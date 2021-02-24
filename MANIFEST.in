@@ -1,0 +1,8 @@
+include pyproject.toml
+include *.md
+include LICENSE
+include setup.py
+include tox.ini
+
+exclude .editorconfig
+exclude .gitlab-ci.yml

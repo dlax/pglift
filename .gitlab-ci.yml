@@ -1,0 +1,11 @@
+---
+stages:
+  - tests
+
+tests:
+  stage: tests
+  needs: []
+  image: python:3.6
+  script:
+    - pip install tox
+    - tox
