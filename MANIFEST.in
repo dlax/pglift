@@ -4,5 +4,7 @@ include LICENSE
 include setup.py
 include tox.ini
 
+recursive-include tests *.py
+
 exclude .editorconfig
 exclude .gitlab-ci.yml
