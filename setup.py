@@ -38,7 +38,7 @@ setup(
     install_requires=[],
     extras_require={
         "dev": ["black", "flake8", "isort", "mypy"],
-        "test": ["check-manifest", "pytest"],
+        "test": ["check-manifest", "pytest", "pytest-cov"],
     },
     package_data={
         "pglib": ["py.typed"],
