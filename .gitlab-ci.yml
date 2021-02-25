@@ -6,6 +6,10 @@ tests:
   stage: tests
   needs: []
   image: python:3.6
-  script:
+  before_script:
+    - apt-get -q update
+    - apt-get -y -q install postgresql
     - pip install tox
-    - tox
+    - useradd gitlab
+  script:
+    - su -c tox gitlab
