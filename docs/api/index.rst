@@ -7,3 +7,4 @@ API
 
     instance
     conf
+    cmd
