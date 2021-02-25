@@ -7,5 +7,7 @@ __pycache__/
 *.so
 *~
 
-.tox
 .cache
+.pytest_cache
+.mypy_cache
+.tox
