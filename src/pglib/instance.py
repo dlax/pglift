@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 from . import pg
-from ._cmd import command
 from .task import task
 
 
@@ -16,13 +15,13 @@ def init(
     locale: str,
     pgroot: Path,
     data_checksums: bool = False,
-    sysuser: Optional[str] = None,
 ) -> None:
     """Initialize a PostgreSQL instance."""
 
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
-    options = [
+    cmd = [
+        str(pg.binpath("initdb")),
         f"--pgdata={datadir}",
         "-U",
         surole,
@@ -32,11 +31,9 @@ def init(
         f"--locale={locale}",
     ]
     if data_checksums:
-        options.append("--data-checksums")
+        cmd.append("--data-checksums")
 
-    cmd = command(str(pg.binpath("initdb")), user=sysuser)
-
-    subprocess.check_call(cmd + options, cwd=pgroot)
+    subprocess.check_call(cmd, cwd=pgroot)
 
 
 @init.revert
@@ -49,9 +46,8 @@ def revert_init(
     **kwargs: Any,
 ) -> None:
     """Un-initialize a PostgreSQL instance."""
-    cmd = command("rm", "-rf", user=sysuser)
-    subprocess.check_call(cmd + [str(waldir)])
-    subprocess.check_call(cmd + [str(datadir)])
+    subprocess.check_call(["rm", "-rf", str(waldir)])
+    subprocess.check_call(["rm", "-rf", str(datadir)])
     try:
         next(pgroot.iterdir())
     except StopIteration:
