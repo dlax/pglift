@@ -40,7 +40,7 @@ def init(
 
 
 @init.revert
-def uninit(
+def revert_init(
     *,
     datadir: Path,
     waldir: Path,
