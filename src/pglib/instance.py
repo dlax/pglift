@@ -20,6 +20,8 @@ def init(
 ) -> None:
     """Initialize a PostgreSQL instance."""
 
+    pgroot.mkdir(mode=0o750, exist_ok=True)
+
     options = [
         f"--pgdata={datadir}",
         "-U",
@@ -42,6 +44,7 @@ def uninit(
     *,
     datadir: Path,
     waldir: Path,
+    pgroot: Path,
     sysuser: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -49,3 +52,8 @@ def uninit(
     cmd = command("rm", "-rf", user=sysuser)
     subprocess.check_call(cmd + [str(waldir)])
     subprocess.check_call(cmd + [str(datadir)])
+    try:
+        next(pgroot.iterdir())
+    except StopIteration:
+        # directory is empty
+        pgroot.rmdir()

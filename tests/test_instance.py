@@ -30,6 +30,8 @@ def test_init(tmp_path):
             raise AssertionError("invalid postgresql.conf")
 
     # A failed init cleans up postgres directories.
+    pgroot = tmp_path / "pg"
+    pgroot.mkdir()
     datadir = tmp_path / "notadirectory"
     datadir.touch()
     waldir = tmp_path / "wal2"
@@ -39,3 +41,4 @@ def test_init(tmp_path):
         )
     assert not datadir.exists()
     assert not waldir.exists()
+    assert not pgroot.exists()
