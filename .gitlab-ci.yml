@@ -10,6 +10,6 @@ tests:
     - apt-get -q update
     - apt-get -y -q --no-install-recommends install postgresql
     - pip install tox
-    - useradd gitlab
+    - useradd --create-home gitlab
   script:
     - su -c tox gitlab
