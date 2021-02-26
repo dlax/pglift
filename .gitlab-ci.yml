@@ -8,7 +8,7 @@ tests:
   image: python:3.6
   before_script:
     - apt-get -q update
-    - apt-get -y -q install postgresql
+    - apt-get -y -q --no-install-recommends install postgresql
     - pip install tox
     - useradd gitlab
   script:
