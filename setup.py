@@ -35,7 +35,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     python_requires=">=3.6, <4",
-    install_requires=[],
+    install_requires=["pgtoolkit"],
     extras_require={
         "dev": ["black", "flake8", "isort", "mypy"],
         "test": ["check-manifest", "pytest", "pytest-cov"],
