@@ -28,3 +28,7 @@ tests:
     - chmod 777 $PIP_CACHE_DIR
   script:
     - su -c "tox -e tests" gitlab
+
+docs:
+  script:
+    - tox -e docs
