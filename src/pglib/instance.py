@@ -1,35 +1,36 @@
 import subprocess
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Tuple, Union
 
 from . import pg, util
+from .model import Instance
+from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
+
+POSTGRESQL_SETTINGS = SETTINGS.postgresql
 
 
 @task
 def init(
+    instance: Instance,
     *,
-    datadir: Path,
-    waldir: Path,
-    surole: str,
-    locale: str,
-    pgroot: Path,
     data_checksums: bool = False,
+    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
 ) -> None:
     """Initialize a PostgreSQL instance."""
 
+    pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
     cmd = [
         str(pg.binpath("initdb")),
-        f"--pgdata={datadir}",
-        "-U",
-        surole,
-        "-X",
-        str(waldir),
+        f"--pgdata={instance.datadir}",
+        f"--waldir={instance.waldir}",
+        f"--username={settings.surole}",
         "--encoding=UTF8",
-        f"--locale={locale}",
     ]
+    if settings.locale:
+        cmd.append(f"--locale={settings.locale}")
     if data_checksums:
         cmd.append("--data-checksums")
 
@@ -38,16 +39,15 @@ def init(
 
 @init.revert
 def revert_init(
+    instance: Instance,
     *,
-    datadir: Path,
-    waldir: Path,
-    pgroot: Path,
-    sysuser: Optional[str] = None,
+    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
 ) -> None:
     """Un-initialize a PostgreSQL instance."""
-    subprocess.check_call(["rm", "-rf", str(waldir)])
-    subprocess.check_call(["rm", "-rf", str(datadir)])
+    subprocess.check_call(["rm", "-rf", str(instance.waldir)])
+    subprocess.check_call(["rm", "-rf", str(instance.datadir)])
+    pgroot = settings.root
     try:
         next(pgroot.iterdir())
     except StopIteration:
@@ -57,11 +57,11 @@ def revert_init(
 
 @task
 def configure(
-    instance: str,
+    instance: Instance,
     *,
-    configdir: Path,
     filename: str,
     ssl: Union[bool, Tuple[Path, Path]] = False,
+    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **confitems: Any,
 ) -> None:
     """Write instance's configuration to 'filename' and include it in its
@@ -72,6 +72,7 @@ def configure(
     `~pathlib.Path` corresponding to the location of SSL cert file and key
     file to use may also be passed.
     """
+    configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     assert postgresql_conf.exists()
     if ssl is True:
@@ -89,16 +90,16 @@ def configure(
     with postgresql_conf.open("w") as f:
         f.write(f"include = '{filename}'\n\n")
         f.write(original_content)
-    config = pg.make_configuration(instance, **confitems)
+    confitems.setdefault("port", instance.port)
+    config = pg.make_configuration(instance.name, **confitems)
     with (configdir / filename).open("w") as f:
         config.save(f)
 
 
 @configure.revert
 def revert_configure(
-    instance: str,
+    instance: Instance,
     *,
-    configdir: Path,
     filename: str,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **kwargs: Any,
@@ -106,6 +107,7 @@ def revert_configure(
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
+    configdir = instance.datadir
     filepath = configdir / filename
     if filepath.exists():
         filepath.unlink()
