@@ -8,11 +8,8 @@ cache:
   paths:
     - .cache/pip
 
-before_script:
-  - apt-get -q update
-  - apt-get -y -q --no-install-recommends install postgresql
+before_script: &tox_install
   - pip install tox
-  - useradd --create-home gitlab
 
 lint:
   script:
@@ -23,5 +20,10 @@ typing:
     - tox -e typing
 
 tests:
+  before_script:
+    - *tox_install
+    - apt-get -q update
+    - apt-get -y -q --no-install-recommends install postgresql
+    - useradd --create-home gitlab
   script:
     - su -c "tox -e tests" gitlab
