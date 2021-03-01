@@ -1,4 +1,7 @@
 ---
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
 stages:
   - tests
 
@@ -6,6 +9,9 @@ tests:
   stage: tests
   needs: []
   image: python:3.6
+  cache:
+    paths:
+      - .cache/pip
   before_script:
     - apt-get -q update
     - apt-get -y -q --no-install-recommends install postgresql
