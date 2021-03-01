@@ -1,8 +1,8 @@
 import subprocess
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, Union
 
-from . import pg
+from . import pg, util
 from .task import task
 
 
@@ -61,13 +61,30 @@ def configure(
     *,
     configdir: Path,
     filename: str,
+    ssl: Union[bool, Tuple[Path, Path]] = False,
     **confitems: Any,
 ) -> None:
     """Write instance's configuration to 'filename' and include it in its
     postgresql.conf.
+
+    `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
+    If True, a self-signed certificate is generated. A tuple of two
+    `~pathlib.Path` corresponding to the location of SSL cert file and key
+    file to use may also be passed.
     """
     postgresql_conf = configdir / "postgresql.conf"
     assert postgresql_conf.exists()
+    if ssl is True:
+        util.generate_certificate(configdir)
+        confitems["ssl"] = True
+    elif isinstance(ssl, tuple):
+        try:
+            certfile, keyfile = ssl
+        except ValueError:
+            raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
+        confitems["ssl"] = True
+        confitems["ssl_cert_file"] = certfile
+        confitems["ssl_key_file"] = keyfile
     original_content = postgresql_conf.read_text()
     with postgresql_conf.open("w") as f:
         f.write(f"include = '{filename}'\n\n")
@@ -83,6 +100,7 @@ def revert_configure(
     *,
     configdir: Path,
     filename: str,
+    ssl: Union[bool, Tuple[Path, Path]] = False,
     **kwargs: Any,
 ) -> None:
     """Remove custom instance configuration, leaving the default
@@ -105,3 +123,8 @@ def revert_configure(
             rest = f.read()
             with postgresql_conf.open("w") as nf:
                 nf.write(rest)
+    if ssl is True:
+        for ext in ("crt", "key"):
+            fpath = configdir / f"server.{ext}"
+            if fpath.exists():
+                fpath.unlink()

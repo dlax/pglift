@@ -75,3 +75,31 @@ def test_configure(tmp_path):
 
     instance.revert_configure(instance_name, configdir=tmp_path, filename="my.conf")
     assert postgresql_conf.read_text() == initial_content
+
+    instance.configure(instance_name, configdir=tmp_path, filename="ssl.conf", ssl=True)
+    configfpath = tmp_path / "ssl.conf"
+    lines = configfpath.read_text().splitlines()
+    assert "ssl = on" in lines
+    assert (tmp_path / "server.crt").exists()
+    assert (tmp_path / "server.key").exists()
+
+    instance.revert_configure(
+        instance_name, configdir=tmp_path, filename="ssl.conf", ssl=True
+    )
+    assert not (tmp_path / "server.crt").exists()
+    assert not (tmp_path / "server.key").exists()
+
+    ssl = (tmp_path / "c.crt", tmp_path / "k.key")
+    for fpath in ssl:
+        fpath.touch()
+    instance.configure(instance_name, configdir=tmp_path, filename="ssl.conf", ssl=ssl)
+    configfpath = tmp_path / "ssl.conf"
+    lines = configfpath.read_text().splitlines()
+    assert "ssl = on" in lines
+    assert f"ssl_cert_file = {tmp_path / 'c.crt'}" in lines
+    assert f"ssl_key_file = {tmp_path / 'k.key'}" in lines
+    instance.revert_configure(
+        instance_name, configdir=tmp_path, filename="ssl.conf", ssl=ssl
+    )
+    for fpath in ssl:
+        assert fpath.exists()
