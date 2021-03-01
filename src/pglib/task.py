@@ -1,3 +1,4 @@
+import functools
 from typing import Any, Callable, Generic, Optional, TypeVar, cast
 
 A = TypeVar("A", bound=Callable[..., Any])
@@ -7,6 +8,7 @@ class task(Generic[A]):
     def __init__(self, action: A) -> None:
         self.action = action
         self.revert_action: Optional[A] = None
+        functools.update_wrapper(self, action)
 
     def __repr__(self) -> str:
         return f"<task '{self.action.__name__}' at 0x{id(self)}>"
