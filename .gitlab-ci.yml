@@ -25,5 +25,6 @@ tests:
     - apt-get -q update
     - apt-get -y -q --no-install-recommends install postgresql
     - useradd --create-home gitlab
+    - chmod 777 $PIP_CACHE_DIR
   script:
     - su -c "tox -e tests" gitlab
