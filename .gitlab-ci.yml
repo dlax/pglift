@@ -1,21 +1,27 @@
 ---
+image: python:3.6
+
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-stages:
-  - tests
+cache:
+  paths:
+    - .cache/pip
+
+before_script:
+  - apt-get -q update
+  - apt-get -y -q --no-install-recommends install postgresql
+  - pip install tox
+  - useradd --create-home gitlab
+
+lint:
+  script:
+    - tox -e lint
+
+typing:
+  script:
+    - tox -e typing
 
 tests:
-  stage: tests
-  needs: []
-  image: python:3.6
-  cache:
-    paths:
-      - .cache/pip
-  before_script:
-    - apt-get -q update
-    - apt-get -y -q --no-install-recommends install postgresql
-    - pip install tox
-    - useradd --create-home gitlab
   script:
-    - su -c tox gitlab
+    - su -c "tox -e tests" gitlab
