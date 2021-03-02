@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+export PYBUILD_NAME=pglib
+
+%:
+	dh $@ --with python3,sphinxdoc --buildsystem=pybuild
+
+
+override_dh_auto_build:
+	dh_auto_build
+	PYTHONPATH=./src http_proxy='127.0.0.1:9' sphinx-build -b html -W -T -N docs/ docs/_build

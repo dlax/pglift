@@ -10,6 +10,7 @@ __pycache__/
 
 .cache
 .coverage
+.pybuild
 .pytest_cache
 .mypy_cache
 .tox
