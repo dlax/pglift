@@ -1,8 +1,8 @@
 ---
-image: $CI_REGISTRY_IMAGE
-
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  TESTING_CI_IMAGE: "$CI_REGISTRY_IMAGE:testing"
+  DEBBUILD_CI_IMAGE: "$CI_REGISTRY_IMAGE:debbuild"
 
 cache:
   paths:
@@ -10,37 +10,65 @@ cache:
 
 lint:
   stage: test
+  image: $TESTING_CI_IMAGE
   script:
     - tox -e lint
 
 typing:
   stage: test
+  image: $TESTING_CI_IMAGE
   script:
     - tox -e typing
 
 tests:
   stage: test
+  image: $TESTING_CI_IMAGE
   script:
     - tox -e tests
 
 docs:
   stage: test
+  image: $TESTING_CI_IMAGE
   script:
     - tox -e docs
   artifacts:
     paths: [docs/_build/]
     expire_in: 3 days
 
-ci_image:
+.ci_image:
   stage: build
   image: docker:19.03-dind
   services:
     - docker:19.03-dind
-  variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - cd ci/testing
+    - cd ci/$WORKSUBDIR
     - docker build --pull -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
+
+testing_ci_image:
+  extends: .ci_image
+  variables:
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE:testing"
+    WORKSUBDIR: "testing"
+
+debbuild_ci_image:
+  extends: .ci_image
+  variables:
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE:debbuild"
+    WORKSUBDIR: "debian"
+
+debian:
+  when: manual
+  stage: test
+  image: $DEBBUILD_CI_IMAGE
+  before_script:
+    - sudo apt-get -qq update
+    - sudo apt-get -qq build-dep .
+    - python3 setup.py sdist
+    - mk-origtargz dist/pglib-$(python3 setup.py --version).tar.gz
+  script:
+    - dpkg-buildpackage
+    - debc
+    - lintian
