@@ -10,7 +10,12 @@ from pglib.model import Instance
 
 @pytest.fixture
 def tmp_settings(tmp_path):
-    return settings.Settings(postgresql=settings.PostgreSQLSettings(root=tmp_path))
+    return settings.Settings(
+        postgresql=settings.PostgreSQLSettings(
+            root=tmp_path,
+            config_file="my.conf",
+        )
+    )
 
 
 def test_init(tmp_settings):
@@ -47,7 +52,8 @@ def test_init(tmp_settings):
 
 
 def test_configure(tmp_settings):
-    i = Instance("test", "11", 5433, settings=tmp_settings)
+    pg_settings = tmp_settings.postgresql
+    i = Instance("test", "11", 5431, settings=tmp_settings)
     configdir = i.datadir
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -55,7 +61,7 @@ def test_configure(tmp_settings):
         f.write("bonjour = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
-    instance.configure(i, filename="my.conf", port=5433)
+    instance.configure(i, port=5433, settings=pg_settings)
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
     assert line1 == "include = 'my.conf'"
@@ -71,34 +77,37 @@ def test_configure(tmp_settings):
     assert config.bonjour == "test"
     assert config.cluster_name == "test"
 
-    instance.revert_configure(i, filename="toto.conf")
+    instance.revert_configure(
+        i, settings=attr.evolve(pg_settings, config_file="foo.conf")
+    )
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
     assert line1 == "include = 'my.conf'"
 
-    instance.revert_configure(i, filename="my.conf")
+    instance.revert_configure(i, settings=pg_settings)
     assert postgresql_conf.read_text() == initial_content
 
-    instance.configure(i, filename="ssl.conf", ssl=True)
+    pg_settings = attr.evolve(pg_settings, config_file="ssl.conf")
+    instance.configure(i, ssl=True, settings=pg_settings)
     configfpath = configdir / "ssl.conf"
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
 
-    instance.revert_configure(i, filename="ssl.conf", ssl=True)
+    instance.revert_configure(i, ssl=True, settings=pg_settings)
     assert not (configdir / "server.crt").exists()
     assert not (configdir / "server.key").exists()
 
     ssl = (i.datadir / "c.crt", i.datadir / "k.key")
     for fpath in ssl:
         fpath.touch()
-    instance.configure(i, filename="ssl.conf", ssl=ssl)
+    instance.configure(i, ssl=ssl, settings=pg_settings)
     configfpath = configdir / "ssl.conf"
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {i.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {i.datadir / 'k.key'}" in lines
-    instance.revert_configure(i, filename="ssl.conf", ssl=ssl)
+    instance.revert_configure(i, ssl=ssl, settings=pg_settings)
     for fpath in ssl:
         assert fpath.exists()

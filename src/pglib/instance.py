@@ -59,13 +59,11 @@ def revert_init(
 def configure(
     instance: Instance,
     *,
-    filename: str,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **confitems: Any,
 ) -> None:
-    """Write instance's configuration to 'filename' and include it in its
-    postgresql.conf.
+    """Write instance's configuration and include it in its postgresql.conf.
 
     `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
     If True, a self-signed certificate is generated. A tuple of two
@@ -88,11 +86,11 @@ def configure(
         confitems["ssl_key_file"] = keyfile
     original_content = postgresql_conf.read_text()
     with postgresql_conf.open("w") as f:
-        f.write(f"include = '{filename}'\n\n")
+        f.write(f"include = '{settings.config_file}'\n\n")
         f.write(original_content)
     confitems.setdefault("port", instance.port)
     config = pg.make_configuration(instance.name, **confitems)
-    with (configdir / filename).open("w") as f:
+    with (configdir / settings.config_file).open("w") as f:
         config.save(f)
 
 
@@ -100,21 +98,21 @@ def configure(
 def revert_configure(
     instance: Instance,
     *,
-    filename: str,
     ssl: Union[bool, Tuple[Path, Path]] = False,
+    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
 ) -> None:
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
     configdir = instance.datadir
-    filepath = configdir / filename
+    filepath = configdir / settings.config_file
     if filepath.exists():
         filepath.unlink()
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open() as f:
         line = f.readline()
-        if line.startswith(f"include = '{filename}'"):
+        if line.startswith(f"include = '{settings.config_file}'"):
             while line:
                 # Move to next non-empty line in file.
                 pos = f.tell()

@@ -23,6 +23,9 @@ class PostgreSQLSettings:
     surole: str = "postgres"
     """User name of instance super-user."""
 
+    config_file: str = "postgresql.pglib.conf"
+    """Name of file containing managed configuration entries."""
+
     instancedir: str = "{version}/{instance}"
     """Path segment to instance base directory relative to `root` path."""
 
