@@ -38,10 +38,34 @@ class PostgreSQLSettings:
     """Path segment from instance base directory to WAL directory."""
 
 
+@environ.config(frozen=True)
+class PgBackRestSettings:
+    """Settings for pgBackRest."""
+
+    execpath: str = environ.var(default="/usr/bin/pgbackrest")
+    """Path to the pbBackRest executable."""
+
+    configpath: str = environ.var(
+        default="/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
+    )
+    """Path to the config file."""
+
+    directory: str = environ.var(
+        default="/var/lib/pgbackrest/{instance.version}-{instance.name}"
+    )
+    """Path to the directory where backups are stored."""
+
+    logpath: str = environ.var(
+        default="/var/lib/pgbackrest/{instance.version}-{instance.name}/logs"
+    )
+    """Path where log files are stored."""
+
+
 @environ.config(prefix="PGLIB", frozen=True)
 class Settings:
 
     postgresql: PostgreSQLSettings = environ.group(PostgreSQLSettings)
+    pgbackrest: PgBackRestSettings = environ.group(PgBackRestSettings)
 
 
 to_config = functools.partial(environ.to_config, Settings)

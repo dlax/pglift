@@ -4,17 +4,8 @@ import attr
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 
-from pglib import instance, pg, settings
+from pglib import instance, pg
 from pglib.model import Instance
-
-
-@pytest.fixture
-def tmp_settings(tmp_path):
-    return settings.to_config(
-        {
-            "PGLIB_POSTGRESQL_ROOT": str(tmp_path),
-        },
-    )
 
 
 def test_init(tmp_settings):
