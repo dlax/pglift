@@ -1,0 +1,15 @@
+---
+- name: my postgresql instances
+  hosts: localhost
+  tasks:
+    - name: production instance, dropped
+      postgresql_instance:
+        name: prod
+        version: "13"
+        state: absent
+
+    - name: dev instance, dropped
+      postgresql_instance:
+        name: dev
+        version: "13"
+        state: absent

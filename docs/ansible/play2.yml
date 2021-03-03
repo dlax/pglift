@@ -1,0 +1,34 @@
+---
+- name: my postgresql instances
+  hosts: localhost
+  tasks:
+    - name: production instance
+      postgresql_instance:
+        name: prod
+        version: "13"
+        state: started
+        ssl: true
+        configuration:
+          port: 5433
+          max_connections: 100
+          shared_buffers: 1GB
+          unix_socket_directories: /tmp
+
+    - name: pre-production instance, now dropped
+      postgresql_instance:
+        name: preprod
+        version: "13"
+        state: absent
+        configuration:
+          unix_socket_directories: /tmp
+
+    - name: dev instance, started, with SSL
+      postgresql_instance:
+        name: dev
+        version: "13"
+        state: started
+        ssl: true
+        configuration:
+          port: 5455
+          max_connections: 42
+          unix_socket_directories: /tmp
