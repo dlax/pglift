@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
-from typing import Any, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
+
+from pgtoolkit import conf as pgconf
 
 from . import pg, util
 from .model import Instance
@@ -55,6 +57,9 @@ def revert_init(
         pgroot.rmdir()
 
 
+ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
+
+
 @task
 def configure(
     instance: Instance,
@@ -62,7 +67,7 @@ def configure(
     ssl: Union[bool, Tuple[Path, Path]] = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **confitems: Any,
-) -> None:
+) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
     `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
@@ -73,25 +78,46 @@ def configure(
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     assert postgresql_conf.exists()
-    if ssl is True:
-        util.generate_certificate(configdir)
+    our_conffile = configdir / settings.config_file
+    conf = pgconf.parse(str(postgresql_conf))
+    if ssl:
         confitems["ssl"] = True
-    elif isinstance(ssl, tuple):
-        try:
-            certfile, keyfile = ssl
-        except ValueError:
-            raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
-        confitems["ssl"] = True
-        confitems["ssl_cert_file"] = certfile
-        confitems["ssl_key_file"] = keyfile
+    if not conf.get("ssl", False):
+        if ssl is True:
+            util.generate_certificate(configdir)
+        elif isinstance(ssl, tuple):
+            try:
+                certfile, keyfile = ssl
+            except ValueError:
+                raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
+            confitems["ssl_cert_file"] = certfile
+            confitems["ssl_key_file"] = keyfile
     original_content = postgresql_conf.read_text()
-    with postgresql_conf.open("w") as f:
-        f.write(f"include = '{settings.config_file}'\n\n")
-        f.write(original_content)
+    include = f"include = '{settings.config_file}'"
+    if not any(line.startswith(include) for line in original_content.splitlines()):
+        with postgresql_conf.open("w") as f:
+            f.write(f"{include}\n\n")
+            f.write(original_content)
     confitems.setdefault("port", instance.port)
+
     config = pg.make_configuration(instance.name, **confitems)
-    with (configdir / settings.config_file).open("w") as f:
-        config.save(f)
+
+    config_before = {}
+    if our_conffile.exists():
+        config_before = {e.name: e.value for e in pgconf.parse(our_conffile)}
+    config_after = {e.name: e.value for e in config}
+    changes: ConfigChanges = {}
+    for k in set(config_before) | set(config_after):
+        pv = config_before.get(k)
+        nv = config_after.get(k)
+        if nv != pv:
+            changes[k] = (pv, nv)
+
+    if changes:
+        with (configdir / settings.config_file).open("w") as f:
+            config.save(f)
+
+    return changes
 
 
 @configure.revert
@@ -101,7 +127,7 @@ def revert_configure(
     ssl: Union[bool, Tuple[Path, Path]] = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
-) -> None:
+) -> Any:
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """

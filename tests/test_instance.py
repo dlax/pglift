@@ -61,7 +61,14 @@ def test_configure(tmp_settings):
         f.write("bonjour = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
-    instance.configure(i, port=5433, settings=pg_settings)
+    changes = instance.configure(
+        i, port=5433, settings=pg_settings, max_connections=100
+    )
+    assert changes == {
+        "cluster_name": (None, "test"),
+        "max_connections": (None, 100),
+        "port": (None, 5433),
+    }
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
     assert line1 == "include = 'my.conf'"
@@ -76,6 +83,20 @@ def test_configure(tmp_settings):
     assert config.port == 5433
     assert config.bonjour == "test"
     assert config.cluster_name == "test"
+
+    changes = instance.configure(i, settings=pg_settings, listen_address="*", ssl=True)
+    assert changes == {
+        "listen_address": (None, "*"),
+        "max_connections": (100, None),
+        "port": (5433, i.port),
+        "ssl": (None, True),
+    }
+    # Same configuration, no change.
+    mtime_before = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
+    changes = instance.configure(i, settings=pg_settings, listen_address="*", ssl=True)
+    assert changes == {}
+    mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
+    assert mtime_before == mtime_after
 
     instance.revert_configure(
         i, settings=attr.evolve(pg_settings, config_file="foo.conf")
@@ -99,10 +120,17 @@ def test_configure(tmp_settings):
     assert not (configdir / "server.crt").exists()
     assert not (configdir / "server.key").exists()
 
-    ssl = (i.datadir / "c.crt", i.datadir / "k.key")
+    ssl = (cert_file, key_file) = (i.datadir / "c.crt", i.datadir / "k.key")
     for fpath in ssl:
         fpath.touch()
-    instance.configure(i, ssl=ssl, settings=pg_settings)
+    changes = instance.configure(i, ssl=ssl, settings=pg_settings)
+    assert changes == {
+        "cluster_name": (None, i.name),
+        "port": (None, i.port),
+        "ssl": (None, True),
+        "ssl_cert_file": (None, cert_file),
+        "ssl_key_file": (None, key_file),
+    }
     configfpath = configdir / "ssl.conf"
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
