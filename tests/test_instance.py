@@ -1,3 +1,4 @@
+import re
 import subprocess
 
 import attr
@@ -20,8 +21,9 @@ def tmp_settings(tmp_path):
 
 def test_init(tmp_settings):
     pgroot = tmp_settings.postgresql.root
-    i = Instance("test", "13", 5432, settings=tmp_settings)
-    instance.init(i, data_checksums=True, settings=tmp_settings.postgresql)
+    i = Instance("test", "11", 5432, settings=tmp_settings)
+    ret = instance.init(i, data_checksums=True, settings=tmp_settings.postgresql)
+    assert ret
     assert i.datadir.exists()
     assert i.waldir.exists()
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -33,6 +35,20 @@ def test_init(tmp_settings):
                 break
         else:
             raise AssertionError("invalid postgresql.conf")
+
+    # Instance alread exists, no-op.
+    ret = instance.init(i, settings=tmp_settings.postgresql)
+    assert not ret
+    postgresql_auto_conf = i.datadir / "postgresql.auto.conf"
+
+    # Lookup failed.
+    postgresql_auto_conf.write_text("port = 1234\n")
+    with pytest.raises(
+        Exception,
+        match=re.escape("instance lookup failed: port mismatch (1234 != 5432)"),
+    ):
+        instance.init(i, settings=tmp_settings.postgresql)
+    assert not postgresql_auto_conf.exists()  # per revert
 
     # A failed init cleans up postgres directories.
     pgroot = tmp_settings.postgresql.root

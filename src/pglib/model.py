@@ -2,6 +2,7 @@ from pathlib import Path
 
 import attr
 from attr.validators import instance_of
+from pgtoolkit import conf as pgconf
 
 from .settings import SETTINGS, Settings
 from .validators import known_postgresql_version
@@ -58,3 +59,22 @@ class Instance:
         /var/lib/pgsql/12/main/wal
         """
         return self.path / self.settings.postgresql.waldir
+
+    def exists(self) -> bool:
+        """Return True if the instance exists based on system lookup."""
+        if not self.datadir.exists():
+            return False
+        postgresql_conf = self.datadir / "postgresql.conf"
+        if not postgresql_conf.exists():
+            return False
+        config = pgconf.parse(postgresql_conf)
+        postgresql_auto_conf = self.datadir / "postgresql.auto.conf"
+        if postgresql_auto_conf.exists():
+            config += pgconf.parse(postgresql_auto_conf)
+        if "port" in config:
+            if config.port != self.port:
+                raise Exception(f"port mismatch ({config.port} != {self.port})")
+        real_version = (self.datadir / "PG_VERSION").read_text().splitlines()[0]
+        if real_version != self.version:
+            raise Exception(f"version mismatch ({real_version} != {self.version})")
+        return True

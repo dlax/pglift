@@ -18,8 +18,13 @@ def init(
     *,
     data_checksums: bool = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-) -> None:
+) -> bool:
     """Initialize a PostgreSQL instance."""
+    try:
+        if instance.exists():
+            return False
+    except Exception as exc:
+        raise Exception(f"instance lookup failed: {exc}")
 
     pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)
@@ -37,6 +42,7 @@ def init(
         cmd.append("--data-checksums")
 
     subprocess.check_call(cmd, cwd=pgroot)
+    return True
 
 
 @init.revert
@@ -45,7 +51,7 @@ def revert_init(
     *,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
-) -> None:
+) -> Any:
     """Un-initialize a PostgreSQL instance."""
     subprocess.check_call(["rm", "-rf", str(instance.waldir)])
     subprocess.check_call(["rm", "-rf", str(instance.datadir)])
