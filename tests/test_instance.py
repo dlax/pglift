@@ -11,11 +11,11 @@ from pglib.model import Instance
 
 @pytest.fixture
 def tmp_settings(tmp_path):
-    return settings.Settings(
-        postgresql=settings.PostgreSQLSettings(
-            root=tmp_path,
-            config_file="my.conf",
-        )
+    return settings.to_config(
+        {
+            "PGLIB_POSTGRESQL_ROOT": str(tmp_path),
+            "PGLIB_POSTGRESQL_CONFIG_FILE": "my.conf",
+        },
     )
 
 
