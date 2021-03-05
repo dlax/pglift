@@ -1,5 +1,6 @@
+import json
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import attr
 from attr.validators import instance_of
@@ -47,3 +48,13 @@ class Settings:
 
 
 SETTINGS = Settings.load()
+
+
+if __name__ == "__main__":
+
+    def default(obj: Any) -> Any:
+        if isinstance(obj, Path):
+            return str(obj)
+        return obj
+
+    print(json.dumps(attr.asdict(SETTINGS), indent=2, default=default))
