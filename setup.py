@@ -38,6 +38,7 @@ setup(
     install_requires=[
         "attrs",
         "pgtoolkit >= 0.14.0",
+        "typing-extensions",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],

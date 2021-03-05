@@ -1,10 +1,9 @@
-import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
 
-from . import pg, util
+from . import cmd, pg, util
 from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
@@ -18,6 +17,7 @@ def init(
     *,
     data_checksums: bool = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
+    run_command: cmd.CommandRunner = cmd.run,
 ) -> bool:
     """Initialize a PostgreSQL instance."""
     try:
@@ -30,7 +30,7 @@ def init(
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
     cmd = [
-        str(pg.binpath("initdb")),
+        str(pg.binpath("initdb", run_command=run_command)),
         f"--pgdata={instance.datadir}",
         f"--waldir={instance.waldir}",
         f"--username={settings.surole}",
@@ -41,7 +41,7 @@ def init(
     if data_checksums:
         cmd.append("--data-checksums")
 
-    subprocess.check_call(cmd, cwd=pgroot)
+    run_command(cmd, check=True, cwd=str(pgroot))
     return True
 
 
@@ -50,11 +50,12 @@ def revert_init(
     instance: Instance,
     *,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
+    run_command: cmd.CommandRunner = cmd.run,
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
-    subprocess.check_call(["rm", "-rf", str(instance.waldir)])
-    subprocess.check_call(["rm", "-rf", str(instance.datadir)])
+    run_command(["rm", "-rf", str(instance.waldir)], check=True)
+    run_command(["rm", "-rf", str(instance.datadir)], check=True)
     pgroot = settings.root
     try:
         next(pgroot.iterdir())
