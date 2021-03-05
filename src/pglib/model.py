@@ -14,14 +14,13 @@ class Instance:
 
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
-    port: int = attr.ib(validator=instance_of(int))
 
     settings: Settings = attr.ib(default=SETTINGS, validator=instance_of(Settings))
 
     def __str__(self) -> str:
         """Return str(self).
 
-        >>> i = Instance("main", "12", 5432)
+        >>> i = Instance("main", "12")
         >>> str(i)
         '12/main'
         """
@@ -31,7 +30,7 @@ class Instance:
     def path(self) -> Path:
         """Base directory path for this instance.
 
-        >>> i = Instance("main", "12", 5432)
+        >>> i = Instance("main", "12")
         >>> print(i.path)
         /var/lib/pgsql/12/main
         """
@@ -44,7 +43,7 @@ class Instance:
     def datadir(self) -> Path:
         """Path to data directory for this instance.
 
-        >>> i = Instance("main", "12", 5432)
+        >>> i = Instance("main", "12")
         >>> print(i.datadir)
         /var/lib/pgsql/12/main/data
         """
@@ -54,7 +53,7 @@ class Instance:
     def waldir(self) -> Path:
         """Path to WAL directory for this instance.
 
-        >>> i = Instance("main", "12", 5432)
+        >>> i = Instance("main", "12")
         >>> print(i.waldir)
         /var/lib/pgsql/12/main/wal
         """
@@ -71,9 +70,6 @@ class Instance:
         postgresql_auto_conf = self.datadir / "postgresql.auto.conf"
         if postgresql_auto_conf.exists():
             config += pgconf.parse(postgresql_auto_conf)
-        if "port" in config:
-            if config.port != self.port:
-                raise Exception(f"port mismatch ({config.port} != {self.port})")
         real_version = (self.datadir / "PG_VERSION").read_text().splitlines()[0]
         if real_version != self.version:
             raise Exception(f"version mismatch ({real_version} != {self.version})")

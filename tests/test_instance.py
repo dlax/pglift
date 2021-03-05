@@ -1,4 +1,3 @@
-import re
 import subprocess
 
 import attr
@@ -21,7 +20,7 @@ def tmp_settings(tmp_path):
 
 def test_init(tmp_settings):
     pgroot = tmp_settings.postgresql.root
-    i = Instance("test", "11", 5432, settings=tmp_settings)
+    i = Instance("test", "11", settings=tmp_settings)
     ret = instance.init(i, data_checksums=True, settings=tmp_settings.postgresql)
     assert ret
     assert i.datadir.exists()
@@ -39,16 +38,16 @@ def test_init(tmp_settings):
     # Instance alread exists, no-op.
     ret = instance.init(i, settings=tmp_settings.postgresql)
     assert not ret
-    postgresql_auto_conf = i.datadir / "postgresql.auto.conf"
 
     # Lookup failed.
-    postgresql_auto_conf.write_text("port = 1234\n")
+    pg_version = i.datadir / "PG_VERSION"
+    pg_version.write_text("7.1")
     with pytest.raises(
         Exception,
-        match=re.escape("instance lookup failed: port mismatch (1234 != 5432)"),
+        match="version mismatch",
     ):
         instance.init(i, settings=tmp_settings.postgresql)
-    assert not postgresql_auto_conf.exists()  # per revert
+    assert not pg_version.exists()  # per revert
 
     # A failed init cleans up postgres directories.
     pgroot = tmp_settings.postgresql.root
@@ -58,7 +57,7 @@ def test_init(tmp_settings):
     )
     pgroot = pgroot / "pg"
     pgroot.mkdir()
-    i = Instance("test", "12", 5433, settings=tmp_settings_1)
+    i = Instance("test", "12", settings=tmp_settings_1)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
@@ -69,7 +68,7 @@ def test_init(tmp_settings):
 
 def test_configure(tmp_settings):
     pg_settings = tmp_settings.postgresql
-    i = Instance("test", "11", 5431, settings=tmp_settings)
+    i = Instance("test", "11", settings=tmp_settings)
     configdir = i.datadir
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -104,7 +103,7 @@ def test_configure(tmp_settings):
     assert changes == {
         "listen_address": (None, "*"),
         "max_connections": (100, None),
-        "port": (5433, i.port),
+        "port": (5433, None),
         "ssl": (None, True),
     }
     # Same configuration, no change.
@@ -142,7 +141,6 @@ def test_configure(tmp_settings):
     changes = instance.configure(i, ssl=ssl, settings=pg_settings)
     assert changes == {
         "cluster_name": (None, i.name),
-        "port": (None, i.port),
         "ssl": (None, True),
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),

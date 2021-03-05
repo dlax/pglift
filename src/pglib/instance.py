@@ -106,7 +106,6 @@ def configure(
         with postgresql_conf.open("w") as f:
             f.write(f"{include}\n\n")
             f.write(original_content)
-    confitems.setdefault("port", instance.port)
 
     config = pg.make_configuration(instance.name, **confitems)
 
