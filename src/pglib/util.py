@@ -2,10 +2,11 @@ import tempfile
 from pathlib import Path
 
 from . import cmd
+from .types import CommandRunner
 
 
 def generate_certificate(
-    configdir: Path, *, run_command: cmd.CommandRunner = cmd.run
+    configdir: Path, *, run_command: CommandRunner = cmd.run
 ) -> None:
     """Generate a self-signed certificate for a PostgreSQL instance in
     `configdir`.

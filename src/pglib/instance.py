@@ -7,6 +7,7 @@ from . import cmd, pg, util
 from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
+from .types import CommandRunner
 
 POSTGRESQL_SETTINGS = SETTINGS.postgresql
 
@@ -17,7 +18,7 @@ def init(
     *,
     data_checksums: bool = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-    run_command: cmd.CommandRunner = cmd.run,
+    run_command: CommandRunner = cmd.run,
 ) -> bool:
     """Initialize a PostgreSQL instance."""
     try:
@@ -50,7 +51,7 @@ def revert_init(
     instance: Instance,
     *,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-    run_command: cmd.CommandRunner = cmd.run,
+    run_command: CommandRunner = cmd.run,
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
