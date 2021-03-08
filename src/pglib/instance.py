@@ -161,3 +161,58 @@ def revert_configure(
             fpath = configdir / f"server.{ext}"
             if fpath.exists():
                 fpath.unlink()
+
+
+@task
+def start(
+    instance: Instance,
+    *,
+    wait: bool = True,
+    logfile: Optional[Path] = None,
+    run_command: CommandRunner = cmd.run,
+) -> None:
+    """Start an instance."""
+    args = ["--wait" if wait else "--no-wait"]
+    if logfile:
+        args.append(f"--log={logfile}")
+    pg.ctl(
+        instance.datadir,
+        "start",
+        *args,
+        check=True,
+        run_command=run_command,
+    )
+
+
+@task
+def status(
+    instance: Instance,
+    *,
+    run_command: CommandRunner = cmd.run,
+) -> pg.Status:
+    """Return the status of an instance."""
+    r = pg.ctl(
+        instance.datadir,
+        "status",
+        run_command=run_command,
+    )
+    return pg.Status(r.returncode)
+
+
+@task
+def stop(
+    instance: Instance,
+    *,
+    mode: str = "fast",
+    wait: bool = True,
+    run_command: CommandRunner = cmd.run,
+) -> None:
+    """Stop an instance."""
+    args = [f"--mode={mode}", "--wait" if wait else "--no-wait"]
+    pg.ctl(
+        instance.datadir,
+        "stop",
+        *args,
+        check=True,
+        run_command=run_command,
+    )

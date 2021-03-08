@@ -1,3 +1,4 @@
+import enum
 import functools
 from pathlib import Path
 from typing import Any
@@ -5,7 +6,14 @@ from typing import Any
 from pgtoolkit.conf import Configuration
 
 from . import cmd
-from .types import CommandRunner
+from .types import CommandRunner, CompletedProcess
+
+
+@enum.unique
+class Status(enum.IntEnum):
+    RUNNING = 0
+    NOT_RUNNING = 3
+    UNSPECIFIED_DATADIR = 4
 
 
 @functools.lru_cache(1)
@@ -25,3 +33,13 @@ def make_configuration(instance: str, **confitems: Any) -> Configuration:
         conf[key] = value
     conf["cluster_name"] = instance
     return conf
+
+
+def ctl(
+    datadir: Path,
+    *args: str,
+    run_command: CommandRunner = cmd.run,
+    **kwargs: Any,
+) -> CompletedProcess:
+    pg_ctl = binpath("pg_ctl", run_command=run_command)
+    return run_command([str(pg_ctl), "-D", str(datadir)] + list(args), **kwargs)
