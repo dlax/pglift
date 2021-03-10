@@ -55,8 +55,7 @@ def revert_init(
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
-    run_command(["rm", "-rf", str(instance.waldir)], check=True)
-    run_command(["rm", "-rf", str(instance.datadir)], check=True)
+    run_command(["rm", "-rf", str(instance.path)], check=True)
     pgroot = settings.root
     try:
         next(pgroot.iterdir())
