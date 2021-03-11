@@ -3,4 +3,5 @@
 PostgreSQL configuration
 ========================
 
+.. autofunction:: make
 .. autofunction:: info

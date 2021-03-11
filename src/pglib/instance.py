@@ -107,7 +107,7 @@ def configure(
             f.write(f"{include}\n\n")
             f.write(original_content)
 
-    config = pg.make_configuration(instance.name, **confitems)
+    config = conf.make(instance.name, **confitems)
 
     config_before = {}
     if our_conffile.exists():
