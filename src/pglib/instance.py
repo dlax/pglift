@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
 
-from . import cmd, pg, util
+from . import cmd, conf, pg, util
 from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
@@ -67,19 +67,6 @@ def revert_init(
 ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 
 
-def conf_info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
-    """Return (confd, conffile, include) where `confd` is the path to
-    directory where managed configuration files live; `conffile` is the path
-    configuration file `name` and `include` is an include directive to be
-    inserted in main 'postgresql.conf'.
-    """
-    confd = Path("pglib.conf.d")
-    include = f"include_dir = '{confd}'"
-    confd = configdir / confd
-    conffile = confd / name
-    return confd, conffile, include
-
-
 @task
 def configure(
     instance: Instance,
@@ -98,13 +85,13 @@ def configure(
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     assert postgresql_conf.exists()
-    our_confd, our_conffile, include = conf_info(configdir)
+    our_confd, our_conffile, include = conf.info(configdir)
     if not our_confd.exists():
         our_confd.mkdir()
-    conf = pgconf.parse(str(postgresql_conf))
+    pgconfig = pgconf.parse(str(postgresql_conf))
     if ssl:
         confitems["ssl"] = True
-    if not conf.get("ssl", False):
+    if not pgconfig.get("ssl", False):
         if ssl is True:
             util.generate_certificate(configdir)
         elif isinstance(ssl, tuple):
@@ -152,7 +139,7 @@ def revert_configure(
     'postgresql.conf'.
     """
     configdir = instance.datadir
-    our_confd, our_conffile, include = conf_info(configdir)
+    our_confd, our_conffile, include = conf.info(configdir)
     if our_conffile.exists():
         our_conffile.unlink()
     postgresql_conf = configdir / "postgresql.conf"
