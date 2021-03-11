@@ -5,7 +5,8 @@ Ansible
 
 This tutorial illustrates the use of the `postgresql_instance` Ansible module.
 
-First, ``ansible`` needs to be installed in the development virtualenv:
+First, ``ansible`` needs to be installed in the :ref:`development environment
+<devenv>`:
 
 ::
 

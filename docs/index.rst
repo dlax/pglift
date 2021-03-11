@@ -7,6 +7,7 @@ Welcome to pglib's documentation!
 
     api/index
     ansible
+    dev
 
 
 Indices and tables
