@@ -32,3 +32,6 @@ tests:
 docs:
   script:
     - tox -e docs
+  artifacts:
+    paths: [docs/_build/]
+    expire_in: 3 days
