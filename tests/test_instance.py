@@ -13,7 +13,6 @@ def tmp_settings(tmp_path):
     return settings.to_config(
         {
             "PGLIB_POSTGRESQL_ROOT": str(tmp_path),
-            "PGLIB_POSTGRESQL_CONFIG_FILE": "my.conf",
         },
     )
 
@@ -86,9 +85,9 @@ def test_configure(tmp_settings):
     }
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
-    assert line1 == "include = 'my.conf'"
+    assert line1 == "include_dir = 'pglib.conf.d'"
 
-    configfpath = configdir / "my.conf"
+    configfpath = configdir / "pglib.conf.d" / "user.conf"
     lines = configfpath.read_text().splitlines()
     assert "port = 5433" in lines
     assert "cluster_name = 'test'" in lines
@@ -113,19 +112,11 @@ def test_configure(tmp_settings):
     mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
     assert mtime_before == mtime_after
 
-    instance.revert_configure(
-        i, settings=attr.evolve(pg_settings, config_file="foo.conf")
-    )
-    with postgresql_conf.open() as f:
-        line1 = f.readline().strip()
-    assert line1 == "include = 'my.conf'"
-
     instance.revert_configure(i, settings=pg_settings)
     assert postgresql_conf.read_text() == initial_content
+    assert not configfpath.exists()
 
-    pg_settings = attr.evolve(pg_settings, config_file="ssl.conf")
     instance.configure(i, ssl=True, settings=pg_settings)
-    configfpath = configdir / "ssl.conf"
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -145,7 +136,6 @@ def test_configure(tmp_settings):
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),
     }
-    configfpath = configdir / "ssl.conf"
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {i.datadir / 'c.crt'}" in lines

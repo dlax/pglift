@@ -67,6 +67,19 @@ def revert_init(
 ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 
 
+def conf_info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
+    """Return (confd, conffile, include) where `confd` is the path to
+    directory where managed configuration files live; `conffile` is the path
+    configuration file `name` and `include` is an include directive to be
+    inserted in main 'postgresql.conf'.
+    """
+    confd = Path("pglib.conf.d")
+    include = f"include_dir = '{confd}'"
+    confd = configdir / confd
+    conffile = confd / name
+    return confd, conffile, include
+
+
 @task
 def configure(
     instance: Instance,
@@ -85,7 +98,9 @@ def configure(
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     assert postgresql_conf.exists()
-    our_conffile = configdir / settings.config_file
+    our_confd, our_conffile, include = conf_info(configdir)
+    if not our_confd.exists():
+        our_confd.mkdir()
     conf = pgconf.parse(str(postgresql_conf))
     if ssl:
         confitems["ssl"] = True
@@ -100,7 +115,6 @@ def configure(
             confitems["ssl_cert_file"] = certfile
             confitems["ssl_key_file"] = keyfile
     original_content = postgresql_conf.read_text()
-    include = f"include = '{settings.config_file}'"
     if not any(line.startswith(include) for line in original_content.splitlines()):
         with postgresql_conf.open("w") as f:
             f.write(f"{include}\n\n")
@@ -120,7 +134,7 @@ def configure(
             changes[k] = (pv, nv)
 
     if changes:
-        with (configdir / settings.config_file).open("w") as f:
+        with our_conffile.open("w") as f:
             config.save(f)
 
     return changes
@@ -138,13 +152,13 @@ def revert_configure(
     'postgresql.conf'.
     """
     configdir = instance.datadir
-    filepath = configdir / settings.config_file
-    if filepath.exists():
-        filepath.unlink()
+    our_confd, our_conffile, include = conf_info(configdir)
+    if our_conffile.exists():
+        our_conffile.unlink()
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open() as f:
         line = f.readline()
-        if line.startswith(f"include = '{settings.config_file}'"):
+        if line.startswith(include):
             while line:
                 # Move to next non-empty line in file.
                 pos = f.tell()

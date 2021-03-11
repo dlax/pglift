@@ -28,9 +28,6 @@ class PostgreSQLSettings:
     surole: str = environ.var(default="postgres")
     """User name of instance super-user."""
 
-    config_file: str = environ.var(default="postgresql.pglib.conf")
-    """Name of file containing managed configuration entries."""
-
     instancedir: str = environ.var(default="{version}/{instance}")
     """Path segment to instance base directory relative to `root` path."""
 
