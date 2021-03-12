@@ -73,6 +73,7 @@ def configure(
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
+    run_command: CommandRunner = cmd.run,
     **confitems: Any,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
@@ -93,7 +94,7 @@ def configure(
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False):
         if ssl is True:
-            util.generate_certificate(configdir)
+            util.generate_certificate(configdir, run_command=run_command)
         elif isinstance(ssl, tuple):
             try:
                 certfile, keyfile = ssl
