@@ -3,8 +3,9 @@ import subprocess
 import attr
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
+from pgtoolkit.ctl import Status
 
-from pglib import instance, pg
+from pglib import instance
 from pglib.model import Instance
 
 
@@ -139,7 +140,7 @@ def test_configure(tmp_settings):
 def test_start_stop(tmp_settings, tmp_path):
     pg_settings = tmp_settings.postgresql
     i = Instance("test", "11", settings=tmp_settings)
-    assert instance.status(i) == pg.Status.UNSPECIFIED_DATADIR
+    assert instance.status(i) == Status.unspecified_datadir
 
     instance.init(i, settings=pg_settings)
     instance.configure(
@@ -149,11 +150,22 @@ def test_start_stop(tmp_settings, tmp_path):
         unix_socket_directories=str(tmp_path),
         settings=pg_settings,
     )
-    assert instance.status(i) == pg.Status.NOT_RUNNING
+    assert instance.status(i) == Status.not_running
 
     instance.start(i, logfile=tmp_path / "log")
     try:
-        assert instance.status(i) == pg.Status.RUNNING
+        assert instance.status(i) == Status.running
     finally:
         instance.stop(i)
-    assert instance.status(i) == pg.Status.NOT_RUNNING
+    assert instance.status(i) == Status.not_running
+
+    instance.start(i, logfile=tmp_path / "log")
+    try:
+        assert instance.status(i) == Status.running
+        instance.restart(i)
+        assert instance.status(i) == Status.running
+        instance.reload(i)
+        assert instance.status(i) == Status.running
+    finally:
+        instance.stop(i, mode="immediate")
+    assert instance.status(i) == Status.not_running

@@ -2,8 +2,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
+from pgtoolkit.ctl import PGCtl
+from pgtoolkit.ctl import Status as Status
+from typing_extensions import Literal
 
-from . import cmd, conf, pg, util
+from . import cmd, conf, util
 from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
@@ -30,19 +33,17 @@ def init(
     pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
-    cmd = [
-        str(pg.binpath("initdb", run_command=run_command)),
-        f"--pgdata={instance.datadir}",
-        f"--waldir={instance.waldir}",
-        f"--username={settings.surole}",
-        "--encoding=UTF8",
-    ]
+    ctl = PGCtl(run_command=run_command)
+    opts: Dict[str, Union[str, Literal[True]]] = {
+        "waldir": str(instance.waldir),
+        "username": settings.surole,
+        "encoding": "UTF8",
+    }
     if settings.locale:
-        cmd.append(f"--locale={settings.locale}")
+        opts["locale"] = settings.locale
     if data_checksums:
-        cmd.append("--data-checksums")
-
-    run_command(cmd, check=True, cwd=str(pgroot))
+        opts["data_checksums"] = True
+    ctl.init(instance.datadir, **opts)
     return True
 
 
@@ -173,16 +174,7 @@ def start(
     run_command: CommandRunner = cmd.run,
 ) -> None:
     """Start an instance."""
-    args = ["--wait" if wait else "--no-wait"]
-    if logfile:
-        args.append(f"--log={logfile}")
-    pg.ctl(
-        instance.datadir,
-        "start",
-        *args,
-        check=True,
-        run_command=run_command,
-    )
+    PGCtl(run_command=run_command).start(instance.datadir, wait=wait, logfile=logfile)
 
 
 @task
@@ -190,14 +182,9 @@ def status(
     instance: Instance,
     *,
     run_command: CommandRunner = cmd.run,
-) -> pg.Status:
+) -> Status:
     """Return the status of an instance."""
-    r = pg.ctl(
-        instance.datadir,
-        "status",
-        run_command=run_command,
-    )
-    return pg.Status(r.returncode)
+    return PGCtl(run_command=run_command).status(instance.datadir)
 
 
 @task
@@ -209,11 +196,26 @@ def stop(
     run_command: CommandRunner = cmd.run,
 ) -> None:
     """Stop an instance."""
-    args = [f"--mode={mode}", "--wait" if wait else "--no-wait"]
-    pg.ctl(
-        instance.datadir,
-        "stop",
-        *args,
-        check=True,
-        run_command=run_command,
-    )
+    PGCtl(run_command=run_command).stop(instance.datadir, mode=mode, wait=wait)
+
+
+@task
+def restart(
+    instance: Instance,
+    *,
+    mode: str = "fast",
+    wait: bool = True,
+    run_command: CommandRunner = cmd.run,
+) -> None:
+    """Restart an instance."""
+    PGCtl(run_command=run_command).restart(instance.datadir, mode=mode, wait=wait)
+
+
+@task
+def reload(
+    instance: Instance,
+    *,
+    run_command: CommandRunner = cmd.run,
+) -> None:
+    """Reload an instance."""
+    PGCtl(run_command=run_command).reload(instance.datadir)

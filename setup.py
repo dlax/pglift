@@ -38,7 +38,7 @@ setup(
     install_requires=[
         "attrs",
         "environ-config",
-        "pgtoolkit >= 0.14.0",
+        "pgtoolkit >= 0.15.0",
         "typing-extensions",
     ],
     extras_require={

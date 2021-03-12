@@ -117,8 +117,8 @@ from ansible.module_utils.basic import AnsibleModule
 
 from pglib import instance as instance_mod
 from pglib.ansible import ansible_runner
+from pglib.instance import Status as PGStatus
 from pglib.model import Instance
-from pglib.pg import Status as PGStatus
 
 
 def run_module() -> None:
@@ -155,7 +155,7 @@ def run_module() -> None:
     ssl = module.params["ssl"] or False
     try:
         if state == "absent" and instance.exists():
-            if status == PGStatus.RUNNING:
+            if status == PGStatus.running:
                 instance_mod.stop(instance, run_command=run_command)
             instance_mod.revert_configure(instance, run_command=run_command)
             instance_mod.revert_init(instance, run_command=run_command)
@@ -170,9 +170,9 @@ def run_module() -> None:
             )
             result["changed"] = result["changed"] or result["configuration_changes"]
             status = instance_mod.status(instance, run_command=run_command)
-            if state == "started" and status == PGStatus.NOT_RUNNING:
+            if state == "started" and status == PGStatus.not_running:
                 instance_mod.start(instance, run_command=run_command)
-            elif state == "stopped" and status == PGStatus.RUNNING:
+            elif state == "stopped" and status == PGStatus.running:
                 instance_mod.stop(instance, run_command=run_command)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

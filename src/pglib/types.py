@@ -1,5 +1,5 @@
 import subprocess
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 from typing_extensions import Protocol
 
@@ -14,7 +14,8 @@ class CommandRunner(Protocol):
         self,
         args: Sequence[str],
         *,
+        capture_output: bool = False,
         check: bool = False,
-        cwd: Optional[str] = None,
+        **kwargs: Any,
     ) -> CompletedProcess:
         ...
