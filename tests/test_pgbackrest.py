@@ -10,34 +10,34 @@ from pglib.model import Instance
 
 
 @pytest.fixture
-def instance(tmp_settings, tmp_path):
+def instance(ctx, tmp_settings, tmp_path):
     i = Instance("test", "11", settings=tmp_settings)
     pg_settings = tmp_settings.postgresql
-    instance_mod.init(i, settings=pg_settings)
+    instance_mod.init(ctx, i, settings=pg_settings)
     instance_mod.configure(
-        i, settings=pg_settings, unix_socket_directories=str(tmp_path)
+        ctx, i, settings=pg_settings, unix_socket_directories=str(tmp_path)
     )
     return i
 
 
 @contextlib.contextmanager
-def instance_running(instance, tmp_path):
+def instance_running(ctx, instance, tmp_path):
     logfile = tmp_path / "log"
-    instance_mod.start(instance, logfile=logfile)
+    instance_mod.start(ctx, instance, logfile=logfile)
     try:
         yield
     finally:
-        instance_mod.stop(instance)
+        instance_mod.stop(ctx, instance)
 
 
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test(instance, tmp_settings, tmp_path):
+def test(ctx, instance, tmp_settings, tmp_path):
     pgbackrest_settings = tmp_settings.pgbackrest
 
     kwargs = {"instance": instance, "settings": pgbackrest_settings}
-    pgbackrest.setup(**kwargs)
+    pgbackrest.setup(ctx, **kwargs)
     configpath = Path(pgbackrest_settings.configpath.format(instance=instance))
     directory = Path(pgbackrest_settings.directory.format(instance=instance))
     assert configpath.exists()
@@ -45,8 +45,8 @@ def test(instance, tmp_settings, tmp_path):
     assert "pg1-port = 5432" in lines
     assert directory.exists()
 
-    with instance_running(instance, tmp_path):
-        pgbackrest.init(instance, settings=pgbackrest_settings)
+    with instance_running(ctx, instance, tmp_path):
+        pgbackrest.init(ctx, instance, settings=pgbackrest_settings)
         assert (
             directory / f"archive/{instance.version}-{instance.name}/archive.info"
         ).exists()
@@ -54,6 +54,6 @@ def test(instance, tmp_settings, tmp_path):
             directory / f"backup/{instance.version}-{instance.name}/backup.info"
         ).exists()
 
-    pgbackrest.revert_setup(**kwargs)
+    pgbackrest.revert_setup(ctx, **kwargs)
     assert not configpath.exists()
     assert not directory.exists()

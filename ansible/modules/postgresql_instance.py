@@ -116,7 +116,7 @@ from typing import Any, Dict
 from ansible.module_utils.basic import AnsibleModule
 
 from pglib import instance as instance_mod
-from pglib.ansible import ansible_runner
+from pglib.ansible import AnsibleContext
 from pglib.instance import Status as PGStatus
 from pglib.model import Instance
 
@@ -148,32 +148,30 @@ def run_module() -> None:
 
     result["state"] = state = module.params["state"]
 
-    run_command = ansible_runner(module)
-    status = instance_mod.status(instance, run_command=run_command)
+    ctx = AnsibleContext(module)
+    status = instance_mod.status(ctx, instance)
     init_options = module.params["init_options"] or {}
     confitems = module.params["configuration"] or {}
     ssl = module.params["ssl"] or False
     try:
         if state == "absent" and instance.exists():
             if status == PGStatus.running:
-                instance_mod.stop(instance, run_command=run_command)
-            instance_mod.revert_configure(instance, run_command=run_command)
-            instance_mod.revert_init(instance, run_command=run_command)
+                instance_mod.stop(ctx, instance)
+            instance_mod.revert_configure(ctx, instance)
+            instance_mod.revert_init(ctx, instance)
         else:
-            result["changed"] = instance_mod.init(
-                instance, run_command=run_command, **init_options
-            )
+            result["changed"] = instance_mod.init(ctx, instance, **init_options)
             result["datadir"] = str(instance.datadir)
             result["waldir"] = str(instance.waldir)
             result["configuration_changes"] = instance_mod.configure(
-                instance, ssl=ssl, **confitems
+                ctx, instance, ssl=ssl, **confitems
             )
             result["changed"] = result["changed"] or result["configuration_changes"]
-            status = instance_mod.status(instance, run_command=run_command)
+            status = instance_mod.status(ctx, instance)
             if state == "started" and status == PGStatus.not_running:
-                instance_mod.start(instance, run_command=run_command)
+                instance_mod.start(ctx, instance)
             elif state == "stopped" and status == PGStatus.running:
-                instance_mod.stop(instance, run_command=run_command)
+                instance_mod.stop(ctx, instance)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 

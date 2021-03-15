@@ -2,15 +2,14 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
-from pgtoolkit.ctl import PGCtl
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import cmd, conf, util
+from . import conf, util
+from .ctx import BaseContext
 from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
-from .types import CommandRunner
 from .util import short_version
 
 POSTGRESQL_SETTINGS = SETTINGS.postgresql
@@ -18,11 +17,11 @@ POSTGRESQL_SETTINGS = SETTINGS.postgresql
 
 @task
 def init(
+    ctx: BaseContext,
     instance: Instance,
     *,
     data_checksums: bool = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-    run_command: CommandRunner = cmd.run,
 ) -> bool:
     """Initialize a PostgreSQL instance."""
     try:
@@ -32,8 +31,7 @@ def init(
         raise Exception(f"instance lookup failed: {exc}")
 
     # Check if the version provided matches the version installed
-    ctl = PGCtl(run_command=run_command)
-    installed_version = short_version(ctl.version)
+    installed_version = short_version(ctx.pg_ctl.version)
     if installed_version != instance.version:
         raise Exception(
             f"version doesn't match installed version {instance.version} != {installed_version}"
@@ -42,7 +40,6 @@ def init(
     pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
-    ctl = PGCtl(run_command=run_command)
     opts: Dict[str, Union[str, Literal[True]]] = {
         "waldir": str(instance.waldir),
         "username": settings.surole,
@@ -52,20 +49,20 @@ def init(
         opts["locale"] = settings.locale
     if data_checksums:
         opts["data_checksums"] = True
-    ctl.init(instance.datadir, **opts)
+    ctx.pg_ctl.init(instance.datadir, **opts)
     return True
 
 
 @init.revert
 def revert_init(
+    ctx: BaseContext,
     instance: Instance,
     *,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-    run_command: CommandRunner = cmd.run,
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
-    run_command(["rm", "-rf", str(instance.path)], check=True)
+    ctx.run(["rm", "-rf", str(instance.path)], check=True)
     pgroot = settings.root
     try:
         next(pgroot.iterdir())
@@ -79,11 +76,11 @@ ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 
 @task
 def configure(
+    ctx: BaseContext,
     instance: Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
-    run_command: CommandRunner = cmd.run,
     **confitems: Any,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
@@ -104,7 +101,7 @@ def configure(
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False):
         if ssl is True:
-            util.generate_certificate(configdir, run_command=run_command)
+            util.generate_certificate(configdir, run_command=ctx.run)
         elif isinstance(ssl, tuple):
             try:
                 certfile, keyfile = ssl
@@ -140,6 +137,7 @@ def configure(
 
 @configure.revert
 def revert_configure(
+    ctx: BaseContext,
     instance: Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
@@ -176,55 +174,53 @@ def revert_configure(
 
 @task
 def start(
+    ctx: BaseContext,
     instance: Instance,
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
-    run_command: CommandRunner = cmd.run,
 ) -> None:
     """Start an instance."""
-    PGCtl(run_command=run_command).start(instance.datadir, wait=wait, logfile=logfile)
+    ctx.pg_ctl.start(instance.datadir, wait=wait, logfile=logfile)
 
 
 @task
 def status(
+    ctx: BaseContext,
     instance: Instance,
-    *,
-    run_command: CommandRunner = cmd.run,
 ) -> Status:
     """Return the status of an instance."""
-    return PGCtl(run_command=run_command).status(instance.datadir)
+    return ctx.pg_ctl.status(instance.datadir)
 
 
 @task
 def stop(
+    ctx: BaseContext,
     instance: Instance,
     *,
     mode: str = "fast",
     wait: bool = True,
-    run_command: CommandRunner = cmd.run,
 ) -> None:
     """Stop an instance."""
-    PGCtl(run_command=run_command).stop(instance.datadir, mode=mode, wait=wait)
+    ctx.pg_ctl.stop(instance.datadir, mode=mode, wait=wait)
 
 
 @task
 def restart(
+    ctx: BaseContext,
     instance: Instance,
     *,
     mode: str = "fast",
     wait: bool = True,
-    run_command: CommandRunner = cmd.run,
 ) -> None:
     """Restart an instance."""
-    PGCtl(run_command=run_command).restart(instance.datadir, mode=mode, wait=wait)
+    ctx.pg_ctl.restart(instance.datadir, mode=mode, wait=wait)
 
 
 @task
 def reload(
+    ctx: BaseContext,
     instance: Instance,
-    *,
-    run_command: CommandRunner = cmd.run,
 ) -> None:
     """Reload an instance."""
-    PGCtl(run_command=run_command).reload(instance.datadir)
+    ctx.pg_ctl.reload(instance.datadir)

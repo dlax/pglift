@@ -5,12 +5,11 @@ from typing import List
 
 from pgtoolkit import conf as pgconf
 
-from . import cmd
 from .conf import info as conf_info
+from .ctx import BaseContext
 from .model import Instance
 from .settings import SETTINGS, PgBackRestSettings
 from .task import task
-from .types import CommandRunner
 
 PGBACKREST_SETTINGS = SETTINGS.pgbackrest
 
@@ -43,6 +42,7 @@ def _stanza(instance: Instance) -> str:
 
 @task
 def setup(
+    ctx: BaseContext,
     instance: Instance,
     *,
     settings: PgBackRestSettings = PGBACKREST_SETTINGS,
@@ -103,6 +103,7 @@ def setup(
 
 @setup.revert
 def revert_setup(
+    ctx: BaseContext,
     instance: Instance,
     *,
     settings: PgBackRestSettings = PGBACKREST_SETTINGS,
@@ -127,20 +128,20 @@ def revert_setup(
 
 @task
 def init(
+    ctx: BaseContext,
     instance: Instance,
     *,
     settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-    run_command: CommandRunner = cmd.run,
 ) -> None:
     base_cmd = make_cmd(instance, settings)
 
     # Stop pgBackRest if needed
-    run_command(base_cmd + ["stop"], check=True)
+    ctx.run(base_cmd + ["stop"], check=True)
     # Remove stanza if present
-    run_command(base_cmd + ["--force", "stanza-delete"], check=True)
+    ctx.run(base_cmd + ["--force", "stanza-delete"], check=True)
     # Start pgBackRest
-    run_command(base_cmd + ["start"], check=True)
+    ctx.run(base_cmd + ["start"], check=True)
     # Create the Stanza
-    run_command(base_cmd + ["stanza-create"], check=True)
+    ctx.run(base_cmd + ["stanza-create"], check=True)
     # Check the configuration
-    run_command(base_cmd + ["check"], check=True)
+    ctx.run(base_cmd + ["check"], check=True)

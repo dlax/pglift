@@ -2,6 +2,14 @@ import pytest
 
 
 @pytest.fixture
+def ctx():
+    # Local import to avoid ImportPathMismatchError pytest errors.
+    from pglib.ctx import Context
+
+    return Context()
+
+
+@pytest.fixture
 def tmp_settings(tmp_path):
     from pglib import settings
 

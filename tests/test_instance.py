@@ -9,10 +9,10 @@ from pglib import instance
 from pglib.model import Instance
 
 
-def test_init(tmp_settings):
+def test_init(ctx, tmp_settings):
     pgroot = tmp_settings.postgresql.root
     i = Instance("test", "11", settings=tmp_settings)
-    ret = instance.init(i, data_checksums=True, settings=tmp_settings.postgresql)
+    ret = instance.init(ctx, i, data_checksums=True, settings=tmp_settings.postgresql)
     assert ret
     assert i.datadir.exists()
     assert i.waldir.exists()
@@ -27,7 +27,7 @@ def test_init(tmp_settings):
             raise AssertionError("invalid postgresql.conf")
 
     # Instance alread exists, no-op.
-    ret = instance.init(i, settings=tmp_settings.postgresql)
+    ret = instance.init(ctx, i, settings=tmp_settings.postgresql)
     assert not ret
 
     # Lookup failed.
@@ -37,7 +37,7 @@ def test_init(tmp_settings):
         Exception,
         match="version mismatch",
     ):
-        instance.init(i, settings=tmp_settings.postgresql)
+        instance.init(ctx, i, settings=tmp_settings.postgresql)
     assert not pg_version.exists()  # per revert
 
     # A failed init cleans up postgres directories.
@@ -52,7 +52,7 @@ def test_init(tmp_settings):
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
-        instance.init(i, settings=tmp_settings_1.postgresql)
+        instance.init(ctx, i, settings=tmp_settings_1.postgresql)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
 
@@ -62,10 +62,10 @@ def test_init(tmp_settings):
         Exception,
         match="version doesn't match installed version",
     ):
-        instance.init(i, settings=tmp_settings.postgresql)
+        instance.init(ctx, i, settings=tmp_settings.postgresql)
 
 
-def test_configure(tmp_settings):
+def test_configure(ctx, tmp_settings):
     pg_settings = tmp_settings.postgresql
     i = Instance("test", "11", settings=tmp_settings)
     configdir = i.datadir
@@ -76,7 +76,7 @@ def test_configure(tmp_settings):
     initial_content = postgresql_conf.read_text()
 
     changes = instance.configure(
-        i, port=5433, settings=pg_settings, max_connections=100
+        ctx, i, port=5433, settings=pg_settings, max_connections=100
     )
     assert changes == {
         "cluster_name": (None, "test"),
@@ -98,7 +98,9 @@ def test_configure(tmp_settings):
     assert config.bonjour == "test"
     assert config.cluster_name == "test"
 
-    changes = instance.configure(i, settings=pg_settings, listen_address="*", ssl=True)
+    changes = instance.configure(
+        ctx, i, settings=pg_settings, listen_address="*", ssl=True
+    )
     assert changes == {
         "listen_address": (None, "*"),
         "max_connections": (100, None),
@@ -107,29 +109,31 @@ def test_configure(tmp_settings):
     }
     # Same configuration, no change.
     mtime_before = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
-    changes = instance.configure(i, settings=pg_settings, listen_address="*", ssl=True)
+    changes = instance.configure(
+        ctx, i, settings=pg_settings, listen_address="*", ssl=True
+    )
     assert changes == {}
     mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
     assert mtime_before == mtime_after
 
-    instance.revert_configure(i, settings=pg_settings)
+    instance.revert_configure(ctx, i, settings=pg_settings)
     assert postgresql_conf.read_text() == initial_content
     assert not configfpath.exists()
 
-    instance.configure(i, ssl=True, settings=pg_settings)
+    instance.configure(ctx, i, ssl=True, settings=pg_settings)
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
 
-    instance.revert_configure(i, ssl=True, settings=pg_settings)
+    instance.revert_configure(ctx, i, ssl=True, settings=pg_settings)
     assert not (configdir / "server.crt").exists()
     assert not (configdir / "server.key").exists()
 
     ssl = (cert_file, key_file) = (i.datadir / "c.crt", i.datadir / "k.key")
     for fpath in ssl:
         fpath.touch()
-    changes = instance.configure(i, ssl=ssl, settings=pg_settings)
+    changes = instance.configure(ctx, i, ssl=ssl, settings=pg_settings)
     assert changes == {
         "cluster_name": (None, i.name),
         "ssl": (None, True),
@@ -140,40 +144,41 @@ def test_configure(tmp_settings):
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {i.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {i.datadir / 'k.key'}" in lines
-    instance.revert_configure(i, ssl=ssl, settings=pg_settings)
+    instance.revert_configure(ctx, i, ssl=ssl, settings=pg_settings)
     for fpath in ssl:
         assert fpath.exists()
 
 
-def test_start_stop(tmp_settings, tmp_path):
+def test_start_stop(ctx, tmp_settings, tmp_path):
     pg_settings = tmp_settings.postgresql
     i = Instance("test", "11", settings=tmp_settings)
-    assert instance.status(i) == Status.unspecified_datadir
+    assert instance.status(ctx, i) == Status.unspecified_datadir
 
-    instance.init(i, settings=pg_settings)
+    instance.init(ctx, i, settings=pg_settings)
     instance.configure(
+        ctx,
         i,
         port=5499,
         log_destination="syslog",
         unix_socket_directories=str(tmp_path),
         settings=pg_settings,
     )
-    assert instance.status(i) == Status.not_running
+    assert instance.status(ctx, i) == Status.not_running
 
-    instance.start(i, logfile=tmp_path / "log")
+    instance.start(ctx, i, logfile=tmp_path / "log")
     try:
-        assert instance.status(i) == Status.running
+        assert instance.status(ctx, i) == Status.running
     finally:
-        instance.stop(i)
-    assert instance.status(i) == Status.not_running
+        instance.stop(ctx, i)
+    assert instance.status(ctx, i) == Status.not_running
 
-    instance.start(i, logfile=tmp_path / "log")
+    instance.start(ctx, i, logfile=tmp_path / "log")
     try:
-        assert instance.status(i) == Status.running
-        instance.restart(i)
-        assert instance.status(i) == Status.running
-        instance.reload(i)
-        assert instance.status(i) == Status.running
+        assert instance.status(ctx, i) == Status.running
+        instance.restart(ctx, i)
+        assert instance.status(ctx, i) == Status.running
+        instance.reload(ctx, i)
+        assert instance.status(ctx, i) == Status.running
     finally:
-        instance.stop(i, mode="immediate")
-    assert instance.status(i) == Status.not_running
+        instance.stop(ctx, i, mode="immediate")
+    assert instance.status(ctx, i) == Status.not_running
