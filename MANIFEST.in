@@ -13,4 +13,5 @@ exclude .editorconfig
 exclude .gitlab-ci.yml
 exclude .pre-commit-config.yaml
 prune ansible
+prune ci
 prune debian

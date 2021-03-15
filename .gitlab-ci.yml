@@ -1,5 +1,5 @@
 ---
-image: python:3.6
+image: $CI_REGISTRY_IMAGE
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -8,30 +8,39 @@ cache:
   paths:
     - .cache/pip
 
-before_script: &tox_install
-  - pip install tox
-
 lint:
+  stage: test
   script:
     - tox -e lint
 
 typing:
+  stage: test
   script:
     - tox -e typing
 
 tests:
-  before_script:
-    - *tox_install
-    - apt-get -q update
-    - apt-get -y -q --no-install-recommends install postgresql
-    - useradd --create-home gitlab
-    - chmod 777 $PIP_CACHE_DIR
+  stage: test
   script:
-    - su -c "tox -e tests" gitlab
+    - tox -e tests
 
 docs:
+  stage: test
   script:
     - tox -e docs
   artifacts:
     paths: [docs/_build/]
     expire_in: 3 days
+
+ci_image:
+  stage: build
+  image: docker:19.03-dind
+  services:
+    - docker:19.03-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cd ci
+    - docker build --pull -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
