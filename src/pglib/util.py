@@ -40,3 +40,21 @@ def generate_certificate(
             capture_output=True,
         )
     certfile.chmod(0o600)
+
+
+def short_version(version: int) -> str:
+    """Convert a server version as per PQServerVersion to a major version string
+
+    >>> short_version(90603)
+    '9.6'
+    >>> short_version(100001)
+    '10'
+    >>> short_version(110011)
+    '11'
+    """
+    ret = version / 10000
+    if ret < 10:
+        ret = int(ret) + int(version % 1000 / 100) / 10
+    else:
+        ret = int(ret)
+    return str(ret)

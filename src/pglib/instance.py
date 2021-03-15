@@ -11,6 +11,7 @@ from .model import Instance
 from .settings import SETTINGS, PostgreSQLSettings
 from .task import task
 from .types import CommandRunner
+from .util import short_version
 
 POSTGRESQL_SETTINGS = SETTINGS.postgresql
 
@@ -29,6 +30,14 @@ def init(
             return False
     except Exception as exc:
         raise Exception(f"instance lookup failed: {exc}")
+
+    # Check if the version provided matches the version installed
+    ctl = PGCtl(run_command=run_command)
+    installed_version = short_version(ctl.version)
+    if installed_version != instance.version:
+        raise Exception(
+            f"version doesn't match installed version {instance.version} != {installed_version}"
+        )
 
     pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)

@@ -56,6 +56,14 @@ def test_init(tmp_settings):
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
 
+    # Init failed. Version doesn't match installed one.
+    i = Instance("test", "9.6", settings=tmp_settings)
+    with pytest.raises(
+        Exception,
+        match="version doesn't match installed version",
+    ):
+        instance.init(i, settings=tmp_settings.postgresql)
+
 
 def test_configure(tmp_settings):
     pg_settings = tmp_settings.postgresql
