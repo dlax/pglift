@@ -48,7 +48,7 @@ def test_init(tmp_settings):
     )
     pgroot = pgroot / "pg"
     pgroot.mkdir()
-    i = Instance("test", "12", settings=tmp_settings_1)
+    i = Instance("test", "11", settings=tmp_settings_1)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
