@@ -7,4 +7,5 @@ API
 
     instance
     conf
+    pgbackrest
     cmd

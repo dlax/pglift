@@ -1,4 +1,5 @@
 import configparser
+import enum
 import shutil
 from pathlib import Path
 from typing import List
@@ -145,3 +146,101 @@ def init(
     ctx.run(base_cmd + ["stanza-create"], check=True)
     # Check the configuration
     ctx.run(base_cmd + ["check"], check=True)
+
+
+@enum.unique
+class BackupType(enum.Enum):
+    """Backup type."""
+
+    full = "full"
+    """full backup"""
+    incr = "incr"
+    """incremental backup"""
+    diff = "diff"
+    """differential backup"""
+
+    @classmethod
+    def default(cls) -> "BackupType":
+        return cls.incr
+
+
+def backup_command(
+    instance: Instance,
+    *,
+    type: BackupType = BackupType.default(),
+    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
+) -> List[str]:
+    """Return the full pgbackrest command to perform a backup for ``instance``.
+
+    :param type: backup type (one of 'full', 'incr', 'diff').
+
+    Ref.: https://pgbackrest.org/command.html#command-backup
+
+    >>> instance = Instance("backmeup", "13")
+    >>> print(" ".join(backup_command(instance, type=BackupType.full)))  # doctest: +NORMALIZE_WHITESPACE
+    /usr/bin/pgbackrest
+        --config=/etc/pgbackrest/pgbackrest-13-backmeup.conf
+        --stanza=13-backmeup --type=full
+        --repo1-retention-full=9999999
+        --repo1-retention-archive=9999999
+        --repo1-retention-diff=9999999
+        backup
+    """
+    args = [
+        f"--type={type.name}",
+        "--repo1-retention-full=9999999",
+        "--repo1-retention-archive=9999999",
+        "--repo1-retention-diff=9999999",
+        "backup",
+    ]
+    return make_cmd(instance, settings, *args)
+
+
+@task
+def backup(
+    ctx: BaseContext,
+    instance: Instance,
+    *,
+    type: BackupType = BackupType.default(),
+    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
+) -> None:
+    """Perform a backup of ``instance``.
+
+    :param type: backup type (one of 'full', 'incr', 'diff').
+
+    Ref.: https://pgbackrest.org/command.html#command-backup
+    """
+    ctx.run(backup_command(instance, type=type, settings=settings), check=True)
+
+
+def expire_command(
+    instance: Instance,
+    *,
+    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
+) -> List[str]:
+    """Return the full pgbackrest command to expire backups for ``instance``.
+
+    Ref.: https://pgbackrest.org/command.html#command-expire
+
+    >>> instance = Instance("backmeup", "13")
+    >>> print(" ".join(expire_command(instance)))  # doctest: +NORMALIZE_WHITESPACE
+    /usr/bin/pgbackrest
+        --config=/etc/pgbackrest/pgbackrest-13-backmeup.conf
+        --stanza=13-backmeup
+        expire
+    """
+    return make_cmd(instance, settings, "expire")
+
+
+@task
+def expire(
+    ctx: BaseContext,
+    instance: Instance,
+    *,
+    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
+) -> None:
+    """Expire a backup of ``instance``.
+
+    Ref.: https://pgbackrest.org/command.html#command-expire
+    """
+    ctx.run(expire_command(instance, settings=settings), check=True)

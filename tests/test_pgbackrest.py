@@ -45,6 +45,10 @@ def test(ctx, instance, tmp_settings, tmp_path):
     assert "pg1-port = 5432" in lines
     assert directory.exists()
 
+    latest_backup = (
+        directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
+    )
+
     with instance_running(ctx, instance, tmp_path):
         pgbackrest.init(ctx, instance, settings=pgbackrest_settings)
         assert (
@@ -53,6 +57,17 @@ def test(ctx, instance, tmp_settings, tmp_path):
         assert (
             directory / f"backup/{instance.version}-{instance.name}/backup.info"
         ).exists()
+
+        assert not latest_backup.exists()
+        pgbackrest.backup(
+            ctx,
+            instance,
+            type=pgbackrest.BackupType.full,
+            settings=pgbackrest_settings,
+        )
+        assert latest_backup.exists() and latest_backup.is_symlink()
+        pgbackrest.expire(ctx, instance, settings=pgbackrest_settings)
+        # TODO: check some result from 'expire' command here.
 
     pgbackrest.revert_setup(ctx, **kwargs)
     assert not configpath.exists()
