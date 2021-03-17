@@ -26,6 +26,9 @@ PostgreSQL instances:
 ::
 
     $ export PGLIB_POSTGRESQL_ROOT=/tmp/postgres
+    $ export PGLIB_PGBACKREST_DIRECTORY=/tmp/backups
+    $ export PGLIB_PGBACKREST_CONFIGPATH=/tmp/pgbackrest.conf
+    $ export PGLIB_PGBACKREST_LOGPATH=/tmp/backups
 
 Then, run:
 
@@ -81,6 +84,19 @@ We can see our instances installed and running:
     26917 ?        Ss     0:00      \_ postgres: preprod: autovacuum launcher
     26918 ?        Ss     0:00      \_ postgres: preprod: stats collector
     26919 ?        Ss     0:00      \_ postgres: preprod: logical replication launcher
+
+And pgBackRest is set up and initialized for started instances:
+
+::
+
+    $ tree -L 2  /tmp/backups/backup
+    /tmp/backups/backup
+    ├── 11-preprod
+    │   ├── backup.info
+    │   └── backup.info.copy
+    └── 11-prod
+        ├── backup.info
+        └── backup.info.copy
 
 
 In the following version of our previous playbook, we are dropping the "preprod"

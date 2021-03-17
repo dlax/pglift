@@ -116,6 +116,7 @@ from typing import Any, Dict
 from ansible.module_utils.basic import AnsibleModule
 
 from pglib import instance as instance_mod
+from pglib import pgbackrest as pgbackrest_mod
 from pglib.ansible import AnsibleContext
 from pglib.instance import Status as PGStatus
 from pglib.model import Instance
@@ -162,6 +163,7 @@ def run_module() -> None:
                 instance_mod.stop(ctx, instance)
             instance_mod.revert_configure(ctx, instance)
             instance_mod.revert_init(ctx, instance)
+            pgbackrest_mod.revert_setup(ctx, instance)
         else:
             result["changed"] = instance_mod.init(ctx, instance, **init_options)
             result["datadir"] = str(instance.datadir)
@@ -170,9 +172,11 @@ def run_module() -> None:
                 ctx, instance, ssl=ssl, **confitems
             )
             result["changed"] = result["changed"] or result["configuration_changes"]
+            pgbackrest_mod.setup(ctx, instance)
             status = instance_mod.status(ctx, instance)
             if state == "started" and status == PGStatus.not_running:
                 instance_mod.start(ctx, instance)
+                pgbackrest_mod.init(ctx, instance)
             elif state == "stopped" and status == PGStatus.running:
                 instance_mod.stop(ctx, instance)
     except Exception as exc:
