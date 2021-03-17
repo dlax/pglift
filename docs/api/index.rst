@@ -8,4 +8,5 @@ API
     instance
     conf
     pgbackrest
+    ctx
     cmd
