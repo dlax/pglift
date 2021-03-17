@@ -1,6 +1,11 @@
 from pglib import model, settings
 
 
+def test_instance_default_version(ctx):
+    i = model.Instance.default_version("test", ctx=ctx)
+    assert str(i) == "11/test"
+
+
 def test_instance_config(tmp_path):
     s = settings.to_config({"PGLIB_POSTGRESQL_ROOT": str(tmp_path)})
     assert s.postgresql.root == tmp_path

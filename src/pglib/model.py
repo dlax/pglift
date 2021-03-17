@@ -1,12 +1,14 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import attr
 from attr.validators import instance_of
 from pgtoolkit import conf as pgconf
 from pgtoolkit.conf import Configuration
 
+from .ctx import BaseContext
 from .settings import SETTINGS, Settings
+from .util import short_version
 from .validators import known_postgresql_version
 
 
@@ -18,6 +20,11 @@ class Instance:
     version: str = attr.ib(validator=known_postgresql_version)
 
     settings: Settings = attr.ib(default=SETTINGS, validator=instance_of(Settings))
+
+    @classmethod
+    def default_version(cls, name: str, ctx: BaseContext, **kwargs: Any) -> "Instance":
+        """Build an Instance by guessing its version from installed PostgreSQL."""
+        return cls(name, short_version(ctx.pg_ctl.version), **kwargs)
 
     def __str__(self) -> str:
         """Return str(self).

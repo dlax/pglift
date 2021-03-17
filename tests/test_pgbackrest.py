@@ -11,7 +11,7 @@ from pglib.model import Instance
 
 @pytest.fixture
 def instance(ctx, tmp_settings, tmp_path):
-    i = Instance("test", "11", settings=tmp_settings)
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
     pg_settings = tmp_settings.postgresql
     instance_mod.init(ctx, i, settings=pg_settings)
     instance_mod.configure(

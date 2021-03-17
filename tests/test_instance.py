@@ -11,7 +11,7 @@ from pglib.model import Instance
 
 def test_init(ctx, tmp_settings):
     pgroot = tmp_settings.postgresql.root
-    i = Instance("test", "11", settings=tmp_settings)
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
     ret = instance.init(ctx, i, data_checksums=True, settings=tmp_settings.postgresql)
     assert ret
     assert i.datadir.exists()
@@ -48,7 +48,7 @@ def test_init(ctx, tmp_settings):
     )
     pgroot = pgroot / "pg"
     pgroot.mkdir()
-    i = Instance("test", "11", settings=tmp_settings_1)
+    i = Instance.default_version("test", settings=tmp_settings_1, ctx=ctx)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
@@ -67,7 +67,7 @@ def test_init(ctx, tmp_settings):
 
 def test_configure(ctx, tmp_settings):
     pg_settings = tmp_settings.postgresql
-    i = Instance("test", "11", settings=tmp_settings)
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
     configdir = i.datadir
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -151,7 +151,7 @@ def test_configure(ctx, tmp_settings):
 
 def test_start_stop(ctx, tmp_settings, tmp_path):
     pg_settings = tmp_settings.postgresql
-    i = Instance("test", "11", settings=tmp_settings)
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
     instance.init(ctx, i, settings=pg_settings)
