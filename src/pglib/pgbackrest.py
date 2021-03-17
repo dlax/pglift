@@ -256,9 +256,9 @@ if __name__ == "__main__":
     parser.add_argument("--instance", metavar="NAME", required=True)
     subparsers = parser.add_subparsers()
 
-    def do_backup(args: argparse.Namespace) -> None:
-        instance = Instance(args.instance, args.version)
-        ctx = Context()
+    def do_backup(
+        ctx: BaseContext, instance: Instance, args: argparse.Namespace
+    ) -> None:
         return backup(ctx, instance, type=BackupType(args.type))
 
     backup_parser = subparsers.add_parser("backup")
@@ -269,12 +269,17 @@ if __name__ == "__main__":
         default=BackupType.default().name,
     )
 
-    def do_expire(args: argparse.Namespace) -> None:
-        instance = Instance(args.instance, args.version)
-        ctx = Context()
+    def do_expire(
+        ctx: BaseContext, instance: Instance, args: argparse.Namespace
+    ) -> None:
         return expire(ctx, instance)
 
     subparsers.add_parser("expire").set_defaults(func=do_expire)
 
     args = parser.parse_args()
-    args.func(args)
+    ctx = Context()
+    if args.version:
+        instance = Instance(args.instance, args.version)
+    else:
+        instance = Instance.default_version(args.instance, ctx=ctx)
+    args.func(ctx, instance, args)
