@@ -5,7 +5,6 @@
     - name: production instance
       postgresql_instance:
         name: prod
-        version: "13"
         state: started
         ssl: true
         configuration:
@@ -17,7 +16,6 @@
     - name: pre-production instance, now dropped
       postgresql_instance:
         name: preprod
-        version: "13"
         state: absent
         configuration:
           unix_socket_directories: /tmp
@@ -25,7 +23,6 @@
     - name: dev instance, started, with SSL
       postgresql_instance:
         name: dev
-        version: "13"
         state: started
         ssl: true
         configuration:

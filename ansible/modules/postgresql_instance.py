@@ -24,9 +24,10 @@ options:
     required: true
   version:
     description:
-      - PostgreSQL version of the instance
+      - PostgreSQL version of the instance.
+      - If not set, version is guessed from installed PostgreSQL.
     type: str
-    required: true
+    required: false
   init_options:
     description:
       - Options passed to initdb (e.g. data_checksums)
@@ -59,7 +60,6 @@ EXAMPLES = """
 - name: Production DB instance
   postgresql_instance:
     name: prod
-    version: 11
     ssl:
       - /etc/certs/db.cert
       - /etc/certs/db.key
@@ -124,7 +124,7 @@ from pglib.model import Instance
 def run_module() -> None:
     module_args = {
         "name": {"type": "str", "required": True},
-        "version": {"type": "str", "required": True},
+        "version": {"type": "str", "required": False},
         "state": {
             "type": "str",
             "choices": ["started", "stopped", "absent"],
@@ -140,7 +140,11 @@ def run_module() -> None:
     }
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
-    instance = Instance(module.params["name"], module.params["version"])
+    ctx = AnsibleContext(module)
+    if module.params["version"]:
+        instance = Instance(module.params["name"], module.params["version"])
+    else:
+        instance = Instance.default_version(module.params["name"], ctx=ctx)
     result = {"changed": False, "instance": str(instance)}
 
     if module.check_mode:
@@ -148,7 +152,6 @@ def run_module() -> None:
 
     result["state"] = state = module.params["state"]
 
-    ctx = AnsibleContext(module)
     status = instance_mod.status(ctx, instance)
     init_options = module.params["init_options"] or {}
     confitems = module.params["configuration"] or {}

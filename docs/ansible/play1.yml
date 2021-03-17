@@ -5,7 +5,6 @@
     - name: production instance
       postgresql_instance:
         name: prod
-        version: "13"
         state: started
         ssl: true
         configuration:
@@ -17,7 +16,6 @@
     - name: pre-production instance
       postgresql_instance:
         name: preprod
-        version: "13"
         state: started
         configuration:
           port: 5434
@@ -26,7 +24,6 @@
     - name: dev instance, not running at the moment
       postgresql_instance:
         name: dev
-        version: "13"
         state: stopped
         configuration:
           port: 5444

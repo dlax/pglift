@@ -53,17 +53,18 @@ We can see our instances installed and running:
 
 ::
 
-    $ tree -L 2  /tmp/postgres/13/
-    /tmp/postgres/13/
-    ├── dev
-    │   ├── data
-    │   └── wal
-    ├── preprod
-    │   ├── data
-    │   └── wal
-    └── prod
-        ├── data
-        └── wal
+    $ tree -L 3  /tmp/postgres
+    /tmp/postgres
+    └── 11
+        ├── dev
+        │   ├── data
+        │   └── wal
+        ├── preprod
+        │   ├── data
+        │   └── wal
+        └── prod
+            ├── data
+            └── wal
     $ ps xf
     [...]
     26856 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/postgres/13/prod/data
@@ -92,7 +93,7 @@ configuration:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
+    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -124,10 +125,11 @@ configuration:
 
 ::
 
-    $ tree -L 1  /tmp/postgres/13/
-    /tmp/postgres/13/
-    ├── dev
-    └── prod
+    $ tree -L 2  /tmp/postgres
+    /tmp/postgres
+    └── 11
+        ├── dev
+        └── prod
 
 
 Finally, in this last playbook, we drop all our instances:
@@ -152,4 +154,3 @@ Finally, in this last playbook, we drop all our instances:
 
     PLAY RECAP ***********************************************************************************************
     localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-
