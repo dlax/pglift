@@ -118,7 +118,10 @@ def revert_setup(
         configpath.unlink()
 
     # Drop directories tree for backups
-    shutil.rmtree(directory)
+    try:
+        shutil.rmtree(directory)
+    except FileNotFoundError:
+        pass
 
     # Remove pg configfile
     configdir = instance.datadir
