@@ -138,7 +138,7 @@ Finally, in this last playbook, we drop all our instances:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
+    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
