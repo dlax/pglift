@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--version")
-    parser.add_argument("--instance", metavar="NAME")
+    parser.add_argument("--instance", metavar="NAME", required=True)
     subparsers = parser.add_subparsers()
 
     def do_backup(args: argparse.Namespace) -> None:
