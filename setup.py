@@ -39,7 +39,9 @@ setup(
         "attrs",
         "environ-config",
         "pgtoolkit >= 0.15.0",
+        "pydantic",
         "typing-extensions",
+        "PyYAML",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],

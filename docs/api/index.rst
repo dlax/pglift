@@ -8,5 +8,6 @@ API
     instance
     conf
     pgbackrest
+    manifest
     ctx
     cmd
