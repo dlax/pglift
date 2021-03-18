@@ -21,9 +21,8 @@ def instance(ctx, tmp_settings, tmp_path):
 
 
 @contextlib.contextmanager
-def instance_running(ctx, instance, tmp_path):
-    logfile = tmp_path / "log"
-    instance_mod.start(ctx, instance, logfile=logfile)
+def instance_running(ctx, instance):
+    instance_mod.start(ctx, instance)
     try:
         yield
     finally:
@@ -49,7 +48,7 @@ def test(ctx, instance, tmp_settings, tmp_path):
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )
 
-    with instance_running(ctx, instance, tmp_path):
+    with instance_running(ctx, instance):
         pgbackrest.init(ctx, instance, settings=pgbackrest_settings)
         assert (
             directory / f"archive/{instance.version}-{instance.name}/archive.info"

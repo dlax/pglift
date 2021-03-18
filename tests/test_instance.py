@@ -165,7 +165,7 @@ def test_start_stop(ctx, tmp_settings, tmp_path):
     )
     assert instance.status(ctx, i) == Status.not_running
 
-    instance.start(ctx, i, logfile=tmp_path / "log")
+    instance.start(ctx, i)
     try:
         assert instance.status(ctx, i) == Status.running
     finally:
