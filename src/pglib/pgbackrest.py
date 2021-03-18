@@ -1,5 +1,6 @@
 import configparser
 import enum
+import json
 import shutil
 from pathlib import Path
 from typing import List
@@ -142,10 +143,13 @@ def init(
 ) -> None:
     base_cmd = make_cmd(instance, settings)
 
-    # Stop pgBackRest if needed
-    ctx.run(base_cmd + ["stop"], check=True)
-    # Remove stanza if present
-    ctx.run(base_cmd + ["--force", "stanza-delete"], check=True)
+    info = ctx.run(
+        base_cmd + ["--output=json", "info"], check=True, capture_output=True
+    ).stdout
+    info_json = json.loads(info)
+    # If the stanza already exists, don't do anything
+    if info_json and info_json[0]["status"]["code"] != 1:
+        return
     # Start pgBackRest
     ctx.run(base_cmd + ["start"], check=True)
     # Create the Stanza
