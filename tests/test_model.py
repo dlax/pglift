@@ -3,7 +3,8 @@ from pglib import model, settings
 
 def test_instance_default_version(ctx):
     i = model.Instance.default_version("test", ctx=ctx)
-    assert str(i) == "11/test"
+    major_version = str(ctx.pg_ctl.version)[:2]
+    assert i.version == major_version
 
 
 def test_instance_config(tmp_path):
