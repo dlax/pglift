@@ -5,7 +5,7 @@ import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
-from pglib import instance
+from pglib import instance, manifest
 from pglib.model import Instance
 
 
@@ -182,3 +182,51 @@ def test_start_stop(ctx, tmp_settings, tmp_path):
     finally:
         instance.stop(ctx, i, mode="immediate")
     assert instance.status(ctx, i) == Status.not_running
+
+
+def test_apply(ctx, tmp_settings, tmp_path):
+    im = manifest.Instance(name="test", ssl=True, state=manifest.InstanceState.stopped)
+    i = im.model(ctx, settings=tmp_settings)
+    instance.apply(
+        ctx,
+        im,
+        settings=tmp_settings,
+    )
+    assert i.exists()
+    pgconfig = i.config()
+    assert pgconfig
+    assert pgconfig.ssl
+
+    im.state = manifest.InstanceState.started
+    im.configuration["unix_socket_directories"] = str(tmp_path)
+    instance.apply(
+        ctx,
+        im,
+        settings=tmp_settings,
+    )
+    assert instance.status(ctx, i) == Status.running
+
+    im.configuration["bonjour"] = False
+    instance.apply(
+        ctx,
+        im,
+        settings=tmp_settings,
+    )
+    assert instance.status(ctx, i) == Status.running
+
+    im.state = manifest.InstanceState.stopped
+    instance.apply(
+        ctx,
+        im,
+        settings=tmp_settings,
+    )
+    assert instance.status(ctx, i) == Status.not_running
+
+    im.state = manifest.InstanceState.absent
+    instance.apply(
+        ctx,
+        im,
+        settings=tmp_settings,
+    )
+    assert not i.exists()
+    assert instance.status(ctx, i) == Status.unspecified_datadir

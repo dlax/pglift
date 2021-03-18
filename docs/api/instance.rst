@@ -3,5 +3,6 @@
 Instance operations
 ===================
 
+.. autofunction:: apply
 .. autofunction:: init
 .. autofunction:: configure

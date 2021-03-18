@@ -5,10 +5,10 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, util
-from .ctx import BaseContext
+from . import conf, manifest, util
+from .ctx import BaseContext, Context
 from .model import Instance
-from .settings import SETTINGS, PostgreSQLSettings
+from .settings import SETTINGS, PostgreSQLSettings, Settings
 from .task import task
 from .util import short_version
 
@@ -224,3 +224,78 @@ def reload(
 ) -> None:
     """Reload an instance."""
     ctx.pg_ctl.reload(instance.datadir)
+
+
+def apply(
+    ctx: BaseContext,
+    instance_manifest: manifest.Instance,
+    *,
+    settings: Settings = SETTINGS,
+) -> None:
+    """Apply state described by specified manifest as a PostgreSQL instance.
+
+    Depending on the previous state and existence of the target instance, the
+    instance may be created or updated or dropped.
+
+    If configuration changes are detected and the instance was previously
+    running, it will be reloaded. Note that some changes require a full
+    restart, this needs to be handled manually.
+    """
+    postgresql_settings = settings.postgresql
+    instance = instance_manifest.model(ctx, settings=settings)
+    States = manifest.InstanceState
+    state = instance_manifest.state
+
+    if state == States.absent:
+        if instance.exists():
+            revert_configure(ctx, instance, settings=postgresql_settings)
+            revert_init(ctx, instance, settings=postgresql_settings)
+        return
+
+    if not instance.exists():
+        init(ctx, instance, settings=postgresql_settings)
+    configure_options = instance_manifest.configuration or {}
+    changes = configure(
+        ctx,
+        instance,
+        ssl=instance_manifest.ssl,
+        settings=postgresql_settings,
+        **configure_options,
+    )
+
+    is_running = status(ctx, instance) == Status.running
+    if state == States.stopped:
+        if is_running:
+            stop(ctx, instance)
+    elif state == States.started:
+        if is_running:
+            if changes:
+                # This might fail because some changes require a restart but
+                # 'pg_ctl reload' does not inform us about that.
+                reload(ctx, instance)
+        else:
+            start(ctx, instance)
+    else:
+        assert False, f"unexpected state: {state}"  # pragma: nocover
+
+
+if __name__ == "__main__":  # pragma: nocover
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+    apply_parser = subparsers.add_parser(
+        "apply",
+        help="apply manifest as a PostgreSQL instance",
+    )
+    apply_parser.add_argument(
+        "-f", "--file", type=argparse.FileType(), metavar="MANIFEST", required=True
+    )
+
+    def do_apply(ctx: BaseContext, args: argparse.Namespace) -> None:
+        apply(ctx, manifest.Instance.parse_yaml(args.file))
+
+    apply_parser.set_defaults(func=do_apply)
+    args = parser.parse_args()
+    ctx = Context()
+    args.func(ctx, args)
