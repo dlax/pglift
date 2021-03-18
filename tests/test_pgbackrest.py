@@ -6,6 +6,7 @@ import pytest
 
 from pglib import instance as instance_mod
 from pglib import pgbackrest
+from pglib.conf import info as conf_info
 from pglib.model import Instance
 
 
@@ -67,6 +68,14 @@ def test(ctx, instance, tmp_settings, tmp_path):
         assert latest_backup.exists() and latest_backup.is_symlink()
         pgbackrest.expire(ctx, instance, settings=pgbackrest_settings)
         # TODO: check some result from 'expire' command here.
+
+    # Calling setup an other time doesn't overwrite configuration
+    configdir = instance.datadir
+    pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
+    mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
+    pgbackrest.setup(ctx, **kwargs)
+    mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
+    assert mtime_before == mtime_after
 
     pgbackrest.revert_setup(ctx, **kwargs)
     assert not configpath.exists()

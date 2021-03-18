@@ -61,26 +61,28 @@ def setup(
     assert instance_config
     stanza = _stanza(instance)
 
-    config = configparser.ConfigParser()
-    config.read(configpath)
     # Write configuration
-    config["global"] = {
-        "repo1-path": str(directory),
-        "log-path": str(logpath),
-    }
-    config["global:archive-push"] = {
-        "compress-level": "3",
-    }
-    config[stanza] = {
-        "pg1-path": f"{instance.datadir}",
-        "pg1-port": str(instance_config.port),
-        "pg1-user": "postgres",
-    }
-    if instance_config.unix_socket_directories:
-        config[stanza]["pg1-socket-path"] = str(instance_config.unix_socket_directories)
+    if not configpath.exists():
+        config = configparser.ConfigParser()
+        config["global"] = {
+            "repo1-path": str(directory),
+            "log-path": str(logpath),
+        }
+        config["global:archive-push"] = {
+            "compress-level": "3",
+        }
+        config[stanza] = {
+            "pg1-path": f"{instance.datadir}",
+            "pg1-port": str(instance_config.port),
+            "pg1-user": "postgres",
+        }
+        if instance_config.unix_socket_directories:
+            config[stanza]["pg1-socket-path"] = str(
+                instance_config.unix_socket_directories
+            )
 
-    with configpath.open("w") as configfile:
-        config.write(configfile)
+        with configpath.open("w") as configfile:
+            config.write(configfile)
 
     # Create directories tree for backups
     directory.mkdir(exist_ok=True, parents=True)
@@ -88,18 +90,19 @@ def setup(
     base_cmd = make_cmd(instance, settings)
 
     # Configure postgres archiving
-    pgconfig = pgconf.Configuration()
-    pgconfig.archive_command = " ".join(base_cmd + ["archive-push", "%p"])
-    pgconfig.archive_mode = "on"
-    pgconfig.listen_addresses = "*"
-    pgconfig.log_line_prefix = ""
-    pgconfig.max_wal_senders = 3
-    pgconfig.wal_level = "replica"
-
     configdir = instance.datadir
     pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
-    with pgconfigfile.open("w") as f:
-        pgconfig.save(f)
+    if not pgconfigfile.exists():
+        pgconfig = pgconf.Configuration()
+        pgconfig.archive_command = " ".join(base_cmd + ["archive-push", "%p"])
+        pgconfig.archive_mode = "on"
+        pgconfig.listen_addresses = "*"
+        pgconfig.log_line_prefix = ""
+        pgconfig.max_wal_senders = 3
+        pgconfig.wal_level = "replica"
+
+        with pgconfigfile.open("w") as f:
+            pgconfig.save(f)
 
 
 @setup.revert
