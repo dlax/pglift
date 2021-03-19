@@ -7,18 +7,6 @@ import pytest
 from pglib import instance as instance_mod
 from pglib import pgbackrest
 from pglib.conf import info as conf_info
-from pglib.model import Instance
-
-
-@pytest.fixture
-def instance(ctx, tmp_settings, tmp_path):
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
-    pg_settings = tmp_settings.postgresql
-    instance_mod.init(ctx, i, settings=pg_settings)
-    instance_mod.configure(
-        ctx, i, settings=pg_settings, unix_socket_directories=str(tmp_path)
-    )
-    return i
 
 
 @contextlib.contextmanager

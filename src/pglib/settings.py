@@ -61,11 +61,30 @@ class PgBackRestSettings:
     """Path where log files are stored."""
 
 
+@environ.config(frozen=True)
+class PrometheusSettings:
+    """Settings for Prometheus postgres_exporter"""
+
+    execpath: str = environ.var(default="/usr/bin/prometheus-postgres-exporter")
+    """Path to the postgres_exporter executable."""
+
+    configpath: str = environ.var(
+        default="/etc/prometheus/postgres_exporter-{instance.version}-{instance.name}.conf"
+    )
+    """Path to the config file."""
+
+    queriespath: str = environ.var(
+        default="/etc/prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml",
+    )
+    """Path to the queries file."""
+
+
 @environ.config(prefix="PGLIB", frozen=True)
 class Settings:
 
     postgresql: PostgreSQLSettings = environ.group(PostgreSQLSettings)
     pgbackrest: PgBackRestSettings = environ.group(PgBackRestSettings)
+    prometheus: PrometheusSettings = environ.group(PrometheusSettings)
 
 
 to_config = functools.partial(environ.to_config, Settings)

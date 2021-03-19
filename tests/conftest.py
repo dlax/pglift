@@ -1,7 +1,9 @@
 import pytest
 
+from pglib import instance as instance_mod
 from pglib import settings
 from pglib.ctx import Context
+from pglib.model import Instance
 
 
 @pytest.fixture
@@ -15,6 +17,9 @@ def tmp_settings(tmp_path):
     pgbackrest_root = tmp_path / "pgbackrest"
     pgbackrest_root.mkdir()
 
+    prometheus_root = tmp_path / "prometheus"
+    prometheus_root.mkdir()
+
     return settings.to_config(
         {
             "PGLIB_POSTGRESQL_ROOT": str(tmp_path),
@@ -27,5 +32,22 @@ def tmp_settings(tmp_path):
             "PGLIB_PGBACKREST_LOGPATH": str(
                 pgbackrest_root / "{instance.version}" / "logs"
             ),
+            "PGLIB_PROMETHEUS_CONFIGPATH": str(
+                prometheus_root / "{instance.version}" / "postgres_exporter.conf"
+            ),
+            "PGLIB_PROMETHEUS_QUERIESPATH": str(
+                prometheus_root / "{instance.version}" / "queries.yaml"
+            ),
         },
     )
+
+
+@pytest.fixture
+def instance(ctx, tmp_settings, tmp_path):
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
+    pg_settings = tmp_settings.postgresql
+    instance_mod.init(ctx, i, settings=pg_settings)
+    instance_mod.configure(
+        ctx, i, settings=pg_settings, unix_socket_directories=str(tmp_path)
+    )
+    return i
