@@ -41,6 +41,6 @@ ci_image:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - cd ci
+    - cd ci/testing
     - docker build --pull -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
