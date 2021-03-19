@@ -184,3 +184,6 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/", None),
     "pgtoolkit": ("https://pgtoolkit.readthedocs.io/en/latest/", None),
 }
+
+# -- Options for autodoc extension -------------------------------------------
+autodoc_member_order = "bysource"
