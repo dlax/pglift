@@ -279,6 +279,24 @@ def apply(
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
 
+def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance]:
+    """Return an instance described as a manifest (or None if the instance
+    does not exists).
+    """
+    if not instance.exists():
+        return None
+    config = instance.config()
+    assert config
+    state = manifest.InstanceState.from_pg_status(status(ctx, instance))
+    return manifest.Instance(
+        name=instance.name,
+        state=state,
+        version=instance.version,
+        ssl=config.ssl,
+        configuration=config.as_dict(),
+    )
+
+
 if __name__ == "__main__":  # pragma: nocover
     import argparse
 
@@ -296,6 +314,25 @@ if __name__ == "__main__":  # pragma: nocover
         apply(ctx, manifest.Instance.parse_yaml(args.file))
 
     apply_parser.set_defaults(func=do_apply)
+
+    describe_parser = subparsers.add_parser(
+        "describe",
+        help="describe a PostgreSQL instance",
+    )
+    describe_parser.add_argument("--name", required=True)
+    describe_parser.add_argument("--version", required=False)
+
+    def do_describe(ctx: BaseContext, args: argparse.Namespace) -> None:
+        if args.version:
+            instance = Instance(args.name, args.version)
+        else:
+            instance = Instance.default_version(args.name, ctx)
+        described = describe(ctx, instance)
+        if described:
+            print(described.yaml(), end="")
+
+    describe_parser.set_defaults(func=do_describe)
+
     args = parser.parse_args()
     ctx = Context()
     args.func(ctx, args)

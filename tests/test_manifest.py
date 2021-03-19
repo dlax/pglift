@@ -18,6 +18,12 @@ def test_parse_yaml():
     assert point == Point(x=1.2, y=3.4)
 
 
+def test_yaml():
+    point = Point(x=0, y=1.2)
+    s = point.yaml()
+    assert s == "x: 0.0\ny: 1.2\n"
+
+
 def test_instance_model(ctx):
     i = manifest.Instance(name="test", version="12").model(ctx)
     assert str(i) == "12/test"

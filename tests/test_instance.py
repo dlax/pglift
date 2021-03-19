@@ -230,3 +230,17 @@ def test_apply(ctx, tmp_settings, tmp_path):
     )
     assert not i.exists()
     assert instance.status(ctx, i) == Status.unspecified_datadir
+
+
+def test_describe(ctx, tmp_settings):
+    i = Instance("absent", "9.6")
+    im = instance.describe(ctx, i)
+    assert im is None
+
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
+    instance.init(ctx, i, settings=tmp_settings.postgresql)
+    im = instance.describe(ctx, i)
+    assert im is not None
+    assert im.name == "test"
+    assert im.configuration["max_connections"] == 100  # default value
+    assert im.state.name == "stopped"
