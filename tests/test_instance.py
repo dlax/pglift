@@ -244,3 +244,13 @@ def test_describe(ctx, tmp_settings):
     assert im.name == "test"
     assert im.configuration["max_connections"] == 100  # default value
     assert im.state.name == "stopped"
+
+
+def test_drop(ctx, tmp_settings):
+    i = Instance("absent", "9.6")
+    instance.drop(ctx, i, settings=tmp_settings)
+
+    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
+    instance.init(ctx, i, settings=tmp_settings.postgresql)
+    instance.drop(ctx, i, settings=tmp_settings)
+    assert not i.exists()

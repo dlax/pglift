@@ -248,8 +248,7 @@ def apply(
 
     if state == States.absent:
         if instance.exists():
-            revert_configure(ctx, instance, settings=postgresql_settings)
-            revert_init(ctx, instance, settings=postgresql_settings)
+            drop(ctx, instance, settings=settings)
         return
 
     if not instance.exists():
@@ -297,11 +296,37 @@ def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance
     )
 
 
+def drop(
+    ctx: BaseContext,
+    instance: Instance,
+    settings: Settings = SETTINGS,
+) -> None:
+    """Drop an instance."""
+    if not instance.exists():
+        return
+    postgresql_settings = settings.postgresql
+    revert_configure(ctx, instance, settings=postgresql_settings)
+    revert_init(ctx, instance, settings=postgresql_settings)
+
+
 if __name__ == "__main__":  # pragma: nocover
     import argparse
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
+
+    def instance_subparser(*args: Any, **kwargs: Any) -> argparse.ArgumentParser:
+        subparser = subparsers.add_parser(*args, **kwargs)
+        subparser.add_argument("--name", required=True)
+        subparser.add_argument("--version", required=False)
+        return subparser
+
+    def get_instance(ctx: BaseContext, args: argparse.Namespace) -> Instance:
+        if args.version:
+            return Instance(args.name, args.version)
+        else:
+            return Instance.default_version(args.name, ctx)
+
     apply_parser = subparsers.add_parser(
         "apply",
         help="apply manifest as a PostgreSQL instance",
@@ -315,23 +340,29 @@ if __name__ == "__main__":  # pragma: nocover
 
     apply_parser.set_defaults(func=do_apply)
 
-    describe_parser = subparsers.add_parser(
+    describe_parser = instance_subparser(
         "describe",
         help="describe a PostgreSQL instance",
     )
-    describe_parser.add_argument("--name", required=True)
-    describe_parser.add_argument("--version", required=False)
 
     def do_describe(ctx: BaseContext, args: argparse.Namespace) -> None:
-        if args.version:
-            instance = Instance(args.name, args.version)
-        else:
-            instance = Instance.default_version(args.name, ctx)
+        instance = get_instance(ctx, args)
         described = describe(ctx, instance)
         if described:
             print(described.yaml(), end="")
 
     describe_parser.set_defaults(func=do_describe)
+
+    drop_parser = instance_subparser(
+        "drop",
+        help="drop a PostgreSQL instance",
+    )
+
+    def do_drop(ctx: BaseContext, args: argparse.Namespace) -> None:
+        instance = get_instance(ctx, args)
+        drop(ctx, instance)
+
+    drop_parser.set_defaults(func=do_drop)
 
     args = parser.parse_args()
     ctx = Context()
