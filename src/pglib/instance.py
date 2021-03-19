@@ -340,6 +340,16 @@ if __name__ == "__main__":  # pragma: nocover
 
     apply_parser.set_defaults(func=do_apply)
 
+    schema_parser = subparsers.add_parser(
+        "schema",
+        help="print the JSON schema of PostgreSQL instance model",
+    )
+
+    def do_schema(ctx: BaseContext, args: argparse.Namespace) -> None:
+        print(manifest.Instance.schema_json(indent=2))
+
+    schema_parser.set_defaults(func=do_schema)
+
     describe_parser = instance_subparser(
         "describe",
         help="describe a PostgreSQL instance",
