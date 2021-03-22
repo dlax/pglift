@@ -286,13 +286,15 @@ def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance
         return None
     config = instance.config()
     assert config
+    managed_config = instance.config(managed_only=True)
+    assert managed_config
     state = manifest.InstanceState.from_pg_status(status(ctx, instance))
     return manifest.Instance(
         name=instance.name,
         state=state,
         version=instance.version,
         ssl=config.ssl,
-        configuration=config.as_dict(),
+        configuration=managed_config.as_dict(),
     )
 
 

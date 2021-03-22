@@ -239,10 +239,11 @@ def test_describe(ctx, tmp_settings):
 
     i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
     instance.init(ctx, i, settings=tmp_settings.postgresql)
+    instance.configure(ctx, i, shared_buffers="10MB", settings=tmp_settings.postgresql)
     im = instance.describe(ctx, i)
     assert im is not None
     assert im.name == "test"
-    assert im.configuration["max_connections"] == 100  # default value
+    assert im.configuration == {"cluster_name": "test", "shared_buffers": "10MB"}
     assert im.state.name == "stopped"
 
 
