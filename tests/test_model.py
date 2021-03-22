@@ -24,3 +24,10 @@ def test_instance_config(tmp_path):
     assert config is not None
     config.bonjour == "hello"
     config.port == 1234
+
+    assert i.config(True) is None
+    (datadir / "pglib.conf.d").mkdir()
+    (datadir / "pglib.conf.d" / "user.conf").write_text("\n".join(["port=5555"]))
+    mconf = i.config(True)
+    assert mconf is not None
+    assert mconf.port == 5555

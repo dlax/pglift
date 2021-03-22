@@ -6,6 +6,7 @@ from attr.validators import instance_of
 from pgtoolkit import conf as pgconf
 from pgtoolkit.conf import Configuration
 
+from . import conf
 from .ctx import BaseContext
 from .settings import SETTINGS, Settings
 from .util import short_version
@@ -68,8 +69,19 @@ class Instance:
         """
         return self.path / self.settings.postgresql.waldir
 
-    def config(self) -> Optional[Configuration]:
-        """Return parsed PostgreSQL configuration for this instance, if it exists."""
+    def config(self, managed_only: bool = False) -> Optional[Configuration]:
+        """Return parsed PostgreSQL configuration for this instance, if it
+        exists.
+
+        If ``managed_only`` is ``True``, only the managed configuration is
+        returned, otherwise the fully parsed configuration is returned.
+        """
+        if managed_only:
+            conffile = conf.info(self.datadir)[1]
+            if not conffile.exists():
+                return None
+            return pgconf.parse(conffile)
+
         postgresql_conf = self.datadir / "postgresql.conf"
         if not postgresql_conf.exists():
             return None
