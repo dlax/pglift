@@ -115,7 +115,6 @@ def run(
     args: Sequence[str],
     *,
     input: Optional[str] = None,
-    capture_output: bool = False,
     redirect_output: bool = True,
     check: bool = False,
     shell: bool = False,
@@ -123,10 +122,9 @@ def run(
 ) -> CompletedProcess:
     """Run a command as a subprocess.
 
-    By default, standard output and errors of child subprocess are not
-    redirected and that of parent process are used.
+    Standard output and errors of child subprocess are captured by default.
 
-    >>> run(["true"], input="a", capture_output=True)
+    >>> run(["true"], input="a", capture_output=False)
     CompletedProcess(args=['true'], returncode=0, stdout='', stderr='')
 
     Files can also be used with ``stdout`` and ``stderr`` arguments:
@@ -152,12 +150,18 @@ def run(
     """
     stdin = DEVNULL if input is None else PIPE
 
-    if capture_output:
-        if "stdout" in kwargs or "stderr" in kwargs:
-            raise ValueError(
-                "stdout and stderr arguments may not be used with capture_output"
-            )
-        kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
+    try:
+        capture_output = kwargs.pop("capture_output")
+    except KeyError:
+        kwargs.setdefault("stdout", subprocess.PIPE)
+        kwargs.setdefault("stderr", subprocess.PIPE)
+    else:
+        if capture_output:
+            if "stdout" in kwargs or "stderr" in kwargs:
+                raise ValueError(
+                    "stdout and stderr arguments may not be used with capture_output"
+                )
+            kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
     def process_stdout(out: str) -> None:
         if shell and redirect_output:

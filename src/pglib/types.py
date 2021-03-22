@@ -14,7 +14,6 @@ class CommandRunner(Protocol):
         self,
         args: Sequence[str],
         *,
-        capture_output: bool = False,
         check: bool = False,
         **kwargs: Any,
     ) -> CompletedProcess:

@@ -19,7 +19,6 @@ class BaseContext(ABC):
         self,
         args: Sequence[str],
         *,
-        capture_output: bool = False,
         check: bool = False,
         **kwargs: Any,
     ) -> CompletedProcess:

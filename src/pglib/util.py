@@ -18,7 +18,6 @@ def generate_certificate(
     out = run_command(
         ["openssl", "req", "-new", "-text", "-key", str(keyfile), "-batch"],
         check=True,
-        capture_output=True,
     ).stdout
     with tempfile.NamedTemporaryFile("w") as tempcert:
         tempcert.write(out)
@@ -37,7 +36,6 @@ def generate_certificate(
                 str(certfile),
             ],
             check=True,
-            capture_output=True,
         )
     certfile.chmod(0o600)
 

@@ -143,9 +143,7 @@ def init(
 ) -> None:
     base_cmd = make_cmd(instance, settings)
 
-    info = ctx.run(
-        base_cmd + ["--output=json", "info"], check=True, capture_output=True
-    ).stdout
+    info = ctx.run(base_cmd + ["--output=json", "info"], check=True).stdout
     info_json = json.loads(info)
     # If the stanza already exists, don't do anything
     if info_json and info_json[0]["status"]["code"] != 1:
