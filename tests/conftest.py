@@ -1,17 +1,16 @@
 import pytest
 
+from pglib import settings
+from pglib.ctx import Context
+
 
 @pytest.fixture
 def ctx():
-    # Local import to avoid ImportPathMismatchError pytest errors.
-    from pglib.ctx import Context
-
     return Context()
 
 
 @pytest.fixture
 def tmp_settings(tmp_path):
-    from pglib import settings
 
     pgbackrest_root = tmp_path / "pgbackrest"
     pgbackrest_root.mkdir()
