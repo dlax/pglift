@@ -1,4 +1,5 @@
-from pglib import model, settings
+from pglib import model
+from pglib.settings import PostgreSQLSettings, Settings
 
 
 def test_instance_default_version(ctx):
@@ -8,7 +9,7 @@ def test_instance_default_version(ctx):
 
 
 def test_instance_config(tmp_path):
-    s = settings.to_config({"PGLIB_POSTGRESQL_ROOT": str(tmp_path)})
+    s = Settings(postgresql=PostgreSQLSettings(root=str(tmp_path)))
     assert s.postgresql.root == tmp_path
 
     i = model.Instance("test", "12", settings=s)

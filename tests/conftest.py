@@ -1,9 +1,9 @@
 import pytest
 
 from pglib import instance as instance_mod
-from pglib import settings
 from pglib.ctx import Context
 from pglib.model import Instance
+from pglib.settings import Settings
 
 
 @pytest.fixture
@@ -15,25 +15,25 @@ def tmp_settings(tmp_path):
     prometheus_root = tmp_path / "prometheus"
     prometheus_root.mkdir()
 
-    return settings.to_config(
+    return Settings.parse_obj(
         {
-            "PGLIB_POSTGRESQL_ROOT": str(tmp_path),
-            "PGLIB_PGBACKREST_CONFIGPATH": str(
-                pgbackrest_root / "{instance.version}" / "pgbackrest.conf"
-            ),
-            "PGLIB_PGBACKREST_DIRECTORY": str(
-                tmp_path / "{instance.version}" / "backups"
-            ),
-            "PGLIB_PGBACKREST_LOGPATH": str(
-                pgbackrest_root / "{instance.version}" / "logs"
-            ),
-            "PGLIB_PROMETHEUS_CONFIGPATH": str(
-                prometheus_root / "{instance.version}" / "postgres_exporter.conf"
-            ),
-            "PGLIB_PROMETHEUS_QUERIESPATH": str(
-                prometheus_root / "{instance.version}" / "queries.yaml"
-            ),
-        },
+            "postgresql": {"root": str(tmp_path)},
+            "pgbackrest": {
+                "configpath": str(
+                    pgbackrest_root / "{instance.version}" / "pgbackrest.conf"
+                ),
+                "directory": str(tmp_path / "{instance.version}" / "backups"),
+                "logpath": str(pgbackrest_root / "{instance.version}" / "logs"),
+            },
+            "prometheus": {
+                "configpath": str(
+                    prometheus_root / "{instance.version}" / "postgres_exporter.conf"
+                ),
+                "queriespath": str(
+                    prometheus_root / "{instance.version}" / "queries.yaml"
+                ),
+            },
+        }
     )
 
 

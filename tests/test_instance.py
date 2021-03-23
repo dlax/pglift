@@ -1,6 +1,5 @@
 import subprocess
 
-import attr
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
@@ -8,6 +7,7 @@ from pgtoolkit.ctl import Status
 from pglib import instance, manifest
 from pglib.ctx import Context
 from pglib.model import Instance
+from pglib.settings import PostgreSQLSettings
 
 
 def test_init(ctx):
@@ -43,12 +43,8 @@ def test_init(ctx):
     # A failed init cleans up postgres directories.
     pgroot = ctx.settings.postgresql.root / "pg"
     ctx1 = Context(
-        settings=attr.evolve(
-            ctx.settings,
-            postgresql=attr.evolve(
-                ctx.settings.postgresql,
-                root=pgroot,
-            ),
+        settings=ctx.settings.copy(
+            update={"postgresql": PostgreSQLSettings(root=pgroot / "pg")}
         ),
     )
     pgroot.mkdir()
