@@ -9,6 +9,12 @@ from pglib import pgbackrest
 from pglib.conf import info as conf_info
 
 
+@pytest.fixture
+def ctx(ctx):
+    ctx.pm.unregister(pgbackrest)
+    return ctx
+
+
 @contextlib.contextmanager
 def instance_running(ctx, instance):
     instance_mod.start(ctx, instance)

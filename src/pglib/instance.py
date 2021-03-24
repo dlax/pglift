@@ -127,6 +127,8 @@ def configure(
         with our_conffile.open("w") as f:
             config.save(f)
 
+    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance)
+
     return changes
 
 
@@ -176,6 +178,8 @@ def start(
 ) -> None:
     """Start an instance."""
     ctx.pg_ctl.start(instance.datadir, wait=wait, logfile=logfile)
+    if wait:
+        ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
 
 @task
@@ -292,12 +296,17 @@ def drop(
     """Drop an instance."""
     if not instance.exists():
         return
+
+    ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
+
     revert_configure(ctx, instance)
     revert_init(ctx, instance)
 
 
 if __name__ == "__main__":  # pragma: nocover
     import argparse
+
+    from . import pm
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -363,5 +372,5 @@ if __name__ == "__main__":  # pragma: nocover
     drop_parser.set_defaults(func=do_drop)
 
     args = parser.parse_args()
-    ctx = Context()
+    ctx = Context(plugin_manager=pm.PluginManager.get())
     args.func(ctx, args)

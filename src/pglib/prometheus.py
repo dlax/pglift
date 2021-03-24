@@ -1,6 +1,7 @@
 import textwrap
 from pathlib import Path
 
+from . import hookimpl
 from .ctx import BaseContext
 from .model import Instance
 from .settings import PrometheusSettings
@@ -66,3 +67,15 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     queriespath = _queriespath(instance, settings)
     if queriespath.exists():
         queriespath.unlink()
+
+
+@hookimpl  # type: ignore[misc]
+def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+    """Install postgres_exporter for an instance when it gets configured."""
+    setup(ctx, instance)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_drop(ctx: BaseContext, instance: Instance) -> None:
+    """Uninstall postgres_exporter from an instance being dropped."""
+    revert_setup(ctx, instance)

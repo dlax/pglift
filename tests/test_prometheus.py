@@ -1,6 +1,14 @@
 from pathlib import Path
 
+import pytest
+
 from pglib import prometheus
+
+
+@pytest.fixture
+def ctx(ctx):
+    ctx.pm.unregister(prometheus)
+    return ctx
 
 
 def test(ctx, instance):

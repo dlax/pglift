@@ -1,6 +1,7 @@
 from .ctx import BaseContext, Context
 from .model import Instance
 from .pgbackrest import BackupType, backup, expire
+from .pm import PluginManager
 
 if __name__ == "__main__":  # pragma: nocover
     import argparse
@@ -31,7 +32,7 @@ if __name__ == "__main__":  # pragma: nocover
     subparsers.add_parser("expire").set_defaults(func=do_expire)
 
     args = parser.parse_args()
-    ctx = Context()
+    ctx = Context(plugin_manager=PluginManager.get())
     if args.version:
         instance = Instance(args.instance, args.version)
     else:

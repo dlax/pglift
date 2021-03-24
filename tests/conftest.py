@@ -1,6 +1,7 @@
 import pytest
 
 from pglib import instance as instance_mod
+from pglib import pm
 from pglib.ctx import Context
 from pglib.model import Instance
 from pglib.settings import Settings
@@ -39,7 +40,8 @@ def tmp_settings(tmp_path):
 
 @pytest.fixture
 def ctx(tmp_settings):
-    return Context(settings=tmp_settings)
+    p = pm.PluginManager.get()
+    return Context(plugin_manager=p, settings=tmp_settings)
 
 
 @pytest.fixture

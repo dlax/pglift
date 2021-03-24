@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from pgtoolkit import conf as pgconf
 
+from . import hookimpl
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .model import Instance
@@ -136,6 +137,24 @@ def init(ctx: BaseContext, instance: Instance) -> None:
     ctx.run(base_cmd + ["start"], check=True)
     ctx.run(base_cmd + ["stanza-create"], check=True)
     ctx.run(base_cmd + ["check"], check=True)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+    """Install pgBackRest for an instance when it gets configured."""
+    setup(ctx, instance)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_start(ctx: BaseContext, instance: Instance) -> None:
+    """Initialize pgBackRest for an instance that got started."""
+    init(ctx, instance)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_drop(ctx: BaseContext, instance: Instance) -> None:
+    """Uninstall pgBackRest from an instance being dropped."""
+    revert_setup(ctx, instance)
 
 
 @enum.unique

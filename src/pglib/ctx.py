@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
 from pgtoolkit import ctl
+from pluggy import PluginManager
 
 from . import cmd
 from .settings import SETTINGS, Settings
@@ -15,11 +16,13 @@ class BaseContext(ABC):
     def __init__(
         self,
         *,
+        plugin_manager: PluginManager,
         settings: Settings = SETTINGS,
         pg_bindir: Optional[Union[str, Path]] = None,
     ) -> None:
         self.settings = settings
         self.pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
+        self.pm = plugin_manager
 
     @abstractmethod
     def run(

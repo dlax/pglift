@@ -10,6 +10,12 @@ from pglib.model import Instance
 from pglib.settings import PostgreSQLSettings
 
 
+@pytest.fixture
+def ctx(ctx):
+    ctx.pm.unregister_all()
+    return ctx
+
+
 def test_init(ctx):
     i = Instance.default_version("test", ctx=ctx)
     ret = instance.init(ctx, i, data_checksums=True)
@@ -44,8 +50,9 @@ def test_init(ctx):
     # A failed init cleans up postgres directories.
     pgroot = ctx.settings.postgresql.root / "pg"
     ctx1 = Context(
+        plugin_manager=ctx.pm,
         settings=ctx.settings.copy(
-            update={"postgresql": PostgreSQLSettings(root=pgroot / "pg")}
+            update={"postgresql": PostgreSQLSettings(root=pgroot)}
         ),
     )
     pgroot.mkdir()

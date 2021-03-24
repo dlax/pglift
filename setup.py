@@ -38,6 +38,7 @@ setup(
     install_requires=[
         "attrs",
         "pgtoolkit >= 0.15.0",
+        "pluggy",
         "pydantic",
         "typing-extensions",
         "PyYAML",
