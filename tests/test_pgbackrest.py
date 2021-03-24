@@ -63,6 +63,15 @@ def test(ctx, instance, tmp_path):
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     assert mtime_before == mtime_after
 
+    # If instance's configuration changes, pgbackrest configuration is
+    # updated.
+    config_before = configpath.read_text()
+    instance_mod.configure(ctx, instance, port=5555)
+    pgbackrest.setup(ctx, instance)
+    config_after = configpath.read_text()
+    assert config_after != config_before
+    assert "pg1-port = 5555" in config_after.splitlines()
+
     pgbackrest.revert_setup(ctx, instance)
     assert not configpath.exists()
     assert not directory.exists()

@@ -3,7 +3,7 @@ import enum
 import json
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from pgtoolkit import conf as pgconf
 
@@ -54,25 +54,29 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     assert instance_config
     stanza = _stanza(instance)
 
-    if not configpath.exists():
-        config: Dict[str, Dict[str, Any]] = {
-            "global": {
-                "repo1-path": directory,
-                "log-path": logpath,
-            },
-            "global:archive-push": {
-                "compress-level": "3",
-            },
-            stanza: {
-                "pg1-path": f"{instance.datadir}",
-                "pg1-port": instance_config.port,
-                "pg1-user": "postgres",
-            },
-        }
-        unix_socket_directories = instance_config.get("unix_socket_directories")
-        if unix_socket_directories:
-            config[stanza]["pg1-socket-path"] = str(unix_socket_directories)
-        cp = configparser.ConfigParser()
+    config: Dict[str, Dict[str, str]] = {
+        "global": {
+            "repo1-path": str(directory),
+            "log-path": str(logpath),
+        },
+        "global:archive-push": {
+            "compress-level": "3",
+        },
+        stanza: {
+            "pg1-path": f"{instance.datadir}",
+            "pg1-port": str(instance_config.port),
+            "pg1-user": "postgres",
+        },
+    }
+    unix_socket_directories = instance_config.get("unix_socket_directories")
+    if unix_socket_directories:
+        config[stanza]["pg1-socket-path"] = str(instance_config.unix_socket_directories)
+    cp = configparser.ConfigParser()
+    actual_config = {}
+    if configpath.exists():
+        cp.read(configpath)
+        actual_config = {name: dict(cp.items(name)) for name in config}
+    if config != actual_config:
         cp.read_dict(config)
 
         with configpath.open("w") as configfile:
