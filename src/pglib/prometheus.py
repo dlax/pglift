@@ -3,10 +3,8 @@ from pathlib import Path
 
 from .ctx import BaseContext
 from .model import Instance
-from .settings import SETTINGS, PrometheusSettings
+from .settings import PrometheusSettings
 from .task import task
-
-PROMETHEUS_SETTINGS = SETTINGS.prometheus
 
 
 def _configpath(instance: Instance, settings: PrometheusSettings) -> Path:
@@ -18,13 +16,9 @@ def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
 
 
 @task
-def setup(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PrometheusSettings = PROMETHEUS_SETTINGS,
-) -> None:
+def setup(ctx: BaseContext, instance: Instance) -> None:
     """Setup postgres_exporter for Prometheus"""
+    settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
     content = """
     DATA_SOURCE_URI=localhost:{instance_port}
@@ -58,13 +52,9 @@ def setup(
 
 
 @setup.revert
-def revert_setup(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PrometheusSettings = PROMETHEUS_SETTINGS,
-) -> None:
+def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup postgres_exporter for Prometheus"""
+    settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
 
     if configpath.exists():

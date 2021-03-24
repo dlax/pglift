@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 from . import model
 from .ctx import BaseContext
-from .settings import SETTINGS, Settings
 
 
 @enum.unique
@@ -72,11 +71,9 @@ class Instance(Manifest):
     ssl: Union[bool, Tuple[Path, Path]] = False
     configuration: Dict[str, Any] = Field(default_factory=dict)
 
-    def model(
-        self, ctx: BaseContext, *, settings: Settings = SETTINGS
-    ) -> model.Instance:
+    def model(self, ctx: BaseContext) -> model.Instance:
         """Return a model Instance matching this manifest."""
         if self.version is not None:
-            return model.Instance(self.name, self.version, settings=settings)
+            return model.Instance(self.name, self.version, settings=ctx.settings)
         else:
-            return model.Instance.default_version(self.name, ctx, settings=settings)
+            return model.Instance.default_version(self.name, ctx)

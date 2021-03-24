@@ -8,11 +8,8 @@ from typing_extensions import Literal
 from . import conf, manifest, util
 from .ctx import BaseContext, Context
 from .model import Instance
-from .settings import SETTINGS, PostgreSQLSettings, Settings
 from .task import task
 from .util import short_version
-
-POSTGRESQL_SETTINGS = SETTINGS.postgresql
 
 
 @task
@@ -21,9 +18,9 @@ def init(
     instance: Instance,
     *,
     data_checksums: bool = False,
-    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
 ) -> bool:
     """Initialize a PostgreSQL instance."""
+    settings = ctx.settings.postgresql
     try:
         if instance.exists():
             return False
@@ -57,11 +54,10 @@ def init(
 def revert_init(
     ctx: BaseContext,
     instance: Instance,
-    *,
-    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
+    settings = ctx.settings.postgresql
     ctx.run(["rm", "-rf", str(instance.path)], check=True)
     pgroot = settings.root
     try:
@@ -80,7 +76,6 @@ def configure(
     instance: Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
-    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **confitems: Any,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
@@ -141,7 +136,6 @@ def revert_configure(
     instance: Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
-    settings: PostgreSQLSettings = POSTGRESQL_SETTINGS,
     **kwargs: Any,
 ) -> Any:
     """Remove custom instance configuration, leaving the default
@@ -226,12 +220,7 @@ def reload(
     ctx.pg_ctl.reload(instance.datadir)
 
 
-def apply(
-    ctx: BaseContext,
-    instance_manifest: manifest.Instance,
-    *,
-    settings: Settings = SETTINGS,
-) -> None:
+def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
@@ -241,24 +230,22 @@ def apply(
     running, it will be reloaded. Note that some changes require a full
     restart, this needs to be handled manually.
     """
-    postgresql_settings = settings.postgresql
-    instance = instance_manifest.model(ctx, settings=settings)
+    instance = instance_manifest.model(ctx)
     States = manifest.InstanceState
     state = instance_manifest.state
 
     if state == States.absent:
         if instance.exists():
-            drop(ctx, instance, settings=settings)
+            drop(ctx, instance)
         return
 
     if not instance.exists():
-        init(ctx, instance, settings=postgresql_settings)
+        init(ctx, instance)
     configure_options = instance_manifest.configuration or {}
     changes = configure(
         ctx,
         instance,
         ssl=instance_manifest.ssl,
-        settings=postgresql_settings,
         **configure_options,
     )
 
@@ -301,14 +288,12 @@ def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance
 def drop(
     ctx: BaseContext,
     instance: Instance,
-    settings: Settings = SETTINGS,
 ) -> None:
     """Drop an instance."""
     if not instance.exists():
         return
-    postgresql_settings = settings.postgresql
-    revert_configure(ctx, instance, settings=postgresql_settings)
-    revert_init(ctx, instance, settings=postgresql_settings)
+    revert_configure(ctx, instance)
+    revert_init(ctx, instance)
 
 
 if __name__ == "__main__":  # pragma: nocover

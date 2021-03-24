@@ -25,7 +25,15 @@ class Instance:
     @classmethod
     def default_version(cls, name: str, ctx: BaseContext, **kwargs: Any) -> "Instance":
         """Build an Instance by guessing its version from installed PostgreSQL."""
-        return cls(name, short_version(ctx.pg_ctl.version), **kwargs)
+        try:
+            settings = kwargs.pop("settings")
+        except KeyError:
+            settings = ctx.settings
+        else:
+            assert (
+                settings == ctx.settings
+            ), "settings bound to context is inconsistent with passed value"
+        return cls(name, short_version(ctx.pg_ctl.version), settings=settings)
 
     def __str__(self) -> str:
         """Return str(self).

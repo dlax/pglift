@@ -6,13 +6,13 @@ from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
 from pglib import instance, manifest
+from pglib.ctx import Context
 from pglib.model import Instance
 
 
-def test_init(ctx, tmp_settings):
-    pgroot = tmp_settings.postgresql.root
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
-    ret = instance.init(ctx, i, data_checksums=True, settings=tmp_settings.postgresql)
+def test_init(ctx):
+    i = Instance.default_version("test", ctx=ctx)
+    ret = instance.init(ctx, i, data_checksums=True)
     assert ret
     assert i.datadir.exists()
     assert i.waldir.exists()
@@ -27,7 +27,7 @@ def test_init(ctx, tmp_settings):
             raise AssertionError("invalid postgresql.conf")
 
     # Instance alread exists, no-op.
-    ret = instance.init(ctx, i, settings=tmp_settings.postgresql)
+    ret = instance.init(ctx, i)
     assert not ret
 
     # Lookup failed.
@@ -37,37 +37,40 @@ def test_init(ctx, tmp_settings):
         Exception,
         match="version mismatch",
     ):
-        instance.init(ctx, i, settings=tmp_settings.postgresql)
+        instance.init(ctx, i)
     assert not pg_version.exists()  # per revert
 
     # A failed init cleans up postgres directories.
-    pgroot = tmp_settings.postgresql.root
-    tmp_settings_1 = attr.evolve(
-        tmp_settings,
-        postgresql=attr.evolve(tmp_settings.postgresql, root=pgroot / "pg"),
+    pgroot = ctx.settings.postgresql.root / "pg"
+    ctx1 = Context(
+        settings=attr.evolve(
+            ctx.settings,
+            postgresql=attr.evolve(
+                ctx.settings.postgresql,
+                root=pgroot,
+            ),
+        ),
     )
-    pgroot = pgroot / "pg"
     pgroot.mkdir()
-    i = Instance.default_version("test", settings=tmp_settings_1, ctx=ctx)
+    i = Instance.default_version("test", ctx=ctx1)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
-        instance.init(ctx, i, settings=tmp_settings_1.postgresql)
+        instance.init(ctx1, i)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
 
     # Init failed. Version doesn't match installed one.
-    i = Instance("test", "9.6", settings=tmp_settings)
+    i = Instance("test", "9.6", settings=ctx.settings)
     with pytest.raises(
         Exception,
         match="version doesn't match installed version",
     ):
-        instance.init(ctx, i, settings=tmp_settings.postgresql)
+        instance.init(ctx, i)
 
 
-def test_configure(ctx, tmp_settings):
-    pg_settings = tmp_settings.postgresql
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
+def test_configure(ctx):
+    i = Instance.default_version("test", ctx=ctx)
     configdir = i.datadir
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -75,9 +78,7 @@ def test_configure(ctx, tmp_settings):
         f.write("bonjour = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
-    changes = instance.configure(
-        ctx, i, port=5433, settings=pg_settings, max_connections=100
-    )
+    changes = instance.configure(ctx, i, port=5433, max_connections=100)
     assert changes == {
         "cluster_name": (None, "test"),
         "max_connections": (None, 100),
@@ -98,9 +99,7 @@ def test_configure(ctx, tmp_settings):
     assert config.bonjour == "test"
     assert config.cluster_name == "test"
 
-    changes = instance.configure(
-        ctx, i, settings=pg_settings, listen_address="*", ssl=True
-    )
+    changes = instance.configure(ctx, i, listen_address="*", ssl=True)
     assert changes == {
         "listen_address": (None, "*"),
         "max_connections": (100, None),
@@ -109,31 +108,29 @@ def test_configure(ctx, tmp_settings):
     }
     # Same configuration, no change.
     mtime_before = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
-    changes = instance.configure(
-        ctx, i, settings=pg_settings, listen_address="*", ssl=True
-    )
+    changes = instance.configure(ctx, i, listen_address="*", ssl=True)
     assert changes == {}
     mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
     assert mtime_before == mtime_after
 
-    instance.revert_configure(ctx, i, settings=pg_settings)
+    instance.revert_configure(ctx, i)
     assert postgresql_conf.read_text() == initial_content
     assert not configfpath.exists()
 
-    instance.configure(ctx, i, ssl=True, settings=pg_settings)
+    instance.configure(ctx, i, ssl=True)
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
 
-    instance.revert_configure(ctx, i, ssl=True, settings=pg_settings)
+    instance.revert_configure(ctx, i, ssl=True)
     assert not (configdir / "server.crt").exists()
     assert not (configdir / "server.key").exists()
 
     ssl = (cert_file, key_file) = (i.datadir / "c.crt", i.datadir / "k.key")
     for fpath in ssl:
         fpath.touch()
-    changes = instance.configure(ctx, i, ssl=ssl, settings=pg_settings)
+    changes = instance.configure(ctx, i, ssl=ssl)
     assert changes == {
         "cluster_name": (None, i.name),
         "ssl": (None, True),
@@ -144,24 +141,22 @@ def test_configure(ctx, tmp_settings):
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {i.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {i.datadir / 'k.key'}" in lines
-    instance.revert_configure(ctx, i, ssl=ssl, settings=pg_settings)
+    instance.revert_configure(ctx, i, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
 
 
-def test_start_stop(ctx, tmp_settings, tmp_path):
-    pg_settings = tmp_settings.postgresql
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
+def test_start_stop(ctx, tmp_path):
+    i = Instance.default_version("test", ctx=ctx)
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
-    instance.init(ctx, i, settings=pg_settings)
+    instance.init(ctx, i)
     instance.configure(
         ctx,
         i,
         port=5499,
         log_destination="syslog",
         unix_socket_directories=str(tmp_path),
-        settings=pg_settings,
     )
     assert instance.status(ctx, i) == Status.not_running
 
@@ -184,14 +179,10 @@ def test_start_stop(ctx, tmp_settings, tmp_path):
     assert instance.status(ctx, i) == Status.not_running
 
 
-def test_apply(ctx, tmp_settings, tmp_path):
+def test_apply(ctx, tmp_path):
     im = manifest.Instance(name="test", ssl=True, state=manifest.InstanceState.stopped)
-    i = im.model(ctx, settings=tmp_settings)
-    instance.apply(
-        ctx,
-        im,
-        settings=tmp_settings,
-    )
+    i = im.model(ctx)
+    instance.apply(ctx, im)
     assert i.exists()
     pgconfig = i.config()
     assert pgconfig
@@ -199,47 +190,31 @@ def test_apply(ctx, tmp_settings, tmp_path):
 
     im.state = manifest.InstanceState.started
     im.configuration["unix_socket_directories"] = str(tmp_path)
-    instance.apply(
-        ctx,
-        im,
-        settings=tmp_settings,
-    )
+    instance.apply(ctx, im)
     assert instance.status(ctx, i) == Status.running
 
     im.configuration["bonjour"] = False
-    instance.apply(
-        ctx,
-        im,
-        settings=tmp_settings,
-    )
+    instance.apply(ctx, im)
     assert instance.status(ctx, i) == Status.running
 
     im.state = manifest.InstanceState.stopped
-    instance.apply(
-        ctx,
-        im,
-        settings=tmp_settings,
-    )
+    instance.apply(ctx, im)
     assert instance.status(ctx, i) == Status.not_running
 
     im.state = manifest.InstanceState.absent
-    instance.apply(
-        ctx,
-        im,
-        settings=tmp_settings,
-    )
+    instance.apply(ctx, im)
     assert not i.exists()
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx, tmp_settings):
+def test_describe(ctx):
     i = Instance("absent", "9.6")
     im = instance.describe(ctx, i)
     assert im is None
 
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
-    instance.init(ctx, i, settings=tmp_settings.postgresql)
-    instance.configure(ctx, i, shared_buffers="10MB", settings=tmp_settings.postgresql)
+    i = Instance.default_version("test", ctx=ctx)
+    instance.init(ctx, i)
+    instance.configure(ctx, i, shared_buffers="10MB")
     im = instance.describe(ctx, i)
     assert im is not None
     assert im.name == "test"
@@ -247,11 +222,11 @@ def test_describe(ctx, tmp_settings):
     assert im.state.name == "stopped"
 
 
-def test_drop(ctx, tmp_settings):
+def test_drop(ctx):
     i = Instance("absent", "9.6")
-    instance.drop(ctx, i, settings=tmp_settings)
+    instance.drop(ctx, i)
 
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
-    instance.init(ctx, i, settings=tmp_settings.postgresql)
-    instance.drop(ctx, i, settings=tmp_settings)
+    i = Instance.default_version("test", ctx=ctx)
+    instance.init(ctx, i)
+    instance.drop(ctx, i)
     assert not i.exists()

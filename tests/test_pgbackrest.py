@@ -21,11 +21,10 @@ def instance_running(ctx, instance):
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test(ctx, instance, tmp_settings, tmp_path):
-    pgbackrest_settings = tmp_settings.pgbackrest
+def test(ctx, instance, tmp_path):
+    pgbackrest_settings = ctx.settings.pgbackrest
 
-    kwargs = {"instance": instance, "settings": pgbackrest_settings}
-    pgbackrest.setup(ctx, **kwargs)
+    pgbackrest.setup(ctx, instance)
     configpath = Path(pgbackrest_settings.configpath.format(instance=instance))
     directory = Path(pgbackrest_settings.directory.format(instance=instance))
     assert configpath.exists()
@@ -38,7 +37,7 @@ def test(ctx, instance, tmp_settings, tmp_path):
     )
 
     with instance_running(ctx, instance):
-        pgbackrest.init(ctx, instance, settings=pgbackrest_settings)
+        pgbackrest.init(ctx, instance)
         assert (
             directory / f"archive/{instance.version}-{instance.name}/archive.info"
         ).exists()
@@ -51,20 +50,19 @@ def test(ctx, instance, tmp_settings, tmp_path):
             ctx,
             instance,
             type=pgbackrest.BackupType.full,
-            settings=pgbackrest_settings,
         )
         assert latest_backup.exists() and latest_backup.is_symlink()
-        pgbackrest.expire(ctx, instance, settings=pgbackrest_settings)
+        pgbackrest.expire(ctx, instance)
         # TODO: check some result from 'expire' command here.
 
     # Calling setup an other time doesn't overwrite configuration
     configdir = instance.datadir
     pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
-    pgbackrest.setup(ctx, **kwargs)
+    pgbackrest.setup(ctx, instance)
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     assert mtime_before == mtime_after
 
-    pgbackrest.revert_setup(ctx, **kwargs)
+    pgbackrest.revert_setup(ctx, instance)
     assert not configpath.exists()
     assert not directory.exists()

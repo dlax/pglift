@@ -41,13 +41,9 @@ def _stanza(instance: Instance) -> str:
 
 
 @task
-def setup(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-) -> None:
+def setup(ctx: BaseContext, instance: Instance) -> None:
     """Setup pgBackRest"""
+    settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
     directory = Path(settings.directory.format(instance=instance))
     logpath = Path(settings.logpath.format(instance=instance))
@@ -105,13 +101,9 @@ def setup(
 
 
 @setup.revert
-def revert_setup(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-) -> None:
+def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup pgBackRest"""
+    settings = ctx.settings.pgbackrest
     configpath = Path(settings.configpath.format(instance=instance))
     directory = Path(settings.directory.format(instance=instance))
 
@@ -133,12 +125,8 @@ def revert_setup(
 
 
 @task
-def init(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-) -> None:
+def init(ctx: BaseContext, instance: Instance) -> None:
+    settings = ctx.settings.pgbackrest
     base_cmd = make_cmd(instance, settings)
 
     info = ctx.run(base_cmd + ["--output=json", "info"], check=True).stdout
@@ -208,7 +196,6 @@ def backup(
     instance: Instance,
     *,
     type: BackupType = BackupType.default(),
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
 ) -> None:
     """Perform a backup of ``instance``.
 
@@ -216,6 +203,7 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
+    settings = ctx.settings.pgbackrest
     ctx.run(backup_command(instance, type=type, settings=settings), check=True)
 
 
@@ -239,16 +227,12 @@ def expire_command(
 
 
 @task
-def expire(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-) -> None:
+def expire(ctx: BaseContext, instance: Instance) -> None:
     """Expire a backup of ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
+    settings = ctx.settings.pgbackrest
     ctx.run(expire_command(instance, settings=settings), check=True)
 
 

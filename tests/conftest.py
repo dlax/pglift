@@ -7,11 +7,6 @@ from pglib.model import Instance
 
 
 @pytest.fixture
-def ctx():
-    return Context()
-
-
-@pytest.fixture
 def tmp_settings(tmp_path):
 
     pgbackrest_root = tmp_path / "pgbackrest"
@@ -43,11 +38,13 @@ def tmp_settings(tmp_path):
 
 
 @pytest.fixture
-def instance(ctx, tmp_settings, tmp_path):
-    i = Instance.default_version("test", settings=tmp_settings, ctx=ctx)
-    pg_settings = tmp_settings.postgresql
-    instance_mod.init(ctx, i, settings=pg_settings)
-    instance_mod.configure(
-        ctx, i, settings=pg_settings, unix_socket_directories=str(tmp_path)
-    )
+def ctx(tmp_settings):
+    return Context(settings=tmp_settings)
+
+
+@pytest.fixture
+def instance(ctx, tmp_path):
+    i = Instance.default_version("test", ctx=ctx)
+    instance_mod.init(ctx, i)
+    instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path))
     return i

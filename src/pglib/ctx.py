@@ -5,13 +5,20 @@ from typing import Any, Optional, Sequence, Union
 from pgtoolkit import ctl
 
 from . import cmd
+from .settings import SETTINGS, Settings
 from .types import CompletedProcess
 
 
 class BaseContext(ABC):
     """Base class for execution context."""
 
-    def __init__(self, *, pg_bindir: Optional[Union[str, Path]] = None) -> None:
+    def __init__(
+        self,
+        *,
+        settings: Settings = SETTINGS,
+        pg_bindir: Optional[Union[str, Path]] = None,
+    ) -> None:
+        self.settings = settings
         self.pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
 
     @abstractmethod
