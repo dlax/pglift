@@ -71,10 +71,9 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
             "pg1-port": str(instance_config.port),
             "pg1-user": "postgres",
         }
-        if instance_config.unix_socket_directories:
-            config[stanza]["pg1-socket-path"] = str(
-                instance_config.unix_socket_directories
-            )
+        unix_socket_directories = instance_config.get("unix_socket_directories")
+        if unix_socket_directories:
+            config[stanza]["pg1-socket-path"] = str(unix_socket_directories)
 
         with configpath.open("w") as configfile:
             config.write(configfile)
