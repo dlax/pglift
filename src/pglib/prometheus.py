@@ -21,7 +21,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
     content = """
-    DATA_SOURCE_URI=localhost:{instance_port}
+    DATA_SOURCE_URI={dsn}
     DATA_SOURCE_USER={role}
     PG_EXPORTER_WEB_LISTEN_ADDRESS=:{port}
     PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
@@ -30,13 +30,16 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     """
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     instance_config = instance.config()
-    assert instance_config and "port" in instance_config
-    instance_port = instance_config.port
+    assert instance_config
 
+    try:
+        dsn = f"localhost:{instance_config.port}"
+    except AttributeError:
+        dsn = "localhost"
     queriespath = _queriespath(instance, settings)
     config = {
         "instance": instance,
-        "instance_port": instance_port,
+        "dsn": dsn,
         "role": "postgres",
         "port": 9187,
         "queriespath": queriespath,
