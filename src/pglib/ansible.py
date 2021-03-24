@@ -26,5 +26,6 @@ class AnsibleContext(BaseContext):
             kwargs["check_rc"] = kwargs.pop("check")
         except KeyError:
             pass
+        kwargs.pop("capture_output", None)  # default on Ansible
         returncode, stdout, stderr = self.module.run_command(args, **kwargs)
         return CompletedProcess(args, returncode, stdout, stderr)
