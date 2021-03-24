@@ -9,15 +9,11 @@ from .task import task
 PROMETHEUS_SETTINGS = SETTINGS.prometheus
 
 
-def _configpath(
-    instance: Instance, settings: PrometheusSettings = PROMETHEUS_SETTINGS
-) -> Path:
+def _configpath(instance: Instance, settings: PrometheusSettings) -> Path:
     return Path(settings.configpath.format(instance=instance))
 
 
-def _queriespath(
-    instance: Instance, settings: PrometheusSettings = PROMETHEUS_SETTINGS
-) -> Path:
+def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
     return Path(settings.queriespath.format(instance=instance))
 
 

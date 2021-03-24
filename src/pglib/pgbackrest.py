@@ -32,9 +32,7 @@ def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> Li
     )
 
 
-def _configpath(
-    instance: Instance, settings: PgBackRestSettings = PGBACKREST_SETTINGS
-) -> Path:
+def _configpath(instance: Instance, settings: PgBackRestSettings) -> Path:
     return Path(settings.configpath.format(instance=instance))
 
 
