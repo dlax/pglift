@@ -161,8 +161,7 @@ def run_module() -> None:
         if state == "absent" and instance.exists():
             if status == PGStatus.running:
                 instance_mod.stop(ctx, instance)
-            instance_mod.revert_configure(ctx, instance)
-            instance_mod.revert_init(ctx, instance)
+            instance_mod.drop(ctx, instance)
             pgbackrest_mod.revert_setup(ctx, instance)
         else:
             result["changed"] = instance_mod.init(ctx, instance, **init_options)
