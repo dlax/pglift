@@ -47,16 +47,13 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     configpath = _configpath(instance, settings)
     directory = Path(settings.directory.format(instance=instance))
     logpath = Path(settings.logpath.format(instance=instance))
-    # Create directory
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
-    # Create logs directory
     logpath.mkdir(exist_ok=True, parents=True)
 
     instance_config = instance.config()
     assert instance_config
     stanza = _stanza(instance)
 
-    # Write configuration
     if not configpath.exists():
         config = configparser.ConfigParser()
         config["global"] = {
@@ -78,12 +75,10 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         with configpath.open("w") as configfile:
             config.write(configfile)
 
-    # Create directories tree for backups
     directory.mkdir(exist_ok=True, parents=True)
 
     base_cmd = make_cmd(instance, settings)
 
-    # Configure postgres archiving
     configdir = instance.datadir
     pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
     if not pgconfigfile.exists():
@@ -106,17 +101,14 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     configpath = Path(settings.configpath.format(instance=instance))
     directory = Path(settings.directory.format(instance=instance))
 
-    # Remove configuration file
     if configpath.exists():
         configpath.unlink()
 
-    # Drop directories tree for backups
     try:
         shutil.rmtree(directory)
     except FileNotFoundError:
         pass
 
-    # Remove pg configfile
     configdir = instance.datadir
     pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
     if pgconfigfile.exists():
@@ -133,11 +125,9 @@ def init(ctx: BaseContext, instance: Instance) -> None:
     # If the stanza already exists, don't do anything
     if info_json and info_json[0]["status"]["code"] != 1:
         return
-    # Start pgBackRest
+
     ctx.run(base_cmd + ["start"], check=True)
-    # Create the Stanza
     ctx.run(base_cmd + ["stanza-create"], check=True)
-    # Check the configuration
     ctx.run(base_cmd + ["check"], check=True)
 
 
