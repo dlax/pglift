@@ -1,6 +1,5 @@
-import json
 from pathlib import Path
-from typing import Any, List, Optional, Type, TypeVar
+from typing import List, Optional, Type, TypeVar
 
 from pydantic import BaseSettings
 
@@ -98,9 +97,4 @@ SETTINGS = Settings()
 
 if __name__ == "__main__":
 
-    def default(obj: Any) -> Any:
-        if isinstance(obj, Path):
-            return str(obj)
-        return obj
-
-    print(json.dumps(SETTINGS.dict(), indent=2, default=default))
+    print(SETTINGS.json(indent=2))
