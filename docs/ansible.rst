@@ -25,10 +25,23 @@ PostgreSQL instances:
 
 ::
 
-    $ export PGLIB_POSTGRESQL_ROOT=/tmp/postgres
-    $ export PGLIB_PGBACKREST_DIRECTORY=/tmp/backups
-    $ export PGLIB_PGBACKREST_CONFIGPATH=/tmp/pgbackrest.conf
-    $ export PGLIB_PGBACKREST_LOGPATH=/tmp/backups
+    $ export SETTINGS=/tmp/config.json
+    $ cat > "$SETTINGS" << EOF
+    {
+      "postgresql": {
+        "root": "/tmp/postgres"
+      },
+      "pgbackrest": {
+        "configpath": "/tmp/pgbackrest-{instance.version}-{instance.name}.conf",
+        "directory": "/tmp/backups",
+        "logpath": "/tmp/pgbackrest-{instance.version}-{instance.name}-logs"
+      },
+      "prometheus": {
+        "configpath": "/tmp/postgres_exporter-{instance.version}-{instance.name}.conf",
+        "queriespath": "/tmp/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+      }
+    }
+    EOF
 
 Then, run:
 
@@ -58,7 +71,7 @@ We can see our instances installed and running:
 
     $ tree -L 3  /tmp/postgres
     /tmp/postgres
-    └── 11
+    └── 13
         ├── dev
         │   ├── data
         │   └── wal
@@ -91,10 +104,10 @@ And pgBackRest is set up and initialized for started instances:
 
     $ tree -L 2  /tmp/backups/backup
     /tmp/backups/backup
-    ├── 11-preprod
+    ├── 13-preprod
     │   ├── backup.info
     │   └── backup.info.copy
-    └── 11-prod
+    └── 13-prod
         ├── backup.info
         └── backup.info.copy
 
@@ -109,7 +122,7 @@ configuration:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -143,7 +156,7 @@ configuration:
 
     $ tree -L 2  /tmp/postgres
     /tmp/postgres
-    └── 11
+    └── 13
         ├── dev
         └── prod
 
@@ -170,3 +183,9 @@ Finally, in this last playbook, we drop all our instances:
 
     PLAY RECAP ***********************************************************************************************
     localhost                  : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+::
+
+    $ tree -L 2  /tmp/postgres
+    /tmp/postgres
+    └── 13
