@@ -1,5 +1,7 @@
+import json
+import os
 from pathlib import Path
-from typing import List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from pydantic import BaseSettings
 
@@ -81,6 +83,17 @@ class PrometheusSettings(BaseSettings):
         env_prefix = "pglib_prometheus_"
 
 
+def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
+    configpath = os.getenv("SETTINGS")
+    if not configpath:
+        return {}
+    encoding = settings.__config__.env_file_encoding
+    config = Path(configpath)
+    if config.exists():
+        return json.loads(config.read_text(encoding))  # type: ignore[no-any-return]
+    return {}
+
+
 @frozen
 class Settings(BaseSettings):
 
@@ -90,6 +103,20 @@ class Settings(BaseSettings):
 
     class Config:
         env_prefix = "pglib_"
+
+        @classmethod
+        def customise_sources(  # type: ignore[no-untyped-def]
+            cls,
+            init_settings,
+            env_settings,
+            file_secret_settings,
+        ):
+            return (
+                init_settings,
+                json_config_settings_source,
+                env_settings,
+                file_secret_settings,
+            )
 
 
 SETTINGS = Settings()
