@@ -1,5 +1,7 @@
 import subprocess
+import time
 
+import psycopg2
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
@@ -8,6 +10,8 @@ from pglib import instance, manifest, systemd, task
 from pglib.ctx import Context
 from pglib.model import Instance
 from pglib.settings import PostgreSQLSettings
+
+from . import instance_running
 
 
 @pytest.fixture
@@ -77,6 +81,64 @@ def test_init(ctx, installed):
         match="version doesn't match installed version",
     ):
         instance.init(ctx, i)
+
+
+def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
+    calls = []
+
+    def cmd_run(args, **kwargs):
+        calls.append(args)
+
+    pgroot = ctx.settings.postgresql.root
+    ctx1 = Context(
+        plugin_manager=ctx.pm,
+        settings=ctx.settings.copy(
+            update={
+                "postgresql": PostgreSQLSettings(root=pgroot, initdb_auth=("md5", None))
+            }
+        ),
+    )
+    i = Instance.default_version("test", ctx=ctx1)
+    with monkeypatch.context() as m:
+        m.setattr("pglib.cmd.run", cmd_run)
+        instance.init(ctx1, i)
+
+    init_cmd = " ".join(calls[0])
+    assert "--auth=md5" in init_cmd
+    assert "--pwprompt" in init_cmd
+
+
+def test_init_surole_pwfile(ctx, tmp_path, installed):
+    pgroot = ctx.settings.postgresql.root
+    surole_pwd = "S3kret"
+    pwfile = tmp_path / "surole_pwd"
+    with open(pwfile, "w") as f:
+        f.write(surole_pwd)
+    ctx1 = Context(
+        plugin_manager=ctx.pm,
+        settings=ctx.settings.copy(
+            update={
+                "postgresql": PostgreSQLSettings(
+                    root=pgroot, initdb_auth=("md5", pwfile)
+                )
+            }
+        ),
+    )
+    i = Instance.default_version("test", ctx=ctx1)
+    instance.init(ctx1, i)
+    instance.configure(ctx1, i, unix_socket_directories=str(tmp_path))
+
+    with instance_running(ctx1, i):
+        time.sleep(1)  # wait for the database system to start up
+        connargs = {
+            "user": ctx1.settings.postgresql.surole,
+            "host": str(tmp_path),
+        }
+        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
+            psycopg2.connect(**connargs)
+
+        connargs["password"] = surole_pwd
+        psycopg2.connect(**connargs)
 
 
 def test_configure(ctx):

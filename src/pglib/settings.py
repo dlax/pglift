@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from pydantic import BaseSettings, Field
 from pydantic.env_settings import SettingsSourceCallable
@@ -43,6 +43,17 @@ class PostgreSQLSettings(BaseSettings):
 
     pid_directory: Path = Path("/run/postgresql")
     """Path to directory where postgres process PID file will be written."""
+
+    initdb_auth: Optional[
+        Tuple[Union[Literal["md5"], Literal["scram-sha-256"]], Optional[Path]]
+    ]
+    """Auth method and pwfile to be used by initdb.
+    Examples:
+      - None: `trust` method is used in pg_hba.conf,
+      - ('md5', None): user is asked a password,
+      - ('md5', Path(/path/to/surole_pwd)): the file is read by initdb for the
+        password.
+    """
 
     class Config:
         env_prefix = "pglib_postgresql_"

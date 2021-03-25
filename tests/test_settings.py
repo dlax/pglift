@@ -35,6 +35,11 @@ def test_settings(tmp_path):
     s = Settings.parse_obj({"postgresql": {"root": str(tmp_path)}})
     assert s.postgresql.root == tmp_path
 
+    pwfile = tmp_path / "surole_password"
+    s = Settings.parse_obj({"postgresql": {"initdb_auth": ("md5", pwfile)}})
+    assert s.postgresql.initdb_auth
+    assert s.postgresql.initdb_auth[1] == pwfile
+
 
 def test_settings_from_env(monkeypatch):
     with monkeypatch.context() as m:

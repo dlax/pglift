@@ -57,6 +57,14 @@ def init(
         opts["locale"] = settings.locale
     if data_checksums:
         opts["data_checksums"] = True
+    initdb_auth = settings.initdb_auth
+    if initdb_auth:
+        opts["auth"] = initdb_auth[0]
+        pwfile = initdb_auth[1]
+        if pwfile is not None:
+            opts["pwfile"] = str(pwfile)
+        else:
+            opts["pwprompt"] = True
     ctx.pg_ctl.init(instance.datadir, **opts)
 
     if ctx.settings.service_manager == "systemd":
