@@ -3,7 +3,7 @@ import enum
 import json
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
 
 from pgtoolkit import conf as pgconf
 
@@ -55,25 +55,28 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     stanza = _stanza(instance)
 
     if not configpath.exists():
-        config = configparser.ConfigParser()
-        config["global"] = {
-            "repo1-path": str(directory),
-            "log-path": str(logpath),
-        }
-        config["global:archive-push"] = {
-            "compress-level": "3",
-        }
-        config[stanza] = {
-            "pg1-path": f"{instance.datadir}",
-            "pg1-port": str(instance_config.port),
-            "pg1-user": "postgres",
+        config: Dict[str, Dict[str, Any]] = {
+            "global": {
+                "repo1-path": directory,
+                "log-path": logpath,
+            },
+            "global:archive-push": {
+                "compress-level": "3",
+            },
+            stanza: {
+                "pg1-path": f"{instance.datadir}",
+                "pg1-port": instance_config.port,
+                "pg1-user": "postgres",
+            },
         }
         unix_socket_directories = instance_config.get("unix_socket_directories")
         if unix_socket_directories:
             config[stanza]["pg1-socket-path"] = str(unix_socket_directories)
+        cp = configparser.ConfigParser()
+        cp.read_dict(config)
 
         with configpath.open("w") as configfile:
-            config.write(configfile)
+            cp.write(configfile)
 
     directory.mkdir(exist_ok=True, parents=True)
 
