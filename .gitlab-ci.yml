@@ -26,6 +26,14 @@ tests:
   script:
     - tox -e tests
 
+tests_ansible:
+  stage: test
+  image: $TESTING_CI_IMAGE
+  before_script:
+    - pip install . ansible
+  script:
+    - PATH=$HOME/.local/bin:$PATH ansible/tests.sh
+
 docs:
   stage: test
   image: $TESTING_CI_IMAGE
