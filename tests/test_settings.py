@@ -17,3 +17,10 @@ def test_settings(tmp_path):
 
     s = Settings.parse_obj({"postgresql": {"root": str(tmp_path)}})
     assert s.postgresql.root == tmp_path
+
+
+def test_settings_from_env(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setenv("pglib_postgresql_root", "/tmp/pg")
+        s = Settings(postgresql={})
+    assert s.postgresql.root == Path("/tmp/pg")

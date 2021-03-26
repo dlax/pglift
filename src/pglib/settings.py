@@ -37,7 +37,7 @@ class PostgreSQLSettings(BaseSettings):
     """Path segment from instance base directory to WAL directory."""
 
     class Config:
-        env_prefix = "postgresql_"
+        env_prefix = "pglib_postgresql_"
 
 
 @frozen
@@ -59,7 +59,7 @@ class PgBackRestSettings(BaseSettings):
     """Path where log files are stored."""
 
     class Config:
-        env_prefix = "pgbackrest_"
+        env_prefix = "pglib_pgbackrest_"
 
 
 @frozen
@@ -78,7 +78,7 @@ class PrometheusSettings(BaseSettings):
     """Path to the queries file."""
 
     class Config:
-        env_prefix = "prometheus_"
+        env_prefix = "pglib_prometheus_"
 
 
 @frozen
