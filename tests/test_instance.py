@@ -4,7 +4,7 @@ import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
-from pglib import instance, manifest
+from pglib import instance, manifest, task
 from pglib.ctx import Context
 from pglib.model import Instance
 from pglib.settings import PostgreSQLSettings
@@ -37,7 +37,8 @@ def test_init(ctx):
         Exception,
         match="version mismatch",
     ):
-        instance.init(ctx, i)
+        with task.runner():
+            instance.init(ctx, i)
     assert not pg_version.exists()  # per revert
 
     # A failed init cleans up postgres directories.
@@ -52,7 +53,8 @@ def test_init(ctx):
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
-        instance.init(ctx1, i)
+        with task.runner():
+            instance.init(ctx1, i)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
 

@@ -120,6 +120,7 @@ from pglib import pgbackrest as pgbackrest_mod
 from pglib.ansible import AnsibleContext
 from pglib.instance import Status as PGStatus
 from pglib.model import Instance
+from pglib.task import runner
 
 
 def run_module() -> None:
@@ -158,26 +159,27 @@ def run_module() -> None:
     confitems = module.params["configuration"] or {}
     ssl = module.params["ssl"] or False
     try:
-        if state == "absent" and instance.exists():
-            if status == PGStatus.running:
-                instance_mod.stop(ctx, instance)
-            instance_mod.drop(ctx, instance)
-            pgbackrest_mod.revert_setup(ctx, instance)
-        else:
-            result["changed"] = instance_mod.init(ctx, instance, **init_options)
-            result["datadir"] = str(instance.datadir)
-            result["waldir"] = str(instance.waldir)
-            result["configuration_changes"] = instance_mod.configure(
-                ctx, instance, ssl=ssl, **confitems
-            )
-            result["changed"] = result["changed"] or result["configuration_changes"]
-            pgbackrest_mod.setup(ctx, instance)
-            status = instance_mod.status(ctx, instance)
-            if state == "started" and status == PGStatus.not_running:
-                instance_mod.start(ctx, instance)
-                pgbackrest_mod.init(ctx, instance)
-            elif state == "stopped" and status == PGStatus.running:
-                instance_mod.stop(ctx, instance)
+        with runner():
+            if state == "absent" and instance.exists():
+                if status == PGStatus.running:
+                    instance_mod.stop(ctx, instance)
+                instance_mod.drop(ctx, instance)
+                pgbackrest_mod.revert_setup(ctx, instance)
+            else:
+                result["changed"] = instance_mod.init(ctx, instance, **init_options)
+                result["datadir"] = str(instance.datadir)
+                result["waldir"] = str(instance.waldir)
+                result["configuration_changes"] = instance_mod.configure(
+                    ctx, instance, ssl=ssl, **confitems
+                )
+                result["changed"] = result["changed"] or result["configuration_changes"]
+                pgbackrest_mod.setup(ctx, instance)
+                status = instance_mod.status(ctx, instance)
+                if state == "started" and status == PGStatus.not_running:
+                    instance_mod.start(ctx, instance)
+                    pgbackrest_mod.init(ctx, instance)
+                elif state == "stopped" and status == PGStatus.running:
+                    instance_mod.stop(ctx, instance)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 

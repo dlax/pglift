@@ -1,10 +1,29 @@
+import collections
+import contextlib
 import functools
-from typing import Any, Callable, Generic, Optional, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Deque,
+    Dict,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 A = TypeVar("A", bound=Callable[..., Any])
 
+Call = Tuple["task", Tuple[Any, ...], Dict[str, Any]]
+
 
 class task(Generic[A]):
+
+    _calls: ClassVar[Optional[Deque[Call]]] = None
+
     def __init__(self, action: A) -> None:
         self.action = action
         self.revert_action: Optional[A] = None
@@ -14,12 +33,9 @@ class task(Generic[A]):
         return f"<task '{self.action.__name__}' at 0x{id(self)}>"
 
     def _call(self, *args: Any, **kwargs: Any) -> Any:
-        try:
-            return self.action(*args, **kwargs)
-        except Exception as exc:
-            if self.revert_action:
-                self.revert_action(*args, **kwargs)
-            raise exc from None
+        if self._calls is not None:
+            self._calls.append((self, args, kwargs))
+        return self.action(*args, **kwargs)
 
     __call__ = cast(A, _call)
 
@@ -31,3 +47,25 @@ class task(Generic[A]):
         """
         self.revert_action = revertfn
         return revertfn
+
+
+@contextlib.contextmanager
+def runner() -> Iterator[None]:
+    """Context manager handling possible revert of a chain to task calls."""
+    if task._calls is not None:
+        raise RuntimeError("inconsistent task state")
+    task._calls = collections.deque()
+
+    try:
+        yield None
+    except Exception as exc:
+        while True:
+            try:
+                t, args, kwargs = task._calls.pop()
+            except IndexError:
+                break
+            if t.revert_action:
+                t.revert_action(*args, **kwargs)
+        raise exc from None
+    finally:
+        task._calls = None

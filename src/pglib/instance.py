@@ -8,7 +8,7 @@ from typing_extensions import Literal
 from . import conf, manifest, util
 from .ctx import BaseContext, Context
 from .model import Instance
-from .task import task
+from .task import runner, task
 from .util import short_version
 
 
@@ -323,7 +323,8 @@ if __name__ == "__main__":  # pragma: nocover
     )
 
     def do_apply(ctx: BaseContext, args: argparse.Namespace) -> None:
-        apply(ctx, manifest.Instance.parse_yaml(args.file))
+        with runner():
+            apply(ctx, manifest.Instance.parse_yaml(args.file))
 
     apply_parser.set_defaults(func=do_apply)
 
