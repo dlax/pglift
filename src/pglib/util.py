@@ -1,8 +1,13 @@
+import os
 import tempfile
 from pathlib import Path
 
 from . import cmd
 from .types import CommandRunner
+
+
+def xdg_data_home() -> Path:
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 
 def generate_certificate(
