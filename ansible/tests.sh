@@ -40,6 +40,7 @@ psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # pr
 set +e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # dev
 set -e
+crontab -l
 
 ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
 
@@ -48,7 +49,9 @@ set +e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 set -e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
+crontab -l
 
 ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
 
+crontab -l
 ps xf

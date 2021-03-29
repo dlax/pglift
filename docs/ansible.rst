@@ -98,7 +98,7 @@ We can see our instances installed and running:
     26918 ?        Ss     0:00      \_ postgres: preprod: stats collector
     26919 ?        Ss     0:00      \_ postgres: preprod: logical replication launcher
 
-And pgBackRest is set up and initialized for started instances:
+pgBackRest is set up and initialized for started instances:
 
 ::
 
@@ -110,6 +110,13 @@ And pgBackRest is set up and initialized for started instances:
     └── 13-prod
         ├── backup.info
         └── backup.info.copy
+
+And a crontab entry has been added for the production instance:
+::
+
+    $ crontab -l
+    #Ansible: backup prod postgres
+    0 3 * * * python -m pglib.backup --instance=prod backup
 
 
 In the following version of our previous playbook, we are dropping the "preprod"

@@ -6,6 +6,10 @@
       postgresql_instance:
         name: prod
         state: absent
+    - name: drop backup schedule task
+      cron:
+        name: backup prod postgres
+        state: absent
 
     - name: dev instance, dropped
       postgresql_instance:
