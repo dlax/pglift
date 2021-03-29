@@ -1,5 +1,6 @@
 import pytest
 
+from pglib import install
 from pglib import instance as instance_mod
 from pglib import pm
 from pglib.ctx import Context
@@ -42,13 +43,26 @@ def tmp_settings(tmp_path):
 
 
 @pytest.fixture
+def installed(tmp_settings, tmp_path):
+    if tmp_settings.service_manager != "systemd":
+        yield
+        return
+
+    custom_settings = tmp_path / "settings.json"
+    custom_settings.write_text(tmp_settings.json())
+    install.do(env=f"SETTINGS=@{custom_settings}")
+    yield
+    install.undo()
+
+
+@pytest.fixture
 def ctx(tmp_settings):
     p = pm.PluginManager.get()
     return Context(plugin_manager=p, settings=tmp_settings)
 
 
 @pytest.fixture
-def instance(ctx, tmp_path):
+def instance(ctx, installed, tmp_path):
     i = Instance.default_version("test", ctx=ctx)
     instance_mod.init(ctx, i)
     instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path))

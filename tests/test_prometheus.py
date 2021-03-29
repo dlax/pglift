@@ -11,7 +11,7 @@ def ctx(ctx):
     return ctx
 
 
-def test(ctx, instance):
+def test(ctx, installed, instance):
     prometheus_settings = ctx.settings.prometheus
     prometheus.setup(ctx, instance)
     configpath = Path(prometheus_settings.configpath.format(instance=instance))

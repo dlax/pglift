@@ -19,7 +19,7 @@ def ctx(ctx):
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test(ctx, instance, tmp_path):
+def test(ctx, installed, instance, tmp_path):
     pgbackrest_settings = ctx.settings.pgbackrest
 
     pgbackrest.setup(ctx, instance)

@@ -4,7 +4,7 @@ import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
-from pglib import instance, manifest, task
+from pglib import instance, manifest, systemd, task
 from pglib.ctx import Context
 from pglib.model import Instance
 from pglib.settings import PostgreSQLSettings
@@ -16,7 +16,7 @@ def ctx(ctx):
     return ctx
 
 
-def test_init(ctx):
+def test_init(ctx, installed):
     i = Instance.default_version("test", ctx=ctx)
     ret = instance.init(ctx, i, data_checksums=True)
     assert ret
@@ -31,6 +31,9 @@ def test_init(ctx):
                 break
         else:
             raise AssertionError("invalid postgresql.conf")
+
+    if ctx.settings.service_manager == "systemd":
+        assert systemd.is_enabled(ctx, instance.systemd_unit(i))
 
     # Instance alread exists, no-op.
     ret = instance.init(ctx, i)
@@ -64,6 +67,8 @@ def test_init(ctx):
             instance.init(ctx1, i)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
+    if ctx.settings.service_manager == "systemd":
+        assert not systemd.is_enabled(ctx, instance.systemd_unit(i))
 
     # Init failed. Version doesn't match installed one.
     i = Instance("test", "9.6", settings=ctx.settings)
@@ -151,7 +156,7 @@ def test_configure(ctx):
         assert fpath.exists()
 
 
-def test_start_stop(ctx, tmp_path):
+def test_start_stop(ctx, installed, tmp_path):
     i = Instance.default_version("test", ctx=ctx)
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
@@ -164,13 +169,19 @@ def test_start_stop(ctx, tmp_path):
         unix_socket_directories=str(tmp_path),
     )
     assert instance.status(ctx, i) == Status.not_running
+    if ctx.settings.service_manager == "systemd":
+        assert not systemd.is_active(ctx, instance.systemd_unit(i))
 
     instance.start(ctx, i)
     try:
         assert instance.status(ctx, i) == Status.running
+        if ctx.settings.service_manager == "systemd":
+            assert systemd.is_active(ctx, instance.systemd_unit(i))
     finally:
         instance.stop(ctx, i)
     assert instance.status(ctx, i) == Status.not_running
+    if ctx.settings.service_manager == "systemd":
+        assert not systemd.is_active(ctx, instance.systemd_unit(i))
 
     instance.start(ctx, i, logfile=tmp_path / "log")
     try:
@@ -184,7 +195,7 @@ def test_start_stop(ctx, tmp_path):
     assert instance.status(ctx, i) == Status.not_running
 
 
-def test_apply(ctx, tmp_path):
+def test_apply(ctx, installed, tmp_path):
     im = manifest.Instance(name="test", ssl=True, state=manifest.InstanceState.stopped)
     i = im.model(ctx)
     instance.apply(ctx, im)
@@ -212,7 +223,7 @@ def test_apply(ctx, tmp_path):
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx):
+def test_describe(ctx, installed):
     i = Instance("absent", "9.6")
     im = instance.describe(ctx, i)
     assert im is None
@@ -227,7 +238,7 @@ def test_describe(ctx):
     assert im.state.name == "stopped"
 
 
-def test_drop(ctx):
+def test_drop(ctx, installed):
     i = Instance("absent", "9.6")
     instance.drop(ctx, i)
 

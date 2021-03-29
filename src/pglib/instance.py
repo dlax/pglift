@@ -5,11 +5,21 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, manifest, util
+from . import conf, manifest, systemd, util
 from .ctx import BaseContext, Context
 from .model import Instance
 from .task import runner, task
 from .util import short_version
+
+
+def systemd_unit(instance: Instance) -> str:
+    """Return systemd unit service name for 'instance'.
+
+    >>> instance = Instance("test", "13")
+    >>> systemd_unit(instance)
+    'postgresql@13-test.service'
+    """
+    return f"postgresql@{instance.version}-{instance.name}.service"
 
 
 @task
@@ -47,6 +57,10 @@ def init(
     if data_checksums:
         opts["data_checksums"] = True
     ctx.pg_ctl.init(instance.datadir, **opts)
+
+    if ctx.settings.service_manager == "systemd":
+        systemd.enable(ctx, systemd_unit(instance))
+
     return True
 
 
@@ -57,6 +71,11 @@ def revert_init(
     **kwargs: Any,
 ) -> Any:
     """Un-initialize a PostgreSQL instance."""
+    if ctx.settings.service_manager == "systemd":
+        unit = systemd_unit(instance)
+        if systemd.is_enabled(ctx, unit):
+            systemd.disable(ctx, unit, now=True)
+
     settings = ctx.settings.postgresql
     ctx.run(["rm", "-rf", str(instance.path)], check=True)
     pgroot = settings.root
@@ -177,7 +196,10 @@ def start(
     logfile: Optional[Path] = None,
 ) -> None:
     """Start an instance."""
-    ctx.pg_ctl.start(instance.datadir, wait=wait, logfile=logfile)
+    if ctx.settings.service_manager is None:
+        ctx.pg_ctl.start(instance.datadir, wait=wait, logfile=logfile)
+    elif ctx.settings.service_manager == "systemd":
+        systemd.start(ctx, systemd_unit(instance))
     if wait:
         ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
@@ -200,7 +222,10 @@ def stop(
     wait: bool = True,
 ) -> None:
     """Stop an instance."""
-    ctx.pg_ctl.stop(instance.datadir, mode=mode, wait=wait)
+    if ctx.settings.service_manager is None:
+        ctx.pg_ctl.stop(instance.datadir, mode=mode, wait=wait)
+    elif ctx.settings.service_manager == "systemd":
+        systemd.stop(ctx, systemd_unit(instance))
     if wait:
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 
@@ -214,7 +239,10 @@ def restart(
     wait: bool = True,
 ) -> None:
     """Restart an instance."""
-    ctx.pg_ctl.restart(instance.datadir, mode=mode, wait=wait)
+    if ctx.settings.service_manager is None:
+        ctx.pg_ctl.restart(instance.datadir, mode=mode, wait=wait)
+    elif ctx.settings.service_manager == "systemd":
+        systemd.restart(ctx, systemd_unit(instance))
 
 
 @task
@@ -223,7 +251,10 @@ def reload(
     instance: Instance,
 ) -> None:
     """Reload an instance."""
-    ctx.pg_ctl.reload(instance.datadir)
+    if ctx.settings.service_manager is None:
+        ctx.pg_ctl.reload(instance.datadir)
+    elif ctx.settings.service_manager == "systemd":
+        systemd.reload(ctx, systemd_unit(instance))
 
 
 def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
