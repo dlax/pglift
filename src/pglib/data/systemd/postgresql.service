@@ -1,0 +1,20 @@
+[Unit]
+Description=PostgreSQL %i database server
+After=network.target
+
+[Service]
+Type=forking
+
+# Disable OOM kill on the postmaster
+OOMScoreAdjust=-1000
+Environment=PG_OOM_ADJUST_FILE=/proc/self/oom_score_adj
+Environment=PG_OOM_ADJUST_VALUE=0
+
+{environment}
+ExecStart={postgres_command} %I
+ExecReload=/bin/kill -HUP $MAINPID
+
+PIDFile={pid_directory}/postgresql-%i.pid
+
+[Install]
+WantedBy=multi-user.target

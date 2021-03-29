@@ -47,6 +47,7 @@ setup(
         "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],
         "test": ["check-manifest", "pytest", "pytest-cov"],
     },
+    include_package_data=True,
     package_data={
         "pglib": ["py.typed"],
     },
