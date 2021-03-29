@@ -1,9 +1,11 @@
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from pydantic import BaseSettings
+from pydantic import BaseSettings, Field
+from typing_extensions import Literal
 
 T = TypeVar("T", bound=BaseSettings)
 
@@ -94,12 +96,22 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     return {}
 
 
+def default_service_manager() -> Optional[Literal["systemd"]]:
+    if shutil.which("systemctl") is not None:
+        return "systemd"
+    return None
+
+
 @frozen
 class Settings(BaseSettings):
 
     postgresql: PostgreSQLSettings = PostgreSQLSettings()
     pgbackrest: PgBackRestSettings = PgBackRestSettings()
     prometheus: PrometheusSettings = PrometheusSettings()
+
+    service_manager: Optional[Literal["systemd"]] = Field(
+        default_factory=default_service_manager
+    )
 
     class Config:
         env_prefix = "pglib_"
