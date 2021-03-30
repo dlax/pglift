@@ -49,7 +49,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     if not configpath.exists():
         with configpath.open("w") as configfile:
             configfile.write(textwrap.dedent(content.format(**config)))
-        configpath.chmod(0o416)
+        configpath.chmod(0o600)
 
     if not queriespath.exists():
         queriespath.touch()
