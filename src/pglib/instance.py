@@ -201,6 +201,8 @@ def stop(
 ) -> None:
     """Stop an instance."""
     ctx.pg_ctl.stop(instance.datadir, mode=mode, wait=wait)
+    if wait:
+        ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 
 
 @task
