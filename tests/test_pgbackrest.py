@@ -1,4 +1,3 @@
-import contextlib
 import shutil
 from pathlib import Path
 
@@ -8,20 +7,13 @@ from pglib import instance as instance_mod
 from pglib import pgbackrest
 from pglib.conf import info as conf_info
 
+from . import instance_running
+
 
 @pytest.fixture
 def ctx(ctx):
     ctx.pm.unregister(pgbackrest)
     return ctx
-
-
-@contextlib.contextmanager
-def instance_running(ctx, instance):
-    instance_mod.start(ctx, instance)
-    try:
-        yield
-    finally:
-        instance_mod.stop(ctx, instance)
 
 
 @pytest.mark.skipif(
