@@ -51,7 +51,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     config = {
         "instance": instance,
         "dsn": dsn,
-        "role": "postgres",
+        "role": ctx.settings.postgresql.surole,
         "port": 9187,
         "queriespath": queriespath,
     }
