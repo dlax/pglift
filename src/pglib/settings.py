@@ -40,6 +40,9 @@ class PostgreSQLSettings(BaseSettings):
     waldir: str = "wal"
     """Path segment from instance base directory to WAL directory."""
 
+    pid_directory: Path = Path("/run/postgresql")
+    """Path to directory where postgres process PID file will be written."""
+
     class Config:
         env_prefix = "pglib_postgresql_"
 

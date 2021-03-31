@@ -18,7 +18,10 @@ def tmp_settings(tmp_path):
 
     return Settings.parse_obj(
         {
-            "postgresql": {"root": str(tmp_path)},
+            "postgresql": {
+                "root": str(tmp_path),
+                "pid_directory": str(tmp_path / "run"),
+            },
             "pgbackrest": {
                 "configpath": str(
                     pgbackrest_root / "{instance.version}" / "pgbackrest.conf"

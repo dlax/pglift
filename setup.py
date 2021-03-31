@@ -37,7 +37,7 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         "attrs",
-        "pgtoolkit >= 0.15.0",
+        "pgtoolkit >= 0.15.3",
         "pluggy",
         "pydantic",
         "typing-extensions",
