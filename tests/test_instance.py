@@ -91,9 +91,9 @@ def test_configure(ctx):
     }
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
-    assert line1 == "include_dir = 'pglib.conf.d'"
+    assert line1 == "include_dir = 'conf.pglib.d'"
 
-    configfpath = configdir / "pglib.conf.d" / "user.conf"
+    configfpath = configdir / "conf.pglib.d" / "user.conf"
     lines = configfpath.read_text().splitlines()
     assert "port = 5433" in lines
     assert "cluster_name = 'test'" in lines

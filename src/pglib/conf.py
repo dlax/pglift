@@ -23,7 +23,7 @@ def info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
     configuration file `name` and `include` is an include directive to be
     inserted in main 'postgresql.conf'.
     """
-    confd = Path(f"{pkgname}.conf.d")
+    confd = Path(f"conf.{pkgname}.d")
     include = f"include_dir = '{confd}'"
     confd = configdir / confd
     conffile = confd / name
