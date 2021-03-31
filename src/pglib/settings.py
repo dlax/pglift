@@ -89,14 +89,20 @@ class PrometheusSettings(BaseSettings):
 
 
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
-    configpath = os.getenv("SETTINGS")
-    if not configpath:
+    """Load settings values from 'SETTINGS' environment variable.
+
+    If this variable has a value starting with @, it is interpreted as a path
+    to a JSON file. Otherwise, a JSON serialization is expected.
+    """
+    env_settings = os.getenv("SETTINGS")
+    if not env_settings:
         return {}
-    encoding = settings.__config__.env_file_encoding
-    config = Path(configpath)
-    if config.exists():
-        return json.loads(config.read_text(encoding))  # type: ignore[no-any-return]
-    return {}
+    if env_settings.startswith("@"):
+        config = Path(env_settings[1:])
+        encoding = settings.__config__.env_file_encoding
+        # May raise FileNotFoundError, which is okay here.
+        env_settings = config.read_text(encoding)
+    return json.loads(env_settings)  # type: ignore[no-any-return]
 
 
 def default_service_manager() -> Optional[Literal["systemd"]]:

@@ -11,8 +11,8 @@ tmpdir=$(mktemp -d)
 echo "Working in $tmpdir"
 trap 'rm -rf $tmpdir' EXIT
 
-export SETTINGS=$tmpdir/config.json
-cat > "$SETTINGS" << EOF
+settings_path=$tmpdir/config.json
+cat > "$settings_path" << EOF
 {
   "postgresql": {
     "root": "$tmpdir/postgresql"
@@ -28,6 +28,7 @@ cat > "$SETTINGS" << EOF
   }
 }
 EOF
+export SETTINGS="@$settings_path"
 
 query="select setting from pg_settings where name = 'cluster_name';"
 

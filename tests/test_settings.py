@@ -5,6 +5,23 @@ import pytest
 from pglib.settings import Settings
 
 
+def test_json_config_settings_source(monkeypatch, tmp_path):
+    settings = tmp_path / "settings.json"
+    settings.write_text('{"postgresql": {"root": "/mnt/postgresql"}}')
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", f"@{settings}")
+        s = Settings()
+    assert s.postgresql.root == Path("/mnt/postgresql")
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", '{"postgresql": {"root": "/data/postgres"}}')
+        s = Settings()
+    assert s.postgresql.root == Path("/data/postgres")
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", f"@{tmp_path / 'notfound'}")
+        with pytest.raises(FileNotFoundError):
+            Settings()
+
+
 def test_settings(tmp_path):
     s = Settings()
     assert hasattr(s, "postgresql")

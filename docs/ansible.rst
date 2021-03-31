@@ -25,8 +25,7 @@ PostgreSQL instances:
 
 ::
 
-    $ export SETTINGS=/tmp/config.json
-    $ cat > "$SETTINGS" << EOF
+    $ cat > /tmp/config.json << EOF
     {
       "postgresql": {
         "root": "/tmp/postgres"
@@ -42,6 +41,7 @@ PostgreSQL instances:
       }
     }
     EOF
+    $ export SETTINGS="@/tmp/config.json"
 
 Then, run:
 
