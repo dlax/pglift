@@ -3,6 +3,8 @@ from typing import Any, Tuple
 
 from pgtoolkit import conf as pgconf
 
+from . import __name__ as pkgname
+
 
 def make(instance: str, **confitems: Any) -> pgconf.Configuration:
     """Return a :class:`pgtoolkit.conf.Configuration` for named `instance`
@@ -21,7 +23,7 @@ def info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
     configuration file `name` and `include` is an include directive to be
     inserted in main 'postgresql.conf'.
     """
-    confd = Path("pglib.conf.d")
+    confd = Path(f"{pkgname}.conf.d")
     include = f"include_dir = '{confd}'"
     confd = configdir / confd
     conffile = confd / name

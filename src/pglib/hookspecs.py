@@ -1,9 +1,10 @@
 import pluggy
 
+from . import __name__ as pkgname
 from .ctx import BaseContext
 from .model import Instance
 
-hookspec = pluggy.HookspecMarker("pglib")
+hookspec = pluggy.HookspecMarker(pkgname)
 
 
 @hookspec  # type: ignore[misc]
