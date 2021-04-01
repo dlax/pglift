@@ -15,7 +15,7 @@ def postgresql_systemd_unit_template(
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
-    content = systemd.template("postgresql").format(
+    content = systemd.template("postgresql.service").format(
         postgres_command=cmd,
         environment=environment,
         pid_directory=settings.pid_directory,
@@ -33,7 +33,7 @@ def revert_postgresql_systemd_unit_template(
 @task
 def postgres_exporter_systemd_unit_template(settings: PrometheusSettings) -> None:
     configpath = settings.configpath.replace("{instance.version}-{instance.name}", "%i")
-    content = systemd.template("postgres_exporter").format(
+    content = systemd.template("postgres_exporter.service").format(
         configpath=configpath,
         execpath=settings.execpath,
     )

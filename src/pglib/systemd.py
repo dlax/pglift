@@ -8,7 +8,7 @@ def template(
     name: str,
     datapath: Path = Path(__file__).parent / "data" / "systemd",
 ) -> str:
-    return (datapath / f"{name}.service").read_text()
+    return (datapath / name).read_text()
 
 
 def unit_path(name: str) -> Path:
