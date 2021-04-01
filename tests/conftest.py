@@ -58,6 +58,8 @@ def installed(tmp_settings, tmp_path):
 @pytest.fixture
 def ctx(tmp_settings):
     p = pm.PluginManager.get()
+    p.trace.root.setwriter(print)
+    p.enable_tracing()
     return Context(plugin_manager=p, settings=tmp_settings)
 
 
