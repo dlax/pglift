@@ -68,6 +68,10 @@ if __name__ == "__main__":  # pragma: nocover
         description="Manage installation of extra data files"
     )
     parser.add_argument(
+        "--settings",
+        help="custom settings file",
+    )
+    parser.add_argument(
         "--uninstall",
         action="store_true",
         default=False,
@@ -78,4 +82,7 @@ if __name__ == "__main__":  # pragma: nocover
     if args.uninstall:
         undo(SETTINGS)
     else:
-        do(SETTINGS)
+        env = None
+        if args.settings:
+            env = f"SETTINGS=@{args.settings}"
+        do(SETTINGS, env=env)
