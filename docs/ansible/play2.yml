@@ -12,12 +12,6 @@
           max_connections: 100
           shared_buffers: 1GB
           unix_socket_directories: /tmp
-    - name: backup production instance at 3 O'clock
-      cron:
-        name: backup prod postgres
-        job: python -m pglib.backup 13-prod backup
-        hour: "3"
-        minute: "0"
 
     - name: pre-production instance, now dropped
       postgresql_instance:

@@ -3,7 +3,10 @@ from pglib import pm
 
 def test_pluginmanager_get():
     p = pm.PluginManager.get(no_register=["prometheus"])
-    assert {name for name, _ in p.list_name_plugin()} == {"pglib.pgbackrest"}
+    assert {name for name, _ in p.list_name_plugin()} == {
+        "pglib.backup",
+        "pglib.pgbackrest",
+    }
 
 
 def test_pluginmanager_unregister_all():

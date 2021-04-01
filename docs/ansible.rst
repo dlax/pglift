@@ -118,13 +118,15 @@ pgBackRest is set up and initialized for started instances:
         ├── backup.info
         └── backup.info.copy
 
-And a crontab entry has been added for the production instance:
+And a systemd timer has been added for our instances:
 ::
 
-    $ crontab -l
-    #Ansible: backup prod postgres
-    0 3 * * * python -m pglib.backup --instance=prod backup
+    $ systemctl --user list-timers
+    NEXT                          LEFT    LAST PASSED UNIT                               ACTIVATES
+    Sat 2021-04-03 00:00:00 CEST  7h left n/a  n/a    postgresql-backup@13-preprod.timer postgresql-backup@13-preprod.service
+    Sat 2021-04-03 00:00:00 CEST  7h left n/a  n/a    postgresql-backup@13-prod.timer    postgresql-backup@13-prod.service
 
+    2 timers listed.
 
 In the following version of our previous playbook, we are dropping the "preprod"
 instance and set the "dev" one to be ``started`` while changing a bit its

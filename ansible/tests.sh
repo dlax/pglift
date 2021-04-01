@@ -40,6 +40,12 @@ export SETTINGS="@$settings_path"
 python -m pglib.install --settings="$settings_path"
 
 query="select setting from pg_settings where name = 'cluster_name';"
+list_timers () (
+    if type systemctl > /dev/null;
+    then
+        systemctl --no-pager --user list-timers
+    fi
+)
 
 set -x
 
@@ -50,7 +56,7 @@ psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # pr
 set +e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # dev
 set -e
-crontab -l
+list_timers
 
 ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
 
@@ -59,9 +65,9 @@ set +e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 set -e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
-crontab -l
+list_timers
 
 ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+list_timers
 
-crontab -l
 ps xf
