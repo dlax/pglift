@@ -3,7 +3,7 @@ from typing import Optional
 
 from . import __name__ as pkgname
 from . import systemd
-from .settings import PostgreSQLSettings, Settings
+from .settings import PostgreSQLSettings, PrometheusSettings, Settings
 from .task import runner, task
 
 
@@ -30,13 +30,32 @@ def revert_postgresql_systemd_unit_template(
     systemd.uninstall("postgresql@.service")
 
 
+@task
+def postgres_exporter_systemd_unit_template(settings: PrometheusSettings) -> None:
+    configpath = settings.configpath.replace("{instance.version}-{instance.name}", "%i")
+    content = systemd.template("postgres_exporter").format(
+        configpath=configpath,
+        execpath=settings.execpath,
+    )
+    systemd.install("postgres_exporter@.service", content)
+
+
+@postgres_exporter_systemd_unit_template.revert
+def revert_postgres_exporter_systemd_unit_template(
+    settings: PrometheusSettings,
+) -> None:
+    systemd.uninstall("postgres_exporter@.service")
+
+
 def do(settings: Settings, env: Optional[str] = None) -> None:
     with runner():
         postgresql_systemd_unit_template(settings.postgresql, env=env)
+        postgres_exporter_systemd_unit_template(settings.prometheus)
 
 
 def undo(settings: Settings) -> None:
     with runner():
+        revert_postgres_exporter_systemd_unit_template(settings.prometheus)
         revert_postgresql_systemd_unit_template(settings.postgresql)
 
 

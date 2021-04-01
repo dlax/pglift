@@ -50,9 +50,9 @@ def installed(tmp_settings, tmp_path):
 
     custom_settings = tmp_path / "settings.json"
     custom_settings.write_text(tmp_settings.json())
-    install.do(env=f"SETTINGS=@{custom_settings}")
+    install.do(tmp_settings, env=f"SETTINGS=@{custom_settings}")
     yield
-    install.undo()
+    install.undo(tmp_settings)
 
 
 @pytest.fixture

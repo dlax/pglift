@@ -1,0 +1,26 @@
+[Unit]
+Description=Prometheus exporter for PostgreSQL %i database server metrics
+Documentation=https://github.com/wrouesnel/postgres_exporter
+Requires=postgresql@%i.service
+After=postgresql@%i.service
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+EnvironmentFile=-{configpath}
+
+ExecStart={execpath} $POSTGRES_EXPORTER_OPTS
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
