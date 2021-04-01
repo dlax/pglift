@@ -1,7 +1,7 @@
 import textwrap
 from pathlib import Path
 
-from . import hookimpl
+from . import hookimpl, systemd
 from .ctx import BaseContext
 from .model import Instance
 from .settings import PrometheusSettings
@@ -14,6 +14,16 @@ def _configpath(instance: Instance, settings: PrometheusSettings) -> Path:
 
 def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
     return Path(settings.queriespath.format(instance=instance))
+
+
+def systemd_unit(instance: Instance) -> str:
+    """Return systemd unit service name for 'instance'.
+
+    >>> instance = Instance("test", "13")
+    >>> systemd_unit(instance)
+    'postgres_exporter@13-test.service'
+    """
+    return f"postgres_exporter@{instance.version}-{instance.name}.service"
 
 
 @task
@@ -54,10 +64,18 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     if not queriespath.exists():
         queriespath.touch()
 
+    if ctx.settings.service_manager == "systemd":
+        systemd.enable(ctx, systemd_unit(instance))
+
 
 @setup.revert
 def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup postgres_exporter for Prometheus"""
+    if ctx.settings.service_manager == "systemd":
+        unit = systemd_unit(instance)
+        if systemd.is_enabled(ctx, unit):
+            systemd.disable(ctx, unit, now=True)
+
     settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
 
@@ -73,6 +91,20 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
 def instance_configure(ctx: BaseContext, instance: Instance) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     setup(ctx, instance)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_start(ctx: BaseContext, instance: Instance) -> None:
+    """Start postgres_exporter service."""
+    if ctx.settings.service_manager == "systemd":
+        systemd.start(ctx, systemd_unit(instance))
+
+
+@hookimpl  # type: ignore[misc]
+def instance_stop(ctx: BaseContext, instance: Instance) -> None:
+    """Stop postgres_exporter service."""
+    if ctx.settings.service_manager == "systemd":
+        systemd.stop(ctx, systemd_unit(instance))
 
 
 @hookimpl  # type: ignore[misc]
