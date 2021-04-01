@@ -105,7 +105,7 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     return json.loads(env_settings)  # type: ignore[no-any-return]
 
 
-def default_service_manager() -> Optional[Literal["systemd"]]:
+def maybe_systemd() -> Optional[Literal["systemd"]]:
     if shutil.which("systemctl") is not None:
         return "systemd"
     return None
@@ -118,9 +118,8 @@ class Settings(BaseSettings):
     pgbackrest: PgBackRestSettings = PgBackRestSettings()
     prometheus: PrometheusSettings = PrometheusSettings()
 
-    service_manager: Optional[Literal["systemd"]] = Field(
-        default_factory=default_service_manager
-    )
+    service_manager: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
+    scheduler: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
 
     class Config:
         env_prefix = "pglib_"
