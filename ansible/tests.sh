@@ -15,7 +15,8 @@ settings_path=$tmpdir/config.json
 cat > "$settings_path" << EOF
 {
   "postgresql": {
-    "root": "$tmpdir/postgresql"
+    "root": "$tmpdir/postgresql",
+    "pid_directory": "$tmpdir/run/postgresql"
   },
   "pgbackrest": {
     "configpath": "$tmpdir/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",

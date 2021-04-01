@@ -28,7 +28,8 @@ PostgreSQL instances:
     $ cat > /tmp/config.json << EOF
     {
       "postgresql": {
-        "root": "/tmp/postgres"
+        "root": "/tmp/postgres",
+        "pid_directory": "/tmp/run"
       },
       "pgbackrest": {
         "configpath": "/tmp/pgbackrest-{instance.version}-{instance.name}.conf",
