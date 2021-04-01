@@ -1,0 +1,8 @@
+[Unit]
+Description=Backup %i PostgreSQL database instance
+After=postgresql@%i.service
+
+[Service]
+Type=oneshot
+{environment}
+ExecStart={python} -m pglib.backup %i backup

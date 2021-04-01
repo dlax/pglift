@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup %i PostgreSQL database instance
+Requires=postgresql@%i.service
+After=postgresql@%i.service
+
+[Timer]
+OnCalendar={calendar}
+Persitent=true
+
+[Install]
+WantedBy=timers.target

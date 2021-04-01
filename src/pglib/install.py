@@ -45,14 +45,39 @@ def revert_postgres_exporter_systemd_unit_template(
     systemd.uninstall("postgres_exporter@.service")
 
 
+@task
+def postgresql_backup_systemd_templates(*, env: Optional[str] = None) -> None:
+    environment = ""
+    if env:
+        environment = f"\nEnvironment={env}\n"
+    service_content = systemd.template("postgresql-backup.service").format(
+        environment=environment,
+        python=sys.executable,
+    )
+    systemd.install("postgresql-backup@.service", service_content)
+    timer_content = systemd.template("postgresql-backup.timer").format(
+        # TODO: use a setting for that value
+        calendar="daily",
+    )
+    systemd.install("postgresql-backup@.timer", timer_content)
+
+
+@postgresql_backup_systemd_templates.revert
+def revert_postgresql_backup_systemd_templates(*, env: Optional[str] = None) -> None:
+    systemd.uninstall("postgresql-backup@.service")
+    systemd.uninstall("postgresql-backup@.timer")
+
+
 def do(settings: Settings, env: Optional[str] = None) -> None:
     with runner():
         postgresql_systemd_unit_template(settings.postgresql, env=env)
         postgres_exporter_systemd_unit_template(settings.prometheus)
+        postgresql_backup_systemd_templates(env=env)
 
 
 def undo(settings: Settings) -> None:
     with runner():
+        revert_postgresql_backup_systemd_templates()
         revert_postgres_exporter_systemd_unit_template(settings.prometheus)
         revert_postgresql_systemd_unit_template(settings.postgresql)
 

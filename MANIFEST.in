@@ -4,7 +4,7 @@ include LICENSE
 include setup.py
 include tox.ini
 
-recursive-include src py.typed *.service
+recursive-include src py.typed *.service *.timer
 recursive-include docs *.rst conf.py Makefile .gitignore
 recursive-include docs/ansible *.yml
 recursive-include docs/api *.rst
