@@ -68,4 +68,6 @@ def instance(ctx, installed, tmp_path):
     i = Instance.default_version("test", ctx=ctx)
     instance_mod.init(ctx, i)
     instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path))
-    return i
+    yield i
+    if i.exists():
+        instance_mod.drop(ctx, i)
