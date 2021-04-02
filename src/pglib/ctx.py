@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
@@ -5,6 +6,7 @@ from typing import Any, Optional, Sequence, Union
 from pgtoolkit import ctl
 from pluggy import PluginManager
 
+from . import __name__ as pkgname
 from . import cmd
 from .settings import SETTINGS, Settings
 from .types import CompletedProcess
@@ -25,6 +27,26 @@ class BaseContext(ABC):
         self.pm = plugin_manager
 
     @abstractmethod
+    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    @abstractmethod
+    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    @abstractmethod
+    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    @abstractmethod
+    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    @abstractmethod
+    def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    @abstractmethod
     def run(
         self,
         args: Sequence[str],
@@ -38,6 +60,14 @@ class BaseContext(ABC):
 
 class Context(BaseContext):
     """Default execution context."""
+
+    _logger = logging.getLogger(pkgname)
+
+    debug = _logger.debug
+    info = _logger.info
+    warning = _logger.warning
+    error = _logger.error
+    exception = _logger.exception
 
     @staticmethod
     def run(args: Sequence[str], **kwargs: Any) -> CompletedProcess:
