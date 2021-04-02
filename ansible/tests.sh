@@ -6,10 +6,17 @@
 
 set -e
 
+cleanup () (
+    set +e
+    unset -v SETTINGS
+    python -m pglib.install --uninstall
+    rm -rf "$tmpdir"
+)
+trap cleanup EXIT
+
 tmpdir=$(mktemp -d)
 
 echo "Working in $tmpdir"
-trap 'rm -rf $tmpdir' EXIT
 
 settings_path=$tmpdir/config.json
 cat > "$settings_path" << EOF
@@ -30,6 +37,7 @@ cat > "$settings_path" << EOF
 }
 EOF
 export SETTINGS="@$settings_path"
+python -m pglib.install --settings="$settings_path"
 
 query="select setting from pg_settings where name = 'cluster_name';"
 
