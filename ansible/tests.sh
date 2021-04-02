@@ -12,7 +12,7 @@ cleanup () (
     python -m pglib.install --uninstall
     rm -rf "$tmpdir"
 )
-trap cleanup EXIT
+trap cleanup EXIT INT
 
 tmpdir=$(mktemp -d)
 
