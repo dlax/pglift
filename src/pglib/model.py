@@ -23,6 +23,23 @@ class Instance:
     settings: Settings = attr.ib(default=SETTINGS, validator=instance_of(Settings))
 
     @classmethod
+    def from_stanza(cls, stanza: str, **kwargs: Any) -> "Instance":
+        """Build an Instance from a '<version>-<name>' string.
+
+        >>> Instance.from_stanza('9.6-main')  # doctest: +ELLIPSIS
+        Instance(name='main', version='9.6', ...)
+        >>> Instance.from_stanza('bad')
+        Traceback (most recent call last):
+            ...
+        ValueError: invalid stanza 'bad'
+        """
+        try:
+            version, name = stanza.split("-", 1)
+        except ValueError:
+            raise ValueError(f"invalid stanza '{stanza}'") from None
+        return cls(name, version, **kwargs)
+
+    @classmethod
     def default_version(cls, name: str, ctx: BaseContext, **kwargs: Any) -> "Instance":
         """Build an Instance by guessing its version from installed PostgreSQL."""
         try:
