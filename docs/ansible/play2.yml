@@ -15,7 +15,7 @@
     - name: backup production instance at 3 O'clock
       cron:
         name: backup prod postgres
-        job: python -m pglib.backup --instance=prod backup
+        job: python -m pglib.backup 13-prod backup
         hour: "3"
         minute: "0"
 

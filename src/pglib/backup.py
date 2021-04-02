@@ -7,8 +7,9 @@ if __name__ == "__main__":  # pragma: nocover
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version")
-    parser.add_argument("--instance", metavar="NAME", required=True)
+    parser.add_argument(
+        "stanza", metavar="<version>-<name>", help="instance identifier"
+    )
     subparsers = parser.add_subparsers()
 
     def do_backup(
@@ -33,8 +34,8 @@ if __name__ == "__main__":  # pragma: nocover
 
     args = parser.parse_args()
     ctx = Context(plugin_manager=PluginManager.get())
-    if args.version:
-        instance = Instance(args.instance, args.version)
-    else:
-        instance = Instance.default_version(args.instance, ctx=ctx)
+    try:
+        instance = Instance.from_stanza(args.stanza)
+    except ValueError as e:
+        parser.error(str(e))
     args.func(ctx, instance, args)
