@@ -1,7 +1,6 @@
 import sys
 from typing import Optional
 
-from . import __name__ as pkgname
 from . import systemd
 from .settings import PostgreSQLSettings, PrometheusSettings, Settings
 from .task import runner, task
@@ -11,12 +10,11 @@ from .task import runner, task
 def postgresql_systemd_unit_template(
     settings: PostgreSQLSettings, *, env: Optional[str] = None
 ) -> None:
-    cmd = " ".join([sys.executable, "-m", f"{pkgname}.postgres"])
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
     content = systemd.template("postgresql.service").format(
-        postgres_command=cmd,
+        python=sys.executable,
         environment=environment,
         pid_directory=settings.pid_directory,
     )
