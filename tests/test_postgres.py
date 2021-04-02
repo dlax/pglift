@@ -20,8 +20,9 @@ def test_main(monkeypatch, ctx, instance):
             calls.append(cmd)
             self.pid = 123
 
-    monkeypatch.setattr("subprocess.Popen", Popen)
-    postgres.main([str(instance)], ctx=ctx)
+    with monkeypatch.context() as m:
+        m.setattr("subprocess.Popen", Popen)
+        postgres.main([str(instance)], ctx=ctx)
     assert calls == [[str(ctx.pg_ctl.bindir / "postgres"), "-D", str(instance.datadir)]]
     assert (
         ctx.settings.postgresql.pid_directory

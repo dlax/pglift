@@ -10,15 +10,16 @@ from pglib.settings import PostgreSQLSettings, PrometheusSettings
 def fake_systemd_install(monkeypatch):
     install_calls = []
     uninstall_calls = []
-    monkeypatch.setattr(
-        "pglib.systemd.install",
-        lambda *args: install_calls.append(args),
-    )
-    monkeypatch.setattr(
-        "pglib.systemd.uninstall",
-        lambda *args: uninstall_calls.append(args),
-    )
-    return install_calls, uninstall_calls
+    with monkeypatch.context() as m:
+        m.setattr(
+            "pglib.systemd.install",
+            lambda *args: install_calls.append(args),
+        )
+        m.setattr(
+            "pglib.systemd.uninstall",
+            lambda *args: uninstall_calls.append(args),
+        )
+        yield install_calls, uninstall_calls
 
 
 def test_postgresql_systemd_unit_template(fake_systemd_install, tmp_settings):

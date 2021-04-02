@@ -5,8 +5,9 @@ from pglib import systemd
 
 @pytest.fixture
 def xdg_data_home(monkeypatch, tmp_path):
-    monkeypatch.setattr("pglib.systemd.xdg_data_home", lambda: tmp_path)
-    return tmp_path
+    with monkeypatch.context() as m:
+        m.setattr("pglib.systemd.xdg_data_home", lambda: tmp_path)
+        yield tmp_path
 
 
 def test_unit_path(xdg_data_home):
