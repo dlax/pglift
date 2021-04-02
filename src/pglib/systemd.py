@@ -47,6 +47,13 @@ def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
     ctx.run(cmd, check=True)
 
 
+def status(ctx: BaseContext, unit: str, *, full: bool = True) -> str:
+    opts = []
+    if full:
+        opts.append("--full")
+    return ctx.run(["systemctl", "--user"] + opts + ["status", unit], check=True).stdout
+
+
 def start(ctx: BaseContext, unit: str) -> None:
     ctx.run(["systemctl", "--user", "start", unit], check=True)
 

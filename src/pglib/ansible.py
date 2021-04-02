@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Mapping, Optional, Sequence, Tuple
 
 from typing_extensions import Protocol
