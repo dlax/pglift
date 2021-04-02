@@ -5,6 +5,7 @@ from .pm import PluginManager
 
 if __name__ == "__main__":  # pragma: nocover
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -38,4 +39,7 @@ if __name__ == "__main__":  # pragma: nocover
         instance = Instance.from_stanza(args.stanza)
     except ValueError as e:
         parser.error(str(e))
+    if not instance.exists():
+        print(f"error: instance {instance} not found", file=sys.stderr)
+        sys.exit(1)
     args.func(ctx, instance, args)
