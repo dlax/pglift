@@ -1,7 +1,7 @@
 import argparse
 import subprocess
 import sys
-from typing import List, Optional
+from typing import Optional, Sequence
 
 from .ctx import Context
 from .model import Instance
@@ -15,7 +15,7 @@ parser.add_argument(
 
 
 def main(
-    argv: List[str] = sys.argv[1:],
+    argv: Optional[Sequence[str]] = None,
     *,
     ctx: Optional[Context] = None,
 ) -> None:
