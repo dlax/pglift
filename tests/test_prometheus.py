@@ -25,8 +25,6 @@ def test(ctx, installed, instance):
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
-
-    if ctx.settings.service_manager == "systemd":
         try:
             # Temporarily register back prometheus' hooks so that service
             # gets started at instance startup.
