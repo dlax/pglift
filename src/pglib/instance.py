@@ -73,8 +73,7 @@ def revert_init(
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(instance)
-        if systemd.is_enabled(ctx, unit):
-            systemd.disable(ctx, unit, now=True)
+        systemd.disable(ctx, unit, now=True)
 
     settings = ctx.settings.postgresql
     ctx.run(["rm", "-rf", str(instance.path)], check=True)

@@ -73,8 +73,7 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup postgres_exporter for Prometheus"""
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(instance)
-        if systemd.is_enabled(ctx, unit):
-            systemd.disable(ctx, unit, now=True)
+        systemd.disable(ctx, unit, now=True)
 
     settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
