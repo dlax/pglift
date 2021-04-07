@@ -2,9 +2,10 @@ import json
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseSettings, Field
+from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal
 
 T = TypeVar("T", bound=BaseSettings)
@@ -125,12 +126,12 @@ class Settings(BaseSettings):
         env_prefix = "pglib_"
 
         @classmethod
-        def customise_sources(  # type: ignore[no-untyped-def]
+        def customise_sources(
             cls,
-            init_settings,
-            env_settings,
-            file_secret_settings,
-        ):
+            init_settings: SettingsSourceCallable,
+            env_settings: SettingsSourceCallable,
+            file_secret_settings: SettingsSourceCallable,
+        ) -> Tuple[SettingsSourceCallable, ...]:
             return (
                 init_settings,
                 json_config_settings_source,
