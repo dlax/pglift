@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
@@ -76,7 +77,7 @@ def revert_init(
         systemd.disable(ctx, unit, now=True)
 
     settings = ctx.settings.postgresql
-    ctx.run(["rm", "-rf", str(instance.path)], check=True)
+    shutil.rmtree(instance.path)
     pgroot = settings.root
     try:
         next(pgroot.iterdir())
