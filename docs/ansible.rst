@@ -48,6 +48,7 @@ Then, proceed with post-installation step (preparing systemd templates, in
 particular):
 
 ::
+
     (.venv) $ python -m pglib.install --settings=/tmp/config.json
 
 Finally, run:
