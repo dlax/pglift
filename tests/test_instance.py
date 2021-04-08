@@ -22,7 +22,7 @@ def ctx(ctx):
 
 def test_init(ctx, installed):
     i = Instance.default_version("test", ctx=ctx)
-    ret = instance.init(ctx, i, data_checksums=True)
+    ret = instance.init(ctx, i)
     assert ret
     assert i.datadir.exists()
     assert i.waldir.exists()

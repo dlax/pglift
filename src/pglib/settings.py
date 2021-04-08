@@ -29,6 +29,9 @@ class PostgreSQLSettings(BaseSettings):
     locale: Optional[str] = "C"
     """Instance locale as used by initdb."""
 
+    data_checksums: bool = False
+    """Use checksums on data pages."""
+
     surole: str = "postgres"
     """User name of instance super-user."""
 

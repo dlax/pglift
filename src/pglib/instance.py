@@ -24,12 +24,7 @@ def systemd_unit(instance: Instance) -> str:
 
 
 @task
-def init(
-    ctx: BaseContext,
-    instance: Instance,
-    *,
-    data_checksums: bool = False,
-) -> bool:
+def init(ctx: BaseContext, instance: Instance) -> bool:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
     try:
@@ -55,7 +50,7 @@ def init(
     }
     if settings.locale:
         opts["locale"] = settings.locale
-    if data_checksums:
+    if settings.data_checksums:
         opts["data_checksums"] = True
     initdb_auth = settings.initdb_auth
     if initdb_auth:
@@ -74,11 +69,7 @@ def init(
 
 
 @init.revert
-def revert_init(
-    ctx: BaseContext,
-    instance: Instance,
-    **kwargs: Any,
-) -> Any:
+def revert_init(ctx: BaseContext, instance: Instance) -> Any:
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(instance)

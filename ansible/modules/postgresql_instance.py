@@ -28,11 +28,6 @@ options:
       - If not set, version is guessed from installed PostgreSQL.
     type: str
     required: false
-  init_options:
-    description:
-      - Options passed to initdb (e.g. data_checksums)
-    type: dict
-    required: false
   state:
     description:
       - instance state
@@ -63,9 +58,6 @@ EXAMPLES = """
     ssl:
       - /etc/certs/db.cert
       - /etc/certs/db.key
-    init_options:
-      data_checksums: true
-      locale: fr_FR.UTF-8
     configuration:
       listen_addresses: "*"
       shared_buffers: "1GB"
@@ -137,7 +129,6 @@ def run_module() -> None:
             "required": False,
             "default": False,
         },
-        "init_options": {"type": "dict", "required": False},
         "configuration": {"type": "dict", "required": False},
     }
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
@@ -155,7 +146,6 @@ def run_module() -> None:
     result["state"] = state = module.params["state"]
 
     status = instance_mod.status(ctx, instance)
-    init_options = module.params["init_options"] or {}
     confitems = module.params["configuration"] or {}
     ssl = module.params["ssl"] or False
     try:
@@ -165,7 +155,7 @@ def run_module() -> None:
                     instance_mod.stop(ctx, instance)
                 instance_mod.drop(ctx, instance)
             else:
-                result["changed"] = instance_mod.init(ctx, instance, **init_options)
+                result["changed"] = instance_mod.init(ctx, instance)
                 result["datadir"] = str(instance.datadir)
                 result["waldir"] = str(instance.waldir)
                 result["configuration_changes"] = instance_mod.configure(
