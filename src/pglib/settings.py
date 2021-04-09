@@ -131,7 +131,7 @@ class PostgreSQLSettings(BaseSettings):
 class PgBackRestSettings(BaseSettings):
     """Settings for pgBackRest."""
 
-    execpath: str = "/usr/bin/pgbackrest"
+    execpath: Path = Path("/usr/bin/pgbackrest")
     """Path to the pbBackRest executable."""
 
     configpath: ConfigPath = ConfigPath(
@@ -153,7 +153,7 @@ class PgBackRestSettings(BaseSettings):
 class PrometheusSettings(BaseSettings):
     """Settings for Prometheus postgres_exporter"""
 
-    execpath: str = "/usr/bin/prometheus-postgres-exporter"
+    execpath: Path = Path("/usr/bin/prometheus-postgres-exporter")
     """Path to the postgres_exporter executable."""
 
     configpath: ConfigPath = ConfigPath(

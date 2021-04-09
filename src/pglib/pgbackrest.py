@@ -28,9 +28,11 @@ def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> Li
     """
     configpath = _configpath(instance, settings)
     stanza = _stanza(instance)
-    return [settings.execpath, f"--config={configpath}", f"--stanza={stanza}"] + list(
-        args
-    )
+    return [
+        str(settings.execpath),
+        f"--config={configpath}",
+        f"--stanza={stanza}",
+    ] + list(args)
 
 
 def _configpath(instance: Instance, settings: PgBackRestSettings) -> Path:
