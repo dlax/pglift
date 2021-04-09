@@ -10,34 +10,10 @@ from pglib.settings import Settings
 
 @pytest.fixture
 def tmp_settings(tmp_path):
-
-    pgbackrest_root = tmp_path / "pgbackrest"
-    pgbackrest_root.mkdir()
-
-    prometheus_root = tmp_path / "prometheus"
-    prometheus_root.mkdir()
-
     return Settings.parse_obj(
         {
-            "postgresql": {
-                "root": str(tmp_path),
-                "pid_directory": str(tmp_path / "run"),
-            },
-            "pgbackrest": {
-                "configpath": str(
-                    pgbackrest_root / "{instance.version}" / "pgbackrest.conf"
-                ),
-                "directory": str(tmp_path / "{instance.version}" / "backups"),
-                "logpath": str(pgbackrest_root / "{instance.version}" / "logs"),
-            },
-            "prometheus": {
-                "configpath": str(
-                    prometheus_root / "{instance.version}" / "postgres_exporter.conf"
-                ),
-                "queriespath": str(
-                    prometheus_root / "{instance.version}" / "queries.yaml"
-                ),
-            },
+            "prefix": str(tmp_path),
+            "postgresql": {"root": str(tmp_path / "postgres")},
         }
     )
 
