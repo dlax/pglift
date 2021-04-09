@@ -1,5 +1,4 @@
 import subprocess
-import time
 
 import psycopg2
 import pytest
@@ -129,7 +128,6 @@ def test_init_surole_pwfile(ctx, tmp_path, installed):
     instance.configure(ctx1, i, unix_socket_directories=str(tmp_path))
 
     with instance_running(ctx1, i):
-        time.sleep(1)  # wait for the database system to start up
         connargs = {
             "user": ctx1.settings.postgresql.surole,
             "host": str(tmp_path),
