@@ -186,9 +186,9 @@ def backup_command(
     Ref.: https://pgbackrest.org/command.html#command-backup
 
     >>> instance = Instance("backmeup", "13")
-    >>> print(" ".join(backup_command(instance, type=BackupType.full)))  # doctest: +NORMALIZE_WHITESPACE
+    >>> print(" ".join(backup_command(instance, type=BackupType.full)))  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
     /usr/bin/pgbackrest
-        --config=/etc/pgbackrest/pgbackrest-13-backmeup.conf
+        --config=...etc/pgbackrest/pgbackrest-13-backmeup.conf
         --stanza=13-backmeup --type=full
         --repo1-retention-full=9999999
         --repo1-retention-archive=9999999
@@ -232,9 +232,9 @@ def expire_command(
     Ref.: https://pgbackrest.org/command.html#command-expire
 
     >>> instance = Instance("backmeup", "13")
-    >>> print(" ".join(expire_command(instance)))  # doctest: +NORMALIZE_WHITESPACE
+    >>> print(" ".join(expire_command(instance)))  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
     /usr/bin/pgbackrest
-        --config=/etc/pgbackrest/pgbackrest-13-backmeup.conf
+        --config=...etc/pgbackrest/pgbackrest-13-backmeup.conf
         --stanza=13-backmeup
         expire
     """

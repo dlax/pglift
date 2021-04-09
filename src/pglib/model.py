@@ -66,8 +66,8 @@ class Instance:
         """Base directory path for this instance.
 
         >>> i = Instance("main", "12")
-        >>> print(i.path)
-        /var/lib/pgsql/12/main
+        >>> print(i.path)  # doctest: +ELLIPSIS
+        /.../var/lib/pgsql/12/main
         """
         pg_settings = self.settings.postgresql
         return pg_settings.root / pg_settings.instancedir.format(
@@ -79,8 +79,8 @@ class Instance:
         """Path to data directory for this instance.
 
         >>> i = Instance("main", "12")
-        >>> print(i.datadir)
-        /var/lib/pgsql/12/main/data
+        >>> print(i.datadir)  # doctest: +ELLIPSIS
+        /.../var/lib/pgsql/12/main/data
         """
         return self.path / self.settings.postgresql.datadir
 
@@ -89,8 +89,8 @@ class Instance:
         """Path to WAL directory for this instance.
 
         >>> i = Instance("main", "12")
-        >>> print(i.waldir)
-        /var/lib/pgsql/12/main/wal
+        >>> print(i.waldir)  # doctest: +ELLIPSIS
+        /.../var/lib/pgsql/12/main/wal
         """
         return self.path / self.settings.postgresql.waldir
 

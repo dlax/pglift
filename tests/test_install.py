@@ -24,13 +24,13 @@ def fake_systemd_install(monkeypatch):
 
 def test_postgresql_systemd_unit_template(fake_systemd_install, tmp_settings):
     install_calls, uninstall_calls = fake_systemd_install
-    settings = PostgreSQLSettings()
+    settings = PostgreSQLSettings(pid_directory="/pids")
     install.postgresql_systemd_unit_template(settings, env="SETTINGS=@settings.json")
     ((name, content),) = install_calls
     assert name == "postgresql@.service"
     lines = content.splitlines()
     assert "Environment=SETTINGS=@settings.json" in lines
-    assert "PIDFile=/run/postgresql/postgresql-%i.pid" in lines
+    assert "PIDFile=/pids/postgresql-%i.pid" in lines
     for line in lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
@@ -44,12 +44,14 @@ def test_postgresql_systemd_unit_template(fake_systemd_install, tmp_settings):
 
 def test_postgres_exporter_systemd_unit_template(fake_systemd_install):
     install_calls, uninstall_calls = fake_systemd_install
-    settings = PrometheusSettings()
+    settings = PrometheusSettings(
+        configpath="/confs/postgres_exporter-{instance.version}-{instance.name}.conf"
+    )
     install.postgres_exporter_systemd_unit_template(settings)
     ((name, content),) = install_calls
     assert name == "postgres_exporter@.service"
     lines = content.splitlines()
-    assert "EnvironmentFile=-/etc/prometheus/postgres_exporter-%i.conf" in lines
+    assert "EnvironmentFile=-/confs/postgres_exporter-%i.conf" in lines
     assert (
         "ExecStart=/usr/bin/prometheus-postgres-exporter $POSTGRES_EXPORTER_OPTS"
         in lines

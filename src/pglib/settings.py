@@ -1,14 +1,26 @@
 import json
 import os
 import shutil
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from pathlib import Path, PosixPath
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, root_validator
 from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
+from .util import xdg_data_home
 
 T = TypeVar("T", bound=BaseSettings)
 
@@ -18,6 +30,57 @@ def frozen(cls: Type[T]) -> Type[T]:
     return cls
 
 
+def default_prefix(uid: int) -> Path:
+    """Return the default path prefix for 'uid'.
+
+    >>> default_prefix(0)
+    PosixPath('/')
+    >>> default_prefix(42)  # doctest: +ELLIPSIS
+    PosixPath('/home/.../.local/share/pglib')
+    """
+    if uid == 0:
+        return Path("/")
+    return xdg_data_home() / pkgname
+
+
+class PrefixedPath(PosixPath):
+    basedir = Path("")
+
+    @classmethod
+    def __get_validators__(cls) -> Iterator[Callable[[Path], "PrefixedPath"]]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: Path) -> "PrefixedPath":
+        if not isinstance(value, cls):
+            value = cls(value)
+        return value
+
+    def prefix(self, prefix: Path) -> Path:
+        """Return the path prefixed if is not yet absolute.
+
+        >>> PrefixedPath("documents").prefix("/home/alice")
+        PosixPath('/home/alice/documents')
+        >>> PrefixedPath("/root").prefix("/whatever")
+        PosixPath('/root')
+        """
+        if self.is_absolute():
+            return Path(self)
+        return prefix / self.basedir / self
+
+
+class ConfigPath(PrefixedPath):
+    basedir = Path("etc")
+
+
+class RunPath(PrefixedPath):
+    basedir = Path("run")
+
+
+class DataPath(PrefixedPath):
+    basedir = Path("var/lib")
+
+
 @frozen
 class PostgreSQLSettings(BaseSettings):
     """Settings for PostgreSQL."""
@@ -25,7 +88,7 @@ class PostgreSQLSettings(BaseSettings):
     versions: List[str] = ["13", "12", "11", "10", "9.6"]
     """Available PostgreSQL versions."""
 
-    root: Path = Path("/var/lib/pgsql")
+    root: DataPath = DataPath("pgsql")
     """Root directory for all managed instances."""
 
     locale: Optional[str] = "C"
@@ -46,7 +109,7 @@ class PostgreSQLSettings(BaseSettings):
     waldir: str = "wal"
     """Path segment from instance base directory to WAL directory."""
 
-    pid_directory: Path = Path("/run/postgresql")
+    pid_directory: RunPath = RunPath("postgresql")
     """Path to directory where postgres process PID file will be written."""
 
     initdb_auth: Optional[
@@ -71,15 +134,15 @@ class PgBackRestSettings(BaseSettings):
     execpath: str = "/usr/bin/pgbackrest"
     """Path to the pbBackRest executable."""
 
-    configpath: Path = Path(
-        "/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
+    configpath: ConfigPath = ConfigPath(
+        "pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
     )
     """Path to the config file."""
 
-    directory: Path = Path("/var/lib/pgbackrest/{instance.version}-{instance.name}")
+    directory: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}")
     """Path to the directory where backups are stored."""
 
-    logpath: Path = Path("/var/lib/pgbackrest/{instance.version}-{instance.name}/logs")
+    logpath: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}/logs")
     """Path where log files are stored."""
 
     class Config:
@@ -93,13 +156,13 @@ class PrometheusSettings(BaseSettings):
     execpath: str = "/usr/bin/prometheus-postgres-exporter"
     """Path to the postgres_exporter executable."""
 
-    configpath: Path = Path(
-        "/etc/prometheus/postgres_exporter-{instance.version}-{instance.name}.conf"
+    configpath: ConfigPath = ConfigPath(
+        "prometheus/postgres_exporter-{instance.version}-{instance.name}.conf"
     )
     """Path to the config file."""
 
-    queriespath: Path = Path(
-        "/etc/prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+    queriespath: ConfigPath = ConfigPath(
+        "prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
     )
     """Path to the queries file."""
 
@@ -139,6 +202,26 @@ class Settings(BaseSettings):
 
     service_manager: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
     scheduler: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
+
+    prefix: Path = default_prefix(os.getuid())
+    """Path prefix for configuration and data files."""
+
+    @root_validator
+    def __prefix_paths(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Prefix child settings fields with the global 'prefix'."""
+        prefix = values["prefix"]
+        for key, child in values.items():
+            if not isinstance(child, BaseSettings):
+                continue
+            update = {
+                fn: getattr(child, fn).prefix(prefix)
+                for fn, mf in child.__fields__.items()
+                # mf.types_ may be a typing.* class, which is not a type.
+                if isinstance(mf.type_, type) and issubclass(mf.type_, PrefixedPath)
+            }
+            if update:
+                values[key] = child.copy(update=update)
+        return values
 
     class Config:
         env_prefix = f"{pkgname}_"
