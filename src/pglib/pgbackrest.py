@@ -106,7 +106,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
 def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup pgBackRest"""
     settings = ctx.settings.pgbackrest
-    configpath = Path(settings.configpath.format(instance=instance))
+    configpath = _configpath(instance, settings)
     directory = Path(settings.directory.format(instance=instance))
 
     if configpath.exists():
