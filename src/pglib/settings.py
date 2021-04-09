@@ -8,6 +8,8 @@ from pydantic import BaseSettings, Field
 from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal
 
+from . import __name__ as pkgname
+
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -59,7 +61,7 @@ class PostgreSQLSettings(BaseSettings):
     """
 
     class Config:
-        env_prefix = "pglib_postgresql_"
+        env_prefix = f"{pkgname}_postgresql_"
 
 
 @frozen
@@ -81,7 +83,7 @@ class PgBackRestSettings(BaseSettings):
     """Path where log files are stored."""
 
     class Config:
-        env_prefix = "pglib_pgbackrest_"
+        env_prefix = f"{pkgname}_pgbackrest_"
 
 
 @frozen
@@ -100,7 +102,7 @@ class PrometheusSettings(BaseSettings):
     """Path to the queries file."""
 
     class Config:
-        env_prefix = "pglib_prometheus_"
+        env_prefix = f"{pkgname}_prometheus_"
 
 
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
@@ -137,7 +139,7 @@ class Settings(BaseSettings):
     scheduler: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
 
     class Config:
-        env_prefix = "pglib_"
+        env_prefix = f"{pkgname}_"
 
         @classmethod
         def customise_sources(
