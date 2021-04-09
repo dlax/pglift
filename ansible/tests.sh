@@ -21,18 +21,9 @@ echo "Working in $tmpdir"
 settings_path=$tmpdir/config.json
 cat > "$settings_path" << EOF
 {
+  "prefix": "$tmpdir",
   "postgresql": {
-    "root": "$tmpdir/postgresql",
-    "pid_directory": "$tmpdir/run/postgresql"
-  },
-  "pgbackrest": {
-    "configpath": "$tmpdir/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
-    "directory": "$tmpdir/var/lib/pgbackrest/{instance.version}-{instance.name}",
-    "logpath": "$tmpdir/var/lib/pgbackrest/{instance.version}-{instance.name}/logs"
-  },
-  "prometheus": {
-    "configpath": "$tmpdir/etc/prometheus/postgres_exporter-{instance.version}-{instance.name}.conf",
-    "queriespath": "$tmpdir/etc/prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+    "root": "$tmpdir/postgresql"
   }
 }
 EOF

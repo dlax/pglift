@@ -21,35 +21,31 @@ localhost; the first two ones are *started* while the third one is not.
 
 To exercice this playbook on a regular user, the system configuration first
 needs to be adjusted in order to define a writable directory to host
-PostgreSQL instances:
+PostgreSQL instances, data and configuration files:
 
 ::
 
-    $ cat > /tmp/config.json << EOF
+    $ tmpdir=$(mktemp -d)
+    $ settings=$tmpdir/config.json
+    $ cat > $settings << EOF
     {
+      "prefix": "$tmpdir",
       "postgresql": {
-        "root": "/tmp/postgres",
-        "pid_directory": "/tmp/run"
+        "root": "$tmpdir/postgres"
       },
       "pgbackrest": {
-        "configpath": "/tmp/pgbackrest-{instance.version}-{instance.name}.conf",
-        "directory": "/tmp/backups",
-        "logpath": "/tmp/pgbackrest-{instance.version}-{instance.name}-logs"
-      },
-      "prometheus": {
-        "configpath": "/tmp/postgres_exporter-{instance.version}-{instance.name}.conf",
-        "queriespath": "/tmp/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+        "directory": "$tmpdir/backups"
       }
     }
     EOF
-    $ export SETTINGS="@/tmp/config.json"
+    $ export SETTINGS="@$settings"
 
 Then, proceed with post-installation step (preparing systemd templates, in
 particular):
 
 ::
 
-    (.venv) $ python -m pglib.install --settings=/tmp/config.json
+    (.venv) $ python -m pglib.install --settings=$settings
 
 Finally, run:
 
@@ -77,8 +73,8 @@ We can see our instances installed and running:
 
 ::
 
-    $ tree -L 3  /tmp/postgres
-    /tmp/postgres
+    $ tree -L 3 $tmpdir/postgres
+    /tmp/.../postgres
     └── 13
         ├── dev
         │   ├── data
@@ -91,14 +87,14 @@ We can see our instances installed and running:
             └── wal
     $ ps xf
     [...]
-    26856 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/postgres/13/prod/data
+    26856 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/.../postgres/13/prod/data
     26858 ?        Ss     0:00  |   \_ postgres: prod: checkpointer
     26859 ?        Ss     0:00  |   \_ postgres: prod: background writer
     26860 ?        Ss     0:00  |   \_ postgres: prod: walwriter
     26861 ?        Ss     0:00  |   \_ postgres: prod: autovacuum launcher
     26862 ?        Ss     0:00  |   \_ postgres: prod: stats collector
     26863 ?        Ss     0:00  |   \_ postgres: prod: logical replication launcher
-    26912 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/postgres/13/preprod/data
+    26912 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/.../postgres/13/preprod/data
     26914 ?        Ss     0:00      \_ postgres: preprod: checkpointer
     26915 ?        Ss     0:00      \_ postgres: preprod: background writer
     26916 ?        Ss     0:00      \_ postgres: preprod: walwriter
@@ -110,8 +106,8 @@ pgBackRest is set up and initialized for started instances:
 
 ::
 
-    $ tree -L 2  /tmp/backups/backup
-    /tmp/backups/backup
+    $ tree -L 2  $tmpdir/backups/backup
+    /tmp/.../backups/backup
     ├── 13-preprod
     │   ├── backup.info
     │   └── backup.info.copy
@@ -171,8 +167,8 @@ configuration:
 
 ::
 
-    $ tree -L 2  /tmp/postgres
-    /tmp/postgres
+    $ tree -L 2 $tmpdir/postgres
+    /tmp/.../postgres
     └── 13
         ├── dev
         └── prod
@@ -203,6 +199,6 @@ Finally, in this last playbook, we drop all our instances:
 
 ::
 
-    $ tree -L 2  /tmp/postgres
-    /tmp/postgres
+    $ tree -L 2 $tmpdir/postgres
+    /tmp/.../postgres
     └── 13
