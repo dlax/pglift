@@ -9,11 +9,11 @@ from .task import task
 
 
 def _configpath(instance: Instance, settings: PrometheusSettings) -> Path:
-    return Path(settings.configpath.format(instance=instance))
+    return Path(str(settings.configpath).format(instance=instance))
 
 
 def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
-    return Path(settings.queriespath.format(instance=instance))
+    return Path(str(settings.queriespath).format(instance=instance))
 
 
 def systemd_unit(instance: Instance) -> str:

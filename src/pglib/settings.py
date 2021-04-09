@@ -71,15 +71,15 @@ class PgBackRestSettings(BaseSettings):
     execpath: str = "/usr/bin/pgbackrest"
     """Path to the pbBackRest executable."""
 
-    configpath: str = (
+    configpath: Path = Path(
         "/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
     )
     """Path to the config file."""
 
-    directory: str = "/var/lib/pgbackrest/{instance.version}-{instance.name}"
+    directory: Path = Path("/var/lib/pgbackrest/{instance.version}-{instance.name}")
     """Path to the directory where backups are stored."""
 
-    logpath: str = "/var/lib/pgbackrest/{instance.version}-{instance.name}/logs"
+    logpath: Path = Path("/var/lib/pgbackrest/{instance.version}-{instance.name}/logs")
     """Path where log files are stored."""
 
     class Config:
@@ -93,12 +93,14 @@ class PrometheusSettings(BaseSettings):
     execpath: str = "/usr/bin/prometheus-postgres-exporter"
     """Path to the postgres_exporter executable."""
 
-    configpath: str = (
+    configpath: Path = Path(
         "/etc/prometheus/postgres_exporter-{instance.version}-{instance.name}.conf"
     )
     """Path to the config file."""
 
-    queriespath: str = "/etc/prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+    queriespath: Path = Path(
+        "/etc/prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
+    )
     """Path to the queries file."""
 
     class Config:

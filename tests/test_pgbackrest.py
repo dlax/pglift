@@ -25,8 +25,8 @@ def test(ctx, installed, instance, tmp_path):
     pgbackrest_settings = ctx.settings.pgbackrest
 
     pgbackrest.setup(ctx, instance)
-    configpath = Path(pgbackrest_settings.configpath.format(instance=instance))
-    directory = Path(pgbackrest_settings.directory.format(instance=instance))
+    configpath = Path(str(pgbackrest_settings.configpath).format(instance=instance))
+    directory = Path(str(pgbackrest_settings.directory).format(instance=instance))
     assert configpath.exists()
     lines = configpath.read_text().splitlines()
     assert "pg1-port = 5432" in lines

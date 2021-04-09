@@ -34,7 +34,7 @@ def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> Li
 
 
 def _configpath(instance: Instance, settings: PgBackRestSettings) -> Path:
-    return Path(settings.configpath.format(instance=instance))
+    return Path(str(settings.configpath).format(instance=instance))
 
 
 def _stanza(instance: Instance) -> str:
@@ -46,8 +46,8 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     """Setup pgBackRest"""
     settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
-    directory = Path(settings.directory.format(instance=instance))
-    logpath = Path(settings.logpath.format(instance=instance))
+    directory = Path(str(settings.directory).format(instance=instance))
+    logpath = Path(str(settings.logpath).format(instance=instance))
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     logpath.mkdir(exist_ok=True, parents=True)
 
@@ -107,7 +107,7 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
     """Un-setup pgBackRest"""
     settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
-    directory = Path(settings.directory.format(instance=instance))
+    directory = Path(str(settings.directory).format(instance=instance))
 
     if configpath.exists():
         configpath.unlink()

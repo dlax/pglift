@@ -30,7 +30,9 @@ def revert_postgresql_systemd_unit_template(
 
 @task
 def postgres_exporter_systemd_unit_template(settings: PrometheusSettings) -> None:
-    configpath = settings.configpath.replace("{instance.version}-{instance.name}", "%i")
+    configpath = str(settings.configpath).replace(
+        "{instance.version}-{instance.name}", "%i"
+    )
     content = systemd.template("postgres_exporter.service").format(
         configpath=configpath,
         execpath=settings.execpath,
