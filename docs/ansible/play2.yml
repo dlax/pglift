@@ -3,7 +3,7 @@
   hosts: localhost
   tasks:
     - name: production instance
-      postgresql_instance:
+      dalibo.pglift.postgresql_instance:
         name: prod
         port: 5433
         state: started
@@ -14,12 +14,12 @@
           unix_socket_directories: /tmp
 
     - name: pre-production instance, now dropped
-      postgresql_instance:
+      dalibo.pglift.postgresql_instance:
         name: preprod
         state: absent
 
     - name: dev instance, started, with SSL
-      postgresql_instance:
+      dalibo.pglift.postgresql_instance:
         name: dev
         port: 5455
         state: started

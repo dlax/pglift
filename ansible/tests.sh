@@ -3,7 +3,6 @@
 # Functional tests for Ansible playbooks in the docs/ansible (and the
 # postgresql_instance Ansible module).
 #
-
 set -e
 
 cleanup () (
@@ -43,6 +42,8 @@ postgresql_surole_password=s3kret
 export postgresql_surole_password
 export PGPASSFILE=$passfile
 
+export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
+
 query="select setting from pg_settings where name = 'cluster_name';"
 list_timers() {
     if type systemctl > /dev/null;
@@ -59,7 +60,7 @@ check_postgres_exporter() {
 
 set -x
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play1.yml
+ansible-playbook docs/ansible/play1.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
@@ -72,7 +73,7 @@ check_postgres_exporter 9189
 set -e
 list_timers
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
+ansible-playbook docs/ansible/play2.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
@@ -85,7 +86,7 @@ psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  #
 check_postgres_exporter 9189
 list_timers
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+ansible-playbook docs/ansible/play3.yml
 if test -f "$passfile";
 then
     echo "password file $passfile still exists"

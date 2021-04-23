@@ -3,11 +3,11 @@
   hosts: localhost
   tasks:
     - name: production instance, dropped
-      postgresql_instance:
+      dalibo.pglift.postgresql_instance:
         name: prod
         state: absent
 
     - name: dev instance, dropped
-      postgresql_instance:
+      dalibo.pglift.postgresql_instance:
         name: dev
         state: absent
