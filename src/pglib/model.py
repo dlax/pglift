@@ -50,7 +50,10 @@ class Instance:
             assert (
                 settings == ctx.settings
             ), "settings bound to context is inconsistent with passed value"
-        return cls(name, short_version(ctx.pg_ctl.version), settings=settings)
+        version = settings.postgresql.default_version
+        if version is None:
+            version = short_version(ctx.pg_ctl(None).version)
+        return cls(name, version, settings=settings)
 
     def __str__(self) -> str:
         """Return str(self).

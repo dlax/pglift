@@ -112,13 +112,18 @@ from pglib.ansible import AnsibleContext
 from pglib.instance import Status as PGStatus
 from pglib.model import Instance
 from pglib.pm import PluginManager
+from pglib.settings import SETTINGS
 from pglib.task import runner
 
 
 def run_module() -> None:
     module_args = {
         "name": {"type": "str", "required": True},
-        "version": {"type": "str", "required": False},
+        "version": {
+            "type": "str",
+            "required": False,
+            "choices": list(SETTINGS.postgresql.versions),
+        },
         "state": {
             "type": "str",
             "choices": ["started", "stopped", "absent"],

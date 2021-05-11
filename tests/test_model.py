@@ -4,7 +4,7 @@ from pglib.settings import PostgreSQLSettings, Settings
 
 def test_instance_default_version(ctx):
     i = model.Instance.default_version("test", ctx=ctx)
-    major_version = str(ctx.pg_ctl.version)[:2]
+    major_version = str(ctx.pg_ctl(None).version)[:2]
     assert i.version == major_version
 
 

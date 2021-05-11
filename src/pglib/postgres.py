@@ -34,7 +34,7 @@ def main(
     if not instance.exists():
         parser.error(f"instance {instance} not found")
 
-    bindir = ctx.pg_ctl.bindir
+    bindir = ctx.settings.postgresql.versions[instance.version].bindir
     cmd = [str(bindir / "postgres"), "-D", str(instance.datadir)]
     piddir = ctx.settings.postgresql.pid_directory
     if not piddir.exists():

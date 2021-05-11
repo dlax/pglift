@@ -23,7 +23,8 @@ def test_main(monkeypatch, ctx, instance):
     with monkeypatch.context() as m:
         m.setattr("subprocess.Popen", Popen)
         postgres.main([str(instance)], ctx=ctx)
-    assert calls == [[str(ctx.pg_ctl.bindir / "postgres"), "-D", str(instance.datadir)]]
+    bindir = ctx.settings.postgresql.versions[instance.version].bindir
+    assert calls == [[str(bindir / "postgres"), "-D", str(instance.datadir)]]
     assert (
         ctx.settings.postgresql.pid_directory
         / f"postgresql-{instance.version}-{instance.name}.pid"

@@ -1,14 +1,14 @@
+import functools
 import logging
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence
 
 from pgtoolkit import ctl
 from pluggy import PluginManager
 
 from . import __name__ as pkgname
-from . import cmd
-from .settings import SETTINGS, Settings
+from . import cmd, util
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS, SETTINGS, Settings
 from .types import CompletedProcess
 
 
@@ -20,11 +20,24 @@ class BaseContext(ABC):
         *,
         plugin_manager: PluginManager,
         settings: Settings = SETTINGS,
-        pg_bindir: Optional[Union[str, Path]] = None,
     ) -> None:
         self.settings = settings
-        self.pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
         self.pm = plugin_manager
+
+    @functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
+    def pg_ctl(self, version: Optional[str]) -> ctl.PGCtl:
+        pg_bindir = None
+        version = version or self.settings.postgresql.default_version
+        if version is not None:
+            pg_bindir = self.settings.postgresql.versions[version].bindir
+        pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
+        if version is not None:
+            installed_version = util.short_version(pg_ctl.version)
+            if installed_version != version:
+                raise EnvironmentError(
+                    f"version mismatch: {installed_version} != {version}"
+                )
+        return pg_ctl
 
     @abstractmethod
     def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:

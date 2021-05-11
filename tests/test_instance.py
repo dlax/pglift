@@ -75,10 +75,7 @@ def test_init(ctx, installed):
 
     # Init failed. Version doesn't match installed one.
     i = Instance("test", "9.6", settings=ctx.settings)
-    with pytest.raises(
-        Exception,
-        match="version doesn't match installed version",
-    ):
+    with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
         instance.init(ctx, i)
 
 
@@ -98,6 +95,7 @@ def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
         ),
     )
     i = Instance.default_version("test", ctx=ctx1)
+    ctx1.pg_ctl(i.version)  # warm cache to avoid mock side effect
     with monkeypatch.context() as m:
         m.setattr("pglib.cmd.run", cmd_run)
         instance.init(ctx1, i)

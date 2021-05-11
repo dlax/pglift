@@ -10,7 +10,6 @@ from . import conf, manifest, systemd, util
 from .ctx import BaseContext, Context
 from .model import Instance
 from .task import runner, task
-from .util import short_version
 
 
 def systemd_unit(instance: Instance) -> str:
@@ -33,12 +32,9 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
     except Exception as exc:
         raise Exception(f"instance lookup failed: {exc}")
 
-    # Check if the version provided matches the version installed
-    installed_version = short_version(ctx.pg_ctl.version)
-    if installed_version != instance.version:
-        raise Exception(
-            f"version doesn't match installed version {instance.version} != {installed_version}"
-        )
+    # Would raise EnvironmentError if requested postgresql binaries are not
+    # available or if versions mismatch.
+    pg_ctl = ctx.pg_ctl(instance.version)
 
     pgroot = settings.root
     pgroot.mkdir(mode=0o750, exist_ok=True)
@@ -60,7 +56,7 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
             opts["pwfile"] = str(pwfile)
         else:
             opts["pwprompt"] = True
-    ctx.pg_ctl.init(instance.datadir, **opts)
+    pg_ctl.init(instance.datadir, **opts)
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
@@ -197,7 +193,7 @@ def start(
 ) -> None:
     """Start an instance."""
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl.start(instance.datadir, wait=wait, logfile=logfile)
+        ctx.pg_ctl(instance.version).start(instance.datadir, wait=wait, logfile=logfile)
     elif ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
     if wait:
@@ -210,7 +206,7 @@ def status(
     instance: Instance,
 ) -> Status:
     """Return the status of an instance."""
-    return ctx.pg_ctl.status(instance.datadir)
+    return ctx.pg_ctl(instance.version).status(instance.datadir)
 
 
 @task
@@ -223,7 +219,7 @@ def stop(
 ) -> None:
     """Stop an instance."""
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl.stop(instance.datadir, mode=mode, wait=wait)
+        ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(instance))
     if wait:
@@ -240,7 +236,7 @@ def restart(
 ) -> None:
     """Restart an instance."""
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl.restart(instance.datadir, mode=mode, wait=wait)
+        ctx.pg_ctl(instance.version).restart(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
         systemd.restart(ctx, systemd_unit(instance))
 
@@ -252,7 +248,7 @@ def reload(
 ) -> None:
     """Reload an instance."""
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl.reload(instance.datadir)
+        ctx.pg_ctl(instance.version).reload(instance.datadir)
     elif ctx.settings.service_manager == "systemd":
         systemd.reload(ctx, systemd_unit(instance))
 

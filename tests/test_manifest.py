@@ -28,4 +28,4 @@ def test_instance_model(ctx):
     i = manifest.Instance(name="test", version="12").model(ctx)
     assert str(i) == "12/test"
     i = manifest.Instance(name="test").model(ctx)
-    assert str(i) == f"{util.short_version(ctx.pg_ctl.version)}/test"
+    assert str(i) == f"{util.short_version(ctx.pg_ctl(None).version)}/test"
