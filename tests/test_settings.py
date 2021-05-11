@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from pglib.settings import DataPath, Settings
 
@@ -45,3 +47,32 @@ def test_settings(tmp_path):
     s = Settings.parse_obj({"postgresql": {"initdb_auth": ("md5", pwfile)}})
     assert s.postgresql.initdb_auth
     assert s.postgresql.initdb_auth[1] == pwfile
+
+
+def test_postgresql_versions(monkeypatch, tmp_path):
+    config = {
+        "postgresql": {
+            "bindir": "/usr/lib/pgsql/{version}/bin",
+            "versions": {
+                "9.6": {
+                    "bindir": "/opt/pgsql-9.6/bin",
+                },
+            },
+        },
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config))
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", f"@{config_path}")
+        s = Settings()
+    pgversions = s.postgresql.versions
+    assert set(pgversions) == {"9.6", "10", "11", "12", "13"}
+    assert str(pgversions["9.6"].bindir) == "/opt/pgsql-9.6/bin"
+    assert str(pgversions["12"].bindir) == "/usr/lib/pgsql/12/bin"
+
+    config["postgresql"]["default_version"] = "7"
+    config_path.write_text(json.dumps(config))
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", f"@{config_path}")
+        with pytest.raises(ValidationError, match="unsupported default version: 7"):
+            Settings()

@@ -2,20 +2,9 @@ import json
 import os
 import shutil
 from pathlib import Path, PosixPath
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar, Union
 
-from pydantic import BaseSettings, Field, root_validator
+from pydantic import BaseSettings, Field, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal
 
@@ -81,12 +70,41 @@ class DataPath(PrefixedPath):
     basedir = Path("var/lib")
 
 
+POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10", "9.6"]
+
+
+class PostgreSQLVersionSettings(BaseSettings):
+    bindir: Path
+
+
 @frozen
 class PostgreSQLSettings(BaseSettings):
     """Settings for PostgreSQL."""
 
-    versions: List[str] = ["13", "12", "11", "10", "9.6"]
+    bindir: str = "/usr/lib/postgresql/{version}/bin"
+    """Default PostgreSQL bindir, templated by version."""
+
+    versions: Dict[str, PostgreSQLVersionSettings] = Field(default_factory=lambda: {})
     """Available PostgreSQL versions."""
+
+    @root_validator
+    def set_versions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        bindir = values["bindir"]
+        pgversions = values["versions"]
+        for version in POSTGRESQL_SUPPORTED_VERSIONS:
+            if version not in pgversions:
+                pgversions[version] = PostgreSQLVersionSettings(
+                    bindir=bindir.format(version=version)
+                )
+        return values
+
+    default_version: Optional[str] = None
+    """Default PostgreSQL version to use, if unspecified."""
+
+    @validator("default_version")
+    def default_version_in_supported_versions(cls, v: Optional[str]) -> None:
+        if v and v not in POSTGRESQL_SUPPORTED_VERSIONS:
+            raise ValueError(f"unsupported default version: {v}")
 
     root: DataPath = DataPath("pgsql")
     """Root directory for all managed instances."""
