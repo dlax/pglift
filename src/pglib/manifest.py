@@ -50,6 +50,9 @@ T = TypeVar("T", bound=BaseModel)
 class Manifest(BaseModel):
     """Base class for manifest data classes."""
 
+    class Config:
+        extra = "forbid"
+
     @classmethod
     def parse_yaml(cls: Type[T], stream: IO[str]) -> T:
         """Parse from a YAML stream."""
