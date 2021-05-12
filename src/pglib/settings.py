@@ -123,9 +123,6 @@ class PostgreSQLSettings(BaseSettings):
         password.
     """
 
-    class Config:
-        env_prefix = f"{pkgname}_postgresql_"
-
 
 @frozen
 class PgBackRestSettings(BaseSettings):
@@ -145,9 +142,6 @@ class PgBackRestSettings(BaseSettings):
     logpath: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}/logs")
     """Path where log files are stored."""
 
-    class Config:
-        env_prefix = f"{pkgname}_pgbackrest_"
-
 
 @frozen
 class PrometheusSettings(BaseSettings):
@@ -165,9 +159,6 @@ class PrometheusSettings(BaseSettings):
         "prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
     )
     """Path to the queries file."""
-
-    class Config:
-        env_prefix = f"{pkgname}_prometheus_"
 
 
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
@@ -224,8 +215,6 @@ class Settings(BaseSettings):
         return values
 
     class Config:
-        env_prefix = f"{pkgname}_"
-
         @classmethod
         def customise_sources(
             cls,

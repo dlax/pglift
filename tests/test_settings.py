@@ -45,23 +45,3 @@ def test_settings(tmp_path):
     s = Settings.parse_obj({"postgresql": {"initdb_auth": ("md5", pwfile)}})
     assert s.postgresql.initdb_auth
     assert s.postgresql.initdb_auth[1] == pwfile
-
-
-def test_settings_from_env(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setenv("pglib_postgresql_root", "/tmp/pg")
-        s = Settings(postgresql={})
-    assert s.postgresql.root == Path("/tmp/pg")
-
-    with monkeypatch.context() as m:
-        m.setenv("pglib_prefix", "/prefix")
-        s = Settings(postgresql={})
-    assert str(s.postgresql.root) == "/prefix/var/lib/pgsql"
-    assert str(s.postgresql.pid_directory) == "/prefix/run/postgresql"
-
-    with monkeypatch.context() as m:
-        m.setenv("pglib_prefix", "/prefix")
-        m.setenv("pglib_postgresql_root", "/postgres/is/absolute")
-        s = Settings(postgresql={})
-    assert str(s.postgresql.root) == "/postgres/is/absolute"
-    assert str(s.postgresql.pid_directory) == "/prefix/run/postgresql"
