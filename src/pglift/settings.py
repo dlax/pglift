@@ -77,11 +77,20 @@ class PostgreSQLVersionSettings(BaseSettings):
     bindir: Path
 
 
+def _postgresql_bindir() -> str:
+    prefix = Path("/usr/lib")
+    for name in ("postgresql", "pgsql"):
+        if (prefix / name).exists():
+            return str(prefix / name / "{version}" / "bin")
+    else:
+        raise EnvironmentError("no PostgreSQL installation found")
+
+
 @frozen
 class PostgreSQLSettings(BaseSettings):
     """Settings for PostgreSQL."""
 
-    bindir: str = "/usr/lib/postgresql/{version}/bin"
+    bindir: str = _postgresql_bindir()
     """Default PostgreSQL bindir, templated by version."""
 
     versions: Dict[str, PostgreSQLVersionSettings] = Field(default_factory=lambda: {})
