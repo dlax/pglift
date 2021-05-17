@@ -1,4 +1,4 @@
-Source: pglib
+Source: pglift
 Section: python
 Priority: optional
 Maintainer: Dalibo <contact@dalibo.com>
@@ -16,22 +16,22 @@ Build-Depends:
   libpq-dev,
 # python3-pgtoolkit,  TODO: no package available yet
 Standards-Version: 4.1.3
-Homepage: https://github.com/dalibo/pglib
+Homepage: https://github.com/dalibo/pglift
 X-Python3-Version: >= 3.6
 #Testsuite: autopkgtest-pkg-python
 
-Package: python3-pglib
+Package: python3-pglift
 Architecture: all
 Depends:
   ${python3:Depends},
   ${misc:Depends},
-Suggests: python-pglib-doc
+Suggests: python-pglift-doc
 Description: PostgreSQL instances operation (Python 3)
  PostgreSQL instances operation.
  .
  This package installs the library for Python 3.
 
-Package: python-pglib-doc
+Package: python-pglift-doc
 Architecture: all
 Section: doc
 Depends:

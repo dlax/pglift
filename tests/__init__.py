@@ -1,7 +1,7 @@
 import contextlib
 import time
 
-from pglib import instance as instance_mod
+from pglift import instance as instance_mod
 
 
 @contextlib.contextmanager

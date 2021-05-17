@@ -1,11 +1,11 @@
 import pytest
 
-from pglib import install
-from pglib import instance as instance_mod
-from pglib import pm
-from pglib.ctx import Context
-from pglib.model import Instance
-from pglib.settings import Settings
+from pglift import install
+from pglift import instance as instance_mod
+from pglift import pm
+from pglift.ctx import Context
+from pglift.model import Instance
+from pglift.settings import Settings
 
 
 @pytest.fixture

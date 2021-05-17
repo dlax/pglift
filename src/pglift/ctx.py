@@ -84,5 +84,5 @@ class Context(BaseContext):
 
     @staticmethod
     def run(args: Sequence[str], **kwargs: Any) -> CompletedProcess:
-        """Execute a system command with :func:`pglib.cmd.run`."""
+        """Execute a system command with :func:`pglift.cmd.run`."""
         return cmd.run(args, **kwargs)

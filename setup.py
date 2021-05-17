@@ -7,7 +7,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
-    name="pglib",
+    name="pglift",
     version="0.0.0",
     description="",  # FIXME
     long_description=long_description,
@@ -49,7 +49,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "pglib": ["py.typed"],
+        "pglift": ["py.typed"],
     },
     project_urls={},  # FIXME
 )

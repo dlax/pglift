@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "pglib"
+project = "pglift"
 copyright = "2021, Dalibo"
 author = "Dalibo"
 
@@ -104,7 +104,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "pglibdoc"
+htmlhelp_basename = "pgliftdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -128,7 +128,7 @@ latex_elements = {  # type: ignore[var-annotated]
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "pglib.tex", "pglib Documentation", "Dalibo SCOP", "manual"),
+    (master_doc, "pglift.tex", "pglift Documentation", "Dalibo SCOP", "manual"),
 ]
 
 
@@ -136,7 +136,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pglib", "pglib Documentation", [author], 1)]
+man_pages = [(master_doc, "pglift", "pglift Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -147,10 +147,10 @@ man_pages = [(master_doc, "pglib", "pglib Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "pglib",
-        "pglib Documentation",
+        "pglift",
+        "pglift Documentation",
         author,
-        "pglib",
+        "pglift",
         "One line description of project.",
         "Miscellaneous",
     ),

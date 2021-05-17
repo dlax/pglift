@@ -5,10 +5,10 @@ import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
-from pglib import instance, manifest, systemd, task
-from pglib.ctx import Context
-from pglib.model import Instance
-from pglib.settings import PostgreSQLSettings
+from pglift import instance, manifest, systemd, task
+from pglift.ctx import Context
+from pglift.model import Instance
+from pglift.settings import PostgreSQLSettings
 
 from . import instance_running
 
@@ -97,7 +97,7 @@ def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
     i = Instance.default_version("test", ctx=ctx1)
     ctx1.pg_ctl(i.version)  # warm cache to avoid mock side effect
     with monkeypatch.context() as m:
-        m.setattr("pglib.cmd.run", cmd_run)
+        m.setattr("pglift.cmd.run", cmd_run)
         instance.init(ctx1, i)
 
     init_cmd = " ".join(calls[0])
@@ -154,9 +154,9 @@ def test_configure(ctx):
     }
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
-    assert line1 == "include_dir = 'conf.pglib.d'"
+    assert line1 == "include_dir = 'conf.pglift.d'"
 
-    configfpath = configdir / "conf.pglib.d" / "user.conf"
+    configfpath = configdir / "conf.pglift.d" / "user.conf"
     lines = configfpath.read_text().splitlines()
     assert "port = 5433" in lines
     assert "cluster_name = 'test'" in lines

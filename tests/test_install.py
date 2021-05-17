@@ -2,8 +2,8 @@ import re
 
 import pytest
 
-from pglib import install
-from pglib.settings import PostgreSQLSettings, PrometheusSettings
+from pglift import install
+from pglift.settings import PostgreSQLSettings, PrometheusSettings
 
 
 @pytest.fixture
@@ -12,11 +12,11 @@ def fake_systemd_install(monkeypatch):
     uninstall_calls = []
     with monkeypatch.context() as m:
         m.setattr(
-            "pglib.systemd.install",
+            "pglift.systemd.install",
             lambda *args: install_calls.append(args),
         )
         m.setattr(
-            "pglib.systemd.uninstall",
+            "pglift.systemd.uninstall",
             lambda *args: uninstall_calls.append(args),
         )
         yield install_calls, uninstall_calls
@@ -34,7 +34,7 @@ def test_postgresql_systemd_unit_template(fake_systemd_install, tmp_settings):
     for line in lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
-            assert re.match(r"^.+/python(3)? -m pglib.postgres %I$", execstart)
+            assert re.match(r"^.+/python(3)? -m pglift.postgres %I$", execstart)
             break
     else:
         raise AssertionError("ExecStart line not found")
@@ -69,7 +69,7 @@ def test_postgresql_backup_systemd_templates(fake_systemd_install):
     for line in service_lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
-            assert re.match(r"^.+/python(3)? -m pglib.backup %i backup$", execstart)
+            assert re.match(r"^.+/python(3)? -m pglift.backup %i backup$", execstart)
             break
     else:
         raise AssertionError("ExecStart line not found")

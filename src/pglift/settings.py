@@ -25,7 +25,7 @@ def default_prefix(uid: int) -> Path:
     >>> default_prefix(0)
     PosixPath('/')
     >>> default_prefix(42)  # doctest: +ELLIPSIS
-    PosixPath('/home/.../.local/share/pglib')
+    PosixPath('/home/.../.local/share/pglift')
     """
     if uid == 0:
         return Path("/")

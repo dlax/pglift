@@ -1,7 +1,7 @@
 import stat
 from pathlib import Path
 
-from pglib import util
+from pglift import util
 
 
 def test_xdg_data_home(monkeypatch):

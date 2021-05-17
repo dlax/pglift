@@ -1,6 +1,6 @@
 import pytest
 
-from pglib import postgres
+from pglift import postgres
 
 
 def test_main_errors():

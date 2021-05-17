@@ -107,13 +107,13 @@ from typing import Any, Dict
 
 from ansible.module_utils.basic import AnsibleModule
 
-from pglib import instance as instance_mod
-from pglib.ansible import AnsibleContext
-from pglib.instance import Status as PGStatus
-from pglib.model import Instance
-from pglib.pm import PluginManager
-from pglib.settings import SETTINGS
-from pglib.task import runner
+from pglift import instance as instance_mod
+from pglift.ansible import AnsibleContext
+from pglift.instance import Status as PGStatus
+from pglift.model import Instance
+from pglift.pm import PluginManager
+from pglift.settings import SETTINGS
+from pglift.task import runner
 
 
 def run_module() -> None:

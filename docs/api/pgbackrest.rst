@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.pgbackrest
+.. currentmodule:: pglift.pgbackrest
 
 Instance backup with pgBackRest
 ===============================

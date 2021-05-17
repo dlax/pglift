@@ -1,5 +1,5 @@
-Welcome to pglib's documentation!
-=================================
+Welcome to pglift's documentation!
+==================================
 
 .. toctree::
     :maxdepth: 2

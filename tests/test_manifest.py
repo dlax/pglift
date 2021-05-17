@@ -2,7 +2,7 @@ import io
 
 import yaml
 
-from pglib import manifest, util
+from pglift import manifest, util
 
 
 class Point(manifest.Manifest):

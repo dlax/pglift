@@ -1,12 +1,12 @@
 import pytest
 
-from pglib import systemd
+from pglift import systemd
 
 
 @pytest.fixture
 def xdg_data_home(monkeypatch, tmp_path):
     with monkeypatch.context() as m:
-        m.setattr("pglib.systemd.xdg_data_home", lambda: tmp_path)
+        m.setattr("pglift.systemd.xdg_data_home", lambda: tmp_path)
         yield tmp_path
 
 

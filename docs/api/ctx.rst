@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.ctx
+.. currentmodule:: pglift.ctx
 
 Execution context
 =================

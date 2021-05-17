@@ -73,7 +73,7 @@ debian:
     - sudo apt-get -qq update
     - sudo apt-get -qq build-dep .
     - python3 setup.py sdist
-    - mk-origtargz dist/pglib-$(python3 setup.py --version).tar.gz
+    - mk-origtargz dist/pglift-$(python3 setup.py --version).tar.gz
   script:
     - dpkg-buildpackage
     - debc

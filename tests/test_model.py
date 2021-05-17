@@ -1,5 +1,5 @@
-from pglib import model
-from pglib.settings import PostgreSQLSettings, Settings
+from pglift import model
+from pglift.settings import PostgreSQLSettings, Settings
 
 
 def test_instance_default_version(ctx):
@@ -27,8 +27,8 @@ def test_instance_config(tmp_path):
     config.port == 1234
 
     assert i.config(True) is None
-    (datadir / "conf.pglib.d").mkdir()
-    (datadir / "conf.pglib.d" / "user.conf").write_text("\n".join(["port=5555"]))
+    (datadir / "conf.pglift.d").mkdir()
+    (datadir / "conf.pglift.d" / "user.conf").write_text("\n".join(["port=5555"]))
     mconf = i.config(True)
     assert mconf is not None
     assert mconf.port == 5555

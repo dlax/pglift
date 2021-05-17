@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.manifest
+.. currentmodule:: pglift.manifest
 
 Resource manifests
 ==================

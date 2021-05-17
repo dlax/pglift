@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.conf
+.. currentmodule:: pglift.conf
 
 PostgreSQL configuration
 ========================

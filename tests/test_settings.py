@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from pglib.settings import DataPath, Settings
+from pglift.settings import DataPath, Settings
 
 
 def test_json_config_settings_source(monkeypatch, tmp_path):

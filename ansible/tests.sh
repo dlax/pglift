@@ -9,7 +9,7 @@ set -e
 cleanup () (
     set +e
     unset -v SETTINGS
-    python -m pglib.install --uninstall
+    python -m pglift.install --uninstall
     rm -rf "$tmpdir"
 )
 trap cleanup EXIT INT
@@ -28,7 +28,7 @@ cat > "$settings_path" << EOF
 }
 EOF
 export SETTINGS="@$settings_path"
-python -m pglib.install --settings="$settings_path"
+python -m pglift.install --settings="$settings_path"
 
 query="select setting from pg_settings where name = 'cluster_name';"
 list_timers () (

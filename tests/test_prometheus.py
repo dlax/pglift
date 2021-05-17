@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from pglib import prometheus, systemd
+from pglift import prometheus, systemd
 
 from . import instance_running
 

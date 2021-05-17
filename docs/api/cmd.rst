@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.cmd
+.. currentmodule:: pglift.cmd
 
 Command execution
 =================

@@ -20,7 +20,7 @@ PGBACKREST_SETTINGS = SETTINGS.pgbackrest
 def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> List[str]:
     """Return the base command for pgbackrest as a list of strings.
 
-    >>> from pglib.settings import PgBackRestSettings
+    >>> from pglift.settings import PgBackRestSettings
     >>> instance = Instance("test", "11")
     >>> settings = PgBackRestSettings(configpath="/tmp/pgbackrest.conf")
     >>> " ".join(make_cmd(instance, settings, 'stanza-upgrade'))

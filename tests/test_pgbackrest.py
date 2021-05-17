@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from pglib import backup
-from pglib import instance as instance_mod
-from pglib import pgbackrest
-from pglib.conf import info as conf_info
+from pglift import backup
+from pglift import instance as instance_mod
+from pglift import pgbackrest
+from pglift.conf import info as conf_info
 
 from . import instance_running
 

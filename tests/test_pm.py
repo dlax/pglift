@@ -1,11 +1,11 @@
-from pglib import pm
+from pglift import pm
 
 
 def test_pluginmanager_get():
     p = pm.PluginManager.get(no_register=["prometheus"])
     assert {name for name, _ in p.list_name_plugin()} == {
-        "pglib.backup",
-        "pglib.pgbackrest",
+        "pglift.backup",
+        "pglift.pgbackrest",
     }
 
 

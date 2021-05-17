@@ -1,4 +1,4 @@
-.. currentmodule:: pglib.instance
+.. currentmodule:: pglift.instance
 
 Instance operations
 ===================

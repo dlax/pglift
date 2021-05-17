@@ -1,8 +1,8 @@
 import pytest
 
-from pglib import backup
-from pglib import instance as instance_mod
-from pglib import systemd
+from pglift import backup
+from pglift import instance as instance_mod
+from pglift import systemd
 
 from . import instance_running
 

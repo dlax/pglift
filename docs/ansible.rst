@@ -45,7 +45,7 @@ particular):
 
 ::
 
-    (.venv) $ python -m pglib.install --settings=$settings
+    (.venv) $ python -m pglift.install --settings=$settings
 
 Finally, run:
 

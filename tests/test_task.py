@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from pglib import task
+from pglift import task
 
 
 def test_task():
