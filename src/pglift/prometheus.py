@@ -52,7 +52,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         "instance": instance,
         "dsn": dsn,
         "role": ctx.settings.postgresql.surole,
-        "port": 9187,
+        "port": ctx.settings.prometheus.port,
         "queriespath": queriespath,
     }
 
