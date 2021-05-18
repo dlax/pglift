@@ -3,7 +3,7 @@ import enum
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 from pgtoolkit import conf as pgconf
 
@@ -57,7 +57,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     assert instance_config
     stanza = _stanza(instance)
 
-    config: Dict[str, Dict[str, str]] = {
+    config = {
         "global": {
             "repo1-path": str(directory),
             "log-path": str(logpath),
