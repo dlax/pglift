@@ -19,7 +19,9 @@ def test(ctx, installed, instance):
     configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
     assert configpath.exists()
     lines = configpath.read_text().splitlines()
-    assert "DATA_SOURCE_URI=localhost:5432" in lines
+    instance_config = instance.config()
+    assert instance_config
+    assert f"DATA_SOURCE_URI=localhost:{instance_config.port}" in lines
     queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
     assert queriespath.exists()
 

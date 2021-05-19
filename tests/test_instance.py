@@ -107,7 +107,7 @@ def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
     assert "--pwprompt" in init_cmd
 
 
-def test_init_surole_pwfile(ctx, tmp_path, installed):
+def test_init_surole_pwfile(ctx, tmp_path, installed, tmp_port):
     pgroot = ctx.settings.postgresql.root
     surole_pwd = "S3kret"
     pwfile = tmp_path / "surole_pwd"
@@ -125,12 +125,13 @@ def test_init_surole_pwfile(ctx, tmp_path, installed):
     )
     i = Instance.default_version("test", ctx=ctx1)
     instance.init(ctx1, i)
-    instance.configure(ctx1, i, unix_socket_directories=str(tmp_path))
+    instance.configure(ctx1, i, unix_socket_directories=str(tmp_path), port=tmp_port)
 
     with instance_running(ctx1, i):
         connargs = {
             "user": ctx1.settings.postgresql.surole,
             "host": str(tmp_path),
+            "port": tmp_port,
         }
         with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
             psycopg2.connect(**connargs)
@@ -216,7 +217,7 @@ def test_configure(ctx):
         assert fpath.exists()
 
 
-def test_start_stop(ctx, installed, tmp_path):
+def test_start_stop(ctx, installed, tmp_path, tmp_port):
     i = Instance.default_version("test", ctx=ctx)
     assert instance.status(ctx, i) == Status.unspecified_datadir
 
@@ -224,7 +225,7 @@ def test_start_stop(ctx, installed, tmp_path):
     instance.configure(
         ctx,
         i,
-        port=5499,
+        port=tmp_port,
         log_destination="syslog",
         unix_socket_directories=str(tmp_path),
     )

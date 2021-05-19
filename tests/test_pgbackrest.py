@@ -22,6 +22,9 @@ def ctx(ctx):
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
 def test(ctx, installed, instance, tmp_path):
+    instance_config = instance.config()
+    assert instance_config
+    instance_port = instance_config.port
     pgbackrest_settings = ctx.settings.pgbackrest
 
     pgbackrest.setup(ctx, instance)
@@ -29,7 +32,7 @@ def test(ctx, installed, instance, tmp_path):
     directory = Path(str(pgbackrest_settings.directory).format(instance=instance))
     assert configpath.exists()
     lines = configpath.read_text().splitlines()
-    assert "pg1-port = 5432" in lines
+    assert f"pg1-port = {instance_port}" in lines
     assert directory.exists()
 
     latest_backup = (
@@ -66,11 +69,12 @@ def test(ctx, installed, instance, tmp_path):
     # If instance's configuration changes, pgbackrest configuration is
     # updated.
     config_before = configpath.read_text()
-    instance_mod.configure(ctx, instance, port=5555)
+    new_port = instance_port + 1  # Hopefully, it'll be free.
+    instance_mod.configure(ctx, instance, port=new_port)
     pgbackrest.setup(ctx, instance)
     config_after = configpath.read_text()
     assert config_after != config_before
-    assert "pg1-port = 5555" in config_after.splitlines()
+    assert f"pg1-port = {new_port}" in config_after.splitlines()
 
     pgbackrest.revert_setup(ctx, instance)
     assert not configpath.exists()

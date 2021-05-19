@@ -1,3 +1,5 @@
+import socket
+
 import pytest
 
 from pglift import install
@@ -40,10 +42,19 @@ def ctx(tmp_settings):
 
 
 @pytest.fixture
-def instance(ctx, installed, tmp_path):
+def tmp_port():
+    s = socket.socket()
+    s.bind(("", 0))
+    with s:
+        port = s.getsockname()[1]
+    return port
+
+
+@pytest.fixture
+def instance(ctx, installed, tmp_path, tmp_port):
     i = Instance.default_version("test", ctx=ctx)
     instance_mod.init(ctx, i)
-    instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path))
+    instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path), port=tmp_port)
     yield i
     if i.exists():
         instance_mod.drop(ctx, i)
