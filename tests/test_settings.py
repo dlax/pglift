@@ -44,9 +44,9 @@ def test_settings(tmp_path):
     assert str(s.postgresql.pid_directory) == "/prefix/run/pgsql"
 
     pwfile = tmp_path / "surole_password"
-    s = Settings.parse_obj({"postgresql": {"initdb_auth": ("md5", pwfile)}})
-    assert s.postgresql.initdb_auth
-    assert s.postgresql.initdb_auth[1] == pwfile
+    s = Settings.parse_obj({"postgresql": {"initdb": {"auth": ("md5", pwfile)}}})
+    assert s.postgresql.initdb.auth
+    assert s.postgresql.initdb.auth[1] == pwfile
 
 
 def test_postgresql_versions(monkeypatch, tmp_path):

@@ -8,7 +8,7 @@ from pgtoolkit.ctl import Status
 from pglift import instance, manifest, systemd, task
 from pglift.ctx import Context
 from pglift.model import Instance
-from pglift.settings import PostgreSQLSettings
+from pglift.settings import InitdbSettings, PostgreSQLSettings
 
 from . import instance_running
 
@@ -90,7 +90,9 @@ def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
         plugin_manager=ctx.pm,
         settings=ctx.settings.copy(
             update={
-                "postgresql": PostgreSQLSettings(root=pgroot, initdb_auth=("md5", None))
+                "postgresql": PostgreSQLSettings(
+                    root=pgroot, initdb=InitdbSettings(auth=("md5", None))
+                )
             }
         ),
     )
@@ -116,7 +118,7 @@ def test_init_surole_pwfile(ctx, tmp_path, installed):
         settings=ctx.settings.copy(
             update={
                 "postgresql": PostgreSQLSettings(
-                    root=pgroot, initdb_auth=("md5", pwfile)
+                    root=pgroot, initdb=InitdbSettings(auth=("md5", pwfile))
                 )
             }
         ),

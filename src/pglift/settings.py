@@ -87,6 +87,29 @@ def _postgresql_bindir() -> str:
 
 
 @frozen
+class InitdbSettings(BaseSettings):
+    """Settings for initdb step of a PostgreSQL instance."""
+
+    locale: Optional[str] = "C"
+    """Instance locale as used by initdb."""
+
+    data_checksums: bool = False
+    """Use checksums on data pages."""
+
+    auth: Optional[
+        Tuple[Union[Literal["md5"], Literal["scram-sha-256"]], Optional[Path]]
+    ]
+    """Auth method and optional pwfile.
+
+    Examples:
+      - None: `trust` method is used in pg_hba.conf,
+      - ('md5', None): user is asked a password,
+      - ('md5', Path(/path/to/surole_pwd)): the file is read by initdb for the
+        password.
+    """
+
+
+@frozen
 class PostgreSQLSettings(BaseSettings):
     """Settings for PostgreSQL."""
 
@@ -118,11 +141,7 @@ class PostgreSQLSettings(BaseSettings):
     root: DataPath = DataPath("pgsql")
     """Root directory for all managed instances."""
 
-    locale: Optional[str] = "C"
-    """Instance locale as used by initdb."""
-
-    data_checksums: bool = False
-    """Use checksums on data pages."""
+    initdb: InitdbSettings = InitdbSettings()
 
     surole: str = "postgres"
     """User name of instance super-user."""
@@ -138,17 +157,6 @@ class PostgreSQLSettings(BaseSettings):
 
     pid_directory: RunPath = RunPath("postgresql")
     """Path to directory where postgres process PID file will be written."""
-
-    initdb_auth: Optional[
-        Tuple[Union[Literal["md5"], Literal["scram-sha-256"]], Optional[Path]]
-    ]
-    """Auth method and pwfile to be used by initdb.
-    Examples:
-      - None: `trust` method is used in pg_hba.conf,
-      - ('md5', None): user is asked a password,
-      - ('md5', Path(/path/to/surole_pwd)): the file is read by initdb for the
-        password.
-    """
 
 
 @frozen

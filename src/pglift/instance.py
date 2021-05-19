@@ -26,6 +26,7 @@ def systemd_unit(instance: Instance) -> str:
 def init(ctx: BaseContext, instance: Instance) -> bool:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
+    initdb_settings = settings.initdb
     try:
         if instance.exists():
             return False
@@ -44,14 +45,13 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
         "username": settings.surole,
         "encoding": "UTF8",
     }
-    if settings.locale:
-        opts["locale"] = settings.locale
-    if settings.data_checksums:
+    if initdb_settings.locale:
+        opts["locale"] = initdb_settings.locale
+    if initdb_settings.data_checksums:
         opts["data_checksums"] = True
-    initdb_auth = settings.initdb_auth
+    initdb_auth = initdb_settings.auth
     if initdb_auth:
-        opts["auth"] = initdb_auth[0]
-        pwfile = initdb_auth[1]
+        opts["auth"], pwfile = initdb_auth
         if pwfile is not None:
             opts["pwfile"] = str(pwfile)
         else:
