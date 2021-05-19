@@ -67,7 +67,7 @@ class RunPath(PrefixedPath):
 
 
 class DataPath(PrefixedPath):
-    basedir = Path("var/lib")
+    basedir = Path("srv")
 
 
 POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10", "9.6"]

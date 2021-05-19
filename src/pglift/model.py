@@ -70,7 +70,7 @@ class Instance:
 
         >>> i = Instance("main", "12")
         >>> print(i.path)  # doctest: +ELLIPSIS
-        /.../var/lib/pgsql/12/main
+        /.../srv/pgsql/12/main
         """
         pg_settings = self.settings.postgresql
         return pg_settings.root / pg_settings.instancedir.format(
@@ -83,7 +83,7 @@ class Instance:
 
         >>> i = Instance("main", "12")
         >>> print(i.datadir)  # doctest: +ELLIPSIS
-        /.../var/lib/pgsql/12/main/data
+        /.../srv/pgsql/12/main/data
         """
         return self.path / self.settings.postgresql.datadir
 
@@ -93,7 +93,7 @@ class Instance:
 
         >>> i = Instance("main", "12")
         >>> print(i.waldir)  # doctest: +ELLIPSIS
-        /.../var/lib/pgsql/12/main/wal
+        /.../srv/pgsql/12/main/wal
         """
         return self.path / self.settings.postgresql.waldir
 
