@@ -261,8 +261,8 @@ class Settings(BaseSettings):
         ) -> Tuple[SettingsSourceCallable, ...]:
             return (
                 init_settings,
-                json_config_settings_source,
                 env_settings,
+                json_config_settings_source,
                 file_secret_settings,
             )
 
