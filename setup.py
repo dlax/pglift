@@ -44,8 +44,8 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort", "mypy", "pre-commit", "psycopg2-binary"],
-        "test": ["check-manifest", "pytest", "pytest-cov"],
+        "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],
+        "test": ["check-manifest", "psycopg2-binary", "pytest", "pytest-cov"],
     },
     include_package_data=True,
     package_data={
