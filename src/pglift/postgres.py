@@ -6,6 +6,7 @@ from typing import Optional, Sequence
 from .ctx import Context
 from .model import Instance
 from .pm import PluginManager
+from .settings import SETTINGS
 
 parser = argparse.ArgumentParser(description="Start postgres for specified instance")
 parser.add_argument(
@@ -28,7 +29,7 @@ def main(
         parser.error("invalid instance identifier")
 
     if ctx is None:
-        ctx = Context(plugin_manager=PluginManager.get())
+        ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
 
     instance = Instance(name, version, settings=ctx.settings)
     if not instance.exists():

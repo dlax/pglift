@@ -8,7 +8,7 @@ from pluggy import PluginManager
 
 from . import __name__ as pkgname
 from . import cmd, util
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS, SETTINGS, Settings
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
 
 
@@ -19,7 +19,7 @@ class BaseContext(ABC):
         self,
         *,
         plugin_manager: PluginManager,
-        settings: Settings = SETTINGS,
+        settings: Settings,
     ) -> None:
         self.settings = settings
         self.pm = plugin_manager

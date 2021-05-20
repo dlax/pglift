@@ -336,6 +336,7 @@ if __name__ == "__main__":  # pragma: nocover
     import argparse
 
     from . import pm
+    from .settings import SETTINGS
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -401,5 +402,5 @@ if __name__ == "__main__":  # pragma: nocover
     drop_parser.set_defaults(func=do_drop)
 
     args = parser.parse_args()
-    ctx = Context(plugin_manager=pm.PluginManager.get())
+    ctx = Context(plugin_manager=pm.PluginManager.get(), settings=SETTINGS)
     args.func(ctx, args)

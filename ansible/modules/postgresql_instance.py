@@ -117,12 +117,13 @@ from pglift.task import runner
 
 
 def run_module() -> None:
+    settings = SETTINGS
     module_args = {
         "name": {"type": "str", "required": True},
         "version": {
             "type": "str",
             "required": False,
-            "choices": list(SETTINGS.postgresql.versions),
+            "choices": list(settings.postgresql.versions),
         },
         "state": {
             "type": "str",
@@ -138,7 +139,7 @@ def run_module() -> None:
     }
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
-    ctx = AnsibleContext(module, plugin_manager=PluginManager.get())
+    ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
     if module.params["version"]:
         instance = Instance(module.params["name"], module.params["version"])
     else:

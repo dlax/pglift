@@ -49,6 +49,7 @@ if __name__ == "__main__":  # pragma: nocover
     import sys
 
     from .pm import PluginManager
+    from .settings import SETTINGS
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -77,7 +78,7 @@ if __name__ == "__main__":  # pragma: nocover
     subparsers.add_parser("expire").set_defaults(func=do_expire)
 
     args = parser.parse_args()
-    ctx = Context(plugin_manager=PluginManager.get())
+    ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
     try:
         instance = Instance.from_stanza(args.stanza)
     except ValueError as e:
