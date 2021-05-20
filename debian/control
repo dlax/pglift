@@ -16,7 +16,7 @@ Build-Depends:
   libpq-dev,
 # python3-pgtoolkit,  TODO: no package available yet
 Standards-Version: 4.1.3
-Homepage: https://github.com/dalibo/pglift
+Homepage: https://gitlab.com/dalibo/pglift
 X-Python3-Version: >= 3.6
 #Testsuite: autopkgtest-pkg-python
 

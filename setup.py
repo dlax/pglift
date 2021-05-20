@@ -12,7 +12,7 @@ setup(
     description="",  # FIXME
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/dalibo/%",  # FIXME
+    url="https://gitlab.com/dalibo/pglift",
     author="Dalibo SCOP",
     author_email="contact@dalibo.com",
     classifiers=[

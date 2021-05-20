@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pglift
-Source: https://github.com/dalibo/pglift
+Source: https://gitlab.com/dalibo/pglift
 
 Files: *
 Copyright: 2021 Dalibo <contact@dalibo.com>
