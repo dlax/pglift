@@ -8,7 +8,7 @@ from pgtoolkit.ctl import Status
 from pglift import instance, manifest, systemd, task
 from pglift.ctx import Context
 from pglift.model import Instance
-from pglift.settings import InitdbSettings, PostgreSQLSettings
+from pglift.settings import PostgreSQLSettings
 
 
 @pytest.fixture
@@ -32,6 +32,13 @@ def test_init(ctx, installed):
                 break
         else:
             raise AssertionError("invalid postgresql.conf")
+
+    hba_path = i.datadir / "pg_hba.conf"
+    hba = hba_path.read_text().splitlines()
+    assert (
+        "local   all             all                                     trust" in hba
+    )
+    assert "host    all             all             127.0.0.1/32            md5" in hba
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instance.systemd_unit(i))
@@ -77,67 +84,6 @@ def test_init(ctx, installed):
         instance.init(ctx, i)
 
 
-def test_init_surole_pwprompt(ctx, tmp_path, installed, monkeypatch):
-    calls = []
-
-    def cmd_run(args, **kwargs):
-        calls.append(args)
-
-    pgroot = ctx.settings.postgresql.root
-    ctx1 = Context(
-        plugin_manager=ctx.pm,
-        settings=ctx.settings.copy(
-            update={
-                "postgresql": PostgreSQLSettings(
-                    root=pgroot, initdb=InitdbSettings(auth=("md5", None))
-                )
-            }
-        ),
-    )
-    i = Instance.default_version("test", ctx=ctx1)
-    ctx1.pg_ctl(i.version)  # warm cache to avoid mock side effect
-    with monkeypatch.context() as m:
-        m.setattr("pglift.cmd.run", cmd_run)
-        instance.init(ctx1, i)
-
-    init_cmd = " ".join(calls[0])
-    assert "--auth=md5" in init_cmd
-    assert "--pwprompt" in init_cmd
-
-
-def test_init_surole_pwfile(ctx, tmp_path, installed, tmp_port):
-    pgroot = ctx.settings.postgresql.root
-    surole_pwd = "S3kret"
-    pwfile = tmp_path / "surole_pwd"
-    with open(pwfile, "w") as f:
-        f.write(surole_pwd)
-    ctx1 = Context(
-        plugin_manager=ctx.pm,
-        settings=ctx.settings.copy(
-            update={
-                "postgresql": PostgreSQLSettings(
-                    root=pgroot, initdb=InitdbSettings(auth=("md5", pwfile))
-                )
-            }
-        ),
-    )
-    i = Instance.default_version("test", ctx=ctx1)
-    instance.init(ctx1, i)
-    instance.configure(ctx1, i, unix_socket_directories=str(tmp_path), port=tmp_port)
-
-    with instance.running(ctx1, i):
-        connargs = {
-            "user": ctx1.settings.postgresql.surole,
-            "host": str(tmp_path),
-            "port": tmp_port,
-        }
-        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
-            psycopg2.connect(**connargs)
-
-        connargs["password"] = surole_pwd
-        psycopg2.connect(**connargs)
-
-
 def test_configure(ctx):
     i = Instance.default_version("test", ctx=ctx)
     configdir = i.datadir
@@ -150,6 +96,7 @@ def test_configure(ctx):
     changes = instance.configure(ctx, i, port=5433, max_connections=100)
     assert changes == {
         "cluster_name": (None, "test"),
+        "password_encryption": (None, "scram-sha-256"),
         "max_connections": (None, 100),
         "port": (None, 5433),
     }
@@ -202,6 +149,7 @@ def test_configure(ctx):
     changes = instance.configure(ctx, i, ssl=ssl)
     assert changes == {
         "cluster_name": (None, i.name),
+        "password_encryption": (None, "scram-sha-256"),
         "ssl": (None, True),
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),
@@ -213,6 +161,32 @@ def test_configure(ctx):
     instance.revert_configure(ctx, i, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
+
+
+def test_configure_auth(ctx, installed, tmp_path, tmp_port):
+    i = Instance.default_version("test", ctx=ctx)
+    instance.init(ctx, i)
+    instance.configure(ctx, i, port=tmp_port, unix_socket_directories=str(tmp_path))
+    surole = ctx.settings.postgresql.surole
+    connargs = {
+        "host": "localhost",
+        "port": tmp_port,
+        "user": surole.name,
+    }
+    password = surole.password.get_secret_value()
+    with instance.running(ctx, i):
+        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
+            psycopg2.connect(**connargs).close()
+        with pytest.raises(
+            psycopg2.OperationalError, match="password authentication failed"
+        ):
+            psycopg2.connect(password=password, **connargs).close()
+
+    instance.configure_auth(ctx, i)
+    with instance.running(ctx, i):
+        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
+            psycopg2.connect(**connargs).close()
+        psycopg2.connect(password=password, **connargs).close()
 
 
 def test_start_stop(ctx, installed, tmp_path, tmp_port):
@@ -254,8 +228,13 @@ def test_start_stop(ctx, installed, tmp_path, tmp_port):
     assert instance.status(ctx, i) == Status.not_running
 
 
-def test_apply(ctx, installed, tmp_path):
-    im = manifest.Instance(name="test", ssl=True, state=manifest.InstanceState.stopped)
+def test_apply(ctx, installed, tmp_path, tmp_port):
+    im = manifest.Instance(
+        name="test",
+        ssl=True,
+        state=manifest.InstanceState.stopped,
+        configuration={"unix_socket_directories": str(tmp_path), "port": tmp_port},
+    )
     i = im.model(ctx)
     instance.apply(ctx, im)
     assert i.exists()
@@ -263,8 +242,8 @@ def test_apply(ctx, installed, tmp_path):
     assert pgconfig
     assert pgconfig.ssl
 
+    assert instance.status(ctx, i) == Status.not_running
     im.state = manifest.InstanceState.started
-    im.configuration["unix_socket_directories"] = str(tmp_path)
     instance.apply(ctx, im)
     assert instance.status(ctx, i) == Status.running
 
@@ -293,7 +272,11 @@ def test_describe(ctx, installed):
     im = instance.describe(ctx, i)
     assert im is not None
     assert im.name == "test"
-    assert im.configuration == {"cluster_name": "test", "shared_buffers": "10MB"}
+    assert im.configuration == {
+        "cluster_name": "test",
+        "password_encryption": "scram-sha-256",
+        "shared_buffers": "10MB",
+    }
     assert im.state.name == "stopped"
 
 

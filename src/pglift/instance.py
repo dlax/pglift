@@ -4,11 +4,12 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
+import psycopg2
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, manifest, systemd, util
+from . import conf, manifest, queries, systemd, util
 from .ctx import BaseContext, Context
 from .model import Instance
 from .task import runner, task
@@ -29,6 +30,7 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
     initdb_settings = settings.initdb
+    surole = settings.surole
     try:
         if instance.exists():
             return False
@@ -44,21 +46,19 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
 
     opts: Dict[str, Union[str, Literal[True]]] = {
         "waldir": str(instance.waldir),
-        "username": settings.surole,
+        "username": surole.name,
         "encoding": "UTF8",
     }
     if initdb_settings.locale:
         opts["locale"] = initdb_settings.locale
     if initdb_settings.data_checksums:
         opts["data_checksums"] = True
-    initdb_auth = initdb_settings.auth
-    if initdb_auth:
-        opts["auth"], pwfile = initdb_auth
-        if pwfile is not None:
-            opts["pwfile"] = str(pwfile)
-        else:
-            opts["pwprompt"] = True
-    pg_ctl.init(instance.datadir, **opts)
+    pg_ctl.init(
+        instance.datadir,
+        auth_host=initdb_settings.auth_host,
+        auth_local=initdb_settings.auth_local,
+        **opts,
+    )
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
@@ -109,6 +109,9 @@ def configure(
     if not our_confd.exists():
         our_confd.mkdir()
     pgconfig = pgconf.parse(str(postgresql_conf))
+    if "password_encryption" in confitems:
+        raise TypeError("cannot set 'password_encryption' setting")
+    confitems["password_encryption"] = ctx.settings.postgresql.password_encryption
     if ssl:
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False):
@@ -219,6 +222,41 @@ def running(
 
 
 @task
+def configure_auth(ctx: BaseContext, instance: Instance) -> None:
+    """Configure authentication for the PostgreSQL instance by setting
+    super-user role's password, if any.
+    """
+    surole = ctx.settings.postgresql.surole
+    if surole.password is not None:
+        config = instance.config()
+        assert config is not None
+        password = surole.password.get_secret_value()
+        connargs = {
+            "port": config.port,
+            "dbname": "postgres",
+            "user": surole.name,
+        }
+        if config.unix_socket_directories:
+            connargs["host"] = config.unix_socket_directories
+        # TODO: find a way to make this idempotent, i.e. skip the work below
+        # if role already has a password.
+        hba_path = instance.datadir / "pg_hba.conf"
+        hba_content = hba_path.read_text()
+        hba_path.write_text(f"local postgres {surole.name} trust\n")
+        try:
+            with running(ctx, instance):
+                with psycopg2.connect(**connargs) as conn:
+                    conn.autocommit = True
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            queries.get("role_alter_password", username=surole.name),
+                            {"password": password},
+                        )
+        finally:
+            hba_path.write_text(hba_content)
+
+
+@task
 def start(
     ctx: BaseContext,
     instance: Instance,
@@ -324,6 +362,7 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
         ssl=instance_manifest.ssl,
         **configure_options,
     )
+    configure_auth(ctx, instance)
 
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:

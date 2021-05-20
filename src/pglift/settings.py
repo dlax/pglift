@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path, PosixPath
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar, Union
 
-from pydantic import BaseSettings, Field, root_validator, validator
+from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal
 
@@ -86,6 +86,23 @@ def _postgresql_bindir() -> str:
         raise EnvironmentError("no PostgreSQL installation found")
 
 
+AuthMethod = Union[
+    Literal["trust"],
+    Literal["reject"],
+    Literal["md5"],
+    Literal["password"],
+    Literal["scram-sha-256"],
+    Literal["gss"],
+    Literal["sspi"],
+    Literal["ident"],
+    Literal["peer"],
+    Literal["pam"],
+    Literal["ldap"],
+    Literal["radius"],
+    Literal["cert"],
+]
+
+
 @frozen
 class InitdbSettings(BaseSettings):
     """Settings for initdb step of a PostgreSQL instance."""
@@ -96,17 +113,10 @@ class InitdbSettings(BaseSettings):
     data_checksums: bool = False
     """Use checksums on data pages."""
 
-    auth: Optional[
-        Tuple[Union[Literal["md5"], Literal["scram-sha-256"]], Optional[Path]]
-    ]
-    """Auth method and optional pwfile.
-
-    Examples:
-      - None: `trust` method is used in pg_hba.conf,
-      - ('md5', None): user is asked a password,
-      - ('md5', Path(/path/to/surole_pwd)): the file is read by initdb for the
-        password.
-    """
+    auth_host: AuthMethod = "trust"
+    """Default authentication method for local TCP/IP connections"""
+    auth_local: AuthMethod = "trust"
+    """Default authentication method for local-socket connections."""
 
 
 @frozen
@@ -143,8 +153,30 @@ class PostgreSQLSettings(BaseSettings):
 
     initdb: InitdbSettings = InitdbSettings()
 
-    surole: str = "postgres"
-    """User name of instance super-user."""
+    password_encryption: Union[
+        Literal["scram-sha-256"], Literal["md5"]
+    ] = "scram-sha-256"
+    """Password encryption method."""
+
+    @frozen
+    class SuRole(BaseSettings):
+        name: str = "postgres"
+        password: Optional[SecretStr] = None
+
+        class Config:
+            env_prefix = "postgresql_surole_"
+
+            @classmethod
+            def customise_sources(
+                cls,
+                init_settings: SettingsSourceCallable,
+                env_settings: SettingsSourceCallable,
+                file_secret_settings: SettingsSourceCallable,
+            ) -> Tuple[SettingsSourceCallable, ...]:
+                return (init_settings, env_settings)
+
+    surole: SuRole = SuRole()
+    """Instance super-user role."""
 
     instancedir: str = "{version}/{instance}"
     """Path segment to instance base directory relative to `root` path."""

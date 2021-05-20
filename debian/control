@@ -12,6 +12,7 @@ Build-Depends:
   python3-sphinx,
   python3-pytest,
   python3-attr,
+  python3-psycopg2,
   postgresql,
   libpq-dev,
 # python3-pgtoolkit,  TODO: no package available yet
@@ -24,6 +25,7 @@ Package: python3-pglift
 Architecture: all
 Depends:
   ${python3:Depends},
+  python3-psycopg2,
   ${misc:Depends},
 Suggests: python-pglift-doc
 Description: PostgreSQL instances operation (Python 3)

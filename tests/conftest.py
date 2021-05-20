@@ -35,7 +35,13 @@ def tmp_settings(tmp_path):
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
-            "postgresql": {"root": str(tmp_path / "postgres")},
+            "postgresql": {
+                "root": str(tmp_path / "postgres"),
+                "initdb": {
+                    "auth_host": "md5",
+                },
+                "surole": {"password": "s3kret"},
+            },
         }
     )
 
