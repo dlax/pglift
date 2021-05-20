@@ -263,7 +263,6 @@ class Settings(BaseSettings):
                 init_settings,
                 env_settings,
                 json_config_settings_source,
-                file_secret_settings,
             )
 
 
