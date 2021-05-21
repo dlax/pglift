@@ -9,7 +9,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 setup(
     name="pglift",
     version="0.0.0",
-    description="",  # FIXME
+    description="Life-cycle management of production-ready PostgreSQL instances",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://gitlab.com/dalibo/pglift",
