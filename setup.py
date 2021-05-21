@@ -51,5 +51,9 @@ setup(
     package_data={
         "pglift": ["py.typed"],
     },
-    project_urls={},  # FIXME
+    project_urls={
+        "Documentation": "https://pglift.readthedocs.io/",
+        "Source": "https://gitlab.com/dalibo/pglift/",
+        "Tracker": "https://gitlab.com/dalibo/pglift/-/issues/",
+    },
 )
