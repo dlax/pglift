@@ -1,3 +1,4 @@
+import pathlib
 import socket
 
 import pytest
@@ -8,6 +9,25 @@ from pglift import pm
 from pglift.ctx import Context
 from pglift.model import Instance
 from pglift.settings import Settings
+
+
+def pytest_addoption(parser, pluginmanager):
+    parser.addoption(
+        "--regen-test-data",
+        action="store_true",
+        default=False,
+        help="Re-generate test data from actual results",
+    )
+
+
+@pytest.fixture
+def regen_test_data(request):
+    return request.config.getoption("--regen-test-data")
+
+
+@pytest.fixture
+def datadir():
+    return pathlib.Path(__file__).parent / "data"
 
 
 @pytest.fixture
