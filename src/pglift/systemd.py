@@ -3,15 +3,13 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
+from . import template as _template
 from .ctx import BaseContext
 from .util import xdg_data_home
 
 
-def template(
-    name: str,
-    datapath: Path = Path(__file__).parent / "data" / "systemd",
-) -> str:
-    return (datapath / name).read_text()
+def template(name: str) -> str:
+    return _template("systemd", name)
 
 
 def unit_path(name: str) -> Path:
