@@ -31,7 +31,12 @@ def datadir():
 
 
 @pytest.fixture
-def tmp_settings(tmp_path):
+def passfile(tmp_path):
+    return tmp_path / ".pgpass"
+
+
+@pytest.fixture
+def tmp_settings(tmp_path, passfile):
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
@@ -40,8 +45,9 @@ def tmp_settings(tmp_path):
                 "auth": {
                     "local": "password",
                     "host": "reject",
+                    "passfile": str(passfile),
                 },
-                "surole": {"password": "s3kret"},
+                "surole": {"password": "s3kret", "pgpass": True},
             },
         }
     )

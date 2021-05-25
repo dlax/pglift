@@ -164,11 +164,21 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
         "port": tmp_port,
         "user": surole.name,
     }
+
+    passfile = None
+    if ctx.settings.postgresql.surole.pgpass:
+        passfile = ctx.settings.postgresql.auth.passfile
+
+    if passfile:
+        assert not passfile.exists()
+        connargs["passfile"] = str(passfile)
+
     password = surole.password.get_secret_value()
     instance.configure_auth(ctx, i)
     with instance.running(ctx, i):
-        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
-            psycopg2.connect(**connargs).close()
+        if not passfile:
+            with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
+                psycopg2.connect(**connargs).close()
         psycopg2.connect(password=password, **connargs).close()
 
     hba_path = i.datadir / "pg_hba.conf"
@@ -180,6 +190,14 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
     assert (
         "host    all             all             127.0.0.1/32            reject" in hba
     )
+
+    if passfile:
+        assert surole.name in passfile.read_text()
+
+    instance.revert_configure_auth(ctx, i)
+
+    if passfile:
+        assert not passfile.exists()
 
 
 def test_start_stop(ctx, installed, tmp_path, tmp_port):

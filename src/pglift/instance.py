@@ -9,7 +9,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, manifest, queries, systemd, template, util
+from . import conf, manifest, pgpass, queries, systemd, template, util
 from .ctx import BaseContext, Context
 from .model import Instance
 from .task import runner, task
@@ -242,6 +242,7 @@ def configure_auth(ctx: BaseContext, instance: Instance) -> None:
             "dbname": "postgres",
             "user": surole.name,
         }
+
         if config.unix_socket_directories:
             connargs["host"] = config.unix_socket_directories
         with running(ctx, instance):
@@ -253,7 +254,28 @@ def configure_auth(ctx: BaseContext, instance: Instance) -> None:
                         {"password": password},
                     )
 
+        if surole.pgpass:
+            pgpass.add(
+                ctx.settings.postgresql.auth.passfile,
+                password,
+                port=config.port,  # type: ignore[arg-type]
+                username=surole.name,
+            )
+
     hba_path.write_text(hba)
+
+
+@configure_auth.revert
+def revert_configure_auth(ctx: BaseContext, instance: Instance) -> None:
+    surole = ctx.settings.postgresql.surole
+    if surole.pgpass:
+        config = instance.config()
+        assert config is not None
+        pgpass.remove(
+            ctx.settings.postgresql.auth.passfile,
+            port=config.port,  # type: ignore[arg-type]
+            username=surole.name,
+        )
 
 
 @task
@@ -410,6 +432,7 @@ def drop(
 
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
+    revert_configure_auth(ctx, instance)
     revert_configure(ctx, instance)
     revert_init(ctx, instance)
 

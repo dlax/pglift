@@ -110,6 +110,9 @@ class AuthSettings(BaseSettings):
     host: AuthMethod = "trust"
     """Default authentication method for local-socket connections."""
 
+    passfile: Path = Path.home() / ".pgpass"
+    """Path to .pgpass file."""
+
 
 @frozen
 class InitdbSettings(BaseSettings):
@@ -162,6 +165,8 @@ class PostgreSQLSettings(BaseSettings):
     class SuRole(BaseSettings):
         name: str = "postgres"
         password: Optional[SecretStr] = None
+        pgpass: bool = False
+        """Whether to store the password in .pgpass file."""
 
         class Config:
             env_prefix = "postgresql_surole_"
