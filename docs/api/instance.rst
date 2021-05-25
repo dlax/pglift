@@ -8,3 +8,4 @@ Instance operations
 .. autofunction:: drop
 .. autofunction:: init
 .. autofunction:: configure
+.. autofunction:: running

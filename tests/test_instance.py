@@ -10,8 +10,6 @@ from pglift.ctx import Context
 from pglift.model import Instance
 from pglift.settings import InitdbSettings, PostgreSQLSettings
 
-from . import instance_running
-
 
 @pytest.fixture
 def ctx(ctx):
@@ -127,7 +125,7 @@ def test_init_surole_pwfile(ctx, tmp_path, installed, tmp_port):
     instance.init(ctx1, i)
     instance.configure(ctx1, i, unix_socket_directories=str(tmp_path), port=tmp_port)
 
-    with instance_running(ctx1, i):
+    with instance.running(ctx1, i):
         connargs = {
             "user": ctx1.settings.postgresql.surole,
             "host": str(tmp_path),

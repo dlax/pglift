@@ -1,6 +1,8 @@
+import contextlib
 import shutil
+import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
@@ -183,6 +185,39 @@ def revert_configure(
                 fpath.unlink()
 
 
+@contextlib.contextmanager
+def running(
+    ctx: BaseContext,
+    instance: Instance,
+    *,
+    timeout: int = 10,
+    run_hooks: bool = False,
+) -> Iterator[None]:
+    """Context manager to temporarily start an instance.
+
+    :param timeout: delay to wait for instance startup.
+    :param run_hooks: whether or not to run hooks during instance start/stop.
+
+    :raises RuntimeError: when the instance did not get through running state
+        after specified `timeout` (in seconds).
+    """
+    if status(ctx, instance) == Status.running:
+        yield
+        return
+
+    start(ctx, instance, run_hooks=run_hooks)
+    for __ in range(timeout):
+        time.sleep(1)
+        if status(ctx, instance) == Status.running:
+            break
+    else:
+        raise RuntimeError(f"{instance} not started after {timeout}s")
+    try:
+        yield
+    finally:
+        stop(ctx, instance, run_hooks=run_hooks)
+
+
 @task
 def start(
     ctx: BaseContext,
@@ -190,13 +225,17 @@ def start(
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
+    run_hooks: bool = True,
 ) -> None:
-    """Start an instance."""
+    """Start an instance.
+
+    :param run_hooks: controls whether start-up hook will be triggered or not.
+    """
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).start(instance.datadir, wait=wait, logfile=logfile)
     elif ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
-    if wait:
+    if run_hooks and wait:
         ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
 
@@ -216,13 +255,17 @@ def stop(
     *,
     mode: str = "fast",
     wait: bool = True,
+    run_hooks: bool = False,
 ) -> None:
-    """Stop an instance."""
+    """Stop an instance.
+
+    :param run_hooks: controls whether stop hook will be triggered or not.
+    """
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(instance))
-    if wait:
+    if run_hooks and wait:
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 
 

@@ -2,9 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from pglift import instance as instance_mod
 from pglift import prometheus, systemd
-
-from . import instance_running
 
 
 @pytest.fixture
@@ -31,7 +30,7 @@ def test(ctx, installed, instance):
             # Temporarily register back prometheus' hooks so that service
             # gets started at instance startup.
             ctx.pm.register(prometheus)
-            with instance_running(ctx, instance):
+            with instance_mod.running(ctx, instance, run_hooks=True):
                 assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
         finally:
             ctx.pm.unregister(prometheus)

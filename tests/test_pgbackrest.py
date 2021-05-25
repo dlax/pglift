@@ -8,8 +8,6 @@ from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
 
-from . import instance_running
-
 
 @pytest.fixture
 def ctx(ctx):
@@ -39,7 +37,7 @@ def test(ctx, installed, instance, tmp_path):
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )
 
-    with instance_running(ctx, instance):
+    with instance_mod.running(ctx, instance):
         pgbackrest.init(ctx, instance)
         assert (
             directory / f"archive/{instance.version}-{instance.name}/archive.info"
