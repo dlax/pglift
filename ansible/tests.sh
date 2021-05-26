@@ -30,6 +30,10 @@ EOF
 export SETTINGS="@$settings_path"
 python -m pglift.install --settings="$settings_path"
 
+postgresql_surole_password=s3kret
+export postgresql_surole_password
+export PGPASSWORD=$postgresql_surole_password
+
 query="select setting from pg_settings where name = 'cluster_name';"
 list_timers () (
     if type systemctl > /dev/null;
