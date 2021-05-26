@@ -8,6 +8,7 @@ from typing import List
 from pgtoolkit import conf as pgconf
 
 from . import hookimpl
+from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .model import Instance
@@ -145,12 +146,8 @@ def init(ctx: BaseContext, instance: Instance) -> None:
 def instance_configure(ctx: BaseContext, instance: Instance) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     setup(ctx, instance)
-
-
-@hookimpl  # type: ignore[misc]
-def instance_start(ctx: BaseContext, instance: Instance) -> None:
-    """Initialize pgBackRest for an instance that got started."""
-    init(ctx, instance)
+    with instance_mod.running(ctx, instance):
+        init(ctx, instance)
 
 
 @hookimpl  # type: ignore[misc]
