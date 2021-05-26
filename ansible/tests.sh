@@ -40,7 +40,7 @@ list_timers () (
 
 set -x
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play1.yml
+ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play1.yml
 
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
@@ -49,7 +49,7 @@ psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # de
 set -e
 list_timers
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
+ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play2.yml
 
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 set +e
@@ -58,7 +58,7 @@ set -e
 psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
 list_timers
 
-ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play3.yml
 list_timers
 
 ps xf
