@@ -46,20 +46,20 @@ set -x
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play1.yml
 
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 set +e
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # dev
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # dev
 set -e
 list_timers
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play2.yml
 
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 set +e
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 set -e
-psql -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
+psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
 list_timers
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play3.yml
