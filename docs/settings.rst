@@ -23,8 +23,7 @@ A typical settings document looks like:
         "root": "/srv/pgsql",
         "initdb": {
           "locale": "fr_FR.UTF8",
-          "data_checksums": true,
-          "auth": ["scram-sha-256", null]
+          "data_checksums": true
         },
         "surole": "postgres",
         "instancedir": "{version}/{instance}",
