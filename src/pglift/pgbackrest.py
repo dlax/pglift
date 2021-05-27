@@ -137,17 +137,17 @@ def init(ctx: BaseContext, instance: Instance) -> None:
     if info_json and info_json[0]["status"]["code"] != 1:
         return
 
-    ctx.run(base_cmd + ["start"], check=True)
-    ctx.run(base_cmd + ["stanza-create"], check=True)
-    ctx.run(base_cmd + ["check"], check=True)
+    with instance_mod.running(ctx, instance):
+        ctx.run(base_cmd + ["start"], check=True)
+        ctx.run(base_cmd + ["stanza-create"], check=True)
+        ctx.run(base_cmd + ["check"], check=True)
 
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: BaseContext, instance: Instance) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     setup(ctx, instance)
-    with instance_mod.running(ctx, instance):
-        init(ctx, instance)
+    init(ctx, instance)
 
 
 @hookimpl  # type: ignore[misc]
