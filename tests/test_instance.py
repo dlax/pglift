@@ -33,13 +33,6 @@ def test_init(ctx, installed):
         else:
             raise AssertionError("invalid postgresql.conf")
 
-    hba_path = i.datadir / "pg_hba.conf"
-    hba = hba_path.read_text().splitlines()
-    assert (
-        "local   all             all                                     trust" in hba
-    )
-    assert "host    all             all             127.0.0.1/32            md5" in hba
-
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instance.systemd_unit(i))
 
@@ -167,24 +160,26 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
     instance.configure(ctx, i, port=tmp_port, unix_socket_directories=str(tmp_path))
     surole = ctx.settings.postgresql.surole
     connargs = {
-        "host": "localhost",
+        "host": str(tmp_path),
         "port": tmp_port,
         "user": surole.name,
     }
     password = surole.password.get_secret_value()
-    with instance.running(ctx, i):
-        with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
-            psycopg2.connect(**connargs).close()
-        with pytest.raises(
-            psycopg2.OperationalError, match="password authentication failed"
-        ):
-            psycopg2.connect(password=password, **connargs).close()
-
     instance.configure_auth(ctx, i)
     with instance.running(ctx, i):
         with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
             psycopg2.connect(**connargs).close()
         psycopg2.connect(password=password, **connargs).close()
+
+    hba_path = i.datadir / "pg_hba.conf"
+    hba = hba_path.read_text().splitlines()
+    assert (
+        "local   all             all                                     password"
+        in hba
+    )
+    assert (
+        "host    all             all             127.0.0.1/32            reject" in hba
+    )
 
 
 def test_start_stop(ctx, installed, tmp_path, tmp_port):

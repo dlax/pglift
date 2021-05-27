@@ -25,6 +25,10 @@ A typical settings document looks like:
           "locale": "fr_FR.UTF8",
           "data_checksums": true
         },
+        "auth": {
+          "local": "trust",
+          "host": "scram-sha-256"
+        },
         "surole": "postgres",
         "instancedir": "{version}/{instance}",
         "datadir": "data",

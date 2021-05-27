@@ -9,7 +9,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, manifest, queries, systemd, util
+from . import conf, manifest, queries, systemd, template, util
 from .ctx import BaseContext, Context
 from .model import Instance
 from .task import runner, task
@@ -48,17 +48,16 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
         "waldir": str(instance.waldir),
         "username": surole.name,
         "encoding": "UTF8",
+        # Set temporary auth methods, until the complete pg_hba.conf gets
+        # deployed.
+        "auth_local": "trust",
+        "auth_host": "reject",
     }
     if initdb_settings.locale:
         opts["locale"] = initdb_settings.locale
     if initdb_settings.data_checksums:
         opts["data_checksums"] = True
-    pg_ctl.init(
-        instance.datadir,
-        auth_host=initdb_settings.auth_host,
-        auth_local=initdb_settings.auth_local,
-        **opts,
-    )
+    pg_ctl.init(instance.datadir, **opts)
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
@@ -221,9 +220,19 @@ def running(
 @task
 def configure_auth(ctx: BaseContext, instance: Instance) -> None:
     """Configure authentication for the PostgreSQL instance by setting
-    super-user role's password, if any.
+    super-user role's password, if any, and installing templated pg_hba.conf.
     """
     surole = ctx.settings.postgresql.surole
+    auth_settings = ctx.settings.postgresql.auth
+    hba_path = instance.datadir / "pg_hba.conf"
+    hba = template("postgresql", "pg_hba.conf").format(
+        surole=surole.name,
+        auth_local=auth_settings.local,
+        auth_host=auth_settings.host,
+    )
+    if hba_path.read_text() == hba:
+        return
+
     if surole.password is not None:
         config = instance.config()
         assert config is not None
@@ -235,22 +244,16 @@ def configure_auth(ctx: BaseContext, instance: Instance) -> None:
         }
         if config.unix_socket_directories:
             connargs["host"] = config.unix_socket_directories
-        # TODO: find a way to make this idempotent, i.e. skip the work below
-        # if role already has a password.
-        hba_path = instance.datadir / "pg_hba.conf"
-        hba_content = hba_path.read_text()
-        hba_path.write_text(f"local postgres {surole.name} trust\n")
-        try:
-            with running(ctx, instance):
-                with psycopg2.connect(**connargs) as conn:
-                    conn.autocommit = True
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            queries.get("role_alter_password", username=surole.name),
-                            {"password": password},
-                        )
-        finally:
-            hba_path.write_text(hba_content)
+        with running(ctx, instance):
+            with psycopg2.connect(**connargs) as conn:
+                conn.autocommit = True
+                with conn.cursor() as cur:
+                    cur.execute(
+                        queries.get("role_alter_password", username=surole.name),
+                        {"password": password},
+                    )
+
+    hba_path.write_text(hba)
 
 
 @task

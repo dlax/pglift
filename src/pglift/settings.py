@@ -104,6 +104,14 @@ AuthMethod = Union[
 
 
 @frozen
+class AuthSettings(BaseSettings):
+    local: AuthMethod = "trust"
+    """Default authentication method for local TCP/IP connections"""
+    host: AuthMethod = "trust"
+    """Default authentication method for local-socket connections."""
+
+
+@frozen
 class InitdbSettings(BaseSettings):
     """Settings for initdb step of a PostgreSQL instance."""
 
@@ -112,11 +120,6 @@ class InitdbSettings(BaseSettings):
 
     data_checksums: bool = False
     """Use checksums on data pages."""
-
-    auth_host: AuthMethod = "trust"
-    """Default authentication method for local TCP/IP connections"""
-    auth_local: AuthMethod = "trust"
-    """Default authentication method for local-socket connections."""
 
 
 @frozen
@@ -152,6 +155,8 @@ class PostgreSQLSettings(BaseSettings):
     """Root directory for all managed instances."""
 
     initdb: InitdbSettings = InitdbSettings()
+
+    auth: AuthSettings = AuthSettings()
 
     @frozen
     class SuRole(BaseSettings):

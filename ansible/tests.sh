@@ -23,6 +23,9 @@ cat > "$settings_path" << EOF
 {
   "prefix": "$tmpdir",
   "postgresql": {
+    "auth": {
+      "local": "md5"
+    },
     "root": "$tmpdir/postgresql"
   }
 }

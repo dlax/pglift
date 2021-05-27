@@ -37,8 +37,9 @@ def tmp_settings(tmp_path):
             "prefix": str(tmp_path),
             "postgresql": {
                 "root": str(tmp_path / "postgres"),
-                "initdb": {
-                    "auth_host": "md5",
+                "auth": {
+                    "local": "password",
+                    "host": "reject",
                 },
                 "surole": {"password": "s3kret"},
             },
