@@ -109,9 +109,6 @@ def configure(
     if not our_confd.exists():
         our_confd.mkdir()
     pgconfig = pgconf.parse(str(postgresql_conf))
-    if "password_encryption" in confitems:
-        raise TypeError("cannot set 'password_encryption' setting")
-    confitems["password_encryption"] = ctx.settings.postgresql.password_encryption
     if ssl:
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False):

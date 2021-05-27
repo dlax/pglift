@@ -153,11 +153,6 @@ class PostgreSQLSettings(BaseSettings):
 
     initdb: InitdbSettings = InitdbSettings()
 
-    password_encryption: Union[
-        Literal["scram-sha-256"], Literal["md5"]
-    ] = "scram-sha-256"
-    """Password encryption method."""
-
     @frozen
     class SuRole(BaseSettings):
         name: str = "postgres"

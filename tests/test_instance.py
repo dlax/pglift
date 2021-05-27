@@ -96,7 +96,6 @@ def test_configure(ctx):
     changes = instance.configure(ctx, i, port=5433, max_connections=100)
     assert changes == {
         "cluster_name": (None, "test"),
-        "password_encryption": (None, "scram-sha-256"),
         "max_connections": (None, 100),
         "port": (None, 5433),
     }
@@ -149,7 +148,6 @@ def test_configure(ctx):
     changes = instance.configure(ctx, i, ssl=ssl)
     assert changes == {
         "cluster_name": (None, i.name),
-        "password_encryption": (None, "scram-sha-256"),
         "ssl": (None, True),
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),
@@ -274,7 +272,6 @@ def test_describe(ctx, installed):
     assert im.name == "test"
     assert im.configuration == {
         "cluster_name": "test",
-        "password_encryption": "scram-sha-256",
         "shared_buffers": "10MB",
     }
     assert im.state.name == "stopped"
