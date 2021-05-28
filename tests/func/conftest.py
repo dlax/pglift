@@ -39,6 +39,18 @@ settings_by_id = {
             },
         },
     },
+    "postgresql-password-auth--surole-no-pgpass": {
+        "postgresql": {
+            "auth": {
+                "local": "password",
+                "host": "reject",
+            },
+            "surole": {
+                "password": "s3kret",
+                "pgpass": False,
+            },
+        },
+    },
 }
 ids, params = zip(*settings_by_id.items())
 ids = tuple(f"settings:{i}" for i in ids)
