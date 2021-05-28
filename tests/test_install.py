@@ -22,7 +22,7 @@ def fake_systemd_install(monkeypatch):
         yield install_calls, uninstall_calls
 
 
-def test_postgresql_systemd_unit_template(fake_systemd_install, tmp_settings):
+def test_postgresql_systemd_unit_template(fake_systemd_install):
     install_calls, uninstall_calls = fake_systemd_install
     settings = PostgreSQLSettings(pid_directory="/pids")
     install.postgresql_systemd_unit_template(settings, env="SETTINGS=@settings.json")
