@@ -27,6 +27,10 @@ def journalctl():
 
 settings_by_id = {
     "defaults": {},
+    "no-service-manager-no-scheduler": {
+        "service_manager": None,
+        "scheduler": None,
+    },
     "postgresql-password-auth--surole-use-pgpass": {
         "postgresql": {
             "auth": {
