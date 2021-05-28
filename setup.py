@@ -37,6 +37,7 @@ setup(
     python_requires=">=3.6, <4",
     install_requires=[
         "attrs",
+        "click",
         "pgtoolkit >= 0.15.3",
         "pluggy",
         "pydantic",
@@ -66,6 +67,10 @@ setup(
     package_data={
         "pglift": ["py.typed"],
     },
+    entry_points="""
+        [console_scripts]
+        pglift=pglift.cli:cli
+    """,
     project_urls={
         "Documentation": "https://pglift.readthedocs.io/",
         "Source": "https://gitlab.com/dalibo/pglift/",
