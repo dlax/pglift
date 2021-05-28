@@ -45,21 +45,26 @@ def test_configure_auth(ctx, instance_auth_configured):
     if passfile:
         connargs["passfile"] = str(passfile)
 
-    password = surole.password.get_secret_value()
+    password = None
+    if surole.password:
+        password = surole.password.get_secret_value()
+
     with instance_mod.running(ctx, i):
-        if not passfile:
+        if password is not None and not passfile:
             with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
                 psycopg2.connect(**connargs).close()
         psycopg2.connect(password=password, **connargs).close()
 
     hba_path = i.datadir / "pg_hba.conf"
     hba = hba_path.read_text().splitlines()
+    auth = ctx.settings.postgresql.auth
     assert (
-        "local   all             all                                     password"
+        f"local   all             all                                     {auth.local}"
         in hba
     )
     assert (
-        "host    all             all             127.0.0.1/32            reject" in hba
+        f"host    all             all             127.0.0.1/32            {auth.host}"
+        in hba
     )
 
     if passfile:

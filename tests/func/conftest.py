@@ -26,6 +26,7 @@ def journalctl():
 
 
 settings_by_id = {
+    "defaults": {},
     "postgresql-password-auth--surole-use-pgpass": {
         "postgresql": {
             "auth": {
