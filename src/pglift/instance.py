@@ -10,9 +10,9 @@ from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
 from . import conf, manifest, pgpass, queries, systemd, template, util
-from .ctx import BaseContext, Context
+from .ctx import BaseContext
 from .model import Instance
-from .task import runner, task
+from .task import task
 
 
 def systemd_unit(instance: Instance) -> str:
@@ -421,77 +421,3 @@ def drop(
 
     revert_configure(ctx, instance)
     revert_init(ctx, instance)
-
-
-if __name__ == "__main__":  # pragma: nocover
-    import argparse
-
-    from . import pm
-    from .settings import SETTINGS
-
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
-
-    def instance_subparser(*args: Any, **kwargs: Any) -> argparse.ArgumentParser:
-        subparser = subparsers.add_parser(*args, **kwargs)
-        subparser.add_argument("--name", required=True)
-        subparser.add_argument("--version", required=False)
-        return subparser
-
-    def get_instance(ctx: BaseContext, args: argparse.Namespace) -> Instance:
-        if args.version:
-            return Instance(args.name, args.version)
-        else:
-            return Instance.default_version(args.name, ctx)
-
-    apply_parser = subparsers.add_parser(
-        "apply",
-        help="apply manifest as a PostgreSQL instance",
-    )
-    apply_parser.add_argument(
-        "-f", "--file", type=argparse.FileType(), metavar="MANIFEST", required=True
-    )
-
-    def do_apply(ctx: BaseContext, args: argparse.Namespace) -> None:
-        with runner():
-            apply(ctx, manifest.Instance.parse_yaml(args.file))
-
-    apply_parser.set_defaults(func=do_apply)
-
-    schema_parser = subparsers.add_parser(
-        "schema",
-        help="print the JSON schema of PostgreSQL instance model",
-    )
-
-    def do_schema(ctx: BaseContext, args: argparse.Namespace) -> None:
-        print(manifest.Instance.schema_json(indent=2))
-
-    schema_parser.set_defaults(func=do_schema)
-
-    describe_parser = instance_subparser(
-        "describe",
-        help="describe a PostgreSQL instance",
-    )
-
-    def do_describe(ctx: BaseContext, args: argparse.Namespace) -> None:
-        instance = get_instance(ctx, args)
-        described = describe(ctx, instance)
-        if described:
-            print(described.yaml(), end="")
-
-    describe_parser.set_defaults(func=do_describe)
-
-    drop_parser = instance_subparser(
-        "drop",
-        help="drop a PostgreSQL instance",
-    )
-
-    def do_drop(ctx: BaseContext, args: argparse.Namespace) -> None:
-        instance = get_instance(ctx, args)
-        drop(ctx, instance)
-
-    drop_parser.set_defaults(func=do_drop)
-
-    args = parser.parse_args()
-    ctx = Context(plugin_manager=pm.PluginManager.get(), settings=SETTINGS)
-    args.func(ctx, args)
