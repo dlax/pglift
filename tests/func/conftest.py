@@ -1,3 +1,4 @@
+import copy
 import shutil
 import socket
 import subprocess
@@ -24,24 +25,38 @@ def journalctl():
     proc.kill()
 
 
-@pytest.fixture(scope="session")
-def settings(tmp_path_factory):
+settings_by_id = {
+    "postgresql-password-auth--surole-use-pgpass": {
+        "postgresql": {
+            "auth": {
+                "local": "password",
+                "host": "reject",
+            },
+            "surole": {
+                "password": "s3kret",
+                "pgpass": True,
+            },
+        },
+    },
+}
+ids, params = zip(*settings_by_id.items())
+ids = tuple(f"settings:{i}" for i in ids)
+
+
+@pytest.fixture(scope="session", params=params, ids=ids)
+def settings(request, tmp_path_factory):
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
     prefix = tmp_path_factory.mktemp("prefix")
-    return Settings.parse_obj(
-        {
-            "prefix": str(prefix),
-            "postgresql": {
-                "root": str(prefix / "postgres"),
-                "auth": {
-                    "local": "password",
-                    "host": "reject",
-                    "passfile": str(passfile),
-                },
-                "surole": {"password": "s3kret", "pgpass": True},
-            },
-        }
-    )
+    obj = copy.deepcopy(request.param)
+    assert "prefix" not in obj
+    obj["prefix"] = str(prefix)
+    pg_obj = obj.setdefault("postgresql", {})
+    assert "root" not in pg_obj
+    pg_obj["root"] = str(tmp_path_factory.mktemp("postgres"))
+    pgauth_obj = pg_obj.setdefault("auth", {})
+    assert "passfile" not in pgauth_obj
+    pgauth_obj["passfile"] = str(passfile)
+    return Settings.parse_obj(obj)
 
 
 @pytest.fixture(scope="session")
