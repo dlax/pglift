@@ -36,7 +36,7 @@ def passfile(tmp_path):
 
 
 @pytest.fixture
-def tmp_settings(tmp_path, passfile):
+def settings(tmp_path, passfile):
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
@@ -54,24 +54,24 @@ def tmp_settings(tmp_path, passfile):
 
 
 @pytest.fixture
-def installed(tmp_settings, tmp_path):
-    if tmp_settings.service_manager != "systemd":
+def installed(settings, tmp_path):
+    if settings.service_manager != "systemd":
         yield
         return
 
     custom_settings = tmp_path / "settings.json"
-    custom_settings.write_text(tmp_settings.json())
-    install.do(tmp_settings, env=f"SETTINGS=@{custom_settings}")
+    custom_settings.write_text(settings.json())
+    install.do(settings, env=f"SETTINGS=@{custom_settings}")
     yield
-    install.undo(tmp_settings)
+    install.undo(settings)
 
 
 @pytest.fixture
-def ctx(tmp_settings):
+def ctx(settings):
     p = pm.PluginManager.get()
     p.trace.root.setwriter(print)
     p.enable_tracing()
-    return Context(plugin_manager=p, settings=tmp_settings)
+    return Context(plugin_manager=p, settings=settings)
 
 
 @pytest.fixture
