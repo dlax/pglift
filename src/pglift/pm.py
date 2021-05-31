@@ -1,4 +1,5 @@
-from typing import Sequence
+from types import ModuleType
+from typing import List, Sequence
 
 import pluggy
 
@@ -19,6 +20,9 @@ class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
                 self.register(hm)
         return self
 
-    def unregister_all(self) -> None:
-        for _, plugin in self.list_name_plugin():
+    def unregister_all(self) -> List[ModuleType]:
+        unregistered = []
+        for __, plugin in self.list_name_plugin():
             self.unregister(plugin)
+            unregistered.append(plugin)
+        return unregistered
