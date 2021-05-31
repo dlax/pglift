@@ -109,6 +109,19 @@ def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
 
 
 @pytest.fixture
+def instance_auth_configured(ctx, instance_configured, tmp_port, tmp_path_factory):
+    i = instance_configured
+
+    passfile = None
+    if ctx.settings.postgresql.surole.pgpass:
+        passfile = ctx.settings.postgresql.auth.passfile
+        assert not passfile.exists()
+
+    instance_mod.configure_auth(ctx, i)
+    return i
+
+
+@pytest.fixture
 def instance(ctx, instance_configured, installed):
     i = instance_configured
     yield i

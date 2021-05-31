@@ -158,8 +158,8 @@ def test_configure(ctx_nohook):
         assert fpath.exists()
 
 
-def test_configure_auth(ctx, instance_configured):
-    i = instance_configured
+def test_configure_auth(ctx, instance_auth_configured):
+    i = instance_auth_configured
     surole = ctx.settings.postgresql.surole
     connargs = {
         "host": str(i.config().unix_socket_directories),
@@ -172,7 +172,6 @@ def test_configure_auth(ctx, instance_configured):
         passfile = ctx.settings.postgresql.auth.passfile
 
     if passfile:
-        assert not passfile.exists()
         connargs["passfile"] = str(passfile)
 
     password = surole.password.get_secret_value()
