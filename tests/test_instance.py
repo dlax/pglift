@@ -12,16 +12,8 @@ from pglift.model import Instance
 from pglift.settings import PostgreSQLSettings
 
 
-@pytest.fixture
-def ctx(ctx):
-    ctx.pm.unregister_all()
-    return ctx
-
-
-def test_init(ctx, installed):
-    i = Instance.default_version("test", ctx=ctx)
-    ret = instance_mod.init(ctx, i)
-    assert ret
+def test_init(ctx, instance_initialized):
+    i = instance_initialized
     assert i.datadir.exists()
     assert i.waldir.exists()
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -78,8 +70,19 @@ def test_init(ctx, installed):
         instance_mod.init(ctx, i)
 
 
-def test_configure(ctx):
-    i = Instance.default_version("test", ctx=ctx)
+@pytest.fixture
+def ctx_nohook(ctx):
+    unregistered = ctx.pm.unregister_all()
+    try:
+        yield ctx
+    finally:
+        for plugin in unregistered:
+            ctx.pm.register(plugin)
+
+
+def test_configure(ctx_nohook):
+    ctx = ctx_nohook
+    i = Instance.default_version("test-configure", ctx=ctx)
     configdir = i.datadir
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
@@ -89,7 +92,7 @@ def test_configure(ctx):
 
     changes = instance_mod.configure(ctx, i, port=5433, max_connections=100)
     assert changes == {
-        "cluster_name": (None, "test"),
+        "cluster_name": (None, "test-configure"),
         "max_connections": (None, 100),
         "port": (None, 5433),
     }
@@ -100,13 +103,13 @@ def test_configure(ctx):
     configfpath = configdir / "conf.pglift.d" / "user.conf"
     lines = configfpath.read_text().splitlines()
     assert "port = 5433" in lines
-    assert "cluster_name = 'test'" in lines
+    assert "cluster_name = 'test-configure'" in lines
 
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
     assert config.port == 5433
     assert config.bonjour_name == "test"
-    assert config.cluster_name == "test"
+    assert config.cluster_name == "test-configure"
 
     changes = instance_mod.configure(ctx, i, listen_address="*", ssl=True)
     assert changes == {
@@ -155,14 +158,12 @@ def test_configure(ctx):
         assert fpath.exists()
 
 
-def test_configure_auth(ctx, installed, tmp_path, tmp_port):
-    i = Instance.default_version("test", ctx=ctx)
-    instance_mod.init(ctx, i)
-    instance_mod.configure(ctx, i, port=tmp_port, unix_socket_directories=str(tmp_path))
+def test_configure_auth(ctx, instance_configured):
+    i = instance_configured
     surole = ctx.settings.postgresql.surole
     connargs = {
-        "host": str(tmp_path),
-        "port": tmp_port,
+        "host": str(i.config().unix_socket_directories),
+        "port": i.config().port,
         "user": surole.name,
     }
 
@@ -201,19 +202,8 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
         assert not passfile.exists()
 
 
-def test_start_stop(ctx, installed, tmp_path, tmp_port):
-    i = Instance.default_version("test", ctx=ctx)
-    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
-
-    instance_mod.init(ctx, i)
-    instance_mod.configure(
-        ctx,
-        i,
-        port=tmp_port,
-        log_destination="syslog",
-        unix_socket_directories=str(tmp_path),
-    )
-    assert instance_mod.status(ctx, i) == Status.not_running
+def test_start_stop(ctx, instance, tmp_path):
+    i = instance
     if ctx.settings.service_manager == "systemd":
         assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
@@ -242,7 +232,7 @@ def test_start_stop(ctx, installed, tmp_path, tmp_port):
 
 def test_apply(ctx, installed, tmp_path, tmp_port):
     im = manifest.Instance(
-        name="test",
+        name="test_apply",
         ssl=True,
         state=manifest.InstanceState.stopped,
         configuration={"unix_socket_directories": str(tmp_path), "port": tmp_port},
@@ -273,28 +263,30 @@ def test_apply(ctx, installed, tmp_path, tmp_port):
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx, installed):
+def test_describe_absent(ctx, installed):
     i = Instance("absent", "9.6")
     im = instance_mod.describe(ctx, i)
     assert im is None
 
-    i = Instance.default_version("test", ctx=ctx)
-    instance_mod.init(ctx, i)
-    instance_mod.configure(ctx, i, shared_buffers="10MB")
+
+def test_describe(ctx, instance):
+    i = instance
     im = instance_mod.describe(ctx, i)
     assert im is not None
     assert im.name == "test"
-    assert im.configuration == {
-        "cluster_name": "test",
-        "shared_buffers": "10MB",
-    }
+    config = im.configuration
+    config.pop("port")
+    config.pop("unix_socket_directories")
+    assert config == {"cluster_name": "test"}
     assert im.state.name == "stopped"
 
 
-def test_drop(ctx, installed):
+def test_drop_absent(ctx, installed):
     i = Instance("absent", "9.6")
     instance_mod.drop(ctx, i)
 
+
+def test_drop(ctx, installed):
     i = Instance.default_version("test", ctx=ctx)
     instance_mod.init(ctx, i)
     instance_mod.drop(ctx, i)
