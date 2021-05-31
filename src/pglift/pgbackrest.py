@@ -58,6 +58,8 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     assert instance_config
     stanza = _stanza(instance)
 
+    backuprole = ctx.settings.postgresql.surole
+
     config = {
         "global": {
             "repo1-path": str(directory),
@@ -69,7 +71,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         stanza: {
             "pg1-path": f"{instance.datadir}",
             "pg1-port": str(instance_config.port),
-            "pg1-user": "postgres",
+            "pg1-user": backuprole.name,
         },
     }
     unix_socket_directories = instance_config.get("unix_socket_directories")
