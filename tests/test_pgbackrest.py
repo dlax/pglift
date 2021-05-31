@@ -3,17 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from pglift import backup
 from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
-
-
-@pytest.fixture
-def ctx(ctx):
-    ctx.pm.unregister(pgbackrest)
-    ctx.pm.unregister(backup)
-    return ctx
 
 
 @pytest.mark.skipif(
@@ -25,7 +17,6 @@ def test(ctx, installed, instance, tmp_path):
     instance_port = instance_config.port
     pgbackrest_settings = ctx.settings.pgbackrest
 
-    pgbackrest.setup(ctx, instance)
     configpath = Path(str(pgbackrest_settings.configpath).format(instance=instance))
     directory = Path(str(pgbackrest_settings.directory).format(instance=instance))
     assert configpath.exists()
@@ -37,16 +28,15 @@ def test(ctx, installed, instance, tmp_path):
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )
 
-    with instance_mod.running(ctx, instance):
-        pgbackrest.init(ctx, instance)
-        assert (
-            directory / f"archive/{instance.version}-{instance.name}/archive.info"
-        ).exists()
-        assert (
-            directory / f"backup/{instance.version}-{instance.name}/backup.info"
-        ).exists()
+    assert (
+        directory / f"archive/{instance.version}-{instance.name}/archive.info"
+    ).exists()
+    assert (
+        directory / f"backup/{instance.version}-{instance.name}/backup.info"
+    ).exists()
 
-        assert not latest_backup.exists()
+    assert not latest_backup.exists()
+    with instance_mod.running(ctx, instance):
         pgbackrest.backup(
             ctx,
             instance,
@@ -69,10 +59,13 @@ def test(ctx, installed, instance, tmp_path):
     config_before = configpath.read_text()
     new_port = instance_port + 1  # Hopefully, it'll be free.
     instance_mod.configure(ctx, instance, port=new_port)
-    pgbackrest.setup(ctx, instance)
-    config_after = configpath.read_text()
-    assert config_after != config_before
-    assert f"pg1-port = {new_port}" in config_after.splitlines()
+    try:
+        pgbackrest.setup(ctx, instance)
+        config_after = configpath.read_text()
+        assert config_after != config_before
+        assert f"pg1-port = {new_port}" in config_after.splitlines()
+    finally:
+        instance_mod.configure(ctx, instance, port=instance_port)
 
     pgbackrest.revert_setup(ctx, instance)
     assert not configpath.exists()
