@@ -84,7 +84,7 @@ def test_configure(ctx):
     configdir.mkdir(parents=True)
     postgresql_conf = i.datadir / "postgresql.conf"
     with postgresql_conf.open("w") as f:
-        f.write("bonjour = 'test'\n")
+        f.write("bonjour_name = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
     changes = instance_mod.configure(ctx, i, port=5433, max_connections=100)
@@ -105,7 +105,7 @@ def test_configure(ctx):
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
     assert config.port == 5433
-    assert config.bonjour == "test"
+    assert config.bonjour_name == "test"
     assert config.cluster_name == "test"
 
     changes = instance_mod.configure(ctx, i, listen_address="*", ssl=True)
