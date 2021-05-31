@@ -5,7 +5,7 @@ from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import yaml
 from pgtoolkit.ctl import Status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from . import model
 from .ctx import BaseContext
@@ -73,6 +73,24 @@ class Instance(Manifest):
     state: InstanceState = InstanceState.started
     ssl: Union[bool, Tuple[Path, Path]] = False
     configuration: Dict[str, Any] = Field(default_factory=dict)
+
+    @validator("name")
+    def __validate_name_(cls, v: str) -> str:
+        """Validate 'name' field.
+
+        >>> Instance(name='without_dash')  # doctest: +ELLIPSIS
+        Instance(name='without_dash', ...)
+        >>> Instance(name='with-dash')
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        name
+          instance name must not contain dashes (type=value_error)
+        """
+        # Avoid dash as this will break systemd instance unit.
+        if "-" in v:
+            raise ValueError("instance name must not contain dashes")
+        return v
 
     def model(self, ctx: BaseContext) -> model.Instance:
         """Return a model Instance matching this manifest."""
