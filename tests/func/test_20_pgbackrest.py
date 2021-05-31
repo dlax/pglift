@@ -78,7 +78,3 @@ def test(ctx, installed, instance, tmp_path):
             port=instance_port,
             unix_socket_directories=instance_config.unix_socket_directories,
         )
-
-    pgbackrest.revert_setup(ctx, instance)
-    assert not configpath.exists()
-    assert not directory.exists()

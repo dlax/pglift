@@ -16,7 +16,3 @@ def test_systemd_backup_job(ctx, installed, instance):
     with instance_mod.running(ctx, instance, run_hooks=True):
         assert systemd.is_active(ctx, backup.systemd_timer(instance))
     assert not systemd.is_active(ctx, backup.systemd_timer(instance))
-
-    instance_mod.drop(ctx, instance)
-    assert not systemd.is_active(ctx, backup.systemd_timer(instance))
-    assert not systemd.is_enabled(ctx, backup.systemd_timer(instance))

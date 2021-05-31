@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 import requests
 
 from pglift import instance as instance_mod
@@ -37,11 +36,3 @@ def test(ctx, installed, instance):
         assert r.ok
         output = r.text
         assert "pg_up 1" in output.splitlines()
-
-    prometheus.revert_setup(ctx, instance)
-    assert not configpath.exists()
-    assert not queriespath.exists()
-    if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
-        with pytest.raises(requests.ConnectionError):
-            requests.get("http://0.0.0.0:9187/metrics")

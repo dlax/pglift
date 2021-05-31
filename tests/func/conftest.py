@@ -24,18 +24,15 @@ def journalctl():
     proc.kill()
 
 
-@pytest.fixture
-def passfile(tmp_path):
-    return tmp_path / ".pgpass"
-
-
-@pytest.fixture
-def settings(tmp_path, passfile):
+@pytest.fixture(scope="session")
+def settings(tmp_path_factory):
+    passfile = tmp_path_factory.mktemp("home") / ".pgpass"
+    prefix = tmp_path_factory.mktemp("prefix")
     return Settings.parse_obj(
         {
-            "prefix": str(tmp_path),
+            "prefix": str(prefix),
             "postgresql": {
-                "root": str(tmp_path / "postgres"),
+                "root": str(prefix / "postgres"),
                 "auth": {
                     "local": "password",
                     "host": "reject",
@@ -47,8 +44,9 @@ def settings(tmp_path, passfile):
     )
 
 
-@pytest.fixture
-def installed(settings, tmp_path):
+@pytest.fixture(scope="session")
+def installed(settings, tmp_path_factory):
+    tmp_path = tmp_path_factory.mktemp("config")
     if settings.service_manager != "systemd":
         yield
         return
@@ -60,7 +58,7 @@ def installed(settings, tmp_path):
     install.undo(settings)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def ctx(settings):
     p = pm.PluginManager.get()
     p.trace.root.setwriter(print)
@@ -68,7 +66,7 @@ def ctx(settings):
     return Context(plugin_manager=p, settings=settings)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def tmp_port():
     s = socket.socket()
     s.bind(("", 0))
@@ -77,12 +75,12 @@ def tmp_port():
     return port
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def instance_obj(ctx):
     return Instance.default_version("test", ctx=ctx)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def instance_initialized(ctx, instance_obj, installed):
     i = instance_obj
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
@@ -92,7 +90,7 @@ def instance_initialized(ctx, instance_obj, installed):
     return i
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
@@ -101,7 +99,7 @@ def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
     return i
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def instance_auth_configured(ctx, instance_configured, tmp_port, tmp_path_factory):
     i = instance_configured
 
@@ -114,9 +112,14 @@ def instance_auth_configured(ctx, instance_configured, tmp_port, tmp_path_factor
     return i
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def instance(ctx, instance_auth_configured, installed):
     i = instance_auth_configured
-    yield i
-    if i.exists():
-        instance_mod.drop(ctx, i)
+    return i
+
+
+@pytest.fixture(scope="session")
+def instance_dropped(ctx, instance):
+    if instance.exists():
+        instance_mod.drop(ctx, instance)
+    return instance

@@ -32,7 +32,11 @@ def test_init(ctx, instance_initialized):
     ret = instance_mod.init(ctx, i)
     assert not ret
 
-    # Lookup failed.
+
+def test_init_lookup_failed(ctx):
+    i = Instance.default_version("dirty", ctx=ctx)
+    i.datadir.mkdir(parents=True)
+    (i.datadir / "postgresql.conf").touch()
     pg_version = i.datadir / "PG_VERSION"
     pg_version.write_text("7.1")
     with pytest.raises(
@@ -43,7 +47,8 @@ def test_init(ctx, instance_initialized):
             instance_mod.init(ctx, i)
     assert not pg_version.exists()  # per revert
 
-    # A failed init cleans up postgres directories.
+
+def test_init_dirty(ctx):
     pgroot = ctx.settings.postgresql.root / "pg"
     ctx1 = Context(
         plugin_manager=ctx.pm,
@@ -52,7 +57,7 @@ def test_init(ctx, instance_initialized):
         ),
     )
     pgroot.mkdir()
-    i = Instance.default_version("test", ctx=ctx1)
+    i = Instance.default_version("dirty", ctx=ctx1)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
@@ -63,8 +68,9 @@ def test_init(ctx, instance_initialized):
     if ctx.settings.service_manager == "systemd":
         assert not systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
 
-    # Init failed. Version doesn't match installed one.
-    i = Instance("test", "9.6", settings=ctx.settings)
+
+def test_init_version_not_available(ctx):
+    i = Instance("pg96", "9.6", settings=ctx.settings)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
         instance_mod.init(ctx, i)
 
@@ -108,25 +114,30 @@ def test_configure_auth(ctx, instance_auth_configured):
 
 def test_start_stop(ctx, instance, tmp_path):
     i = instance
-    if ctx.settings.service_manager == "systemd":
+    use_systemd = ctx.settings.service_manager == "systemd"
+    if use_systemd:
         assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
     instance_mod.start(ctx, i)
     try:
         assert instance_mod.status(ctx, i) == Status.running
-        if ctx.settings.service_manager == "systemd":
+        if use_systemd:
             assert systemd.is_active(ctx, instance_mod.systemd_unit(i))
     finally:
         instance_mod.stop(ctx, i)
     assert instance_mod.status(ctx, i) == Status.not_running
-    if ctx.settings.service_manager == "systemd":
+    if use_systemd:
         assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
     instance_mod.start(ctx, i, logfile=tmp_path / "log")
     try:
         assert instance_mod.status(ctx, i) == Status.running
-        instance_mod.restart(ctx, i)
-        assert instance_mod.status(ctx, i) == Status.running
+        if not use_systemd:
+            # FIXME: systemctl restart would fail with:
+            #   Start request repeated too quickly.
+            #   Failed with result 'start-limit-hit'.
+            instance_mod.restart(ctx, i)
+            assert instance_mod.status(ctx, i) == Status.running
         instance_mod.reload(ctx, i)
         assert instance_mod.status(ctx, i) == Status.running
     finally:
@@ -191,7 +202,7 @@ def test_drop_absent(ctx, installed):
 
 
 def test_drop(ctx, installed):
-    i = Instance.default_version("test", ctx=ctx)
+    i = Instance.default_version("dropme", ctx=ctx)
     instance_mod.init(ctx, i)
     instance_mod.drop(ctx, i)
     assert not i.exists()
