@@ -2,6 +2,7 @@ import pathlib
 import socket
 
 import pytest
+from pgtoolkit.ctl import Status
 
 from pglift import install
 from pglift import instance as instance_mod
@@ -84,10 +85,32 @@ def tmp_port():
 
 
 @pytest.fixture
-def instance(ctx, installed, tmp_path, tmp_port):
-    i = Instance.default_version("test", ctx=ctx)
-    instance_mod.init(ctx, i)
+def instance_obj(ctx):
+    return Instance.default_version("test", ctx=ctx)
+
+
+@pytest.fixture
+def instance_initialized(ctx, instance_obj, installed):
+    i = instance_obj
+    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
+    rv = instance_mod.init(ctx, i)
+    assert instance_mod.status(ctx, i) == Status.not_running
+    assert rv
+    return i
+
+
+@pytest.fixture
+def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
+    i = instance_initialized
+    tmp_path = tmp_path_factory.mktemp("run")
     instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path), port=tmp_port)
+    assert i.config()
+    return i
+
+
+@pytest.fixture
+def instance(ctx, instance_configured, installed):
+    i = instance_configured
     yield i
     if i.exists():
         instance_mod.drop(ctx, i)
