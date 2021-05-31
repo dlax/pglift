@@ -125,7 +125,10 @@ class Instance:
             return False
         if self.config() is None:
             return False
-        real_version = (self.datadir / "PG_VERSION").read_text().splitlines()[0]
+        try:
+            real_version = (self.datadir / "PG_VERSION").read_text().splitlines()[0]
+        except FileNotFoundError:
+            return False
         if real_version != self.version:
             raise Exception(f"version mismatch ({real_version} != {self.version})")
         return True
