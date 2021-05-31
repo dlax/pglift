@@ -5,7 +5,8 @@ import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 from pgtoolkit.ctl import Status
 
-from pglift import instance, manifest, systemd, task
+from pglift import instance as instance_mod
+from pglift import manifest, systemd, task
 from pglift.ctx import Context
 from pglift.model import Instance
 from pglift.settings import PostgreSQLSettings
@@ -19,7 +20,7 @@ def ctx(ctx):
 
 def test_init(ctx, installed):
     i = Instance.default_version("test", ctx=ctx)
-    ret = instance.init(ctx, i)
+    ret = instance_mod.init(ctx, i)
     assert ret
     assert i.datadir.exists()
     assert i.waldir.exists()
@@ -34,10 +35,10 @@ def test_init(ctx, installed):
             raise AssertionError("invalid postgresql.conf")
 
     if ctx.settings.service_manager == "systemd":
-        assert systemd.is_enabled(ctx, instance.systemd_unit(i))
+        assert systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
 
     # Instance alread exists, no-op.
-    ret = instance.init(ctx, i)
+    ret = instance_mod.init(ctx, i)
     assert not ret
 
     # Lookup failed.
@@ -48,7 +49,7 @@ def test_init(ctx, installed):
         match="version mismatch",
     ):
         with task.runner():
-            instance.init(ctx, i)
+            instance_mod.init(ctx, i)
     assert not pg_version.exists()  # per revert
 
     # A failed init cleans up postgres directories.
@@ -65,16 +66,16 @@ def test_init(ctx, installed):
     (i.datadir / "dirty").touch()
     with pytest.raises(subprocess.CalledProcessError):
         with task.runner():
-            instance.init(ctx1, i)
+            instance_mod.init(ctx1, i)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
     if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_enabled(ctx, instance.systemd_unit(i))
+        assert not systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
 
     # Init failed. Version doesn't match installed one.
     i = Instance("test", "9.6", settings=ctx.settings)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
-        instance.init(ctx, i)
+        instance_mod.init(ctx, i)
 
 
 def test_configure(ctx):
@@ -86,7 +87,7 @@ def test_configure(ctx):
         f.write("bonjour = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
-    changes = instance.configure(ctx, i, port=5433, max_connections=100)
+    changes = instance_mod.configure(ctx, i, port=5433, max_connections=100)
     assert changes == {
         "cluster_name": (None, "test"),
         "max_connections": (None, 100),
@@ -107,7 +108,7 @@ def test_configure(ctx):
     assert config.bonjour == "test"
     assert config.cluster_name == "test"
 
-    changes = instance.configure(ctx, i, listen_address="*", ssl=True)
+    changes = instance_mod.configure(ctx, i, listen_address="*", ssl=True)
     assert changes == {
         "listen_address": (None, "*"),
         "max_connections": (100, None),
@@ -116,29 +117,29 @@ def test_configure(ctx):
     }
     # Same configuration, no change.
     mtime_before = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
-    changes = instance.configure(ctx, i, listen_address="*", ssl=True)
+    changes = instance_mod.configure(ctx, i, listen_address="*", ssl=True)
     assert changes == {}
     mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
     assert mtime_before == mtime_after
 
-    instance.revert_configure(ctx, i)
+    instance_mod.revert_configure(ctx, i)
     assert postgresql_conf.read_text() == initial_content
     assert not configfpath.exists()
 
-    instance.configure(ctx, i, ssl=True)
+    instance_mod.configure(ctx, i, ssl=True)
     lines = configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
 
-    instance.revert_configure(ctx, i, ssl=True)
+    instance_mod.revert_configure(ctx, i, ssl=True)
     assert not (configdir / "server.crt").exists()
     assert not (configdir / "server.key").exists()
 
     ssl = (cert_file, key_file) = (i.datadir / "c.crt", i.datadir / "k.key")
     for fpath in ssl:
         fpath.touch()
-    changes = instance.configure(ctx, i, ssl=ssl)
+    changes = instance_mod.configure(ctx, i, ssl=ssl)
     assert changes == {
         "cluster_name": (None, i.name),
         "ssl": (None, True),
@@ -149,15 +150,15 @@ def test_configure(ctx):
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {i.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {i.datadir / 'k.key'}" in lines
-    instance.revert_configure(ctx, i, ssl=ssl)
+    instance_mod.revert_configure(ctx, i, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
 
 
 def test_configure_auth(ctx, installed, tmp_path, tmp_port):
     i = Instance.default_version("test", ctx=ctx)
-    instance.init(ctx, i)
-    instance.configure(ctx, i, port=tmp_port, unix_socket_directories=str(tmp_path))
+    instance_mod.init(ctx, i)
+    instance_mod.configure(ctx, i, port=tmp_port, unix_socket_directories=str(tmp_path))
     surole = ctx.settings.postgresql.surole
     connargs = {
         "host": str(tmp_path),
@@ -174,8 +175,8 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
         connargs["passfile"] = str(passfile)
 
     password = surole.password.get_secret_value()
-    instance.configure_auth(ctx, i)
-    with instance.running(ctx, i):
+    instance_mod.configure_auth(ctx, i)
+    with instance_mod.running(ctx, i):
         if not passfile:
             with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
                 psycopg2.connect(**connargs).close()
@@ -194,7 +195,7 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
     if passfile:
         assert surole.name in passfile.read_text()
 
-    instance.revert_configure_auth(ctx, i)
+    instance_mod.revert_configure_auth(ctx, i)
 
     if passfile:
         assert not passfile.exists()
@@ -202,41 +203,41 @@ def test_configure_auth(ctx, installed, tmp_path, tmp_port):
 
 def test_start_stop(ctx, installed, tmp_path, tmp_port):
     i = Instance.default_version("test", ctx=ctx)
-    assert instance.status(ctx, i) == Status.unspecified_datadir
+    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
-    instance.init(ctx, i)
-    instance.configure(
+    instance_mod.init(ctx, i)
+    instance_mod.configure(
         ctx,
         i,
         port=tmp_port,
         log_destination="syslog",
         unix_socket_directories=str(tmp_path),
     )
-    assert instance.status(ctx, i) == Status.not_running
+    assert instance_mod.status(ctx, i) == Status.not_running
     if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_active(ctx, instance.systemd_unit(i))
+        assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
-    instance.start(ctx, i)
+    instance_mod.start(ctx, i)
     try:
-        assert instance.status(ctx, i) == Status.running
+        assert instance_mod.status(ctx, i) == Status.running
         if ctx.settings.service_manager == "systemd":
-            assert systemd.is_active(ctx, instance.systemd_unit(i))
+            assert systemd.is_active(ctx, instance_mod.systemd_unit(i))
     finally:
-        instance.stop(ctx, i)
-    assert instance.status(ctx, i) == Status.not_running
+        instance_mod.stop(ctx, i)
+    assert instance_mod.status(ctx, i) == Status.not_running
     if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_active(ctx, instance.systemd_unit(i))
+        assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
-    instance.start(ctx, i, logfile=tmp_path / "log")
+    instance_mod.start(ctx, i, logfile=tmp_path / "log")
     try:
-        assert instance.status(ctx, i) == Status.running
-        instance.restart(ctx, i)
-        assert instance.status(ctx, i) == Status.running
-        instance.reload(ctx, i)
-        assert instance.status(ctx, i) == Status.running
+        assert instance_mod.status(ctx, i) == Status.running
+        instance_mod.restart(ctx, i)
+        assert instance_mod.status(ctx, i) == Status.running
+        instance_mod.reload(ctx, i)
+        assert instance_mod.status(ctx, i) == Status.running
     finally:
-        instance.stop(ctx, i, mode="immediate")
-    assert instance.status(ctx, i) == Status.not_running
+        instance_mod.stop(ctx, i, mode="immediate")
+    assert instance_mod.status(ctx, i) == Status.not_running
 
 
 def test_apply(ctx, installed, tmp_path, tmp_port):
@@ -247,40 +248,40 @@ def test_apply(ctx, installed, tmp_path, tmp_port):
         configuration={"unix_socket_directories": str(tmp_path), "port": tmp_port},
     )
     i = im.model(ctx)
-    instance.apply(ctx, im)
+    instance_mod.apply(ctx, im)
     assert i.exists()
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
 
-    assert instance.status(ctx, i) == Status.not_running
+    assert instance_mod.status(ctx, i) == Status.not_running
     im.state = manifest.InstanceState.started
-    instance.apply(ctx, im)
-    assert instance.status(ctx, i) == Status.running
+    instance_mod.apply(ctx, im)
+    assert instance_mod.status(ctx, i) == Status.running
 
     im.configuration["bonjour"] = False
-    instance.apply(ctx, im)
-    assert instance.status(ctx, i) == Status.running
+    instance_mod.apply(ctx, im)
+    assert instance_mod.status(ctx, i) == Status.running
 
     im.state = manifest.InstanceState.stopped
-    instance.apply(ctx, im)
-    assert instance.status(ctx, i) == Status.not_running
+    instance_mod.apply(ctx, im)
+    assert instance_mod.status(ctx, i) == Status.not_running
 
     im.state = manifest.InstanceState.absent
-    instance.apply(ctx, im)
+    instance_mod.apply(ctx, im)
     assert not i.exists()
-    assert instance.status(ctx, i) == Status.unspecified_datadir
+    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
 def test_describe(ctx, installed):
     i = Instance("absent", "9.6")
-    im = instance.describe(ctx, i)
+    im = instance_mod.describe(ctx, i)
     assert im is None
 
     i = Instance.default_version("test", ctx=ctx)
-    instance.init(ctx, i)
-    instance.configure(ctx, i, shared_buffers="10MB")
-    im = instance.describe(ctx, i)
+    instance_mod.init(ctx, i)
+    instance_mod.configure(ctx, i, shared_buffers="10MB")
+    im = instance_mod.describe(ctx, i)
     assert im is not None
     assert im.name == "test"
     assert im.configuration == {
@@ -292,9 +293,9 @@ def test_describe(ctx, installed):
 
 def test_drop(ctx, installed):
     i = Instance("absent", "9.6")
-    instance.drop(ctx, i)
+    instance_mod.drop(ctx, i)
 
     i = Instance.default_version("test", ctx=ctx)
-    instance.init(ctx, i)
-    instance.drop(ctx, i)
+    instance_mod.init(ctx, i)
+    instance_mod.drop(ctx, i)
     assert not i.exists()
