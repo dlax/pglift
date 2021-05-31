@@ -122,8 +122,8 @@ def instance_auth_configured(ctx, instance_configured, tmp_port, tmp_path_factor
 
 
 @pytest.fixture
-def instance(ctx, instance_configured, installed):
-    i = instance_configured
+def instance(ctx, instance_auth_configured, installed):
+    i = instance_auth_configured
     yield i
     if i.exists():
         instance_mod.drop(ctx, i)
