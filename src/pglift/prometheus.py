@@ -1,4 +1,3 @@
-import textwrap
 from pathlib import Path
 
 from . import hookimpl, systemd
@@ -31,14 +30,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     """Setup postgres_exporter for Prometheus"""
     settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
-    content = """
-    DATA_SOURCE_URI={dsn}
-    DATA_SOURCE_USER={role}
-    PG_EXPORTER_WEB_LISTEN_ADDRESS=:{port}
-    PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
-    PG_EXPORTER_EXTEND_QUERY_PATH={queriespath}
-    POSTGRES_EXPORTER_OPTS='--log.level=info --log.format=logger:syslog?appname=postgres_exporter-{instance.version}-{instance.name}&local=0'
-    """
+    role = ctx.settings.postgresql.surole
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     instance_config = instance.config()
     assert instance_config
@@ -47,19 +39,36 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         dsn = f"localhost:{instance_config.port}"
     except AttributeError:
         dsn = "localhost"
+    config = [
+        f"DATA_SOURCE_URI={dsn}",
+        f"DATA_SOURCE_USER={role.name}",
+    ]
+    auth_env = ctx.settings.postgresql.auth.libpq_environ(role)
+    passfile, pgpassword = auth_env.get("PGPASSFILE"), auth_env.get("PGPASSWORD")
+    if passfile:
+        config.append(f"DATA_SOURCE_PASS_FILE={passfile}")
+    elif pgpassword:
+        config.append(f"DATA_SOURCE_PASS={pgpassword}")
+    appname = f"postgres_exporter-{instance.version}-{instance.name}"
+    opts = " ".join(
+        [
+            "--log.level=info",
+            f"--log.format=logger:syslog?appname={appname}&local=0",
+        ]
+    )
     queriespath = _queriespath(instance, settings)
-    role = ctx.settings.postgresql.surole
-    config = {
-        "instance": instance,
-        "dsn": dsn,
-        "role": role.name,
-        "port": ctx.settings.prometheus.port,
-        "queriespath": queriespath,
-    }
+    config.extend(
+        [
+            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{ctx.settings.prometheus.port}",
+            "PG_EXPORTER_AUTO_DISCOVER_DATABASES=true",
+            f"PG_EXPORTER_EXTEND_QUERY_PATH={queriespath}",
+            f"POSTGRES_EXPORTER_OPTS='{opts}'",
+        ]
+    )
 
     if not configpath.exists():
         with configpath.open("w") as configfile:
-            configfile.write(textwrap.dedent(content.format(**config)))
+            configfile.write("\n".join(config))
         configpath.chmod(0o600)
 
     if not queriespath.exists():
