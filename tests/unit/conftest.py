@@ -2,6 +2,7 @@ import pytest
 
 from pglift import pm
 from pglift.ctx import Context
+from pglift.model import Instance
 from pglift.settings import Settings
 
 
@@ -28,3 +29,12 @@ def settings(tmp_path):
 def ctx(settings):
     p = pm.PluginManager.get()
     return Context(plugin_manager=p, settings=settings)
+
+
+@pytest.fixture
+def instance(ctx):
+    instance = Instance.default_version("test", ctx=ctx)
+    instance.datadir.mkdir(parents=True)
+    (instance.datadir / "PG_VERSION").write_text(instance.version)
+    (instance.datadir / "postgresql.conf").touch()
+    return instance

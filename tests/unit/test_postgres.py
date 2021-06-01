@@ -1,7 +1,6 @@
 import pytest
 
 from pglift import postgres
-from pglift.model import Instance
 
 
 def test_main_errors():
@@ -11,15 +10,6 @@ def test_main_errors():
         postgres.main(["12/"])
     with pytest.raises(SystemExit, match="2"):
         postgres.main(["12/test"])
-
-
-@pytest.fixture
-def instance(ctx):
-    instance = Instance.default_version("postgres-main", ctx=ctx)
-    instance.datadir.mkdir(parents=True)
-    (instance.datadir / "PG_VERSION").write_text(instance.version)
-    (instance.datadir / "postgresql.conf").touch()
-    return instance
 
 
 def test_main(monkeypatch, ctx, instance):
