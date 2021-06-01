@@ -175,7 +175,6 @@ def test_configure_auth(ctx, instance_auth_configured):
         connargs["passfile"] = str(passfile)
 
     password = surole.password.get_secret_value()
-    instance_mod.configure_auth(ctx, i)
     with instance_mod.running(ctx, i):
         if not passfile:
             with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
