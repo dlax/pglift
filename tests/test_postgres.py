@@ -1,6 +1,9 @@
 import pytest
 
-from pglift import postgres
+from pglift import pm, postgres
+from pglift.ctx import Context
+from pglift.model import Instance
+from pglift.settings import Settings
 
 
 def test_main_errors():
@@ -10,6 +13,26 @@ def test_main_errors():
         postgres.main(["12/"])
     with pytest.raises(SystemExit, match="2"):
         postgres.main(["12/test"])
+
+
+@pytest.fixture
+def settings(tmp_path):
+    return Settings.parse_obj({"prefix": str(tmp_path)})
+
+
+@pytest.fixture
+def ctx(settings):
+    p = pm.PluginManager.get()
+    return Context(plugin_manager=p, settings=settings)
+
+
+@pytest.fixture
+def instance(ctx):
+    instance = Instance.default_version("postgres-main", ctx=ctx)
+    instance.datadir.mkdir(parents=True)
+    (instance.datadir / "PG_VERSION").write_text(instance.version)
+    (instance.datadir / "postgresql.conf").touch()
+    return instance
 
 
 def test_main(monkeypatch, ctx, instance):
