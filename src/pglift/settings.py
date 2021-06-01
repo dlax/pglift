@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
-from typing_extensions import Literal
+from typing_extensions import Literal, Protocol, TypedDict
 
 from . import __name__ as pkgname
 from .util import xdg_data_home
@@ -30,6 +30,12 @@ def default_prefix(uid: int) -> Path:
     if uid == 0:
         return Path("/")
     return xdg_data_home() / pkgname
+
+
+class Role(Protocol):
+    name: str
+    password: Optional[SecretStr]
+    pgpass: bool
 
 
 class PrefixedPath(PosixPath):
@@ -103,6 +109,11 @@ AuthMethod = Union[
 ]
 
 
+class AuthEnviron(TypedDict, total=False):
+    PGPASSWORD: str
+    PGPASSFILE: str
+
+
 @frozen
 class AuthSettings(BaseSettings):
     local: AuthMethod = "trust"
@@ -112,6 +123,31 @@ class AuthSettings(BaseSettings):
 
     passfile: Path = Path.home() / ".pgpass"
     """Path to .pgpass file."""
+
+    def libpq_environ(self, role: Role) -> AuthEnviron:
+        """Return a dict with libpq environment variables for `role`
+        authentication.
+
+        >>> class MyRole(BaseSettings):
+        ...     name: str
+        ...     password: Optional[SecretStr] = None
+        ...     pgpass: bool = False
+
+        >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
+        >>> s.libpq_environ(MyRole(name="bob"))
+        {}
+        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")))
+        {'PGPASSWORD': 'secret'}
+        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("whatever"), pgpass=True))
+        {'PGPASSFILE': '/srv/pg/.pgpass'}
+        """
+        env: AuthEnviron = {}
+        if role.password:
+            if role.pgpass:
+                env["PGPASSFILE"] = str(self.passfile)
+            else:
+                env["PGPASSWORD"] = role.password.get_secret_value()
+        return env
 
 
 @frozen
