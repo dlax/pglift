@@ -219,13 +219,8 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
-    env = {}
     backuprole = ctx.settings.postgresql.surole
-    if backuprole.password:
-        if backuprole.pgpass:
-            env = {"PGPASSFILE": str(ctx.settings.postgresql.auth.passfile)}
-        else:
-            env = {"PGPASSWORD": backuprole.password.get_secret_value()}
+    env = ctx.settings.postgresql.auth.libpq_environ(backuprole)
     settings = ctx.settings.pgbackrest
     ctx.run(backup_command(instance, type=type, settings=settings), check=True, env=env)
 
