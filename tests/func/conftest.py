@@ -1,4 +1,6 @@
+import shutil
 import socket
+import subprocess
 
 import pytest
 from pgtoolkit.ctl import Status
@@ -9,6 +11,17 @@ from pglift import pm
 from pglift.ctx import Context
 from pglift.model import Instance
 from pglift.settings import Settings
+
+
+@pytest.fixture(autouse=True)
+def journalctl():
+    journalctl = shutil.which("journalctl")
+    if journalctl is None:
+        yield
+        return
+    proc = subprocess.Popen([journalctl, "--user", "-f"])
+    yield
+    proc.kill()
 
 
 @pytest.fixture
