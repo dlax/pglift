@@ -8,7 +8,7 @@ recursive-include src py.typed *.conf *.service *.timer *.sql
 recursive-include docs *.rst conf.py Makefile .gitignore
 recursive-include docs/ansible *.yml
 recursive-include docs/api *.rst
-recursive-include tests *.py *.json
+recursive-include tests *.py *.json *.md
 
 exclude .editorconfig
 exclude .gitlab-ci.yml
