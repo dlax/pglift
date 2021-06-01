@@ -194,11 +194,6 @@ def test_configure_auth(ctx, instance_auth_configured):
     if passfile:
         assert surole.name in passfile.read_text()
 
-    instance_mod.revert_configure_auth(ctx, i)
-
-    if passfile:
-        assert not passfile.exists()
-
 
 def test_start_stop(ctx, instance, tmp_path):
     i = instance

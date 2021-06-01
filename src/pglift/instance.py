@@ -265,19 +265,6 @@ def configure_auth(ctx: BaseContext, instance: Instance) -> None:
     hba_path.write_text(hba)
 
 
-@configure_auth.revert
-def revert_configure_auth(ctx: BaseContext, instance: Instance) -> None:
-    surole = ctx.settings.postgresql.surole
-    if surole.pgpass:
-        config = instance.config()
-        assert config is not None
-        pgpass.remove(
-            ctx.settings.postgresql.auth.passfile,
-            port=config.port,  # type: ignore[arg-type]
-            username=surole.name,
-        )
-
-
 @task
 def start(
     ctx: BaseContext,
@@ -432,7 +419,6 @@ def drop(
 
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
-    revert_configure_auth(ctx, instance)
     revert_configure(ctx, instance)
     revert_init(ctx, instance)
 
