@@ -48,10 +48,11 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     except AttributeError:
         dsn = "localhost"
     queriespath = _queriespath(instance, settings)
+    role = ctx.settings.postgresql.surole
     config = {
         "instance": instance,
         "dsn": dsn,
-        "role": ctx.settings.postgresql.surole,
+        "role": role.name,
         "port": ctx.settings.prometheus.port,
         "queriespath": queriespath,
     }
