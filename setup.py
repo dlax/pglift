@@ -45,7 +45,13 @@ setup(
     ],
     extras_require={
         "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],
-        "test": ["check-manifest", "psycopg2-binary", "pytest", "pytest-cov"],
+        "test": [
+            "check-manifest",
+            "psycopg2-binary",
+            "pytest",
+            "pytest-cov",
+            "requests",
+        ],
     },
     include_package_data=True,
     package_data={

@@ -35,20 +35,21 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     instance_config = instance.config()
     assert instance_config
 
-    try:
-        dsn = f"localhost:{instance_config.port}"
-    except AttributeError:
-        dsn = "localhost"
+    dsn = []
+    host = instance_config.get("unix_socket_directories")
+    if host:
+        dsn.append(f"host={host}")
+    port = instance_config.get("port")
+    if port:
+        dsn.append(f"port={port}")
+    dsn.append(f"user={role.name}")
+    if role.password:
+        dsn.append(f"password={role.password.get_secret_value()}")
+    if not instance_config.ssl:
+        dsn.append("sslmode=disable")
     config = [
-        f"DATA_SOURCE_URI={dsn}",
-        f"DATA_SOURCE_USER={role.name}",
+        f"DATA_SOURCE_NAME={' '.join(dsn)}",
     ]
-    auth_env = ctx.settings.postgresql.auth.libpq_environ(role)
-    passfile, pgpassword = auth_env.get("PGPASSFILE"), auth_env.get("PGPASSWORD")
-    if passfile:
-        config.append(f"DATA_SOURCE_PASS_FILE={passfile}")
-    elif pgpassword:
-        config.append(f"DATA_SOURCE_PASS={pgpassword}")
     appname = f"postgres_exporter-{instance.version}-{instance.name}"
     opts = " ".join(
         [
