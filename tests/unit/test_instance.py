@@ -1,16 +1,55 @@
+import subprocess
+
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
+from pglift import task
+from pglift.model import Instance
+
+
+def test_init_lookup_failed(ctx):
+    i = Instance.default_version("dirty", ctx=ctx)
+    i.datadir.mkdir(parents=True)
+    (i.datadir / "postgresql.conf").touch()
+    pg_version = i.datadir / "PG_VERSION"
+    pg_version.write_text("7.1")
+    with pytest.raises(Exception, match="version mismatch"):
+        with task.runner():
+            instance_mod.init(ctx, i)
+    assert not pg_version.exists()  # per revert
+
+
+def test_init_dirty(ctx, monkeypatch):
+    i = Instance.default_version("dirty", ctx=ctx)
+    i.datadir.mkdir(parents=True)
+    (i.datadir / "dirty").touch()
+    calls = []
+    with pytest.raises(subprocess.CalledProcessError):
+        with task.runner():
+            with monkeypatch.context() as m:
+                m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))
+                instance_mod.init(ctx, i)
+    assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
+    assert not i.waldir.exists()
+    if ctx.settings.service_manager == "systemd":
+        assert not calls
+
+
+def test_init_version_not_available(ctx):
+    i = Instance("pg96", "9.6", settings=ctx.settings)
+    with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
+        instance_mod.init(ctx, i)
 
 
 @pytest.fixture
-def ctx(ctx):
+def ctx_nohook(ctx):
     ctx.pm.unregister_all()
     return ctx
 
 
-def test_configure(ctx, instance):
+def test_configure(ctx_nohook, instance):
+    ctx = ctx_nohook
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open("w") as f:

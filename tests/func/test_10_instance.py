@@ -1,14 +1,10 @@
-import subprocess
-
 import psycopg2
 import pytest
 from pgtoolkit.ctl import Status
 
 from pglift import instance as instance_mod
-from pglift import manifest, systemd, task
-from pglift.ctx import Context
+from pglift import manifest, systemd
 from pglift.model import Instance
-from pglift.settings import PostgreSQLSettings
 
 
 def test_init(ctx, instance_initialized):
@@ -31,48 +27,6 @@ def test_init(ctx, instance_initialized):
     # Instance alread exists, no-op.
     ret = instance_mod.init(ctx, i)
     assert not ret
-
-
-def test_init_lookup_failed(ctx):
-    i = Instance.default_version("dirty", ctx=ctx)
-    i.datadir.mkdir(parents=True)
-    (i.datadir / "postgresql.conf").touch()
-    pg_version = i.datadir / "PG_VERSION"
-    pg_version.write_text("7.1")
-    with pytest.raises(
-        Exception,
-        match="version mismatch",
-    ):
-        with task.runner():
-            instance_mod.init(ctx, i)
-    assert not pg_version.exists()  # per revert
-
-
-def test_init_dirty(ctx):
-    pgroot = ctx.settings.postgresql.root / "pg"
-    ctx1 = Context(
-        plugin_manager=ctx.pm,
-        settings=ctx.settings.copy(
-            update={"postgresql": PostgreSQLSettings(root=pgroot)}
-        ),
-    )
-    pgroot.mkdir()
-    i = Instance.default_version("dirty", ctx=ctx1)
-    i.datadir.mkdir(parents=True)
-    (i.datadir / "dirty").touch()
-    with pytest.raises(subprocess.CalledProcessError):
-        with task.runner():
-            instance_mod.init(ctx1, i)
-    assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
-    assert not i.waldir.exists()
-    if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
-
-
-def test_init_version_not_available(ctx):
-    i = Instance("pg96", "9.6", settings=ctx.settings)
-    with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
-        instance_mod.init(ctx, i)
 
 
 def test_configure_auth(ctx, instance_auth_configured):
