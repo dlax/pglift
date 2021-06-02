@@ -44,9 +44,14 @@ setup(
         "PyYAML",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort", "mypy", "pre-commit"],
-        "test": [
+        "dev": [
+            "black",
             "check-manifest",
+            "flake8",
+            "isort",
+            "pre-commit",
+        ],
+        "test": [
             "psycopg2-binary",
             "pytest",
             "pytest-cov",
