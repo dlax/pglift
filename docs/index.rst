@@ -8,6 +8,7 @@ Welcome to pglift's documentation!
     api/index
     settings
     ansible
+    cli
     dev
 
 
