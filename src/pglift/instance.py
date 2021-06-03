@@ -140,7 +140,7 @@ def configure(
         with our_conffile.open("w") as f:
             config.save(f)
 
-    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance)
+    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance, changes=changes)
 
     return changes
 
@@ -215,7 +215,9 @@ def running(
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+def instance_configure(
+    ctx: BaseContext, instance: Instance, changes: ConfigChanges
+) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf.
     """

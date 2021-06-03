@@ -3,7 +3,7 @@ import enum
 import json
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from pgtoolkit import conf as pgconf
 
@@ -146,7 +146,7 @@ def init(ctx: BaseContext, instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     setup(ctx, instance)
     init(ctx, instance)

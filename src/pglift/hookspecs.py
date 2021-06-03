@@ -3,12 +3,15 @@ import pluggy
 from . import __name__ as pkgname
 from .ctx import BaseContext
 from .model import Instance
+from .types import ConfigChanges
 
 hookspec = pluggy.HookspecMarker(pkgname)
 
 
 @hookspec  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+def instance_configure(
+    ctx: BaseContext, instance: Instance, changes: ConfigChanges
+) -> None:
     """Called when the PostgreSQL instance got (re-)configured."""
 
 

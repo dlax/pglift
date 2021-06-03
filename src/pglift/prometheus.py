@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext
@@ -98,7 +99,7 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     setup(ctx, instance)
 

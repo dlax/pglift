@@ -1,3 +1,5 @@
+from typing import Any
+
 from . import hookimpl, systemd
 from .ctx import BaseContext, Context
 from .model import Instance
@@ -15,7 +17,7 @@ def systemd_timer(instance: Instance) -> str:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance) -> None:
+def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
     """Enable scheduled backup job for configured instance."""
     if ctx.settings.scheduler == "systemd":
         unit = systemd_timer(instance)
