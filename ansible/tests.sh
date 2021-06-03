@@ -19,12 +19,17 @@ tmpdir=$(mktemp -d)
 echo "Working in $tmpdir"
 
 settings_path=$tmpdir/config.json
+passfile=$tmpdir/pgpass
 cat > "$settings_path" << EOF
 {
   "prefix": "$tmpdir",
   "postgresql": {
     "auth": {
-      "local": "md5"
+      "local": "md5",
+      "passfile": "$passfile"
+    },
+    "surole": {
+      "pgpass": true
     },
     "root": "$tmpdir/postgresql"
   }
@@ -35,7 +40,7 @@ python -m pglift.install --settings="$settings_path"
 
 postgresql_surole_password=s3kret
 export postgresql_surole_password
-export PGPASSWORD=$postgresql_surole_password
+export PGPASSFILE=$passfile
 
 query="select setting from pg_settings where name = 'cluster_name';"
 list_timers () (
@@ -48,6 +53,7 @@ list_timers () (
 set -x
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play1.yml
+cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
@@ -57,6 +63,7 @@ set -e
 list_timers
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play2.yml
+cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 set +e
@@ -66,6 +73,7 @@ psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  #
 list_timers
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play3.yml
+cat "$passfile"
 list_timers
 
 ps xf
