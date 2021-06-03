@@ -29,8 +29,8 @@ def test_init(ctx, instance_initialized):
     assert not ret
 
 
-def test_configure_auth(ctx, instance_auth_configured):
-    i = instance_auth_configured
+def test_auth(ctx, instance):
+    i = instance
     surole = ctx.settings.postgresql.surole
     connargs = {
         "host": str(i.config().unix_socket_directories),

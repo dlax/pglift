@@ -9,7 +9,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, manifest, pgpass, queries, systemd, template, util
+from . import conf, hookimpl, manifest, pgpass, queries, systemd, template, util
 from .ctx import BaseContext
 from .model import Instance
 from .task import task
@@ -217,8 +217,8 @@ def running(
         stop(ctx, instance, run_hooks=run_hooks)
 
 
-@task
-def configure_auth(ctx: BaseContext, instance: Instance) -> None:
+@hookimpl  # type: ignore[misc]
+def instance_configure(ctx: BaseContext, instance: Instance) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf.
     """
@@ -371,7 +371,6 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
         ssl=instance_manifest.ssl,
         **configure_options,
     )
-    configure_auth(ctx, instance)
 
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:

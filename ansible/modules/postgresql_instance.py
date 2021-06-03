@@ -167,7 +167,6 @@ def run_module() -> None:
                 result["configuration_changes"] = instance_mod.configure(
                     ctx, instance, ssl=ssl, **confitems
                 )
-                instance_mod.configure_auth(ctx, instance)
                 result["changed"] = result["changed"] or result["configuration_changes"]
                 status = instance_mod.status(ctx, instance)
                 if state == "started" and status == PGStatus.not_running:

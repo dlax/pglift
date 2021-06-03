@@ -125,30 +125,11 @@ def instance_initialized(ctx, instance_obj, installed):
 
 
 @pytest.fixture(scope="session")
-def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
+def instance(ctx, instance_initialized, tmp_port, tmp_path_factory):
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
     configure_instance(ctx, i, port=tmp_port, socket_path=tmp_path)
     assert i.config()
-    return i
-
-
-@pytest.fixture(scope="session")
-def instance_auth_configured(ctx, instance_configured, tmp_port, tmp_path_factory):
-    i = instance_configured
-
-    passfile = None
-    if ctx.settings.postgresql.surole.pgpass:
-        passfile = ctx.settings.postgresql.auth.passfile
-        assert not passfile.exists()
-
-    instance_mod.configure_auth(ctx, i)
-    return i
-
-
-@pytest.fixture(scope="session")
-def instance(ctx, instance_auth_configured, installed):
-    i = instance_auth_configured
     return i
 
 
