@@ -12,6 +12,7 @@ from . import conf, hookimpl, manifest, roles, systemd, template, util
 from .ctx import BaseContext
 from .model import Instance
 from .task import task
+from .types import ConfigChanges
 
 
 def systemd_unit(instance: Instance) -> str:
@@ -80,9 +81,6 @@ def revert_init(ctx: BaseContext, instance: Instance) -> Any:
     except StopIteration:
         # directory is empty
         pgroot.rmdir()
-
-
-ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 
 
 @task

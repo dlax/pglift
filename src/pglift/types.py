@@ -1,6 +1,7 @@
 import subprocess
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
+from pgtoolkit import conf as pgconf
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
@@ -18,3 +19,6 @@ class CommandRunner(Protocol):
         **kwargs: Any,
     ) -> CompletedProcess:
         ...
+
+
+ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
