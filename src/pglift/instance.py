@@ -4,12 +4,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
-import psycopg2
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, hookimpl, manifest, pgpass, queries, systemd, template, util
+from . import conf, hookimpl, manifest, roles, systemd, template, util
 from .ctx import BaseContext
 from .model import Instance
 from .task import task
@@ -233,34 +232,9 @@ def instance_configure(ctx: BaseContext, instance: Instance) -> None:
     if hba_path.read_text() == hba:
         return
 
-    if surole.password is not None:
-        config = instance.config()
-        assert config is not None
-        password = surole.password.get_secret_value()
-        connargs = {
-            "port": config.port,
-            "dbname": "postgres",
-            "user": surole.name,
-        }
-
-        if config.unix_socket_directories:
-            connargs["host"] = config.unix_socket_directories
-        with running(ctx, instance):
-            with psycopg2.connect(**connargs) as conn:
-                conn.autocommit = True
-                with conn.cursor() as cur:
-                    cur.execute(
-                        queries.get("role_alter_password", username=surole.name),
-                        {"password": password},
-                    )
-
-        if surole.pgpass:
-            pgpass.add(
-                ctx.settings.postgresql.auth.passfile,
-                password,
-                port=config.port,  # type: ignore[arg-type]
-                username=surole.name,
-            )
+    with running(ctx, instance):
+        roles.set_password_for(ctx, instance, surole)
+    roles.set_passfile_entry_for(ctx, instance, surole)
 
     hba_path.write_text(hba)
 
