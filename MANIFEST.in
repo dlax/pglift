@@ -13,6 +13,7 @@ recursive-include tests *.py *.json *.md
 exclude .editorconfig
 exclude .gitlab-ci.yml
 exclude .pre-commit-config.yaml
+exclude .readthedocs.yaml
 prune ansible
 prune ci
 prune debian
