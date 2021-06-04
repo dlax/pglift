@@ -33,26 +33,3 @@ def add(
         pgpass.sort()
 
     pgpass.save()
-
-
-def remove(
-    passfile: Path,
-    *,
-    port: int,
-    database: Optional[str] = None,
-    username: Optional[str] = None,
-) -> None:
-    """Remove an entry user's .pgpass."""
-    if not passfile.exists():
-        return
-    pgpass = pgpass_parse(str(passfile))
-    match_rule = {}
-    if database is not None:
-        match_rule["database"] = database
-    if username is not None:
-        match_rule["username"] = username
-    pgpass.remove(filter=None, port=port, **match_rule)
-    if pgpass.lines:
-        pgpass.save()
-    else:
-        passfile.unlink()
