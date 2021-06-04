@@ -30,3 +30,15 @@ or through ``tox``:
 ::
 
     $ tox [-e tests]
+
+Pre-commit hooks
+----------------
+
+Some checks (linting, typing, syntax checking, …) can be done for you
+before git commits.
+
+You just need to install the pre-commit hooks:
+
+::
+
+    (.venv) $ pre-commit install
