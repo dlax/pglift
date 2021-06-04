@@ -7,6 +7,8 @@ from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
 
+from . import configure_instance
+
 
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
@@ -58,23 +60,11 @@ def test(ctx, installed, instance, tmp_path):
     # updated.
     config_before = configpath.read_text()
     new_port = instance_port + 1  # Hopefully, it'll be free.
-    instance_mod.configure(
-        ctx,
-        instance,
-        port=new_port,
-        unix_socket_directories=instance_config.unix_socket_directories,
-        # XXX ^ this is fragile, we should not need to repeat all
-        # configuration values.
-    )
+    configure_instance(ctx, instance, port=new_port)
     try:
         pgbackrest.setup(ctx, instance)
         config_after = configpath.read_text()
         assert config_after != config_before
         assert f"pg1-port = {new_port}" in config_after.splitlines()
     finally:
-        instance_mod.configure(
-            ctx,
-            instance,
-            port=instance_port,
-            unix_socket_directories=instance_config.unix_socket_directories,
-        )
+        configure_instance(ctx, instance, port=instance_port)

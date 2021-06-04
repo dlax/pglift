@@ -13,6 +13,8 @@ from pglift.ctx import Context
 from pglift.model import Instance
 from pglift.settings import Settings
 
+from . import configure_instance
+
 
 @pytest.fixture(autouse=True)
 def journalctl():
@@ -126,7 +128,7 @@ def instance_initialized(ctx, instance_obj, installed):
 def instance_configured(ctx, instance_initialized, tmp_port, tmp_path_factory):
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
-    instance_mod.configure(ctx, i, unix_socket_directories=str(tmp_path), port=tmp_port)
+    configure_instance(ctx, i, port=tmp_port, socket_path=tmp_path)
     assert i.config()
     return i
 
