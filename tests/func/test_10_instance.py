@@ -71,14 +71,15 @@ def test_auth(ctx, instance):
     )
 
     if passfile:
-        assert passfile.read_text().splitlines() == [f"*:{port}:*:postgres:s3kret"]
+        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
         with reconfigure_instance(ctx, instance, port=port + 1):
             assert passfile.read_text().splitlines() == [
-                f"*:{port+1}:*:postgres:s3kret"
+                "#hostname:port:database:username:password",
+                f"*:{port+1}:*:postgres:s3kret",
             ]
 
-        assert passfile.read_text().splitlines() == [f"*:{port}:*:postgres:s3kret"]
+        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
 
 def test_start_stop(ctx, instance, tmp_path):

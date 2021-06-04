@@ -65,6 +65,9 @@ ids = tuple(f"settings:{i}" for i in ids)
 @pytest.fixture(scope="session", params=params, ids=ids)
 def settings(request, tmp_path_factory):
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
+    passfile.touch(mode=0o600)
+    passfile.write_text("#hostname:port:database:username:password\n")
+
     prefix = tmp_path_factory.mktemp("prefix")
     obj = copy.deepcopy(request.param)
     assert "prefix" not in obj
