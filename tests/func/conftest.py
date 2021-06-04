@@ -145,6 +145,8 @@ def instance(ctx, instance_initialized, tmp_port_factory, tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def instance_dropped(ctx, instance):
+    config = instance.config()
+    assert config
     if instance.exists():
         instance_mod.drop(ctx, instance)
-    return instance
+    return instance, config

@@ -12,7 +12,7 @@ def test_systemd_backup_job(ctx, installed, instance_dropped):
     if scheduler != "systemd":
         pytest.skip(f"not applicable for scheduler method '{scheduler}'")
 
-    instance = instance_dropped
+    instance, __ = instance_dropped
     assert not systemd.is_active(ctx, backup.systemd_timer(instance))
     assert not systemd.is_enabled(ctx, backup.systemd_timer(instance))
 
@@ -21,7 +21,7 @@ def test_systemd_backup_job(ctx, installed, instance_dropped):
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
 def test_pgbackrest_teardown(ctx, instance_dropped):
-    instance = instance_dropped
+    instance, __ = instance_dropped
     pgbackrest_settings = ctx.settings.pgbackrest
     configpath = pathlib.Path(
         str(pgbackrest_settings.configpath).format(instance=instance)
@@ -34,7 +34,7 @@ def test_pgbackrest_teardown(ctx, instance_dropped):
 
 
 def test_prometheus_teardown(ctx, instance_dropped):
-    instance = instance_dropped
+    instance, __ = instance_dropped
     prometheus_settings = ctx.settings.prometheus
     configpath = pathlib.Path(
         str(prometheus_settings.configpath).format(instance=instance)
