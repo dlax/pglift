@@ -57,6 +57,10 @@ setup(
             "pytest-cov",
             "requests",
         ],
+        "docs": [
+            "psycopg2-binary",
+            "sphinx",
+        ],
     },
     include_package_data=True,
     package_data={
