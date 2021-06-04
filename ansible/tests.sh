@@ -73,7 +73,11 @@ psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  #
 list_timers
 
 ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play3.yml
-cat "$passfile"
+if test -f "$passfile";
+then
+    echo "password file $passfile still exists"
+    exit 1
+fi
 list_timers
 
 ps xf

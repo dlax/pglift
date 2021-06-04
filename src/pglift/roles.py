@@ -46,6 +46,18 @@ def instance_configure(
                 passfile.sort()
 
 
+@hookimpl  # type: ignore[misc]
+def instance_drop(ctx: BaseContext, instance: Instance) -> None:
+    """Remove password file (pgpass) entries for the instance being dropped."""
+    config = instance.config()
+    assert config is not None
+    passfile_path = ctx.settings.postgresql.auth.passfile
+    with pgpass.edit(passfile_path) as passfile:
+        passfile.remove(port=config.port)  # type: ignore[arg-type]
+    if not passfile.lines:
+        passfile_path.unlink()
+
+
 def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Set password for a PostgreSQL role on instance."""
     if role.password is None:

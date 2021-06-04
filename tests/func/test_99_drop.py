@@ -7,6 +7,18 @@ import requests
 from pglift import backup, prometheus, systemd
 
 
+def test_pgpass(ctx, installed, instance_dropped):
+    instance, config = instance_dropped
+    passfile = ctx.settings.postgresql.auth.passfile
+    surole = ctx.settings.postgresql.surole
+    if surole.pgpass and surole.password:
+        port = config.port
+        pgpass_entries = passfile.read_text().splitlines()
+        for line in pgpass_entries:
+            assert f"*:{port}:*:{surole.name}:" not in line
+    assert passfile.read_text() == "#hostname:port:database:username:password\n"
+
+
 def test_systemd_backup_job(ctx, installed, instance_dropped):
     scheduler = ctx.settings.scheduler
     if scheduler != "systemd":
