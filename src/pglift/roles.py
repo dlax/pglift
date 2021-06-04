@@ -1,6 +1,7 @@
 import psycopg2
+from pgtoolkit import pgpass
 
-from . import hookimpl, pgpass, queries
+from . import hookimpl, queries
 from .ctx import BaseContext
 from .model import Instance
 from .settings import Role
@@ -14,17 +15,17 @@ def instance_configure(
     """Add an entry for PostgreSQL roles upon instance configuration."""
     surole = ctx.settings.postgresql.surole
 
-    if surole.password is not None:
+    if surole.pgpass and surole.password:
         config = instance.config()
         assert config is not None
+        port = config.port
+
+        username = surole.name
         password = surole.password.get_secret_value()
-        if surole.pgpass:
-            pgpass.add(
-                ctx.settings.postgresql.auth.passfile,
-                password,
-                port=config.port,  # type: ignore[arg-type]
-                username=surole.name,
-            )
+        with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
+            entry = pgpass.PassEntry.parse(f"*:{port}:*:{username}:{password}")
+            passfile.lines.append(entry)
+            passfile.sort()
 
 
 def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
