@@ -173,8 +173,10 @@ def run_module() -> None:
                 status = instance_mod.status(ctx, instance)
                 if state == "started" and status == PGStatus.not_running:
                     instance_mod.start(ctx, instance)
+                    result["changed"] = True
                 elif state == "stopped" and status == PGStatus.running:
                     instance_mod.stop(ctx, instance)
+                    result["changed"] = True
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
