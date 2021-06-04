@@ -12,20 +12,38 @@ from .types import ConfigChanges
 def instance_configure(
     ctx: BaseContext, instance: Instance, changes: ConfigChanges
 ) -> None:
-    """Add an entry for PostgreSQL roles upon instance configuration."""
-    surole = ctx.settings.postgresql.surole
+    """Set / update passfile entry for PostgreSQL roles upon instance
+    configuration.
 
-    if surole.pgpass and surole.password:
+    If a role should be referenced in password file, we either create an entry
+    or update the existing one to reflect configuration changes (e.g. port
+    change).
+    """
+    surole = ctx.settings.postgresql.surole
+    if surole.pgpass:
+
         config = instance.config()
         assert config is not None
-        port = config.port
+        try:
+            old_port, port = changes["port"]
+        except KeyError:
+            old_port = port = config.port
+        assert isinstance(port, int)
 
         username = surole.name
-        password = surole.password.get_secret_value()
         with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
-            entry = pgpass.PassEntry.parse(f"*:{port}:*:{username}:{password}")
-            passfile.lines.append(entry)
-            passfile.sort()
+            entry = None
+            if old_port is not None:
+                assert isinstance(old_port, int)
+                for entry in passfile:
+                    if entry.matches(username=username, port=old_port):
+                        entry.port = port
+                        break
+            if entry is None and surole.password:
+                password = surole.password.get_secret_value()
+                entry = pgpass.PassEntry("*", port, "*", username, password)
+                passfile.lines.append(entry)
+                passfile.sort()
 
 
 def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:

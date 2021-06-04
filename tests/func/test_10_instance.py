@@ -6,6 +6,8 @@ from pglift import instance as instance_mod
 from pglift import manifest, systemd
 from pglift.model import Instance
 
+from . import reconfigure_instance
+
 
 def test_init(ctx, instance_initialized):
     i = instance_initialized
@@ -32,9 +34,10 @@ def test_init(ctx, instance_initialized):
 def test_auth(ctx, instance):
     i = instance
     surole = ctx.settings.postgresql.surole
+    port = i.config().port
     connargs = {
         "host": str(i.config().unix_socket_directories),
-        "port": i.config().port,
+        "port": port,
         "user": surole.name,
     }
 
@@ -68,7 +71,14 @@ def test_auth(ctx, instance):
     )
 
     if passfile:
-        assert surole.name in passfile.read_text()
+        assert passfile.read_text().splitlines() == [f"*:{port}:*:postgres:s3kret"]
+
+        with reconfigure_instance(ctx, instance, port=port + 1):
+            assert passfile.read_text().splitlines() == [
+                f"*:{port+1}:*:postgres:s3kret"
+            ]
+
+        assert passfile.read_text().splitlines() == [f"*:{port}:*:postgres:s3kret"]
 
 
 def test_start_stop(ctx, instance, tmp_path):
