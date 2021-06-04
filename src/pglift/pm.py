@@ -4,9 +4,9 @@ from typing import List, Sequence
 import pluggy
 
 from . import __name__ as pkgname
-from . import backup, hookspecs, instance, pgbackrest, prometheus
+from . import backup, hookspecs, instance, pgbackrest, prometheus, roles
 
-hook_modules = (instance, pgbackrest, prometheus, backup)
+hook_modules = (backup, instance, pgbackrest, prometheus, roles)
 
 
 class PluginManager(pluggy.PluginManager):  # type: ignore[misc]

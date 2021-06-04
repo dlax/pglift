@@ -234,7 +234,6 @@ def instance_configure(
 
     with running(ctx, instance):
         roles.set_password_for(ctx, instance, surole)
-    roles.set_passfile_entry_for(ctx, instance, surole)
 
     hba_path.write_text(hba)
 

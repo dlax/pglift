@@ -7,6 +7,7 @@ def test_pluginmanager_get():
         "pglift.backup",
         "pglift.instance",
         "pglift.pgbackrest",
+        "pglift.roles",
     }
 
 
