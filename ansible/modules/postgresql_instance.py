@@ -156,10 +156,12 @@ def run_module() -> None:
     ssl = module.params["ssl"] or False
     try:
         with runner():
-            if state == "absent" and instance.exists():
-                if status == PGStatus.running:
-                    instance_mod.stop(ctx, instance)
-                instance_mod.drop(ctx, instance)
+            if state == "absent":
+                if instance.exists():
+                    if status == PGStatus.running:
+                        instance_mod.stop(ctx, instance)
+                    instance_mod.drop(ctx, instance)
+                    result["changed"] = True
             else:
                 result["changed"] = instance_mod.init(ctx, instance)
                 result["datadir"] = str(instance.datadir)
