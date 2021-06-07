@@ -42,3 +42,30 @@ You just need to install the pre-commit hooks:
 ::
 
     (.venv) $ pre-commit install
+
+Working on documentation
+------------------------
+
+Building the documentation requires a few more dependencies:
+
+::
+
+    (.venv) $ pip install -e .[docs] sphinx-autobuild
+
+Then, run:
+
+::
+
+    (.venv) $ make -C docs html
+
+to actually build the documentation and finally open
+``docs/_build/html/index.html`` to browse the result.
+
+Alternatively, keep the following command running:
+
+::
+
+    (.venv) $ make -C docs serve
+
+to get the documentation rebuilt and along with a live-reloaded Web browser
+(the reason for ``sphinx-autobuild`` dependency above).
