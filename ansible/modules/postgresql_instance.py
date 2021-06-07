@@ -97,10 +97,6 @@ configuration_changes:
   description: Changes to PostgreSQL instance configuration
   type: dict
   returned: always
-started:
-  description: Whether or not the instance got started
-  type: bool
-  returned: always
 """
 
 from typing import Any, Dict
