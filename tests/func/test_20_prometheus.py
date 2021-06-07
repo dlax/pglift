@@ -31,7 +31,10 @@ def test(ctx, installed, instance):
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
         with instance_mod.running(ctx, instance, run_hooks=True):
             assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
-            r = requests.get("http://0.0.0.0:9187/metrics")
+            try:
+                r = requests.get("http://0.0.0.0:9187/metrics")
+            except requests.ConnectionError as e:
+                raise AssertionError(f"HTTP connection failed: {e}")
             r.raise_for_status()
         assert r.ok
         output = r.text
