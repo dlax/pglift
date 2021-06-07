@@ -31,6 +31,21 @@ def test_init(ctx, instance_initialized):
     assert not ret
 
 
+def test_pgpass(ctx, instance):
+    port = instance.config().port
+    passfile = ctx.settings.postgresql.auth.passfile
+    if ctx.settings.postgresql.surole.pgpass:
+        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
+
+        with reconfigure_instance(ctx, instance, port=port + 1):
+            assert passfile.read_text().splitlines() == [
+                "#hostname:port:database:username:password",
+                f"*:{port+1}:*:postgres:s3kret",
+            ]
+
+        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
+
+
 def test_auth(ctx, instance):
     i = instance
     surole = ctx.settings.postgresql.surole
@@ -69,17 +84,6 @@ def test_auth(ctx, instance):
         f"host    all             all             127.0.0.1/32            {auth.host}"
         in hba
     )
-
-    if passfile:
-        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
-
-        with reconfigure_instance(ctx, instance, port=port + 1):
-            assert passfile.read_text().splitlines() == [
-                "#hostname:port:database:username:password",
-                f"*:{port+1}:*:postgres:s3kret",
-            ]
-
-        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
 
 def test_start_stop(ctx, instance, tmp_path):
