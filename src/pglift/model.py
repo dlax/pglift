@@ -14,11 +14,20 @@ from .validators import known_postgresql_version
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
+class PrometheusService:
+    """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
+
+    port: int = 9187
+    """TCP port for the web interface and telemetry."""
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
 class Instance:
     """A PostgreSQL instance."""
 
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
+    prometheus: PrometheusService = attr.ib(factory=PrometheusService)
 
     settings: Settings = attr.ib(default=SETTINGS, validator=instance_of(Settings))
 
@@ -40,13 +49,22 @@ class Instance:
         return cls(name, version, **kwargs)
 
     @classmethod
-    def default_version(cls, name: str, ctx: BaseContext) -> "Instance":
+    def default_version(
+        cls,
+        name: str,
+        ctx: BaseContext,
+        *,
+        prometheus: Optional[PrometheusService] = None,
+    ) -> "Instance":
         """Build an Instance by guessing its version from installed PostgreSQL."""
         settings = ctx.settings
         version = settings.postgresql.default_version
         if version is None:
             version = short_version(ctx.pg_ctl(None).version)
-        return cls(name, version, settings=settings)
+        extras = {}
+        if prometheus is not None:
+            extras["prometheus"] = prometheus
+        return cls(name=name, version=version, settings=settings, **extras)
 
     def __str__(self) -> str:
         """Return str(self).

@@ -267,8 +267,6 @@ class PrometheusSettings(BaseSettings):
         "prometheus/postgres_exporter_queries-{instance.version}-{instance.name}.yaml"
     )
     """Path to the queries file."""
-    port: int = 9187
-    """TCP port for the web interface and telemetry."""
 
 
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:

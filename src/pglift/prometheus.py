@@ -61,7 +61,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     queriespath = _queriespath(instance, settings)
     config.extend(
         [
-            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{ctx.settings.prometheus.port}",
+            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{instance.prometheus.port}",
             "PG_EXPORTER_AUTO_DISCOVER_DATABASES=true",
             f"PG_EXPORTER_EXTEND_QUERY_PATH={queriespath}",
             f"POSTGRES_EXPORTER_OPTS='{opts}'",
