@@ -118,12 +118,13 @@ def test_start_stop(ctx, instance, tmp_path):
     assert instance_mod.status(ctx, i) == Status.not_running
 
 
-def test_apply(ctx, installed, tmp_path, tmp_port):
+def test_apply(ctx, installed, tmp_path, tmp_port_factory):
+    port = next(tmp_port_factory)
     im = manifest.Instance(
         name="test_apply",
         ssl=True,
         state=manifest.InstanceState.stopped,
-        configuration={"unix_socket_directories": str(tmp_path), "port": tmp_port},
+        configuration={"unix_socket_directories": str(tmp_path), "port": port},
     )
     i = im.model(ctx)
     instance_mod.apply(ctx, im)

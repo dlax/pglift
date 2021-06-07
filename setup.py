@@ -53,6 +53,7 @@ setup(
             "pre-commit",
         ],
         "test": [
+            "port-for",
             "psycopg2-binary",
             "pytest",
             "pytest-cov",

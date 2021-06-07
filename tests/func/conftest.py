@@ -1,8 +1,9 @@
 import copy
 import shutil
-import socket
 import subprocess
+from typing import Iterator, Set
 
+import port_for
 import pytest
 from pgtoolkit.ctl import Status
 
@@ -104,12 +105,17 @@ def ctx(settings):
 
 
 @pytest.fixture(scope="session")
-def tmp_port():
-    s = socket.socket()
-    s.bind(("", 0))
-    with s:
-        port = s.getsockname()[1]
-    return port
+def tmp_port_factory():
+    """Return a generator producing available and distinct TCP ports."""
+
+    def available_ports() -> Iterator[int]:
+        used: Set[int] = set()
+        while True:
+            port = port_for.select_random(exclude_ports=list(used))
+            used.add(port)
+            yield port
+
+    return available_ports()
 
 
 @pytest.fixture(scope="session")
@@ -128,10 +134,11 @@ def instance_initialized(ctx, instance_obj, installed):
 
 
 @pytest.fixture(scope="session")
-def instance(ctx, instance_initialized, tmp_port, tmp_path_factory):
+def instance(ctx, instance_initialized, tmp_port_factory, tmp_path_factory):
+    port = next(tmp_port_factory)
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
-    configure_instance(ctx, i, port=tmp_port, socket_path=tmp_path)
+    configure_instance(ctx, i, port=port, socket_path=tmp_path)
     assert i.config()
     return i
 
