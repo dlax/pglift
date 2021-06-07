@@ -20,6 +20,27 @@ def systemd_unit(instance: BaseInstance) -> str:
     return f"postgres_exporter@{instance.version}-{instance.name}.service"
 
 
+def port(ctx: BaseContext, instance: BaseInstance) -> int:
+    """Return postgres_exporter port read from configuration file.
+
+    :raises LookupError: if port could not be read from configuration file.
+    :raises FileNotFoundError: if configuration file is not found.
+    """
+    configpath = _configpath(instance, ctx.settings.prometheus)
+    varname = "PG_EXPORTER_WEB_LISTEN_ADDRESS"
+    with configpath.open() as f:
+        for line in f:
+            if line.startswith(varname):
+                break
+        else:
+            raise LookupError(f"{varname} not found in {configpath}")
+    try:
+        value = line.split("=", 1)[1].split(":", 1)[1]
+    except (IndexError, ValueError):
+        raise LookupError(f"malformatted {varname} parameter in {configpath}")
+    return int(value.strip())
+
+
 @task
 def setup(ctx: BaseContext, instance: Instance) -> None:
     """Setup postgres_exporter for Prometheus"""
