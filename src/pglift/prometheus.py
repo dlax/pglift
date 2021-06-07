@@ -3,20 +3,20 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext
-from .models.system import Instance
+from .models.system import BaseInstance, Instance
 from .settings import PrometheusSettings
 from .task import task
 
 
-def _configpath(instance: Instance, settings: PrometheusSettings) -> Path:
+def _configpath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
     return Path(str(settings.configpath).format(instance=instance))
 
 
-def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
+def _queriespath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
     return Path(str(settings.queriespath).format(instance=instance))
 
 
-def systemd_unit(instance: Instance) -> str:
+def systemd_unit(instance: BaseInstance) -> str:
     return f"postgres_exporter@{instance.version}-{instance.name}.service"
 
 

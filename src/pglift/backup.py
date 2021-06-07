@@ -2,11 +2,11 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext, Context
-from .models.system import Instance
+from .models.system import BaseInstance, Instance
 from .pgbackrest import BackupType, backup
 
 
-def systemd_timer(instance: Instance) -> str:
+def systemd_timer(instance: BaseInstance) -> str:
     return f"postgresql-backup@{instance.version}-{instance.name}.timer"
 
 

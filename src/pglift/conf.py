@@ -8,7 +8,7 @@ from pgtoolkit import conf as pgconf
 from . import __name__ as pkgname
 
 if TYPE_CHECKING:
-    from .models.system import Instance
+    from .models.system import BaseInstance
 
 
 def make(instance: str, **confitems: Any) -> pgconf.Configuration:
@@ -33,12 +33,12 @@ def info(configdir: Path) -> Tuple[Path, str]:
     return confd, include
 
 
-F = Callable[["Instance", Path], None]
+F = Callable[["BaseInstance", Path], None]
 
 
 def absolute_path(fn: F) -> F:
     @wraps(fn)
-    def wrapper(instance: "Instance", path: Path) -> None:
+    def wrapper(instance: "BaseInstance", path: Path) -> None:
         if not path.is_absolute():
             path = instance.datadir / path
         return fn(instance, path)
@@ -47,10 +47,10 @@ def absolute_path(fn: F) -> F:
 
 
 @absolute_path
-def create_log_directory(instance: "Instance", path: Path) -> None:
+def create_log_directory(instance: "BaseInstance", path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
 @absolute_path
-def remove_log_directory(instance: "Instance", path: Path) -> None:
+def remove_log_directory(instance: "BaseInstance", path: Path) -> None:
     shutil.rmtree(path)

@@ -11,12 +11,14 @@ from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
-from .models.system import Instance
+from .models.system import BaseInstance, Instance
 from .settings import PgBackRestSettings
 from .task import task
 
 
-def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> List[str]:
+def make_cmd(
+    instance: BaseInstance, settings: PgBackRestSettings, *args: str
+) -> List[str]:
     configpath = _configpath(instance, settings)
     stanza = _stanza(instance)
     return [
@@ -26,11 +28,11 @@ def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> Li
     ] + list(args)
 
 
-def _configpath(instance: Instance, settings: PgBackRestSettings) -> Path:
+def _configpath(instance: BaseInstance, settings: PgBackRestSettings) -> Path:
     return Path(str(settings.configpath).format(instance=instance))
 
 
-def _stanza(instance: Instance) -> str:
+def _stanza(instance: BaseInstance) -> str:
     return f"{instance.version}-{instance.name}"
 
 
@@ -166,7 +168,7 @@ class BackupType(enum.Enum):
 
 
 def backup_command(
-    instance: Instance, *, type: BackupType = BackupType.default()
+    instance: BaseInstance, *, type: BackupType = BackupType.default()
 ) -> List[str]:
     """Return the full pgbackrest command to perform a backup for ``instance``.
 
@@ -187,7 +189,7 @@ def backup_command(
 @task
 def backup(
     ctx: BaseContext,
-    instance: Instance,
+    instance: BaseInstance,
     *,
     type: BackupType = BackupType.default(),
 ) -> None:
@@ -202,7 +204,7 @@ def backup(
     ctx.run(backup_command(instance, type=type), check=True, env=env)
 
 
-def expire_command(instance: Instance) -> List[str]:
+def expire_command(instance: BaseInstance) -> List[str]:
     """Return the full pgbackrest command to expire backups for ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
@@ -211,7 +213,7 @@ def expire_command(instance: Instance) -> List[str]:
 
 
 @task
-def expire(ctx: BaseContext, instance: Instance) -> None:
+def expire(ctx: BaseContext, instance: BaseInstance) -> None:
     """Expire a backup of ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
