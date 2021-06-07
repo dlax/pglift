@@ -172,10 +172,3 @@ def test_describe(ctx, instance):
 def test_drop_absent(ctx, installed):
     i = Instance("absent", "9.6")
     instance_mod.drop(ctx, i)
-
-
-def test_drop(ctx, installed):
-    i = Instance.default_version("dropme", ctx=ctx)
-    instance_mod.init(ctx, i)
-    instance_mod.drop(ctx, i)
-    assert not i.exists()

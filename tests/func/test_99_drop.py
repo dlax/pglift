@@ -48,3 +48,8 @@ def test_prometheus_teardown(ctx, instance_dropped):
         assert not systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
         with pytest.raises(requests.ConnectionError):
             requests.get("http://0.0.0.0:9187/metrics")
+
+
+def test_instance(ctx, instance_dropped):
+    instance, __ = instance_dropped
+    assert not instance.exists()
