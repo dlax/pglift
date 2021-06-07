@@ -1,11 +1,12 @@
 Command Line Interface
 ======================
 
-... highlight:: console
+.. highlight:: console
 
 pglift provides a CLI that can be used as follows:
 
 ::
+
     (.venv) $ pglift --help
     Usage: pglift [OPTIONS] COMMAND [ARGS]...
 
@@ -21,6 +22,7 @@ pglift provides a CLI that can be used as follows:
 For example, you can describe an instance using the following command:
 
 ::
+
     (.venv) $ pglift instance describe myinstance
 
 The following syntax is also valid:
