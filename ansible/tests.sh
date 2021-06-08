@@ -8,6 +8,7 @@ set -e
 
 cleanup () (
     set +e
+    ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
     unset -v SETTINGS
     python -m pglift.install --uninstall
     rm -rf "$tmpdir"
