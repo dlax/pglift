@@ -60,6 +60,7 @@ testing_ci_image:
     WORKSUBDIR: "testing"
 
 debbuild_ci_image:
+  when: manual
   extends: .ci_image
   variables:
     IMAGE_TAG: "$CI_REGISTRY_IMAGE:debbuild"
