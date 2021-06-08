@@ -53,7 +53,7 @@ list_timers () (
 
 set -x
 
-ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play1.yml
+ansible-playbook --module-path=ansible/modules/  docs/ansible/play1.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
@@ -63,7 +63,7 @@ psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  #
 set -e
 list_timers
 
-ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play2.yml
+ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
@@ -73,7 +73,7 @@ set -e
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
 list_timers
 
-ansible-playbook -vvv --module-path=ansible/modules/  docs/ansible/play3.yml
+ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
 if test -f "$passfile";
 then
     echo "password file $passfile still exists"

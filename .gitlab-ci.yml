@@ -30,7 +30,7 @@ tests_ansible:
   stage: test
   image: $TESTING_CI_IMAGE
   script:
-    - tox -e tests_ansible
+    - ANSIBLE_VERBOSITY=3 tox -e tests_ansible
 
 docs:
   stage: test
