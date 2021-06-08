@@ -7,6 +7,7 @@ from click.testing import CliRunner
 
 from pglift import instance as instance_mod
 from pglift import manifest as manifest_mod
+from pglift import pgbackrest
 from pglift.cli import cli
 from pglift.ctx import Context
 
@@ -65,3 +66,20 @@ def test_instance_drop(runner):
         result = runner.invoke(cli, ["instance", "drop", "test"])
     mock_method.assert_called_once()
     assert isinstance(mock_method.call_args[0][0], Context)
+
+
+def test_backup_instance(runner):
+    patch_backup = patch.object(pgbackrest, "backup")
+    patch_expire = patch.object(pgbackrest, "expire")
+    with patch_backup as backup, patch_expire as expire:
+        result = runner.invoke(cli, ["backup-instance", "test", "--type=diff"])
+    assert result.exit_code == 0, result.stdout
+    assert backup.call_count == 1
+    assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
+    assert not expire.called
+
+    with patch_backup as backup, patch_expire as expire:
+        result = runner.invoke(cli, ["backup-instance", "test", "--purge"])
+    assert result.exit_code == 0, result.stdout
+    assert backup.called
+    assert expire.called

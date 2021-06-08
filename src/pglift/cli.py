@@ -3,7 +3,7 @@ from typing import IO, Optional
 import click
 
 from . import instance as instance_mod
-from . import manifest, pm
+from . import manifest, pgbackrest, pm
 from .ctx import Context
 from .model import Instance
 from .settings import SETTINGS
@@ -71,3 +71,24 @@ def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
     instance = get_instance(ctx, name, version)
     with runner():
         instance_mod.drop(ctx, instance)
+
+
+@cli.command("backup-instance")
+@name_argument
+@version_argument
+@click.option(
+    "--type",
+    type=click.Choice([t.name for t in pgbackrest.BackupType]),
+    default=pgbackrest.BackupType.default().name,
+    help="Backup type",
+)
+@click.option("--purge", is_flag=True, default=False, help="Purge old backups")
+@click.pass_obj
+def backup_instance(
+    ctx: Context, name: str, version: Optional[str], type: str, purge: bool
+) -> None:
+    """Back up a PostgreSQL instance"""
+    instance = get_instance(ctx, name, version)
+    pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
+    if purge:
+        pgbackrest.expire(ctx, instance)
