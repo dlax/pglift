@@ -17,8 +17,6 @@
       postgresql_instance:
         name: preprod
         state: absent
-        configuration:
-          unix_socket_directories: /tmp
 
     - name: dev instance, started, with SSL
       postgresql_instance:
