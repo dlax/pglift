@@ -1,22 +1,30 @@
 from pathlib import Path
+from typing import Dict
 
 import requests
 
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
 
+from . import reconfigure_instance
 
-def test(ctx, installed, instance):
+
+def config_dict(configpath: Path) -> Dict[str, str]:
+    config = {}
+    for line in configpath.read_text().splitlines():
+        key, value = line.split("=", 1)
+        config[key] = value.strip()
+    return config
+
+
+def test(ctx, installed, instance, tmp_port_factory):
     prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
     assert configpath.exists()
     instance_config = instance.config()
     assert instance_config
 
-    prometheus_config = {}
-    for line in configpath.read_text().splitlines():
-        key, value = line.split("=", 1)
-        prometheus_config[key] = value.strip()
+    prometheus_config = config_dict(configpath)
     dsn = prometheus_config["DATA_SOURCE_NAME"]
     assert "user=postgres" in dsn
     assert f"port={instance_config.port}" in dsn
@@ -36,3 +44,9 @@ def test(ctx, installed, instance):
         assert r.ok
         output = r.text
         assert "pg_up 1" in output.splitlines()
+
+    new_port = next(tmp_port_factory)
+    with reconfigure_instance(ctx, instance, port=new_port):
+        new_prometheus_config = config_dict(configpath)
+        dsn = new_prometheus_config["DATA_SOURCE_NAME"]
+        assert f"port={new_port}" in dsn

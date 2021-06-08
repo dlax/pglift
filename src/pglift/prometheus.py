@@ -68,10 +68,12 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         ]
     )
 
-    if not configpath.exists():
-        with configpath.open("w") as configfile:
-            configfile.write("\n".join(config))
-        configpath.chmod(0o600)
+    actual_config = []
+    if configpath.exists():
+        actual_config = configpath.read_text().splitlines()
+    if config != actual_config:
+        configpath.write_text("\n".join(config))
+    configpath.chmod(0o600)
 
     if not queriespath.exists():
         queriespath.touch()
