@@ -61,7 +61,6 @@ def test(ctx, installed, instance, tmp_path, tmp_port_factory):
     config_before = configpath.read_text()
     new_port = next(tmp_port_factory)
     with reconfigure_instance(ctx, instance, port=new_port):
-        pgbackrest.setup(ctx, instance)
         config_after = configpath.read_text()
         assert config_after != config_before
         assert f"pg1-port = {new_port}" in config_after.splitlines()
