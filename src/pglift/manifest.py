@@ -68,11 +68,17 @@ class Manifest(BaseModel):
 class Instance(Manifest):
     """PostgreSQL instance"""
 
+    class Prometheus(BaseModel):
+        port: int = 9187
+        """TCP port for the web interface and telemetry."""
+
     name: str
     version: Optional[str] = None
     state: InstanceState = InstanceState.started
     ssl: Union[bool, Tuple[Path, Path]] = False
     configuration: Dict[str, Any] = Field(default_factory=dict)
+
+    prometheus: Prometheus = Prometheus()
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:
