@@ -10,17 +10,14 @@ def test(ctx, installed, instance):
     prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
     assert configpath.exists()
-    lines = configpath.read_text().splitlines()
     instance_config = instance.config()
     assert instance_config
 
-    for line in lines:
+    prometheus_config = {}
+    for line in configpath.read_text().splitlines():
         key, value = line.split("=", 1)
-        if key == "DATA_SOURCE_NAME":
-            dsn = value
-            break
-    else:
-        raise AssertionError("DATA_SOURCE_NAME not found in config")
+        prometheus_config[key] = value.strip()
+    dsn = prometheus_config["DATA_SOURCE_NAME"]
     assert "user=postgres" in dsn
     assert f"port={instance_config.port}" in dsn
 
