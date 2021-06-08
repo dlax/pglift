@@ -44,12 +44,12 @@ export postgresql_surole_password
 export PGPASSFILE=$passfile
 
 query="select setting from pg_settings where name = 'cluster_name';"
-list_timers () (
+list_timers() {
     if type systemctl > /dev/null;
     then
         systemctl --no-pager --user list-timers
     fi
-)
+}
 
 set -x
 
