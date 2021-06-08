@@ -1,4 +1,5 @@
 import copy
+import pathlib
 import shutil
 import subprocess
 from typing import Iterator, Set
@@ -11,7 +12,7 @@ from pglift import install
 from pglift import instance as instance_mod
 from pglift import model, pm
 from pglift.ctx import Context
-from pglift.settings import Settings
+from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 
 from . import configure_instance
 
@@ -79,6 +80,18 @@ def settings(request, tmp_path_factory):
     assert "passfile" not in pgauth_obj
     pgauth_obj["passfile"] = str(passfile)
     return Settings.parse_obj(obj)
+
+
+@pytest.fixture(
+    scope="session",
+    params=POSTGRESQL_SUPPORTED_VERSIONS,
+    ids=lambda v: f"postgresql:{v}",
+)
+def pg_version(request, settings):
+    version = request.param
+    if not pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
+        pytest.skip(f"PostgreSQL {version} not available")
+    return version
 
 
 @pytest.fixture(scope="session")
