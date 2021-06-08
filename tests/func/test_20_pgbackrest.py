@@ -13,7 +13,7 @@ from . import reconfigure_instance
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test(ctx, installed, instance, tmp_path):
+def test(ctx, installed, instance, tmp_path, tmp_port_factory):
     instance_config = instance.config()
     assert instance_config
     instance_port = instance_config.port
@@ -59,7 +59,7 @@ def test(ctx, installed, instance, tmp_path):
     # If instance's configuration changes, pgbackrest configuration is
     # updated.
     config_before = configpath.read_text()
-    new_port = instance_port + 1  # Hopefully, it'll be free.
+    new_port = next(tmp_port_factory)
     with reconfigure_instance(ctx, instance, port=new_port):
         pgbackrest.setup(ctx, instance)
         config_after = configpath.read_text()
