@@ -28,6 +28,8 @@ def test(ctx, installed, instance, tmp_port_factory):
     dsn = prometheus_config["DATA_SOURCE_NAME"]
     assert "user=postgres" in dsn
     assert f"port={instance_config.port}" in dsn
+    port = instance.prometheus.port
+    assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
     queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
     assert queriespath.exists()
@@ -37,7 +39,7 @@ def test(ctx, installed, instance, tmp_port_factory):
         with instance_mod.running(ctx, instance, run_hooks=True):
             assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
             try:
-                r = requests.get("http://0.0.0.0:9187/metrics")
+                r = requests.get(f"http://0.0.0.0:{port}/metrics")
             except requests.ConnectionError as e:
                 raise AssertionError(f"HTTP connection failed: {e}")
             r.raise_for_status()

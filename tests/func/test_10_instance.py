@@ -120,11 +120,13 @@ def test_start_stop(ctx, instance, tmp_path):
 
 def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     port = next(tmp_port_factory)
+    prometheus_port = next(tmp_port_factory)
     im = manifest.Instance(
         name="test_apply",
         ssl=True,
         state=manifest.InstanceState.stopped,
         configuration={"unix_socket_directories": str(tmp_path), "port": port},
+        prometheus={"port": prometheus_port},
     )
     i = im.model(ctx)
     instance_mod.apply(ctx, im)

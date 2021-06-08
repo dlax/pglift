@@ -9,9 +9,8 @@ from pgtoolkit.ctl import Status
 
 from pglift import install
 from pglift import instance as instance_mod
-from pglift import pm
+from pglift import model, pm
 from pglift.ctx import Context
-from pglift.model import Instance
 from pglift.settings import Settings
 
 from . import configure_instance
@@ -119,8 +118,14 @@ def tmp_port_factory():
 
 
 @pytest.fixture(scope="session")
-def instance_obj(pg_version, settings):
-    return Instance(name="test", version=pg_version, settings=settings)
+def instance_obj(pg_version, settings, tmp_port_factory):
+    prometheus_port = next(tmp_port_factory)
+    return model.Instance(
+        name="test",
+        version=pg_version,
+        prometheus=model.PrometheusService(prometheus_port),
+        settings=settings,
+    )
 
 
 @pytest.fixture(scope="session")
