@@ -32,8 +32,8 @@ def ctx(settings):
 
 
 @pytest.fixture
-def instance(ctx):
-    instance = Instance.default_version("test", ctx=ctx)
+def instance(pg_version, settings):
+    instance = Instance(name="test", version=pg_version, settings=settings)
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
     (instance.datadir / "postgresql.conf").touch()

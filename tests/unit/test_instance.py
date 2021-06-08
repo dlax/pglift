@@ -8,8 +8,8 @@ from pglift import task
 from pglift.model import Instance
 
 
-def test_init_lookup_failed(ctx):
-    i = Instance.default_version("dirty", ctx=ctx)
+def test_init_lookup_failed(pg_version, settings, ctx):
+    i = Instance(name="dirty", version=pg_version, settings=settings)
     i.datadir.mkdir(parents=True)
     (i.datadir / "postgresql.conf").touch()
     pg_version = i.datadir / "PG_VERSION"
@@ -20,8 +20,8 @@ def test_init_lookup_failed(ctx):
     assert not pg_version.exists()  # per revert
 
 
-def test_init_dirty(ctx, monkeypatch):
-    i = Instance.default_version("dirty", ctx=ctx)
+def test_init_dirty(pg_version, settings, ctx, monkeypatch):
+    i = Instance(name="dirty", version=pg_version, settings=settings)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []

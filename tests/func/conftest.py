@@ -119,8 +119,8 @@ def tmp_port_factory():
 
 
 @pytest.fixture(scope="session")
-def instance_obj(ctx):
-    return Instance.default_version("test", ctx=ctx)
+def instance_obj(pg_version, settings):
+    return Instance(name="test", version=pg_version, settings=settings)
 
 
 @pytest.fixture(scope="session")
