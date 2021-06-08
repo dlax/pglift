@@ -76,7 +76,7 @@ class DataPath(PrefixedPath):
     basedir = Path("srv")
 
 
-POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10", "9.6"]
+POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10"]
 
 
 class PostgreSQLVersionSettings(BaseSettings):

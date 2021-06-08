@@ -49,8 +49,8 @@ def test_postgresql_versions(monkeypatch, tmp_path):
         "postgresql": {
             "bindir": "/usr/lib/pgsql/{version}/bin",
             "versions": {
-                "9.6": {
-                    "bindir": "/opt/pgsql-9.6/bin",
+                "10": {
+                    "bindir": "/opt/pgsql-10/bin",
                 },
             },
         },
@@ -61,8 +61,8 @@ def test_postgresql_versions(monkeypatch, tmp_path):
         m.setenv("SETTINGS", f"@{config_path}")
         s = Settings()
     pgversions = s.postgresql.versions
-    assert set(pgversions) == {"9.6", "10", "11", "12", "13"}
-    assert str(pgversions["9.6"].bindir) == "/opt/pgsql-9.6/bin"
+    assert set(pgversions) == {"10", "11", "12", "13"}
+    assert str(pgversions["10"].bindir) == "/opt/pgsql-10/bin"
     assert str(pgversions["12"].bindir) == "/usr/lib/pgsql/12/bin"
 
     config["postgresql"]["default_version"] = "7"

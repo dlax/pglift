@@ -1,3 +1,4 @@
+import pathlib
 import subprocess
 
 import pytest
@@ -37,7 +38,11 @@ def test_init_dirty(pg_version, settings, ctx, monkeypatch):
 
 
 def test_init_version_not_available(ctx):
-    i = Instance("pg96", "9.6", settings=ctx.settings)
+    settings = ctx.settings
+    version = "10"
+    if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
+        pytest.skip(f"PostgreSQL {version} seems available")
+    i = Instance(f"pg{version}", version, settings=settings)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
         instance_mod.init(ctx, i)
 

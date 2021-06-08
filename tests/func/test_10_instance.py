@@ -155,7 +155,7 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
 
 
 def test_describe_absent(ctx, installed):
-    i = Instance("absent", "9.6")
+    i = Instance("absent", "13")
     im = instance_mod.describe(ctx, i)
     assert im is None
 
@@ -173,5 +173,5 @@ def test_describe(ctx, instance):
 
 
 def test_drop_absent(ctx, installed):
-    i = Instance("absent", "9.6")
+    i = Instance("absent", "13")
     instance_mod.drop(ctx, i)

@@ -35,8 +35,8 @@ class Instance:
     def from_stanza(cls, stanza: str, **kwargs: Any) -> "Instance":
         """Build an Instance from a '<version>-<name>' string.
 
-        >>> Instance.from_stanza('9.6-main')  # doctest: +ELLIPSIS
-        Instance(name='main', version='9.6', ...)
+        >>> Instance.from_stanza('12-main')  # doctest: +ELLIPSIS
+        Instance(name='main', version='12', ...)
         >>> Instance.from_stanza('bad')
         Traceback (most recent call last):
             ...
