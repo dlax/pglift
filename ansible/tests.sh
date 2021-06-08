@@ -50,6 +50,12 @@ list_timers() {
         systemctl --no-pager --user list-timers
     fi
 }
+check_postgres_exporter() {
+    if type systemctl > /dev/null;
+    then
+        curl -f -I "http://localhost:$1/metrics"
+    fi
+}
 
 set -x
 
@@ -57,9 +63,12 @@ ansible-playbook --module-path=ansible/modules/  docs/ansible/play1.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
+check_postgres_exporter 9187
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
+check_postgres_exporter 9188
 set +e
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5444"  # dev
+check_postgres_exporter 9189
 set -e
 list_timers
 
@@ -67,10 +76,13 @@ ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
 cat "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
+check_postgres_exporter 9187
 set +e
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
+check_postgres_exporter 9188
 set -e
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
+check_postgres_exporter 9189
 list_timers
 
 ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml

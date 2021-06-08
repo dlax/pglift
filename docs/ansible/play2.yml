@@ -27,3 +27,4 @@
           port: 5455
           max_connections: 42
           unix_socket_directories: /tmp
+        prometheus_port: 9189

@@ -45,6 +45,13 @@ options:
       - Settings for the PostgreSQL instance.
     type: dict
     required: false
+  prometheus_port:
+    description:
+      - TCP port for the web interface and telemetry of Prometheus
+      - postgres_exporter
+    type: int
+    required: true
+    default: 9187
 
 author:
 - Dalibo (@dalibo)
@@ -69,6 +76,7 @@ EXAMPLES = """
     version: 12
     state: stopped
     ssl: true
+    prometheus_port: 9188
 
 # A PostgreSQL instance without SSL and with some custom settings:
 - name: Dev DB instance
@@ -104,9 +112,9 @@ from typing import Any, Dict
 from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
+from pglift import model
 from pglift.ansible import AnsibleContext
 from pglift.instance import Status as PGStatus
-from pglift.model import Instance
 from pglift.pm import PluginManager
 from pglift.settings import SETTINGS
 from pglift.task import runner
@@ -132,14 +140,22 @@ def run_module() -> None:
             "default": False,
         },
         "configuration": {"type": "dict", "required": False},
+        "prometheus_port": {"type": "int", "required": False, "default": 9187},
     }
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
+    prometheus = model.PrometheusService(port=module.params["prometheus_port"])
     if module.params["version"]:
-        instance = Instance(module.params["name"], module.params["version"])
+        instance = model.Instance(
+            name=module.params["name"],
+            version=module.params["version"],
+            prometheus=prometheus,
+        )
     else:
-        instance = Instance.default_version(module.params["name"], ctx=ctx)
+        instance = model.Instance.default_version(
+            module.params["name"], prometheus=prometheus, ctx=ctx
+        )
     result = {"changed": False, "instance": str(instance)}
 
     if module.check_mode:

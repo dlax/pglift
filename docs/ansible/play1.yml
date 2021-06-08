@@ -20,6 +20,7 @@
         configuration:
           port: 5434
           unix_socket_directories: /tmp
+        prometheus_port: 9188
 
     - name: dev instance, not running at the moment
       postgresql_instance:
@@ -28,3 +29,4 @@
         configuration:
           port: 5444
           unix_socket_directories: /tmp
+        prometheus_port: 9189
