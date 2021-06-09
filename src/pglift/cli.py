@@ -27,14 +27,14 @@ def instance() -> None:
 @instance.command("apply")
 @click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
 @click.pass_obj
-def apply_cli(ctx: Context, file: IO[str]) -> None:
+def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     with runner():
         instance_mod.apply(ctx, manifest.Instance.parse_yaml(file))
 
 
 @instance.command("schema")
-def schema_cli() -> None:
+def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
     print(manifest.Instance.schema_json(indent=2))
 
@@ -54,7 +54,7 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
 @name_argument
 @version_argument
 @click.pass_obj
-def describe_cli(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     described = instance_mod.describe(ctx, instance)
@@ -66,7 +66,7 @@ def describe_cli(ctx: Context, name: str, version: Optional[str]) -> None:
 @name_argument
 @version_argument
 @click.pass_obj
-def drop_cli(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
     """Drop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     with runner():
