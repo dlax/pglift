@@ -2,6 +2,9 @@ from pathlib import Path
 from typing import Dict
 
 import requests
+from tenacity import retry
+from tenacity.stop import stop_after_attempt
+from tenacity.wait import wait_fixed
 
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
@@ -34,12 +37,16 @@ def test(ctx, installed, instance, tmp_port_factory):
     queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
     assert queriespath.exists()
 
+    @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))  # type: ignore[no-untyped-call]
+    def request_metrics() -> requests.Response:
+        return requests.get(f"http://0.0.0.0:{port}/metrics")
+
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
         with instance_mod.running(ctx, instance, run_hooks=True):
             assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
             try:
-                r = requests.get(f"http://0.0.0.0:{port}/metrics")
+                r = request_metrics()
             except requests.ConnectionError as e:
                 raise AssertionError(f"HTTP connection failed: {e}")
             r.raise_for_status()
