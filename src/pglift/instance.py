@@ -232,6 +232,9 @@ def instance_configure(
 ) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf.
+
+    This is a no-op if if pg_hba.conf's content matches the initial
+    configuration.
     """
     surole = ctx.settings.postgresql.surole
     auth_settings = ctx.settings.postgresql.auth
