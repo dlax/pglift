@@ -7,6 +7,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 extras_typing = [
+    "mypy",
     "types-PyYAML",
     "types-requests",
 ]
