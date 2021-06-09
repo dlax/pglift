@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Any, Iterator, Optional
 
 from pglift import instance
 from pglift.ctx import BaseContext
@@ -12,7 +12,8 @@ def configure_instance(
     i: Instance,
     *,
     port: Optional[int] = None,
-    socket_path: Optional[Path] = None
+    socket_path: Optional[Path] = None,
+    **confitems: Any
 ) -> None:
     if port is None or socket_path is None:
         config = i.config()
@@ -21,7 +22,9 @@ def configure_instance(
             port = config.port  # type: ignore[assignment]
         if not socket_path:
             socket_path = Path(config.unix_socket_directories)  # type: ignore[arg-type]
-    instance.configure(ctx, i, port=port, unix_socket_directories=str(socket_path))
+    instance.configure(
+        ctx, i, port=port, unix_socket_directories=str(socket_path), **confitems
+    )
 
 
 @contextmanager
