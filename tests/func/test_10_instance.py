@@ -93,6 +93,10 @@ def test_auth(ctx, instance):
         in hba
     )
 
+    ident_path = i.datadir / "pg_ident.conf"
+    ident = ident_path.read_text().splitlines()
+    assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
+
 
 def test_start_stop(ctx, instance, tmp_path):
     i = instance

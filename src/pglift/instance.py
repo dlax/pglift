@@ -231,7 +231,8 @@ def instance_configure(
     ctx: BaseContext, instance: Instance, changes: ConfigChanges
 ) -> None:
     """Configure authentication for the PostgreSQL instance by setting
-    super-user role's password, if any, and installing templated pg_hba.conf.
+    super-user role's password, if any, and installing templated pg_hba.conf
+    and pg_ident.conf.
 
     This is a no-op if if pg_hba.conf's content matches the initial
     configuration.
@@ -251,6 +252,10 @@ def instance_configure(
         roles.set_password_for(ctx, instance, surole)
 
     hba_path.write_text(hba)
+
+    ident_path = instance.datadir / "pg_ident.conf"
+    ident = template("postgresql", "pg_ident.conf")
+    ident_path.write_text(ident)
 
 
 @task
