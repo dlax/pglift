@@ -140,6 +140,12 @@ def configure(
         with our_conffile.open("w") as f:
             config.save(f)
 
+    i_config = instance.config()
+    assert i_config is not None
+    if "log_directory" in i_config:
+        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
+        conf.create_log_directory(instance, logdir)
+
     ctx.pm.hook.instance_configure(ctx=ctx, instance=instance, changes=changes)
 
     return changes
@@ -156,6 +162,12 @@ def revert_configure(
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
+    i_config = instance.config()
+    assert i_config is not None
+    if "log_directory" in i_config:
+        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
+        conf.remove_log_directory(instance, logdir)
+
     configdir = instance.datadir
     our_confd, our_conffile, include = conf.info(configdir)
     if our_conffile.exists():

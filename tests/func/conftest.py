@@ -152,11 +152,20 @@ def instance_initialized(ctx, instance_obj, installed):
 
 
 @pytest.fixture(scope="session")
-def instance(ctx, instance_initialized, tmp_port_factory, tmp_path_factory):
+def log_directory(tmp_path_factory):
+    return tmp_path_factory.mktemp("postgres-logs")
+
+
+@pytest.fixture(scope="session")
+def instance(
+    ctx, instance_initialized, tmp_port_factory, tmp_path_factory, log_directory
+):
     port = next(tmp_port_factory)
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
-    configure_instance(ctx, i, port=port, socket_path=tmp_path)
+    configure_instance(
+        ctx, i, port=port, socket_path=tmp_path, log_directory=str(log_directory)
+    )
     assert i.config()
     return i
 

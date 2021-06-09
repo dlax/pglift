@@ -1,9 +1,14 @@
+import shutil
+from functools import wraps
 from pathlib import Path
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Tuple, cast
 
 from pgtoolkit import conf as pgconf
 
 from . import __name__ as pkgname
+
+if TYPE_CHECKING:
+    from .model import Instance
 
 
 def make(instance: str, **confitems: Any) -> pgconf.Configuration:
@@ -28,3 +33,26 @@ def info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
     confd = configdir / confd
     conffile = confd / name
     return confd, conffile, include
+
+
+F = Callable[["Instance", Path], None]
+
+
+def absolute_path(fn: F) -> F:
+    @wraps(fn)
+    def wrapper(instance: "Instance", path: Path) -> None:
+        if not path.is_absolute():
+            path = instance.datadir / path
+        return fn(instance, path)
+
+    return cast(F, wrapper)
+
+
+@absolute_path
+def create_log_directory(instance: "Instance", path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+
+
+@absolute_path
+def remove_log_directory(instance: "Instance", path: Path) -> None:
+    shutil.rmtree(path)

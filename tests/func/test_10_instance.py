@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import psycopg2
 import pytest
 from pgtoolkit.ctl import Status
@@ -29,6 +31,13 @@ def test_init(ctx, instance_initialized):
     # Instance alread exists, no-op.
     ret = instance_mod.init(ctx, i)
     assert not ret
+
+
+def test_log_directory(ctx, instance, log_directory):
+    config = instance.config()
+    instance_log_dir = Path(config.log_directory)
+    assert instance_log_dir == log_directory
+    assert instance_log_dir.exists()
 
 
 def test_pgpass(ctx, instance):
@@ -160,7 +169,7 @@ def test_describe_absent(ctx, installed):
     assert im is None
 
 
-def test_describe(ctx, instance):
+def test_describe(ctx, instance, log_directory):
     i = instance
     im = instance_mod.describe(ctx, i)
     assert im is not None
@@ -168,6 +177,8 @@ def test_describe(ctx, instance):
     config = im.configuration
     config.pop("port")
     config.pop("unix_socket_directories")
+    if "log_directory" in config:
+        assert config.pop("log_directory") == str(log_directory)
     assert config == {"cluster_name": "test"}
     assert im.state.name == "stopped"
 
