@@ -6,6 +6,11 @@ here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
+extras_typing = [
+    "types-PyYAML",
+    "types-requests",
+]
+
 setup(
     name="pglift",
     version="0.0.0",
@@ -51,7 +56,8 @@ setup(
             "flake8",
             "isort",
             "pre-commit",
-        ],
+        ]
+        + extras_typing,
         "test": [
             "port-for",
             "psycopg2-binary",
@@ -59,6 +65,7 @@ setup(
             "pytest-cov",
             "requests",
         ],
+        "typing": extras_typing,
         "docs": [
             "psycopg2-binary",
             "sphinx",
