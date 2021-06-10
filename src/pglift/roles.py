@@ -3,8 +3,7 @@ from pgtoolkit import pgpass
 from . import db, hookimpl
 from .ctx import BaseContext
 from .model import Instance
-from .settings import Role
-from .types import ConfigChanges
+from .types import ConfigChanges, Role
 
 
 @hookimpl  # type: ignore[misc]

@@ -9,7 +9,7 @@ from psycopg2 import sql
 
 if TYPE_CHECKING:  # pragma: nocover
     from .model import Instance
-    from .settings import Role
+    from .types import Role
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 

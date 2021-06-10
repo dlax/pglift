@@ -6,9 +6,10 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
-from typing_extensions import Literal, Protocol, TypedDict
+from typing_extensions import Literal, TypedDict
 
 from . import __name__ as pkgname
+from .types import Role
 from .util import xdg_data_home
 
 T = TypeVar("T", bound=BaseSettings)
@@ -30,12 +31,6 @@ def default_prefix(uid: int) -> Path:
     if uid == 0:
         return Path("/")
     return xdg_data_home() / pkgname
-
-
-class Role(Protocol):
-    name: str
-    password: Optional[SecretStr]
-    pgpass: bool
 
 
 class PrefixedPath(PosixPath):
