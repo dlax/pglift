@@ -1,6 +1,9 @@
+import json
 from typing import IO, Optional
 
 import click
+import pydantic.json
+from tabulate import tabulate
 
 from . import instance as instance_mod
 from . import manifest, pgbackrest, pm
@@ -60,6 +63,26 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     described = instance_mod.describe(ctx, instance)
     if described:
         print(described.yaml(), end="")
+
+
+@instance.command("list")
+@click.option("--json", "as_json", is_flag=True, help="Print as JSON")
+@click.pass_obj
+def instance_list(ctx: Context, as_json: bool) -> None:
+    """List the available instances"""
+
+    if as_json:
+        print(
+            json.dumps(
+                list(instance_mod.list(ctx)), default=pydantic.json.pydantic_encoder
+            )
+        )
+        return
+
+    props = manifest.InstanceListItem.__fields__
+    headers = [p.capitalize() for p in props]
+    content = [[getattr(info, p) for p in props] for info in instance_mod.list(ctx)]
+    print(tabulate(content, headers))
 
 
 @instance.command("drop")

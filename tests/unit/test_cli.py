@@ -120,3 +120,29 @@ def test_backup_instance(runner, instance, ctx):
     assert result.exit_code == 0, result
     assert backup.called
     assert expire.called
+
+
+def test_instance_list(runner, instance, ctx):
+    result = runner.invoke(cli, ["instance", "list"], obj=ctx)
+    port = instance.config().port
+    path = instance.path
+    expected = [
+        "Name Version Port Path Status",
+        "-----------------------------",
+        f"test 11 {port} {path} not_running",
+    ]
+    lines = result.output.splitlines()
+    assert lines[0].split() == expected[0].split()
+    assert lines[2].split() == expected[2].split()
+
+    result = runner.invoke(cli, ["instance", "list", "--json"], obj=ctx)
+    list_as_json = json.loads(result.output)
+    assert list_as_json == [
+        {
+            "name": "test",
+            "path": str(path),
+            "port": port,
+            "status": "not_running",
+            "version": "11",
+        }
+    ]

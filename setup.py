@@ -47,6 +47,7 @@ setup(
         "pgtoolkit >= 0.16.0",
         "pluggy",
         "pydantic",
+        "tabulate",
         "typing-extensions",
         "PyYAML",
     ],
