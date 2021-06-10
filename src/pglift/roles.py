@@ -1,4 +1,3 @@
-import psycopg2
 from pgtoolkit import pgpass
 
 from . import db, hookimpl
@@ -63,27 +62,10 @@ def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     if role.password is None:
         return
 
-    config = instance.config()
-    assert config is not None
-    password = role.password.get_secret_value()
-    connargs = {
-        "port": config.port,
-        "dbname": "postgres",
-        "user": role.name,
-    }
-
-    if config.unix_socket_directories:
-        connargs["host"] = config.unix_socket_directories
-    passfile = ctx.settings.postgresql.auth.passfile
-    if role.pgpass and passfile.exists():
-        connargs["passfile"] = str(passfile)
-    else:
-        connargs["password"] = password
-
-    with psycopg2.connect(**connargs) as conn:
+    with db.connect(ctx, instance, role) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
                 db.query("role_alter_password", username=role.name),
-                {"password": password},
+                {"password": role.password.get_secret_value()},
             )

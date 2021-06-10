@@ -1,8 +1,16 @@
 import pathlib
 import re
-from typing import Iterator, Tuple
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Iterator, Tuple
 
+import psycopg2
+import psycopg2.extensions
 from psycopg2 import sql
+
+if TYPE_CHECKING:  # pragma: nocover
+    from .ctx import BaseContext
+    from .model import Instance
+    from .settings import Role
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 
@@ -23,3 +31,26 @@ def queries() -> Iterator[Tuple[str, str]]:
             continue
         qname, query = block.split("\n", 1)
         yield qname.strip(), query.strip()
+
+
+@contextmanager
+def connect(
+    ctx: "BaseContext", instance: "Instance", role: "Role", *, dbname: str = "postgres"
+) -> Iterator[psycopg2.extensions.connection]:
+    """Connect to specified database of `instance` with `role`."""
+    config = instance.config()
+    assert config is not None
+    connargs = {
+        "port": config.port,
+        "dbname": "postgres",
+        "user": role.name,
+    }
+    if config.unix_socket_directories:
+        connargs["host"] = config.unix_socket_directories
+    passfile = ctx.settings.postgresql.auth.passfile
+    if role.pgpass and passfile.exists():
+        connargs["passfile"] = str(passfile)
+    elif role.password:
+        connargs["password"] = role.password.get_secret_value()
+    with psycopg2.connect(**connargs) as conn:
+        yield conn
