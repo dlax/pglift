@@ -11,3 +11,5 @@ Resource manifests
     :members:
 .. autoclass:: InstanceListItem
     :members:
+.. autoclass:: Role
+    :members:

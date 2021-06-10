@@ -5,7 +5,14 @@ from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import yaml
 from pgtoolkit.ctl import Status
-from pydantic import BaseModel, DirectoryPath, Field, root_validator, validator
+from pydantic import (
+    BaseModel,
+    DirectoryPath,
+    Field,
+    SecretStr,
+    root_validator,
+    validator,
+)
 
 from . import model
 from .ctx import BaseContext
@@ -131,3 +138,11 @@ class Instance(Manifest):
             return model.InstanceSpec(self.name, self.version, settings=ctx.settings)
         else:
             return model.InstanceSpec.default_version(self.name, ctx)
+
+
+class Role(Manifest):
+    """PostgreSQL role"""
+
+    name: str
+    password: Optional[SecretStr] = None
+    pgpass: bool = False
