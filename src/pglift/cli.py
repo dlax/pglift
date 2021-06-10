@@ -6,7 +6,7 @@ import pydantic.json
 from tabulate import tabulate
 
 from . import instance as instance_mod
-from . import manifest, pgbackrest, pm
+from . import manifest, pgbackrest, pm, roles
 from .ctx import Context
 from .model import Instance, InstanceSpec
 from .settings import SETTINGS
@@ -51,6 +51,15 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> InstanceSpe
         return InstanceSpec(name, version, settings=ctx.settings)
     else:
         return InstanceSpec.default_version(name, ctx)
+
+
+def instance_lookup(ctx: Context, instance_id: str) -> Instance:
+    version = None
+    try:
+        version, name = instance_id.split("/", 1)
+    except ValueError:
+        name = instance_id
+    return Instance.from_spec(get_instance(ctx, name, version))
 
 
 @instance.command("describe")
@@ -179,3 +188,50 @@ def backup_instance(
     pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
     if purge:
         pgbackrest.expire(ctx, instance)
+
+
+instance_identifier = click.argument("instance", metavar="<version>/<instance>")
+
+
+@cli.group("role")
+def role() -> None:
+    """Manipulate roles"""
+
+
+@role.command("schema")
+def role_schema() -> None:
+    """Print the JSON schema of role model"""
+    print(manifest.Role.schema_json(indent=2))
+
+
+@role.command("apply")
+@instance_identifier
+@click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
+@click.pass_obj
+def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
+    """Apply manifest as a role"""
+    i = instance_lookup(ctx, instance)
+    with runner():
+        roles.apply(ctx, i, manifest.Role.parse_yaml(file))
+
+
+@role.command("describe")
+@instance_identifier
+@click.argument("name")
+@click.pass_obj
+def role_describe(ctx: Context, instance: str, name: str) -> None:
+    """Describe a role"""
+    i = instance_lookup(ctx, instance)
+    described = roles.describe(ctx, i, name)
+    if described:
+        print(described.yaml(), end="")
+
+
+@role.command("drop")
+@instance_identifier
+@click.argument("name")
+@click.pass_obj
+def role_drop(ctx: Context, instance: str, name: str) -> None:
+    """Drop a role"""
+    i = instance_lookup(ctx, instance)
+    roles.drop(ctx, i, name)

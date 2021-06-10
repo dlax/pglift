@@ -8,7 +8,7 @@ from pgtoolkit.ctl import Status
 
 from pglift import instance as instance_mod
 from pglift import manifest as manifest_mod
-from pglift import pgbackrest
+from pglift import pgbackrest, roles
 from pglift.cli import cli
 from pglift.ctx import Context
 
@@ -169,3 +169,71 @@ def test_backup_instance(runner, instance, ctx):
     assert result.exit_code == 0, result
     assert backup.called
     assert expire.called
+
+
+def test_role_schema(runner):
+    result = runner.invoke(cli, ["role", "schema"])
+    schema = json.loads(result.output)
+    assert schema["title"] == "Role"
+    assert schema["description"] == "PostgreSQL role"
+
+
+def test_role_apply(runner, tmp_path, ctx, instance):
+    manifest = tmp_path / "manifest.yml"
+    content = yaml.dump({"name": "roltest", "pgpass": True})
+    manifest.write_text(content)
+    with patch.object(roles, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["role", "apply", str(instance), "-f", str(manifest)],
+            obj=ctx,
+        )
+    assert result.exit_code == 0
+    apply.assert_called_once()
+    (call_ctx, call_instance, call_role), kwargs = apply.call_args
+    assert call_ctx == ctx
+    assert call_instance == instance
+    assert call_role.name == "roltest"
+    assert kwargs == {}
+
+
+def test_role_describe(runner, ctx, instance):
+    with patch.object(roles, "describe", return_value=None) as describe:
+        result = runner.invoke(
+            cli,
+            ["role", "describe", str(instance), "absent"],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "absent")
+    assert result.exit_code == 0
+    assert result.stdout == ""
+
+    with patch.object(
+        roles,
+        "describe",
+        return_value=manifest_mod.Role(name="present", pgpass=True, password="hidden"),
+    ) as describe:
+        result = runner.invoke(
+            cli,
+            ["role", "describe", instance.name, "present"],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "present")
+    assert result.exit_code == 0
+    described = yaml.safe_load(result.stdout)
+    assert described == {
+        "name": "present",
+        "password": "**********",
+        "pgpass": True,
+    }
+
+
+def test_role_drop(runner, ctx, instance):
+    with patch.object(roles, "drop") as drop:
+        result = runner.invoke(
+            cli,
+            ["role", "drop", str(instance), "foo"],
+            obj=ctx,
+        )
+    drop.assert_called_once_with(ctx, instance, "foo")
+    assert result.exit_code == 0
