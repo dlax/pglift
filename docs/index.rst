@@ -6,6 +6,7 @@ Welcome to pglift's documentation!
     :caption: Contents:
 
     api/index
+    datamodel
     settings
     ansible
     cli
