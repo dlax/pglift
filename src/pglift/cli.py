@@ -5,7 +5,7 @@ import click
 from . import instance as instance_mod
 from . import manifest, pgbackrest, pm
 from .ctx import Context
-from .model import Instance
+from .model import Instance, InstanceSpec
 from .settings import SETTINGS
 from .task import runner
 
@@ -43,11 +43,11 @@ name_argument = click.argument("name", type=click.STRING)
 version_argument = click.argument("version", required=False, type=click.STRING)
 
 
-def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
+def get_instance(ctx: Context, name: str, version: Optional[str]) -> InstanceSpec:
     if version:
-        return Instance(name, version, settings=ctx.settings)
+        return InstanceSpec(name, version, settings=ctx.settings)
     else:
-        return Instance.default_version(name, ctx)
+        return InstanceSpec.default_version(name, ctx)
 
 
 @instance.command("describe")
@@ -88,7 +88,7 @@ def backup_instance(
     ctx: Context, name: str, version: Optional[str], type: str, purge: bool
 ) -> None:
     """Back up a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
+    instance = Instance.from_spec(get_instance(ctx, name, version))
     pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
     if purge:
         pgbackrest.expire(ctx, instance)

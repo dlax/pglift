@@ -6,12 +6,12 @@ from pgtoolkit.ctl import Status
 
 from pglift import instance as instance_mod
 from pglift import manifest, systemd
-from pglift.model import Instance
+from pglift.model import InstanceSpec
 
 from . import reconfigure_instance
 
 
-def test_init(ctx, instance_initialized):
+def test_init(ctx, instance_initialized, monkeypatch):
     i = instance_initialized
     assert i.datadir.exists()
     assert i.waldir.exists()
@@ -29,8 +29,13 @@ def test_init(ctx, instance_initialized):
         assert systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
 
     # Instance alread exists, no-op.
-    ret = instance_mod.init(ctx, i)
-    assert not ret
+    with monkeypatch.context() as m:
+
+        def fail():
+            raise AssertionError("unexpected called")
+
+        m.setattr(ctx, "pg_ctl", fail)
+        instance_mod.init(ctx, i)
 
 
 def test_log_directory(ctx, instance, log_directory):
@@ -141,8 +146,8 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
         configuration={"unix_socket_directories": str(tmp_path), "port": port},
         prometheus={"port": prometheus_port},
     )
-    i = im.model(ctx)
-    instance_mod.apply(ctx, im)
+    i = instance_mod.apply(ctx, im)
+    assert i is not None
     assert i.exists()
     pgconfig = i.config()
     assert pgconfig
@@ -168,7 +173,7 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
 
 
 def test_describe_absent(ctx, installed, settings):
-    i = Instance("absent", "13", settings)
+    i = InstanceSpec("absent", "13", settings)
     im = instance_mod.describe(ctx, i)
     assert im is None
 
@@ -188,5 +193,5 @@ def test_describe(ctx, instance, log_directory):
 
 
 def test_drop_absent(ctx, installed, settings):
-    i = Instance("absent", "13", settings)
+    i = InstanceSpec("absent", "13", settings)
     instance_mod.drop(ctx, i)

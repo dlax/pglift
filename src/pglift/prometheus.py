@@ -35,7 +35,6 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     role = ctx.settings.postgresql.surole
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     instance_config = instance.config()
-    assert instance_config
 
     dsn = []
     host = instance_config.get("unix_socket_directories")

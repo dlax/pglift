@@ -146,15 +146,16 @@ def run_module() -> None:
 
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
     prometheus = model.PrometheusService(port=module.params["prometheus_port"])
+    instance: model.BaseInstance
     if module.params["version"]:
-        instance = model.Instance(
+        instance = model.InstanceSpec(
             name=module.params["name"],
             version=module.params["version"],
             settings=settings,
             prometheus=prometheus,
         )
     else:
-        instance = model.Instance.default_version(
+        instance = model.InstanceSpec.default_version(
             module.params["name"], prometheus=prometheus, ctx=ctx
         )
     result = {"changed": False, "instance": str(instance)}
@@ -172,11 +173,12 @@ def run_module() -> None:
             if state == "absent":
                 if instance.exists():
                     if status == PGStatus.running:
-                        instance_mod.stop(ctx, instance)
+                        instance_mod.stop(ctx, model.Instance.from_spec(instance))
                     instance_mod.drop(ctx, instance)
                     result["changed"] = True
             else:
-                result["changed"] = instance_mod.init(ctx, instance)
+                result["changed"] = not instance.exists()
+                instance = instance_mod.init(ctx, instance)
                 result["datadir"] = str(instance.datadir)
                 result["waldir"] = str(instance.waldir)
                 result["configuration_changes"] = instance_mod.configure(

@@ -53,7 +53,6 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     logpath.mkdir(exist_ok=True, parents=True)
 
     instance_config = instance.config()
-    assert instance_config
     stanza = _stanza(instance)
 
     backuprole = ctx.settings.postgresql.surole

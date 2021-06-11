@@ -1,8 +1,9 @@
 import contextlib
+import functools
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, TypeVar, Union
 
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
@@ -10,12 +11,28 @@ from typing_extensions import Literal
 
 from . import conf, hookimpl, manifest, roles, systemd, template, util
 from .ctx import BaseContext
-from .model import Instance
+from .model import BaseInstance, Instance, InstanceSpec
 from .task import task
 from .types import ConfigChanges
 
+R = TypeVar("R")
 
-def systemd_unit(instance: Instance) -> str:
+
+def bypass_absent_instance(
+    fn: Callable[[BaseContext, Instance], R]
+) -> Callable[[BaseContext, InstanceSpec], Optional[R]]:
+    """Bypass decorated function if `instance` argument does not exists."""
+
+    @functools.wraps(fn)
+    def wrapper(ctx: BaseContext, instance: InstanceSpec) -> Optional[R]:
+        if not instance.exists():
+            return None
+        return fn(ctx, Instance.from_spec(instance))
+
+    return wrapper
+
+
+def systemd_unit(instance: BaseInstance) -> str:
     """Return systemd unit service name for 'instance'.
 
     >>> from pglift.settings import Settings
@@ -27,15 +44,15 @@ def systemd_unit(instance: Instance) -> str:
 
 
 @task
-def init(ctx: BaseContext, instance: Instance) -> bool:
+def init(ctx: BaseContext, instance: InstanceSpec) -> Instance:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
     initdb_settings = settings.initdb
     surole = settings.surole
     try:
         if instance.exists():
-            return False
-    except Exception as exc:
+            return Instance.from_spec(instance)
+    except LookupError as exc:
         raise Exception(f"instance lookup failed: {exc}")
 
     # Would raise EnvironmentError if requested postgresql binaries are not
@@ -63,11 +80,11 @@ def init(ctx: BaseContext, instance: Instance) -> bool:
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
 
-    return True
+    return Instance.from_spec(instance)
 
 
 @init.revert
-def revert_init(ctx: BaseContext, instance: Instance) -> Any:
+def revert_init(ctx: BaseContext, instance: InstanceSpec) -> Any:
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(instance)
@@ -101,7 +118,6 @@ def configure(
     """
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
-    assert postgresql_conf.exists()
     our_confd, our_conffile, include = conf.info(configdir)
     if not our_confd.exists():
         our_confd.mkdir()
@@ -142,7 +158,6 @@ def configure(
             config.save(f)
 
     i_config = instance.config()
-    assert i_config is not None
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(instance, logdir)
@@ -164,7 +179,6 @@ def revert_configure(
     'postgresql.conf'.
     """
     i_config = instance.config()
-    assert i_config is not None
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.remove_log_directory(instance, logdir)
@@ -281,10 +295,7 @@ def start(
 
 
 @task
-def status(
-    ctx: BaseContext,
-    instance: Instance,
-) -> Status:
+def status(ctx: BaseContext, instance: BaseInstance) -> Status:
     """Return the status of an instance."""
     return ctx.pg_ctl(instance.version).status(instance.datadir)
 
@@ -337,27 +348,31 @@ def reload(
         systemd.reload(ctx, systemd_unit(instance))
 
 
-def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
+def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[Instance]:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
     instance may be created or updated or dropped.
 
+    Unless the target state is 'absent' an :class:`~pglift.model.Instance`
+    object is returned.
+
     If configuration changes are detected and the instance was previously
     running, it will be reloaded. Note that some changes require a full
     restart, this needs to be handled manually.
     """
-    instance = instance_manifest.model(ctx)
+    instance_spec = instance_manifest.model(ctx)
     States = manifest.InstanceState
     state = instance_manifest.state
 
     if state == States.absent:
-        if instance.exists():
-            drop(ctx, instance)
-        return
+        drop(ctx, instance_spec)
+        return None
 
-    if not instance.exists():
-        init(ctx, instance)
+    if not instance_spec.exists():
+        instance = init(ctx, instance_spec)
+    else:
+        instance = Instance.from_spec(instance_spec)
     configure_options = instance_manifest.configuration or {}
     changes = configure(
         ctx,
@@ -381,17 +396,16 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> None:
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
+    return instance
 
-def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance]:
+
+@bypass_absent_instance
+def describe(ctx: BaseContext, instance: Instance) -> manifest.Instance:
     """Return an instance described as a manifest (or None if the instance
     does not exists).
     """
-    if not instance.exists():
-        return None
     config = instance.config()
-    assert config
     managed_config = instance.config(managed_only=True)
-    assert managed_config
     state = manifest.InstanceState.from_pg_status(status(ctx, instance))
     return manifest.Instance(
         name=instance.name,
@@ -402,15 +416,13 @@ def describe(ctx: BaseContext, instance: Instance) -> Optional[manifest.Instance
     )
 
 
-def drop(
-    ctx: BaseContext,
-    instance: Instance,
-) -> None:
-    """Drop an instance."""
-    if not instance.exists():
-        return
+@bypass_absent_instance
+def drop(ctx: BaseContext, instance: Instance) -> None:
+    """Drop an instance.
 
+    No-op if instance does not exist.
+    """
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
     revert_configure(ctx, instance)
-    revert_init(ctx, instance)
+    revert_init(ctx, instance.as_spec())

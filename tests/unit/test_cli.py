@@ -68,18 +68,26 @@ def test_instance_drop(runner, ctx):
     assert isinstance(mock_method.call_args[0][0], Context)
 
 
-def test_backup_instance(runner, ctx):
+def test_backup_instance(runner, instance, ctx):
     patch_backup = patch.object(pgbackrest, "backup")
     patch_expire = patch.object(pgbackrest, "expire")
     with patch_backup as backup, patch_expire as expire:
-        result = runner.invoke(cli, ["backup-instance", "test", "--type=diff"], obj=ctx)
+        result = runner.invoke(
+            cli,
+            ["backup-instance", instance.name, instance.version, "--type=diff"],
+            obj=ctx,
+        )
     assert result.exit_code == 0, result
     assert backup.call_count == 1
     assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
     assert not expire.called
 
     with patch_backup as backup, patch_expire as expire:
-        result = runner.invoke(cli, ["backup-instance", "test", "--purge"], obj=ctx)
+        result = runner.invoke(
+            cli,
+            ["backup-instance", instance.name, instance.version, "--purge"],
+            obj=ctx,
+        )
     assert result.exit_code == 0, result
     assert backup.called
     assert expire.called

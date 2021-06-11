@@ -38,7 +38,6 @@ def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
             raise TypeError(f"unexpected '{badarg}' argument")
 
     config = instance.config()
-    assert config is not None
     kwargs["port"] = config.port
     kwargs["user"] = role.name
     if config.unix_socket_directories:

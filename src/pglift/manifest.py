@@ -98,9 +98,9 @@ class Instance(Manifest):
             raise ValueError("instance name must not contain dashes")
         return v
 
-    def model(self, ctx: BaseContext) -> model.Instance:
+    def model(self, ctx: BaseContext) -> model.InstanceSpec:
         """Return a model Instance matching this manifest."""
         if self.version is not None:
-            return model.Instance(self.name, self.version, settings=ctx.settings)
+            return model.InstanceSpec(self.name, self.version, settings=ctx.settings)
         else:
-            return model.Instance.default_version(self.name, ctx)
+            return model.InstanceSpec.default_version(self.name, ctx)
