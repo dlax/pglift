@@ -8,7 +8,6 @@ import psycopg2.extensions
 from psycopg2 import sql
 
 if TYPE_CHECKING:  # pragma: nocover
-    from .ctx import BaseContext
     from .model import Instance
     from .settings import Role
 
@@ -35,7 +34,7 @@ def queries() -> Iterator[Tuple[str, str]]:
 
 @contextmanager
 def connect(
-    ctx: "BaseContext", instance: "Instance", role: "Role", *, dbname: str = "postgres"
+    instance: "Instance", role: "Role", *, dbname: str = "postgres"
 ) -> Iterator[psycopg2.extensions.connection]:
     """Connect to specified database of `instance` with `role`."""
     config = instance.config()
@@ -47,7 +46,7 @@ def connect(
     }
     if config.unix_socket_directories:
         connargs["host"] = config.unix_socket_directories
-    passfile = ctx.settings.postgresql.auth.passfile
+    passfile = instance.settings.postgresql.auth.passfile
     if role.pgpass and passfile.exists():
         connargs["passfile"] = str(passfile)
     elif role.password:
