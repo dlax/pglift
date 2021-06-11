@@ -23,7 +23,7 @@ class PrometheusService:
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class Instance:
-    """A PostgreSQL instance."""
+    """A PostgreSQL instance with satellite services."""
 
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
