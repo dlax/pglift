@@ -1,6 +1,6 @@
 import json
 from typing import Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import SecretStr
@@ -60,3 +60,14 @@ def test_dsn_badarg(instance):
     role = MagicMock()
     with pytest.raises(TypeError, match="unexpected 'port' argument"):
         db.dsn(instance, role, port=123)
+
+
+def test_connect(instance):
+    role = MagicMock()
+    role.configure_mock(name="dba", password=None, pgpass=False)
+    with patch("psycopg2.connect") as connect:
+        cnx = db.connect(instance, role)
+        assert not connect.called
+        with cnx:
+            pass
+    connect.assert_called_once_with("dbname=postgres port=999 user=dba host=/socks")
