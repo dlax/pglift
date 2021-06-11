@@ -1,7 +1,7 @@
 import pathlib
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, Iterator, Tuple
 
 import psycopg2
 import psycopg2.extensions
@@ -32,24 +32,32 @@ def queries() -> Iterator[Tuple[str, str]]:
         yield qname.strip(), query.strip()
 
 
+def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
+    for badarg in ("port", "user", "password", "passfile", "host"):
+        if badarg in kwargs:
+            raise TypeError(f"unexpected '{badarg}' argument")
+
+    config = instance.config()
+    assert config is not None
+    kwargs["port"] = config.port
+    kwargs["user"] = role.name
+    if config.unix_socket_directories:
+        kwargs["host"] = config.unix_socket_directories
+    passfile = instance.settings.postgresql.auth.passfile
+    if role.pgpass and passfile.exists():
+        kwargs["passfile"] = str(passfile)
+    elif role.password:
+        kwargs["password"] = role.password.get_secret_value()
+
+    assert "dsn" not in kwargs
+    return psycopg2.extensions.make_dsn(**kwargs)  # type: ignore[no-any-return]
+
+
 @contextmanager
 def connect(
     instance: "Instance", role: "Role", *, dbname: str = "postgres"
 ) -> Iterator[psycopg2.extensions.connection]:
     """Connect to specified database of `instance` with `role`."""
-    config = instance.config()
-    assert config is not None
-    connargs = {
-        "port": config.port,
-        "dbname": "postgres",
-        "user": role.name,
-    }
-    if config.unix_socket_directories:
-        connargs["host"] = config.unix_socket_directories
-    passfile = instance.settings.postgresql.auth.passfile
-    if role.pgpass and passfile.exists():
-        connargs["passfile"] = str(passfile)
-    elif role.password:
-        connargs["password"] = role.password.get_secret_value()
-    with psycopg2.connect(**connargs) as conn:
+    conninfo = dsn(instance, role, dbname=dbname)
+    with psycopg2.connect(conninfo) as conn:
         yield conn

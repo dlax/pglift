@@ -1,4 +1,9 @@
 import json
+from typing import Optional
+from unittest.mock import MagicMock
+
+import pytest
+from pydantic import SecretStr
 
 from pglift import db
 
@@ -17,3 +22,41 @@ def test_query():
     query = db.query("role_alter_password", username="bob")
     qs = "".join(q.string for q in query.seq)
     assert qs == "ALTER ROLE bob PASSWORD %(password)s"
+
+
+@pytest.mark.parametrize(
+    "rolspec, expected",
+    [
+        (
+            ("bob", None, False),
+            "dbname=mydb sslmode=off port=999 user=bob host=/socks",
+        ),
+        (
+            ("alice", "s3kret", True),
+            "dbname=mydb sslmode=off port=999 user=alice host=/socks passfile={passfile}",
+        ),
+        (
+            ("charles", "s3kret", False),
+            "dbname=mydb sslmode=off port=999 user=charles host=/socks password=s3kret",
+        ),
+    ],
+)
+def test_dsn(settings, instance, rolspec, expected):
+    passfile = settings.postgresql.auth.passfile
+
+    class MyRole:
+        def __init__(
+            self, username: str, password: Optional[str], pgpass: bool
+        ) -> None:
+            self.name = username
+            self.password = SecretStr(password) if password is not None else None
+            self.pgpass = pgpass
+
+    conninfo = db.dsn(instance, MyRole(*rolspec), dbname="mydb", sslmode="off")
+    assert conninfo == expected.format(passfile=passfile)
+
+
+def test_dsn_badarg(instance):
+    role = MagicMock()
+    with pytest.raises(TypeError, match="unexpected 'port' argument"):
+        db.dsn(instance, role, port=123)

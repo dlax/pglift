@@ -22,7 +22,14 @@ def regen_test_data(request):
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings.parse_obj({"prefix": str(tmp_path)})
+    passfile = tmp_path / "pgass"
+    passfile.touch()
+    return Settings.parse_obj(
+        {
+            "prefix": str(tmp_path),
+            "postgresql": {"auth": {"passfile": str(passfile)}},
+        }
+    )
 
 
 @pytest.fixture
@@ -36,5 +43,7 @@ def instance(pg_version, settings):
     instance = Instance(name="test", version=pg_version, settings=settings)
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
-    (instance.datadir / "postgresql.conf").touch()
+    (instance.datadir / "postgresql.conf").write_text(
+        "\n".join(["port = 999", "unix_socket_directories = /socks"])
+    )
     return instance
