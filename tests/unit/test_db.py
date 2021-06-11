@@ -1,10 +1,10 @@
 import json
 
-from pglift import queries
+from pglift import db
 
 
-def test_queries_iter(datadir, regen_test_data):
-    actual = dict(queries.iter())
+def test_queries(datadir, regen_test_data):
+    actual = dict(db.queries())
     fpath = datadir / "queries.json"
     if regen_test_data:
         with fpath.open("w") as f:
@@ -13,7 +13,7 @@ def test_queries_iter(datadir, regen_test_data):
     assert actual == expected
 
 
-def test_queries_get():
-    query = queries.get("role_alter_password", username="bob")
+def test_query():
+    query = db.query("role_alter_password", username="bob")
     qs = "".join(q.string for q in query.seq)
     assert qs == "ALTER ROLE bob PASSWORD %(password)s"

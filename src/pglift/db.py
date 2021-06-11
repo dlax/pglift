@@ -7,15 +7,15 @@ from psycopg2 import sql
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 
 
-def get(name: str, **kwargs: str) -> sql.Composed:
-    for qname, query in iter():
+def query(name: str, **kwargs: str) -> sql.Composed:
+    for qname, qstr in queries():
         if qname == name:
             kwargs = {k: sql.Identifier(v) for k, v in kwargs.items()}
-            return sql.SQL(query).format(**kwargs)
+            return sql.SQL(qstr).format(**kwargs)
     raise ValueError(name)
 
 
-def iter() -> Iterator[Tuple[str, str]]:
+def queries() -> Iterator[Tuple[str, str]]:
     content = QUERIES.read_text()
     for block in re.split("-- name:", content):
         block = block.strip()

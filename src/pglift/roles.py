@@ -1,7 +1,7 @@
 import psycopg2
 from pgtoolkit import pgpass
 
-from . import hookimpl, queries
+from . import db, hookimpl
 from .ctx import BaseContext
 from .model import Instance
 from .settings import Role
@@ -84,6 +84,6 @@ def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
-                queries.get("role_alter_password", username=role.name),
+                db.query("role_alter_password", username=role.name),
                 {"password": password},
             )
