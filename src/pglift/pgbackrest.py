@@ -12,10 +12,8 @@ from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .model import Instance
-from .settings import SETTINGS, PgBackRestSettings
+from .settings import PgBackRestSettings
 from .task import task
-
-PGBACKREST_SETTINGS = SETTINGS.pgbackrest
 
 
 def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> List[str]:
@@ -175,10 +173,7 @@ class BackupType(enum.Enum):
 
 
 def backup_command(
-    instance: Instance,
-    *,
-    type: BackupType = BackupType.default(),
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
+    instance: Instance, *, type: BackupType = BackupType.default()
 ) -> List[str]:
     """Return the full pgbackrest command to perform a backup for ``instance``.
 
@@ -203,7 +198,7 @@ def backup_command(
         "--repo1-retention-diff=9999999",
         "backup",
     ]
-    return make_cmd(instance, settings, *args)
+    return make_cmd(instance, instance.settings.pgbackrest, *args)
 
 
 @task
@@ -221,15 +216,10 @@ def backup(
     """
     backuprole = ctx.settings.postgresql.surole
     env = ctx.settings.postgresql.auth.libpq_environ(backuprole)
-    settings = ctx.settings.pgbackrest
-    ctx.run(backup_command(instance, type=type, settings=settings), check=True, env=env)
+    ctx.run(backup_command(instance, type=type), check=True, env=env)
 
 
-def expire_command(
-    instance: Instance,
-    *,
-    settings: PgBackRestSettings = PGBACKREST_SETTINGS,
-) -> List[str]:
+def expire_command(instance: Instance) -> List[str]:
     """Return the full pgbackrest command to expire backups for ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
@@ -241,7 +231,7 @@ def expire_command(
         --stanza=13-backmeup
         expire
     """
-    return make_cmd(instance, settings, "expire")
+    return make_cmd(instance, instance.settings.pgbackrest, "expire")
 
 
 @task
@@ -250,5 +240,4 @@ def expire(ctx: BaseContext, instance: Instance) -> None:
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    settings = ctx.settings.pgbackrest
-    ctx.run(expire_command(instance, settings=settings), check=True)
+    ctx.run(expire_command(instance), check=True)
