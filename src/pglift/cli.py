@@ -73,6 +73,23 @@ def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
         instance_mod.drop(ctx, instance)
 
 
+@instance.command("status")
+@name_argument
+@version_argument
+@click.pass_context
+def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) -> None:
+    """Check the status of a PostgreSQL instance.
+
+    Output the status string value ('running', 'not running', 'unspecified
+    datadir') and exit with respective status code (0, 3, 4).
+    """
+    instance = get_instance(ctx.obj, name, version)
+    with runner():
+        status = instance_mod.status(ctx.obj, instance)
+    click.echo(status.name.replace("_", " "))
+    ctx.exit(status.value)
+
+
 @cli.command("start-instance")
 @name_argument
 @version_argument
