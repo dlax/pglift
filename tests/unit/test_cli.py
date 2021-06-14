@@ -73,13 +73,13 @@ def test_backup_instance(runner, ctx):
     patch_expire = patch.object(pgbackrest, "expire")
     with patch_backup as backup, patch_expire as expire:
         result = runner.invoke(cli, ["backup-instance", "test", "--type=diff"], obj=ctx)
-    assert result.exit_code == 0, result.stdout
+    assert result.exit_code == 0, result
     assert backup.call_count == 1
     assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
     assert not expire.called
 
     with patch_backup as backup, patch_expire as expire:
         result = runner.invoke(cli, ["backup-instance", "test", "--purge"], obj=ctx)
-    assert result.exit_code == 0, result.stdout
+    assert result.exit_code == 0, result
     assert backup.called
     assert expire.called
