@@ -45,7 +45,7 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
     if version:
-        return Instance(name, version)
+        return Instance(name, version, settings=ctx.settings)
     else:
         return Instance.default_version(name, ctx)
 
