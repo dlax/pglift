@@ -8,7 +8,7 @@ from pgtoolkit.conf import Configuration
 
 from . import conf
 from .ctx import BaseContext
-from .settings import SETTINGS, Settings
+from .settings import Settings
 from .util import short_version
 from .validators import known_postgresql_version
 
@@ -27,17 +27,17 @@ class Instance:
 
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
+    settings: Settings = attr.ib(validator=instance_of(Settings))
     prometheus: PrometheusService = attr.ib(factory=PrometheusService)
 
-    settings: Settings = attr.ib(default=SETTINGS, validator=instance_of(Settings))
-
     @classmethod
-    def from_stanza(cls, stanza: str, **kwargs: Any) -> "Instance":
+    def from_stanza(cls, stanza: str, settings: Settings, **kwargs: Any) -> "Instance":
         """Build an Instance from a '<version>-<name>' string.
 
-        >>> Instance.from_stanza('12-main')  # doctest: +ELLIPSIS
+        >>> s = Settings()
+        >>> Instance.from_stanza('12-main', s)  # doctest: +ELLIPSIS
         Instance(name='main', version='12', ...)
-        >>> Instance.from_stanza('bad')
+        >>> Instance.from_stanza('bad', s)
         Traceback (most recent call last):
             ...
         ValueError: invalid stanza 'bad'
@@ -46,7 +46,7 @@ class Instance:
             version, name = stanza.split("-", 1)
         except ValueError:
             raise ValueError(f"invalid stanza '{stanza}'") from None
-        return cls(name, version, **kwargs)
+        return cls(name, version, settings, **kwargs)
 
     @classmethod
     def default_version(
@@ -69,7 +69,7 @@ class Instance:
     def __str__(self) -> str:
         """Return str(self).
 
-        >>> i = Instance("main", "12")
+        >>> i = Instance("main", "12", Settings())
         >>> str(i)
         '12/main'
         """
@@ -79,7 +79,7 @@ class Instance:
     def path(self) -> Path:
         """Base directory path for this instance.
 
-        >>> i = Instance("main", "12")
+        >>> i = Instance("main", "12", Settings())
         >>> print(i.path)  # doctest: +ELLIPSIS
         /.../srv/pgsql/12/main
         """
@@ -92,7 +92,7 @@ class Instance:
     def datadir(self) -> Path:
         """Path to data directory for this instance.
 
-        >>> i = Instance("main", "12")
+        >>> i = Instance("main", "12", Settings())
         >>> print(i.datadir)  # doctest: +ELLIPSIS
         /.../srv/pgsql/12/main/data
         """
@@ -102,7 +102,7 @@ class Instance:
     def waldir(self) -> Path:
         """Path to WAL directory for this instance.
 
-        >>> i = Instance("main", "12")
+        >>> i = Instance("main", "12", Settings())
         >>> print(i.waldir)  # doctest: +ELLIPSIS
         /.../srv/pgsql/12/main/wal
         """

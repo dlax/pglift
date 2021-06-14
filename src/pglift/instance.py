@@ -18,7 +18,8 @@ from .types import ConfigChanges
 def systemd_unit(instance: Instance) -> str:
     """Return systemd unit service name for 'instance'.
 
-    >>> instance = Instance("test", "13")
+    >>> from pglift.settings import Settings
+    >>> instance = Instance("test", "13", Settings())
     >>> systemd_unit(instance)
     'postgresql@13-test.service'
     """

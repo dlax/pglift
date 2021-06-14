@@ -167,8 +167,8 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe_absent(ctx, installed):
-    i = Instance("absent", "13")
+def test_describe_absent(ctx, installed, settings):
+    i = Instance("absent", "13", settings)
     im = instance_mod.describe(ctx, i)
     assert im is None
 
@@ -187,6 +187,6 @@ def test_describe(ctx, instance, log_directory):
     assert im.state.name == "stopped"
 
 
-def test_drop_absent(ctx, installed):
-    i = Instance("absent", "13")
+def test_drop_absent(ctx, installed, settings):
+    i = Instance("absent", "13", settings)
     instance_mod.drop(ctx, i)

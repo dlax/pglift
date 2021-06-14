@@ -9,7 +9,8 @@ from .pgbackrest import BackupType, backup
 def systemd_timer(instance: Instance) -> str:
     """Return systemd timer name for 'instance'.
 
-    >>> instance = Instance("test", "13")
+    >>> from pglift.settings import Settings
+    >>> instance = Instance("test", "13", Settings())
     >>> systemd_timer(instance)
     'postgresql-backup@13-test.timer'
     """
@@ -74,7 +75,7 @@ if __name__ == "__main__":  # pragma: nocover
     args = parser.parse_args()
     ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
     try:
-        instance = Instance.from_stanza(args.stanza)
+        instance = Instance.from_stanza(args.stanza, settings=SETTINGS)
     except ValueError as e:
         parser.error(str(e))
     if not instance.exists():

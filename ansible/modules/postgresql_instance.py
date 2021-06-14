@@ -150,6 +150,7 @@ def run_module() -> None:
         instance = model.Instance(
             name=module.params["name"],
             version=module.params["version"],
+            settings=settings,
             prometheus=prometheus,
         )
     else:
