@@ -68,6 +68,21 @@ def test_instance_drop(runner, ctx):
     assert isinstance(mock_method.call_args[0][0], Context)
 
 
+@pytest.mark.parametrize(
+    "action",
+    ["start-instance", "stop-instance", "reload-instance", "restart-instance"],
+)
+def test_instance_operations(runner, instance, ctx, action):
+    patched_fn = action.split("-", 1)[0]
+    with patch.object(instance_mod, patched_fn) as patched:
+        result = runner.invoke(cli, [action, instance.name, instance.version], obj=ctx)
+    assert result.exit_code == 0, result
+    assert patched.call_count == 1
+    args, kwargs = patched.call_args
+    assert args[1] == instance
+    assert kwargs == {}
+
+
 def test_backup_instance(runner, instance, ctx):
     patch_backup = patch.object(pgbackrest, "backup")
     patch_expire = patch.object(pgbackrest, "expire")

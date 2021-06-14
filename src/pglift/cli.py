@@ -73,6 +73,50 @@ def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
         instance_mod.drop(ctx, instance)
 
 
+@cli.command("start-instance")
+@name_argument
+@version_argument
+@click.pass_obj
+def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+    """Start a PostgreSQL instance"""
+    instance = Instance.from_spec(get_instance(ctx, name, version))
+    with runner():
+        instance_mod.start(ctx, instance)
+
+
+@cli.command("stop-instance")
+@name_argument
+@version_argument
+@click.pass_obj
+def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+    """Stop a PostgreSQL instance"""
+    instance = Instance.from_spec(get_instance(ctx, name, version))
+    with runner():
+        instance_mod.stop(ctx, instance)
+
+
+@cli.command("reload-instance")
+@name_argument
+@version_argument
+@click.pass_obj
+def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+    """Reload a PostgreSQL instance"""
+    instance = Instance.from_spec(get_instance(ctx, name, version))
+    with runner():
+        instance_mod.reload(ctx, instance)
+
+
+@cli.command("restart-instance")
+@name_argument
+@version_argument
+@click.pass_obj
+def restart_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+    """Restart a PostgreSQL instance"""
+    instance = Instance.from_spec(get_instance(ctx, name, version))
+    with runner():
+        instance_mod.restart(ctx, instance)
+
+
 @cli.command("backup-instance")
 @name_argument
 @version_argument
