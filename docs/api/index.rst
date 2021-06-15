@@ -11,3 +11,4 @@ API
     manifest
     ctx
     cmd
+    exceptions
