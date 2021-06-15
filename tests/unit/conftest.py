@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from pglift import pm
@@ -21,7 +23,7 @@ def regen_test_data(request):
 
 
 @pytest.fixture
-def settings(tmp_path):
+def settings(tmp_path: Path) -> Settings:
     passfile = tmp_path / "pgass"
     passfile.touch()
     return Settings.parse_obj(
@@ -33,13 +35,13 @@ def settings(tmp_path):
 
 
 @pytest.fixture
-def ctx(settings):
+def ctx(settings: Settings) -> Context:
     p = pm.PluginManager.get()
     return Context(plugin_manager=p, settings=settings)
 
 
 @pytest.fixture
-def instance(pg_version, settings):
+def instance(pg_version: str, settings: Settings) -> Instance:
     instance = Instance(name="test", version=pg_version, settings=settings)
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)

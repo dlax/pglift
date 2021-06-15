@@ -2,8 +2,9 @@ import copy
 import pathlib
 import shutil
 import subprocess
-from typing import Iterator, Set
+from typing import Iterator, Set, Tuple
 
+import pgtoolkit.conf
 import port_for
 import pytest
 from pgtoolkit.ctl import Status
@@ -117,7 +118,7 @@ def ctx(settings):
 
 
 @pytest.fixture(scope="session")
-def tmp_port_factory():
+def tmp_port_factory() -> Iterator[int]:
     """Return a generator producing available and distinct TCP ports."""
 
     def available_ports() -> Iterator[int]:
@@ -131,9 +132,11 @@ def tmp_port_factory():
 
 
 @pytest.fixture(scope="session")
-def instance_obj(pg_version, settings, tmp_port_factory):
+def instance_spec(
+    pg_version: str, settings: Settings, tmp_port_factory: Iterator[int]
+) -> model.InstanceSpec:
     prometheus_port = next(tmp_port_factory)
-    return model.Instance(
+    return model.InstanceSpec(
         name="test",
         version=pg_version,
         prometheus=model.PrometheusService(prometheus_port),
@@ -142,12 +145,12 @@ def instance_obj(pg_version, settings, tmp_port_factory):
 
 
 @pytest.fixture(scope="session")
-def instance_initialized(ctx, instance_obj, installed):
-    i = instance_obj
-    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
-    rv = instance_mod.init(ctx, i)
+def instance_initialized(
+    ctx: Context, instance_spec: model.InstanceSpec, installed: None
+) -> model.Instance:
+    assert instance_mod.status(ctx, instance_spec) == Status.unspecified_datadir
+    i = instance_mod.init(ctx, instance_spec)
     assert instance_mod.status(ctx, i) == Status.not_running
-    assert rv
     return i
 
 
@@ -158,8 +161,12 @@ def log_directory(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def instance(
-    ctx, instance_initialized, tmp_port_factory, tmp_path_factory, log_directory
-):
+    ctx: Context,
+    instance_initialized: model.Instance,
+    tmp_port_factory: Iterator[int],
+    tmp_path_factory: pytest.TempPathFactory,
+    log_directory: pathlib.Path,
+) -> model.Instance:
     port = next(tmp_port_factory)
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
@@ -171,9 +178,11 @@ def instance(
 
 
 @pytest.fixture(scope="session")
-def instance_dropped(ctx, instance):
+def instance_dropped(
+    ctx: Context, instance: model.Instance
+) -> Tuple[model.InstanceSpec, pgtoolkit.conf.Configuration]:
     config = instance.config()
-    assert config
+    spec = instance.as_spec()
     if instance.exists():
-        instance_mod.drop(ctx, instance)
-    return instance, config
+        instance_mod.drop(ctx, spec)
+    return spec, config
