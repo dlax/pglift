@@ -7,9 +7,9 @@ def test_main_errors():
     with pytest.raises(SystemExit, match="2"):
         postgres.main(["aa"])
     with pytest.raises(SystemExit, match="2"):
-        postgres.main(["12/"])
+        postgres.main(["12-"])
     with pytest.raises(SystemExit, match="2"):
-        postgres.main(["12/test"])
+        postgres.main(["12-test"])
 
 
 def test_main(monkeypatch, ctx, instance):
@@ -22,7 +22,7 @@ def test_main(monkeypatch, ctx, instance):
 
     with monkeypatch.context() as m:
         m.setattr("subprocess.Popen", Popen)
-        postgres.main([str(instance)], ctx=ctx)
+        postgres.main([f"{instance.version}-{instance.name}"], ctx=ctx)
     bindir = ctx.settings.postgresql.versions[instance.version].bindir
     assert calls == [[str(bindir / "postgres"), "-D", str(instance.datadir)]]
     assert (

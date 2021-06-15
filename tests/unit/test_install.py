@@ -34,7 +34,7 @@ def test_postgresql_systemd_unit_template(fake_systemd_install):
     for line in lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
-            assert re.match(r"^.+/python(3)? -m pglift.postgres %I$", execstart)
+            assert re.match(r"^.+/python(3)? -m pglift.postgres %i$", execstart)
             break
     else:
         raise AssertionError("ExecStart line not found")

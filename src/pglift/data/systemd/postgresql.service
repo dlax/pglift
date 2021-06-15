@@ -11,7 +11,7 @@ Environment=PG_OOM_ADJUST_FILE=/proc/self/oom_score_adj
 Environment=PG_OOM_ADJUST_VALUE=0
 
 {environment}
-ExecStart={python} -m pglift.postgres %I
+ExecStart={python} -m pglift.postgres %i
 ExecReload=/bin/kill -HUP $MAINPID
 
 PIDFile={pid_directory}/postgresql-%i.pid
