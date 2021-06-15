@@ -30,7 +30,7 @@ def main(
     except ValueError as e:
         parser.error(str(e))
     except InstanceNotFound as e:
-        parser.error(f"instance {e} not found")
+        parser.exit(2, f"instance {e} not found")
 
     bindir = ctx.settings.postgresql.versions[instance.version].bindir
     cmd = [str(bindir / "postgres"), "-D", str(instance.datadir)]
