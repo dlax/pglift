@@ -30,7 +30,6 @@ A typical settings document looks like:
           "host": "scram-sha-256"
         },
         "surole": "postgres",
-        "instancedir": "{version}/{instance}",
         "datadir": "data",
         "waldir": "wal",
         "pid_directory": "/run/postgresql"

@@ -47,9 +47,7 @@ class BaseInstance:
         /.../srv/pgsql/12/main
         """
         pg_settings = self.settings.postgresql
-        return pg_settings.root / pg_settings.instancedir.format(
-            version=self.version, instance=self.name
-        )
+        return pg_settings.root / self.version / self.name
 
     @property
     def datadir(self) -> Path:

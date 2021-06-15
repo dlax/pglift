@@ -219,9 +219,6 @@ class PostgreSQLSettings(BaseSettings):
     surole: SuRole = SuRole()
     """Instance super-user role."""
 
-    instancedir: str = "{version}/{instance}"
-    """Path segment to instance base directory relative to `root` path."""
-
     datadir: str = "data"
     """Path segment from instance base directory to PGDATA directory."""
 
