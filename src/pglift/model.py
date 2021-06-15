@@ -161,6 +161,20 @@ class Instance(BaseInstance):
             raise exceptions.InstanceNotFound(str(instance))
         return instance
 
+    def exists(self) -> bool:
+        """Return True if the instance exists and its configuration is valid.
+
+        :raises ~pglift.exceptions.InstanceNotFound: if configuration cannot
+            be read
+        """
+        if not super().exists():
+            raise exceptions.InstanceNotFound(str(self))
+        try:
+            self.config()
+        except FileNotFoundError:
+            raise exceptions.InstanceNotFound(str(self))
+        return True
+
     def config(self, managed_only: bool = False) -> Configuration:
         """Return parsed PostgreSQL configuration for this instance.
 

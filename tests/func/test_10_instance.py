@@ -4,6 +4,7 @@ import psycopg2
 import pytest
 from pgtoolkit.ctl import Status
 
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import manifest, systemd
 from pglift.model import InstanceSpec
@@ -168,7 +169,9 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
 
     im.state = manifest.InstanceState.absent
     instance_mod.apply(ctx, im)
-    assert not i.exists()
+    with pytest.raises(exceptions.InstanceNotFound):
+        i.exists()
+    assert not i.as_spec().exists()
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 

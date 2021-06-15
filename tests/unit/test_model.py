@@ -32,6 +32,18 @@ def test_instance_as_spec(instance):
     )
 
 
+def test_instance_exists(pg_version, settings):
+    instance = model.Instance(name="exists", version=pg_version, settings=settings)
+    with pytest.raises(exceptions.InstanceNotFound):
+        instance.exists()
+    instance.datadir.mkdir(parents=True)
+    (instance.datadir / "PG_VERSION").write_text(pg_version)
+    with pytest.raises(exceptions.InstanceNotFound):
+        instance.exists()
+    (instance.datadir / "postgresql.conf").touch()
+    assert instance.exists()
+
+
 def test_instance_config(instance):
     datadir = instance.datadir
     (datadir / "postgresql.conf").write_text(
