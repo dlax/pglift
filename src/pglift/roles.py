@@ -92,3 +92,26 @@ def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
                 db.query("role_alter_password", username=role.name),
                 {"password": role.password.get_secret_value()},
             )
+
+
+def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
+    """Add, update or remove a password file entry for 'role' of 'instance'."""
+    port = int(instance.config().port)  # type: ignore[arg-type]
+
+    username = role.name
+    password = None
+    if role.password:
+        password = role.password.get_secret_value()
+    with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
+        for entry in passfile:
+            if entry.matches(username=username, port=port):
+                if not role.pgpass:
+                    passfile.lines.remove(entry)
+                elif password is not None:
+                    entry.password = password
+                break
+        else:
+            if role.pgpass and password is not None:
+                entry = pgpass.PassEntry("*", port, "*", username, password)
+                passfile.lines.append(entry)
+        passfile.sort()
