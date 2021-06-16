@@ -6,6 +6,7 @@ API
     :caption: Contents:
 
     instance
+    roles
     conf
     pgbackrest
     manifest

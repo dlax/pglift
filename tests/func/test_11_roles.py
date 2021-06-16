@@ -1,7 +1,8 @@
 import pytest
+from pydantic import SecretStr
 
 from pglift import instance as instance_mod
-from pglift import manifest, roles
+from pglift import manifest, roles, types
 
 from . import execute
 
@@ -46,3 +47,47 @@ def test_create(ctx, instance, role_factory):
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role)
+
+
+def test_apply(ctx, instance):
+    rolname = "applyme"
+
+    def role_in_pgpass(role: types.Role) -> bool:
+        if role.password:
+            pattern = f":{role.name}:{role.password.get_secret_value()}"
+        else:
+            pattern = f":{role.name}:"
+        with ctx.settings.postgresql.auth.passfile.open() as f:
+            for line in f:
+                if pattern in line:
+                    return True
+        return False
+
+    role = manifest.Role(name=rolname)
+    assert not roles.exists(ctx, instance, role.name)
+    roles.apply(ctx, instance, role)
+    assert roles.exists(ctx, instance, role.name)
+    assert not roles.has_password(ctx, instance, role)
+    assert not role_in_pgpass(role)
+
+    role = manifest.Role(name=rolname, password=SecretStr("passw0rd"))
+    roles.apply(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role)
+    assert not role_in_pgpass(role)
+
+    role = manifest.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
+    roles.apply(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role)
+    assert role_in_pgpass(role)
+
+    role = manifest.Role(
+        name=rolname, password=SecretStr("passw0rd_changed"), pgpass=True
+    )
+    roles.apply(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role)
+    assert role_in_pgpass(role)
+
+    role = manifest.Role(name=rolname, pgpass=False)
+    roles.apply(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role)
+    assert not role_in_pgpass(role)

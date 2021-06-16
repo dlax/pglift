@@ -1,6 +1,6 @@
 from pgtoolkit import pgpass
 
-from . import db, hookimpl
+from . import db, hookimpl, manifest
 from .ctx import BaseContext
 from .model import Instance
 from .types import ConfigChanges, Role
@@ -50,6 +50,19 @@ def instance_drop(ctx: BaseContext, instance: Instance) -> None:
         passfile.remove(port=instance.port)
     if not passfile.lines:
         passfile_path.unlink()
+
+
+def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) -> None:
+    """Apply state described by specified role manifest as a PostgreSQL instance.
+
+    The instance should be running.
+    """
+    if not exists(ctx, instance, role_manifest.name):
+        create(ctx, instance, role_manifest)
+    if role_manifest.password:
+        if not has_password(ctx, instance, role_manifest):
+            set_password_for(ctx, instance, role_manifest)
+    set_pgpass_entry_for(ctx, instance, role_manifest)
 
 
 def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
