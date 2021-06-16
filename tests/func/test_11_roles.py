@@ -1,3 +1,7 @@
+import functools
+import pathlib
+from typing import Optional, Union
+
 import pytest
 from pydantic import SecretStr
 
@@ -6,7 +10,7 @@ from pglift import instance as instance_mod
 from pglift import roles, types
 from pglift.models import interface
 
-from . import execute
+from . import execute, reconfigure_instance
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -51,48 +55,60 @@ def test_create(ctx, instance, role_factory):
     assert roles.has_password(ctx, instance, role)
 
 
+def role_in_pgpass(
+    passfile: pathlib.Path,
+    role: types.Role,
+    *,
+    port: Optional[Union[int, str]] = None,
+) -> bool:
+    password = ""
+    if role.password:
+        password = role.password.get_secret_value()
+    parts = [role.name, password]
+    if port is not None:
+        parts = [str(port), "*"] + parts
+    pattern = ":".join(parts)
+    with passfile.open() as f:
+        for line in f:
+            if pattern in line:
+                return True
+    return False
+
+
 def test_apply(ctx, instance):
     rolname = "applyme"
-
-    def role_in_pgpass(role: types.Role) -> bool:
-        if role.password:
-            pattern = f":{role.name}:{role.password.get_secret_value()}"
-        else:
-            pattern = f":{role.name}:"
-        with ctx.settings.postgresql.auth.passfile.open() as f:
-            for line in f:
-                if pattern in line:
-                    return True
-        return False
+    _role_in_pgpass = functools.partial(
+        role_in_pgpass, ctx.settings.postgresql.auth.passfile
+    )
 
     role = interface.Role(name=rolname)
     assert not roles.exists(ctx, instance, role.name)
     roles.apply(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role)
-    assert not role_in_pgpass(role)
+    assert not _role_in_pgpass(role)
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
-    assert not role_in_pgpass(role)
+    assert not _role_in_pgpass(role)
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
-    assert role_in_pgpass(role)
+    assert _role_in_pgpass(role)
 
     role = interface.Role(
         name=rolname, password=SecretStr("passw0rd_changed"), pgpass=True
     )
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
-    assert role_in_pgpass(role)
+    assert _role_in_pgpass(role)
 
     role = interface.Role(name=rolname, pgpass=False)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
-    assert not role_in_pgpass(role)
+    assert not _role_in_pgpass(role)
 
 
 def test_describe(ctx, instance, role_factory):
@@ -115,3 +131,35 @@ def test_drop(ctx, instance, role_factory):
     role_factory("dropme")
     roles.drop(ctx, instance, "dropme")
     assert not roles.exists(ctx, instance, "dropme")
+
+
+def test_instance_port_changed(ctx, instance, tmp_port_factory):
+    """Check that change of instance port is reflected in password file
+    entries.
+    """
+    role1, role2, role3 = (
+        interface.Role(name="r1", password="1", pgpass=True),
+        interface.Role(name="r2", password="2", pgpass=True),
+        interface.Role(name="r3", pgpass=False),
+    )
+    surole = ctx.settings.postgresql.surole
+    roles.apply(ctx, instance, role1)
+    roles.apply(ctx, instance, role2)
+    roles.apply(ctx, instance, role3)
+    port = instance.port
+    passfile = ctx.settings.postgresql.auth.passfile
+    assert role_in_pgpass(passfile, role1, port=port)
+    assert role_in_pgpass(passfile, role2, port=port)
+    assert not role_in_pgpass(passfile, role3)
+    if surole.pgpass:
+        assert role_in_pgpass(passfile, surole, port=port)
+    newport = next(tmp_port_factory)
+    with reconfigure_instance(ctx, instance, port=newport):
+        assert not role_in_pgpass(passfile, role1, port=port)
+        assert role_in_pgpass(passfile, role1, port=newport)
+        assert not role_in_pgpass(passfile, role2, port=port)
+        assert role_in_pgpass(passfile, role2, port=newport)
+        assert not role_in_pgpass(passfile, role3)
+        if surole.pgpass:
+            assert not role_in_pgpass(passfile, surole, port=port)
+            assert role_in_pgpass(passfile, surole, port=newport)
