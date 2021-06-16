@@ -45,7 +45,7 @@ setup(
     install_requires=[
         "attrs",
         "click",
-        "pgtoolkit >= 0.16.0",
+        "pgtoolkit >= 0.17.0",
         "pluggy",
         "pydantic",
         "tabulate",
