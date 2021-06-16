@@ -9,7 +9,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, hookimpl, manifest, roles, systemd, template, util
+from . import conf, exceptions, hookimpl, manifest, roles, systemd, template, util
 from .ctx import BaseContext
 from .model import BaseInstance, Instance, InstanceSpec
 from .task import task
@@ -20,14 +20,23 @@ R = TypeVar("R")
 
 def bypass_absent_instance(
     fn: Callable[[BaseContext, Instance], R]
-) -> Callable[[BaseContext, InstanceSpec], Optional[R]]:
-    """Bypass decorated function if `instance` argument does not exists."""
+) -> Callable[[BaseContext, Union[InstanceSpec, Instance]], Optional[R]]:
+    """Bypass decorated function if `instance` argument is an InstanceSpec and
+    the underlying Instance does not exists.
+
+    A real Instance is then passed to the decorated function.
+    """
 
     @functools.wraps(fn)
-    def wrapper(ctx: BaseContext, instance: InstanceSpec) -> Optional[R]:
-        if not instance.exists():
-            return None
-        return fn(ctx, Instance.from_spec(instance))
+    def wrapper(
+        ctx: BaseContext, instance: Union[InstanceSpec, Instance]
+    ) -> Optional[R]:
+        if isinstance(instance, InstanceSpec):
+            try:
+                instance = Instance.from_spec(instance)
+            except exceptions.InstanceNotFound:
+                return None
+        return fn(ctx, instance)
 
     return wrapper
 
