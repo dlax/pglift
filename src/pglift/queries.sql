@@ -15,3 +15,6 @@ CREATE ROLE {username}
 
 -- name: role_alter_password
 ALTER ROLE {username} PASSWORD %(password)s
+
+-- name: role_drop
+DROP ROLE {username}

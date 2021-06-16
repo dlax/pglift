@@ -83,6 +83,21 @@ def describe(
     return role
 
 
+def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
+    """Drop a role from instance.
+
+    No-op if the role does not exists.
+    """
+    if not exists(ctx, instance, name):
+        return
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(db.query("role_drop", username=name))
+        cnx.commit()
+    role = manifest.Role(name=name, pgpass=False)
+    set_pgpass_entry_for(ctx, instance, role)
+
+
 def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
     """Return True if named role exists in 'instance'.
 

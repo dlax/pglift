@@ -104,3 +104,10 @@ def test_describe(ctx, instance, role_factory):
         assert postgres.password is not None
     if surole.pgpass:
         assert postgres.pgpass is not None
+
+
+def test_drop(ctx, instance, role_factory):
+    roles.drop(ctx, instance, "dropping_absent")
+    role_factory("dropme")
+    roles.drop(ctx, instance, "dropme")
+    assert not roles.exists(ctx, instance, "dropme")
