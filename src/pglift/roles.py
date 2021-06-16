@@ -116,6 +116,13 @@ def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
             )
 
 
+def in_pgpass(ctx: BaseContext, instance: Instance, role: Role) -> bool:
+    """Return True if 'role' is present if password file for 'instance'."""
+    port = int(instance.config().port)  # type: ignore[arg-type]
+    passfile = pgpass.parse(ctx.settings.postgresql.auth.passfile)
+    return any(entry.matches(username=role.name, port=port) for entry in passfile)
+
+
 def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Add, update or remove a password file entry for 'role' of 'instance'."""
     port = int(instance.config().port)  # type: ignore[arg-type]

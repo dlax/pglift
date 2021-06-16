@@ -22,6 +22,11 @@ def passfile(ctx):
     return fpath
 
 
+def test_in_pgpass(ctx, instance, passfile):
+    assert roles.in_pgpass(ctx, instance, Role("edgar"))
+    assert not roles.in_pgpass(ctx, instance, Role("alice"))
+
+
 @pytest.mark.parametrize(
     "role, pgpass",
     [
