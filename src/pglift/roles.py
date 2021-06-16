@@ -63,6 +63,15 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
             return cur.rowcount == 1  # type: ignore[no-any-return]
 
 
+def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
+    """Return True if the role has a password set."""
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(db.query("role_has_password"), {"username": role.name})
+            (haspassword,) = cur.fetchone()
+            return haspassword  # type: ignore[no-any-return]
+
+
 def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Create 'role' in 'instance'.
 

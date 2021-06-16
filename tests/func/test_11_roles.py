@@ -35,23 +35,14 @@ def test_exists(ctx, instance, role_factory):
 
 
 def test_create(ctx, instance, role_factory):
-    def has_password(rolname: str) -> bool:
-        ((haspassword,),) = execute(
-            ctx,
-            instance,
-            f"SELECT rolpassword IS NOT NULL FROM pg_authid WHERE rolname = '{rolname}'",
-            fetch=True,
-        )
-        return haspassword  # type: ignore[no-any-return]
-
     role = manifest.Role(name="nopassword")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert not has_password(role.name)
+    assert not roles.has_password(ctx, instance, role)
 
     role = manifest.Role(name="password", password="scret")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert has_password(role.name)
+    assert roles.has_password(ctx, instance, role)

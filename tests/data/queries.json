@@ -2,5 +2,6 @@
   "role_alter_password": "ALTER ROLE {username} PASSWORD %(password)s",
   "role_create": "CREATE ROLE {username} PASSWORD %(password)s",
   "role_create_no_password": "CREATE ROLE {username}",
-  "role_exists": "SELECT true FROM pg_roles WHERE rolname = %(username)s"
+  "role_exists": "SELECT true FROM pg_roles WHERE rolname = %(username)s",
+  "role_has_password": "SELECT\n    rolpassword IS NOT NULL FROM pg_authid\nWHERE\n    rolname = %(username)s"
 }
