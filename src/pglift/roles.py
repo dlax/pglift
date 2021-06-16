@@ -52,6 +52,34 @@ def instance_drop(ctx: BaseContext, instance: Instance) -> None:
         passfile_path.unlink()
 
 
+def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
+    """Return True if named role exists in 'instance'.
+
+    The instance should be running.
+    """
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(db.query("role_exists"), {"username": name})
+            return cur.rowcount == 1  # type: ignore[no-any-return]
+
+
+def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
+    """Create 'role' in 'instance'.
+
+    The instance should be running and the role should not exist already.
+    """
+    if role.password is not None:
+        query = "role_create"
+        args = {"password": role.password.get_secret_value()}
+    else:
+        query = "role_create_no_password"
+        args = {}
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(db.query(query, username=role.name), args)
+        cnx.commit()
+
+
 def set_password_for(instance: Instance, role: Role) -> None:
     """Set password for a PostgreSQL role on instance."""
     if role.password is None:
