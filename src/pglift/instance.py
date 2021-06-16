@@ -435,3 +435,33 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
 
     revert_configure(ctx, instance)
     revert_init(ctx, instance.as_spec())
+
+
+def list(ctx: BaseContext) -> Iterator[manifest.InstanceListItem]:
+    """Yield an InstanceListItem for each instance found with system lookup."""
+    pgroot = ctx.settings.postgresql.root
+    assert pgroot.is_dir(), f"{pgroot} isn't a directory"
+    # Search for directories looking like <version>/<name> in pgroot
+    for version in ctx.settings.postgresql.versions:
+        version_path = pgroot / version
+        if not version_path.is_dir():
+            continue
+        for d in version_path.iterdir():
+            if not d.is_dir():
+                continue
+            instance_spec = InstanceSpec(d.name, version, settings=ctx.settings)
+            try:
+                instance = Instance.from_spec(instance_spec)
+            except exceptions.InstanceNotFound:
+                continue
+
+            config = instance.config()
+            assert config.port
+            assert isinstance(config.port, int)
+            yield manifest.InstanceListItem(
+                name=instance.name,
+                path=str(instance.path),
+                port=config.port,
+                status=status(ctx, instance).name,
+                version=instance.version,
+            )

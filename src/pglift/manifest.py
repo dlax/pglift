@@ -5,7 +5,7 @@ from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import yaml
 from pgtoolkit.ctl import Status
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, DirectoryPath, Field, validator
 
 from . import model
 from .ctx import BaseContext
@@ -42,6 +42,15 @@ class InstanceState(enum.Enum):
                 status.unspecified_datadir: "absent",
             }[status]
         )
+
+
+class InstanceListItem(BaseModel):
+
+    name: str
+    version: str
+    port: int
+    path: DirectoryPath
+    status: str
 
 
 T = TypeVar("T", bound=BaseModel)

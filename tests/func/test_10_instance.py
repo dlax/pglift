@@ -198,3 +198,11 @@ def test_describe(ctx, instance, log_directory):
 def test_drop_absent(ctx, installed, settings):
     i = InstanceSpec("absent", "13", settings)
     instance_mod.drop(ctx, i)
+
+
+def test_list(ctx, instance):
+    (ctx.settings.postgresql.root / "12/notAnInstanceDir").mkdir(parents=True)
+    (i,) = list(instance_mod.list(ctx))
+    assert i.name == instance.name
+    assert i.version == instance.version
+    assert i.status == Status.not_running.name
