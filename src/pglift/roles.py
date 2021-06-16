@@ -80,12 +80,12 @@ def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
         cnx.commit()
 
 
-def set_password_for(instance: Instance, role: Role) -> None:
+def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Set password for a PostgreSQL role on instance."""
     if role.password is None:
         return
 
-    with db.connect(instance, role) as conn:
+    with db.connect(instance, ctx.settings.postgresql.surole) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
