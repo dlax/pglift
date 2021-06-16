@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pgtoolkit import pgpass
 
 from . import db, hookimpl, manifest
@@ -63,6 +65,22 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) ->
         if not has_password(ctx, instance, role_manifest):
             set_password_for(ctx, instance, role_manifest)
     set_pgpass_entry_for(ctx, instance, role_manifest)
+
+
+def describe(
+    ctx: BaseContext, instance: Instance, name: str
+) -> Optional[manifest.Role]:
+    """Return a role described as a manifest or None if no role with specified
+    'name' exists.
+    """
+    if not exists(ctx, instance, name):
+        return None
+    role = manifest.Role(name=name)
+    if has_password(ctx, instance, role):
+        role = role.copy(update={"password": "<set>"})
+    if in_pgpass(ctx, instance, role):
+        role = role.copy(update={"pgpass": True})
+    return role
 
 
 def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:

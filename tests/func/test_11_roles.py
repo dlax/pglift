@@ -91,3 +91,16 @@ def test_apply(ctx, instance):
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert not role_in_pgpass(role)
+
+
+def test_describe(ctx, instance, role_factory):
+    assert roles.describe(ctx, instance, "absent") is None
+
+    postgres = roles.describe(ctx, instance, "postgres")
+    assert postgres is not None
+    surole = ctx.settings.postgresql.surole
+    assert postgres.name == "postgres"
+    if surole.password:
+        assert postgres.password is not None
+    if surole.pgpass:
+        assert postgres.pgpass is not None
