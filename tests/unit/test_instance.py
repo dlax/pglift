@@ -82,7 +82,9 @@ def test_configure(ctx_nohook, instance):
     assert config.bonjour_name == "test"
     assert config.cluster_name == "test"
 
-    changes = instance_mod.configure(ctx, instance, listen_address="*", ssl=True)
+    changes = instance_mod.configure(
+        ctx, instance, listen_address="*", ssl=True, port=None
+    )
     assert changes == {
         "listen_address": (None, "*"),
         "max_connections": (100, None),

@@ -18,7 +18,8 @@ def make(instance: str, **confitems: Any) -> pgconf.Configuration:
     conf = pgconf.Configuration()
     conf["cluster_name"] = instance
     for key, value in confitems.items():
-        conf[key] = value
+        if value is not None:
+            conf[key] = value
     return conf
 
 
