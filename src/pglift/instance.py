@@ -69,6 +69,7 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> Instance:
     pg_ctl = ctx.pg_ctl(instance.version)
 
     pgroot = settings.root
+    pgroot.parent.mkdir(parents=True, exist_ok=True)
     pgroot.mkdir(mode=0o750, exist_ok=True)
 
     opts: Dict[str, Union[str, Literal[True]]] = {
