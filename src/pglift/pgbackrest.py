@@ -67,7 +67,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
         },
         stanza: {
             "pg1-path": f"{instance.datadir}",
-            "pg1-port": str(instance_config.port),
+            "pg1-port": str(instance.port),
             "pg1-user": backuprole.name,
         },
     }

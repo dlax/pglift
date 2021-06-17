@@ -34,15 +34,12 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     configpath = _configpath(instance, settings)
     role = ctx.settings.postgresql.surole
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
-    instance_config = instance.config()
 
-    dsn = []
+    dsn = [f"port={instance.port}"]
+    instance_config = instance.config()
     host = instance_config.get("unix_socket_directories")
     if host:
         dsn.append(f"host={host}")
-    port = instance_config.get("port")
-    if port:
-        dsn.append(f"port={port}")
     dsn.append(f"user={role.name}")
     if role.password:
         dsn.append(f"password={role.password.get_secret_value()}")

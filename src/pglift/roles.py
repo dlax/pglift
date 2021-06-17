@@ -21,11 +21,10 @@ def instance_configure(
     surole = ctx.settings.postgresql.surole
     if surole.pgpass:
 
-        config = instance.config()
         try:
             old_port, port = changes["port"]
         except KeyError:
-            old_port = port = config.port
+            old_port = port = instance.port
         assert isinstance(port, int)
 
         username = surole.name
@@ -47,10 +46,9 @@ def instance_configure(
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     """Remove password file (pgpass) entries for the instance being dropped."""
-    config = instance.config()
     passfile_path = ctx.settings.postgresql.auth.passfile
     with pgpass.edit(passfile_path) as passfile:
-        passfile.remove(port=config.port)  # type: ignore[arg-type]
+        passfile.remove(port=instance.port)
     if not passfile.lines:
         passfile_path.unlink()
 

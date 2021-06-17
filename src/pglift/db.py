@@ -37,9 +37,9 @@ def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
         if badarg in kwargs:
             raise TypeError(f"unexpected '{badarg}' argument")
 
-    config = instance.config()
-    kwargs["port"] = config.port
+    kwargs["port"] = instance.port
     kwargs["user"] = role.name
+    config = instance.config()
     if config.unix_socket_directories:
         kwargs["host"] = config.unix_socket_directories
     passfile = instance.settings.postgresql.auth.passfile

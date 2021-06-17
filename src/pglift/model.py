@@ -193,3 +193,8 @@ class Instance(BaseInstance):
         if postgresql_auto_conf.exists():
             config += pgconf.parse(postgresql_auto_conf)
         return config
+
+    @property
+    def port(self) -> int:
+        """TCP port the server listens on."""
+        return int(self.config().get("port", 5432))  # type: ignore[arg-type]

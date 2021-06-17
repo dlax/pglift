@@ -455,13 +455,10 @@ def list(ctx: BaseContext) -> Iterator[manifest.InstanceListItem]:
             except exceptions.InstanceNotFound:
                 continue
 
-            config = instance.config()
-            assert config.port
-            assert isinstance(config.port, int)
             yield manifest.InstanceListItem(
                 name=instance.name,
                 path=str(instance.path),
-                port=config.port,
+                port=instance.port,
                 status=status(ctx, instance).name,
                 version=instance.version,
             )

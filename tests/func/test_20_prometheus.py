@@ -24,13 +24,11 @@ def test(ctx, installed, instance, tmp_port_factory):
     prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
     assert configpath.exists()
-    instance_config = instance.config()
-    assert instance_config
 
     prometheus_config = config_dict(configpath)
     dsn = prometheus_config["DATA_SOURCE_NAME"]
     assert "user=postgres" in dsn
-    assert f"port={instance_config.port}" in dsn
+    assert f"port={instance.port}" in dsn
     port = instance.prometheus.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 

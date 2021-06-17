@@ -47,7 +47,7 @@ def test_log_directory(ctx, instance, log_directory):
 
 
 def test_pgpass(ctx, instance):
-    port = instance.config().port
+    port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
     if ctx.settings.postgresql.surole.pgpass:
         assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
@@ -64,7 +64,7 @@ def test_pgpass(ctx, instance):
 def test_auth(ctx, instance):
     i = instance
     surole = ctx.settings.postgresql.surole
-    port = i.config().port
+    port = i.port
     connargs = {
         "host": str(i.config().unix_socket_directories),
         "port": port,

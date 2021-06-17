@@ -44,15 +44,24 @@ def test_instance_exists(pg_version, settings):
     assert instance.exists()
 
 
-def test_instance_config(instance):
+def test_instance_port(instance):
+    assert instance.port == 999
+
+
+def test_instance_config(pg_version, settings):
+    instance = model.Instance(name="configured", version=pg_version, settings=settings)
     datadir = instance.datadir
-    (datadir / "postgresql.conf").write_text(
-        "\n".join(["bonjour = hello", "port=1234"])
-    )
+    datadir.mkdir(parents=True)
+    postgresql_conf = datadir / "postgresql.conf"
+    postgresql_conf.touch()
+    assert instance.port == 5432
+    postgresql_conf.write_text("\n".join(["bonjour = hello", "port=1234"]))
 
     config = instance.config()
     config.bonjour == "hello"
     config.port == 1234
+
+    assert instance.port == 1234
 
     user_conf = datadir / "conf.pglift.d" / "user.conf"
     with pytest.raises(FileNotFoundError, match=str(user_conf)):
@@ -62,3 +71,4 @@ def test_instance_config(instance):
     mconf = instance.config(True)
     assert mconf is not None
     assert mconf.port == 5555
+    assert instance.port == 1234
