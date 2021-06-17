@@ -5,7 +5,7 @@ from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import yaml
 from pgtoolkit.ctl import Status
-from pydantic import BaseModel, DirectoryPath, Field, validator
+from pydantic import BaseModel, DirectoryPath, Field, root_validator, validator
 
 from . import model
 from .ctx import BaseContext
@@ -83,6 +83,7 @@ class Instance(Manifest):
 
     name: str
     version: Optional[str] = None
+    port: Optional[int] = None
     state: InstanceState = InstanceState.started
     ssl: Union[bool, Tuple[Path, Path]] = False
     configuration: Dict[str, Any] = Field(default_factory=dict)
@@ -106,6 +107,23 @@ class Instance(Manifest):
         if "-" in v:
             raise ValueError("instance name must not contain dashes")
         return v
+
+    @root_validator
+    def __port_not_in_configuration_(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that 'configuration' field has no 'port' key.
+
+        >>> Instance(name="i")
+        Instance(name='i', ...)
+        >>> Instance(name="i", configuration={"port": 123})
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        __root__
+          port should not be specified in configuration field (type=value_error)
+        """
+        if "port" in values.get("configuration", {}):
+            raise ValueError("port should not be specified in configuration field")
+        return values
 
     def model(self, ctx: BaseContext) -> model.InstanceSpec:
         """Return a model Instance matching this manifest."""

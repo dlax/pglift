@@ -28,6 +28,11 @@ options:
       - If not set, version is guessed from installed PostgreSQL.
     type: str
     required: false
+  port:
+    description:
+      - TCP port the PostgreSQL instance will be listening on.
+    type: int
+    required: false
   state:
     description:
       - instance state
@@ -83,6 +88,7 @@ EXAMPLES = """
   postgresql_instance:
     name: dev
     version: 13
+    port: 5455
     configuration:
       max_connections: 10
       log_statement: 'all'
@@ -129,6 +135,10 @@ def run_module() -> None:
             "required": False,
             "choices": list(settings.postgresql.versions),
         },
+        "port": {
+            "type": "int",
+            "required": False,
+        },
         "state": {
             "type": "str",
             "choices": ["started", "stopped", "absent"],
@@ -167,6 +177,9 @@ def run_module() -> None:
 
     status = instance_mod.status(ctx, instance)
     confitems = module.params["configuration"] or {}
+    if "port" in confitems:
+        module.fail_json(msg="port should not be specified in configuration field")
+    confitems["port"] = module.params["port"]
     ssl = module.params["ssl"] or False
     try:
         with runner():

@@ -142,14 +142,16 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     prometheus_port = next(tmp_port_factory)
     im = manifest.Instance(
         name="test_apply",
+        port=port,
         ssl=True,
         state=manifest.InstanceState.stopped,
-        configuration={"unix_socket_directories": str(tmp_path), "port": port},
+        configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
     )
     i = instance_mod.apply(ctx, im)
     assert i is not None
     assert i.exists()
+    assert i.port == port
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
@@ -187,7 +189,7 @@ def test_describe(ctx, instance, log_directory):
     assert im is not None
     assert im.name == "test"
     config = im.configuration
-    config.pop("port")
+    assert im.port == i.port
     config.pop("unix_socket_directories")
     if "log_directory" in config:
         assert config.pop("log_directory") == str(log_directory)

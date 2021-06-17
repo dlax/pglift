@@ -387,6 +387,7 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[In
         ctx,
         instance,
         ssl=instance_manifest.ssl,
+        port=instance_manifest.port,
         **configure_options,
     )
 
@@ -414,14 +415,16 @@ def describe(ctx: BaseContext, instance: Instance) -> manifest.Instance:
     does not exists).
     """
     config = instance.config()
-    managed_config = instance.config(managed_only=True)
+    managed_config = instance.config(managed_only=True).as_dict()
+    managed_config.pop("port", None)
     state = manifest.InstanceState.from_pg_status(status(ctx, instance))
     return manifest.Instance(
         name=instance.name,
-        state=state,
         version=instance.version,
+        port=instance.port,
+        state=state,
         ssl=config.ssl,
-        configuration=managed_config.as_dict(),
+        configuration=managed_config,
     )
 
 
