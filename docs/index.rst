@@ -5,6 +5,7 @@ Welcome to pglift's documentation!
     :maxdepth: 2
     :caption: Contents:
 
+    postgresql_configuration
     api/index
     datamodel
     settings
