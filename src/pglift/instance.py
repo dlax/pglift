@@ -102,13 +102,15 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> Any:
             systemd.disable(ctx, unit, now=True)
 
     settings = ctx.settings.postgresql
-    shutil.rmtree(instance.path)
+    if instance.path.exists():
+        shutil.rmtree(instance.path)
     pgroot = settings.root
-    try:
-        next(pgroot.iterdir())
-    except StopIteration:
-        # directory is empty
-        pgroot.rmdir()
+    if pgroot.exists():
+        try:
+            next(pgroot.iterdir())
+        except StopIteration:
+            # directory is empty
+            pgroot.rmdir()
 
 
 @task
