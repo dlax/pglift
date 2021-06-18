@@ -80,9 +80,10 @@ def instance_list(ctx: Context, as_json: bool) -> None:
         return
 
     props = manifest.InstanceListItem.__fields__
-    headers = [p.capitalize() for p in props]
     content = [[getattr(info, p) for p in props] for info in instance_mod.list(ctx)]
-    print(tabulate(content, headers))
+    if content:
+        headers = [p.capitalize() for p in props]
+        print(tabulate(content, headers))
 
 
 @instance.command("drop")
