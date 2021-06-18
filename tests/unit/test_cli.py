@@ -58,6 +58,55 @@ def test_instance_describe(runner, ctx):
     assert "name: test" in result.output
 
 
+def test_instance_list(runner, instance, ctx):
+    name, version = instance.name, instance.version
+    port = instance.config().port
+    path = instance.path
+    expected = [
+        "Name Version Port Path Status",
+        "-----------------------------",
+        f"{name} {version} {port} {path} not_running",
+    ]
+    result = runner.invoke(cli, ["instance", "list"], obj=ctx)
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert lines[0].split() == expected[0].split()
+    assert lines[2].split() == expected[2].split()
+
+    expected_list_as_json = [
+        {
+            "name": name,
+            "path": str(path),
+            "port": port,
+            "status": "not_running",
+            "version": version,
+        }
+    ]
+    result = runner.invoke(cli, ["instance", "list", "--json"], obj=ctx)
+    assert result.exit_code == 0
+    assert json.loads(result.output) == expected_list_as_json
+
+    result = runner.invoke(
+        cli, ["instance", "list", "--json", f"--version={instance.version}"], obj=ctx
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output) == expected_list_as_json
+
+    other_version = next(
+        v for v in ctx.settings.postgresql.versions if v != instance.version
+    )
+    result = runner.invoke(
+        cli, ["instance", "list", "--json", f"--version={other_version}"], obj=ctx
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output) == []
+    result = runner.invoke(
+        cli, ["instance", "list", f"--version={other_version}"], obj=ctx
+    )
+    assert result.exit_code == 0
+    assert not result.output
+
+
 def test_instance_drop(runner, ctx):
     result = runner.invoke(cli, ["instance", "drop"], obj=ctx)
     assert result.exit_code == 2
@@ -120,52 +169,3 @@ def test_backup_instance(runner, instance, ctx):
     assert result.exit_code == 0, result
     assert backup.called
     assert expire.called
-
-
-def test_instance_list(runner, instance, ctx):
-    name, version = instance.name, instance.version
-    port = instance.config().port
-    path = instance.path
-    expected = [
-        "Name Version Port Path Status",
-        "-----------------------------",
-        f"{name} {version} {port} {path} not_running",
-    ]
-    result = runner.invoke(cli, ["instance", "list"], obj=ctx)
-    assert result.exit_code == 0
-    lines = result.output.splitlines()
-    assert lines[0].split() == expected[0].split()
-    assert lines[2].split() == expected[2].split()
-
-    expected_list_as_json = [
-        {
-            "name": name,
-            "path": str(path),
-            "port": port,
-            "status": "not_running",
-            "version": version,
-        }
-    ]
-    result = runner.invoke(cli, ["instance", "list", "--json"], obj=ctx)
-    assert result.exit_code == 0
-    assert json.loads(result.output) == expected_list_as_json
-
-    result = runner.invoke(
-        cli, ["instance", "list", "--json", f"--version={instance.version}"], obj=ctx
-    )
-    assert result.exit_code == 0
-    assert json.loads(result.output) == expected_list_as_json
-
-    other_version = next(
-        v for v in ctx.settings.postgresql.versions if v != instance.version
-    )
-    result = runner.invoke(
-        cli, ["instance", "list", "--json", f"--version={other_version}"], obj=ctx
-    )
-    assert result.exit_code == 0
-    assert json.loads(result.output) == []
-    result = runner.invoke(
-        cli, ["instance", "list", f"--version={other_version}"], obj=ctx
-    )
-    assert result.exit_code == 0
-    assert not result.output
