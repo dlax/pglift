@@ -1,0 +1,13 @@
+{
+  "name": {
+    "required": true,
+    "type": "str"
+  },
+  "password": {
+    "type": "str"
+  },
+  "pgpass": {
+    "default": false,
+    "type": "bool"
+  }
+}

@@ -1,16 +1,18 @@
 import enum
 import functools
-from typing import Any, Callable, Dict, Iterator, Type
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Type, Union
 
 import click
 import pydantic
 from pydantic.utils import lenient_issubclass
+from typing_extensions import TypedDict
 
 Callback = Callable[..., None]
+ModelType = Type[pydantic.BaseModel]
 
 
 def _decorators_from_model(
-    model_type: Type[pydantic.BaseModel], *, _prefix: str = ""
+    model_type: ModelType, *, _prefix: str = ""
 ) -> Iterator[Callable[[Callback], Callback]]:
     """Yield click.{argument,option} decorators corresponding to fields of
     a pydantic model type.
@@ -42,7 +44,7 @@ def _decorators_from_model(
 
 
 def parameters_from_model(
-    model_type: Type[pydantic.BaseModel],
+    model_type: ModelType,
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.
@@ -69,3 +71,60 @@ def parameters_from_model(
         return cb
 
     return decorator
+
+
+PYDANTIC2ANSIBLE_TYPES: Mapping[Union[Type[Any], str], str] = {
+    bool: "bool",
+    int: "int",
+    str: "str",
+    pydantic.SecretStr: "str",
+}
+
+
+class ArgSpec(TypedDict, total=False):
+    required: bool
+    type: str
+    default: Any
+    choices: List[str]
+
+
+def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
+    """Return the Ansible module argument spec object a pydantic model class."""
+    spec = {}
+    for field in model_type.__fields__.values():
+        ansible_config = field.field_info.extra.get("ansible", {})
+        if ansible_config.get("hide", False):
+            continue
+        try:
+            arg_spec: ArgSpec = ansible_config["spec"]
+        except KeyError:
+            arg_spec = ArgSpec()
+            ftype = field.type_
+            try:
+                arg_spec["type"] = PYDANTIC2ANSIBLE_TYPES[ftype]
+            except KeyError:
+                if lenient_issubclass(ftype, enum.Enum):
+                    try:
+                        choices = ansible_config["choices"]
+                    except KeyError:
+                        choices = [f.name for f in ftype]
+                    arg_spec["choices"] = choices
+                elif lenient_issubclass(ftype, pydantic.BaseModel):
+                    for subname, subspec in argspec_from_model(ftype).items():
+                        spec[f"{field.name}_{subname}"] = subspec
+                    continue
+                else:
+                    raise ValueError(f"unhandled field type {ftype}")
+
+            if field.required:
+                arg_spec["required"] = True
+
+            if field.default is not None:
+                default = field.default
+                if lenient_issubclass(ftype, enum.Enum):
+                    default = default.name
+                arg_spec["default"] = default
+
+        spec[field.name] = arg_spec
+
+    return spec

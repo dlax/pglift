@@ -1,0 +1,33 @@
+{
+  "configuration": {
+    "required": false,
+    "type": "dict"
+  },
+  "name": {
+    "required": true,
+    "type": "str"
+  },
+  "port": {
+    "type": "int"
+  },
+  "prometheus_port": {
+    "default": 9187,
+    "type": "int"
+  },
+  "ssl": {
+    "default": false,
+    "required": false,
+    "type": "bool"
+  },
+  "state": {
+    "choices": [
+      "stopped",
+      "started",
+      "absent"
+    ],
+    "default": "started"
+  },
+  "version": {
+    "type": "str"
+  }
+}

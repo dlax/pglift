@@ -102,8 +102,16 @@ class Instance(Manifest):
         description="Runtime state",
         cli={"choices": [InstanceState.started.value, InstanceState.stopped.value]},
     )
-    ssl: Union[bool, Tuple[Path, Path]] = Field(default=False, cli={"hide": True})
-    configuration: Dict[str, Any] = Field(default_factory=dict, cli={"hide": True})
+    ssl: Union[bool, Tuple[Path, Path]] = Field(
+        default=False,
+        cli={"hide": True},
+        ansible={"spec": {"type": "bool", "required": False, "default": False}},
+    )
+    configuration: Dict[str, Any] = Field(
+        default_factory=dict,
+        cli={"hide": True},
+        ansible={"spec": {"type": "dict", "required": False}},
+    )
 
     prometheus: Prometheus = Prometheus()
 

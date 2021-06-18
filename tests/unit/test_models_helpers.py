@@ -3,10 +3,11 @@ import json
 from typing import Optional
 
 import click
+import pytest
 from click.testing import CliRunner
 from pydantic import BaseModel, Field
 
-from pglift.models import helpers
+from pglift.models import helpers, interface
 
 
 class Gender(enum.Enum):
@@ -22,10 +23,19 @@ class Country(enum.Enum):
 
 class Address(BaseModel):
     street: str = Field(description="the street")
-    zipcode: int = Field(default=0, description="ZIP code", cli={"hide": True})
-    city: str = Field(description="city")
+    zipcode: int = Field(
+        default=0,
+        description="ZIP code",
+        cli={"hide": True},
+        ansible={"hide": True},
+    )
+    city: str = Field(
+        description="city",
+        ansible={"spec": {"type": "str", "description": "the city"}},
+    )
     country: Country = Field(
-        cli={"choices": [Country.France.value, Country.Belgium.value]}
+        cli={"choices": [Country.France.value, Country.Belgium.value]},
+        ansible={"choices": [Country.France.value, Country.UnitedKindom.value]},
     )
 
 
@@ -84,3 +94,25 @@ def test_parameters_from_model():
         "gender": "F",
         "name": "alice",
     }
+
+
+def test_argspec_from_model():
+    argspec = helpers.argspec_from_model(Person)
+    assert argspec == {
+        "name": {"required": True, "type": "str"},
+        "gender": {"choices": ["M", "F"]},
+        "age": {"type": "int"},
+        "address_street": {"required": True, "type": "str"},
+        "address_city": {"type": "str", "description": "the city"},
+        "address_country": {"choices": ["fr", "gb"], "required": True},
+    }
+
+
+@pytest.mark.parametrize("manifest_type", [interface.Instance, interface.Role])
+def test_argspec_from_model_manifest(datadir, regen_test_data, manifest_type):
+    actual = helpers.argspec_from_model(manifest_type)
+    fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
+    if regen_test_data:
+        fpath.write_text(json.dumps(actual, indent=2, sort_keys=True))
+    expected = json.loads(fpath.read_text())
+    assert actual == expected
