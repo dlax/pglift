@@ -1,3 +1,4 @@
+import builtins
 import contextlib
 import functools
 import shutil
@@ -443,19 +444,30 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
     revert_init(ctx, instance.as_spec())
 
 
-def list(ctx: BaseContext) -> Iterator[manifest.InstanceListItem]:
-    """Yield an InstanceListItem for each instance found with system lookup."""
+def list(
+    ctx: BaseContext, *, version: Optional[str] = None
+) -> Iterator[manifest.InstanceListItem]:
+    """Yield InstanceListItem for each instance found by system lookup.
+
+    :param version: filter instances matching a given version.
+    """
+    versions = builtins.list(ctx.settings.postgresql.versions)
+    if version:
+        if version not in versions:
+            raise ValueError(f"unknown version '{version}'")
+        versions = [version]
+
     pgroot = ctx.settings.postgresql.root
     assert pgroot.is_dir(), f"{pgroot} isn't a directory"
     # Search for directories looking like <version>/<name> in pgroot
-    for version in ctx.settings.postgresql.versions:
-        version_path = pgroot / version
+    for ver in versions:
+        version_path = pgroot / ver
         if not version_path.is_dir():
             continue
         for d in version_path.iterdir():
             if not d.is_dir():
                 continue
-            instance_spec = InstanceSpec(d.name, version, settings=ctx.settings)
+            instance_spec = InstanceSpec(d.name, ver, settings=ctx.settings)
             try:
                 instance = Instance.from_spec(instance_spec)
             except exceptions.InstanceNotFound:

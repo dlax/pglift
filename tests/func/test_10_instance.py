@@ -208,3 +208,14 @@ def test_list(ctx, instance):
     assert i.name == instance.name
     assert i.version == instance.version
     assert i.status == Status.not_running.name
+
+    with pytest.raises(ValueError, match="unknown version '7'"):
+        next(instance_mod.list(ctx, version="7"))
+
+    iv = next(instance_mod.list(ctx, version=instance.version))
+    assert iv == i
+
+    other_version = next(
+        v for v in ctx.settings.postgresql.versions if v != instance.version
+    )
+    assert list(instance_mod.list(ctx, version=other_version)) == []
