@@ -18,7 +18,7 @@ supported tools are:
 
 The project is under active development; it is not yet ready for production
 use. Refer to the [issue tracker](https://gitlab.com/dalibo/pglift/-/issues/)
-for mode details.
+for more details.
 
 # Getting Started
 
