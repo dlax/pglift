@@ -9,3 +9,5 @@ Resource manifests
     :members:
 .. autoclass:: InstanceState
     :members:
+.. autoclass:: InstanceListItem
+    :members:

@@ -447,7 +447,7 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
 def list(
     ctx: BaseContext, *, version: Optional[str] = None
 ) -> Iterator[manifest.InstanceListItem]:
-    """Yield InstanceListItem for each instance found by system lookup.
+    """Yield instances found by system lookup.
 
     :param version: filter instances matching a given version.
     """
