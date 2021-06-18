@@ -69,3 +69,36 @@ Alternatively, keep the following command running:
 
 to get the documentation rebuilt and along with a live-reloaded Web browser
 (the reason for ``sphinx-autobuild`` dependency above).
+
+Release workflow
+----------------
+
+* Create an *annotated* git tag following the ``v<MAJOR>.<MINOR>.<PATCH>``
+  pattern. For instance:
+
+  .. code-block:: bash
+
+    $ git tag -a [-s] -m 'pglift v0.1.0' --edit
+
+  then edit the tag message to include a changelog since latest tag.
+
+  That changelog can be obtained using:
+
+  .. code-block:: bash
+
+    $ git log $(git describe --tags --abbrev=0).. --format=%s
+
+* Push the tag:
+
+  .. code-block:: bash
+
+    $ git push --tags
+
+* Finally get your PyPI API token and run:
+
+  .. code-block:: bash
+
+    $ env PYPI_TOKEN=pypi-xxx tox -e release
+
+  to build and upload the Python package to `PyPI
+  <https://pypi.org/project/pglift>`_.
