@@ -78,7 +78,7 @@ Release workflow
 
   .. code-block:: bash
 
-    $ git tag -a [-s] -m 'pglift v0.1.0' --edit
+    $ git tag v0.1.0 -a [-s] -m 'pglift v0.1.0' --edit
 
   then edit the tag message to include a changelog since latest tag.
 
