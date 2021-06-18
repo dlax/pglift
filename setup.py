@@ -14,7 +14,6 @@ extras_typing = [
 
 setup(
     name="pglift",
-    version="0.0.0",
     description="Life-cycle management of production-ready PostgreSQL instances",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -41,6 +40,8 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     python_requires=">=3.6, <4",
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     install_requires=[
         "attrs",
         "click",
