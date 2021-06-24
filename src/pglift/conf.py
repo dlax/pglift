@@ -16,7 +16,6 @@ def make(instance: str, **confitems: Any) -> pgconf.Configuration:
     filled with given items.
     """
     conf = pgconf.Configuration()
-    conf["cluster_name"] = instance
     for key, value in confitems.items():
         if value is not None:
             conf[key] = value

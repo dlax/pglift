@@ -193,7 +193,7 @@ def test_describe(ctx, instance, log_directory):
     config.pop("unix_socket_directories")
     if "log_directory" in config:
         assert config.pop("log_directory") == str(log_directory)
-    assert config == {"cluster_name": "test"}
+    assert config == {}
     assert im.state.name == "stopped"
 
 

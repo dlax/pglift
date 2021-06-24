@@ -1,4 +1,5 @@
 import pathlib
+import re
 import subprocess
 
 import pytest
@@ -73,7 +74,6 @@ def test_configure(ctx_nohook, instance):
     assert old_shared_buffers is None
     assert new_shared_buffers is not None and new_shared_buffers != "10 %"
     assert changes == {
-        "cluster_name": (None, "test"),
         "effective_cache_size": (None, "5MB"),
         "max_connections": (None, 100),
         "port": (None, 5433),
@@ -82,10 +82,14 @@ def test_configure(ctx_nohook, instance):
         line1 = f.readline().strip()
     assert line1 == "include_dir = 'conf.pglift.d'"
 
-    configfpath = configdir / "conf.pglift.d" / "user.conf"
-    lines = configfpath.read_text().splitlines()
+    site_configfpath = configdir / "conf.pglift.d" / "site.conf"
+    user_configfpath = configdir / "conf.pglift.d" / "user.conf"
+    lines = user_configfpath.read_text().splitlines()
     assert "port = 5433" in lines
-    assert "cluster_name = 'test'" in lines
+    site_config = site_configfpath.read_text()
+    assert "cluster_name = 'test'" in site_config.splitlines()
+    assert re.search(r"shared_buffers = '\d+ [kMGT]?B'", site_config)
+    assert "effective_cache_size" in site_config
 
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
@@ -105,18 +109,27 @@ def test_configure(ctx_nohook, instance):
         "ssl": (None, True),
     }
     # Same configuration, no change.
-    mtime_before = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
+    mtime_before = (
+        postgresql_conf.stat().st_mtime,
+        site_configfpath.stat().st_mtime,
+        user_configfpath.stat().st_mtime,
+    )
     changes = instance_mod.configure(ctx, instance, listen_address="*", ssl=True)
     assert changes == {}
-    mtime_after = postgresql_conf.stat().st_mtime, configfpath.stat().st_mtime
+    mtime_after = (
+        postgresql_conf.stat().st_mtime,
+        site_configfpath.stat().st_mtime,
+        user_configfpath.stat().st_mtime,
+    )
     assert mtime_before == mtime_after
 
     instance_mod.revert_configure(ctx, instance)
     assert postgresql_conf.read_text() == initial_content
-    assert not configfpath.exists()
+    assert not site_configfpath.exists()
+    assert not user_configfpath.exists()
 
     instance_mod.configure(ctx, instance, ssl=True)
-    lines = configfpath.read_text().splitlines()
+    lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
@@ -133,12 +146,11 @@ def test_configure(ctx_nohook, instance):
         fpath.touch()
     changes = instance_mod.configure(ctx, instance, ssl=ssl)
     assert changes == {
-        "cluster_name": (None, instance.name),
         "ssl": (None, True),
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),
     }
-    lines = configfpath.read_text().splitlines()
+    lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {instance.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {instance.datadir / 'k.key'}" in lines

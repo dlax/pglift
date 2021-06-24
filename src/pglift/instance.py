@@ -10,7 +10,17 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, exceptions, hookimpl, manifest, roles, systemd, template, util
+from . import (
+    conf,
+    datapath,
+    exceptions,
+    hookimpl,
+    manifest,
+    roles,
+    systemd,
+    template,
+    util,
+)
 from .ctx import BaseContext
 from .model import BaseInstance, Instance, InstanceSpec
 from .task import task
@@ -138,6 +148,7 @@ def configure(
     confd, include = conf.info(configdir)
     if not confd.exists():
         confd.mkdir()
+    site_conffile = confd / "site.conf"
     user_conffile = confd / "user.conf"
     pgconfig = pgconf.parse(str(postgresql_conf))
     if ssl:
@@ -158,6 +169,11 @@ def configure(
             f.write(f"{include}\n\n")
             f.write(original_content)
 
+    site_confitems: Dict[str, pgconf.Value] = {"cluster_name": instance.name}
+    site_config_template = datapath / "postgresql" / "site.conf"
+    if site_config_template.exists():
+        site_confitems.update(pgconf.parse(site_config_template).as_dict())
+
     def format_memory_values(
         confitems: Dict[str, Any], memtotal: float = util.total_memory()
     ) -> None:
@@ -172,6 +188,7 @@ def configure(
                 pass
 
     format_memory_values(confitems)
+    format_memory_values(site_confitems)
 
     def make_config(fpath: Path, items: Dict[str, Any]) -> ConfigChanges:
         config = conf.make(instance.name, **items)
@@ -193,6 +210,7 @@ def configure(
 
         return changes
 
+    make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
     i_config = instance.config()
@@ -223,9 +241,10 @@ def revert_configure(
 
     configdir = instance.datadir
     confd, include = conf.info(configdir)
-    user_conffile = confd / "user.conf"
-    if user_conffile.exists():
-        user_conffile.unlink()
+    for name in ("site", "user"):
+        conffile = confd / f"{name}.conf"
+        if conffile.exists():
+            conffile.unlink()
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open() as f:
         line = f.readline()
