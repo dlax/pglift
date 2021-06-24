@@ -131,9 +131,10 @@ def configure(
     """
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
-    our_confd, our_conffile, include = conf.info(configdir)
-    if not our_confd.exists():
-        our_confd.mkdir()
+    confd, include = conf.info(configdir)
+    if not confd.exists():
+        confd.mkdir()
+    user_conffile = confd / "user.conf"
     pgconfig = pgconf.parse(str(postgresql_conf))
     if ssl:
         confitems["ssl"] = True
@@ -156,8 +157,8 @@ def configure(
     config = conf.make(instance.name, **confitems)
 
     config_before = {}
-    if our_conffile.exists():
-        config_before = {e.name: e.value for e in pgconf.parse(our_conffile)}
+    if user_conffile.exists():
+        config_before = {e.name: e.value for e in pgconf.parse(user_conffile)}
     config_after = {e.name: e.value for e in config}
     changes: ConfigChanges = {}
     for k in set(config_before) | set(config_after):
@@ -167,7 +168,7 @@ def configure(
             changes[k] = (pv, nv)
 
     if changes:
-        with our_conffile.open("w") as f:
+        with user_conffile.open("w") as f:
             config.save(f)
 
     i_config = instance.config()
@@ -197,9 +198,10 @@ def revert_configure(
         conf.remove_log_directory(instance, logdir)
 
     configdir = instance.datadir
-    our_confd, our_conffile, include = conf.info(configdir)
-    if our_conffile.exists():
-        our_conffile.unlink()
+    confd, include = conf.info(configdir)
+    user_conffile = confd / "user.conf"
+    if user_conffile.exists():
+        user_conffile.unlink()
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open() as f:
         line = f.readline()

@@ -50,7 +50,8 @@ def test(ctx, installed, instance, tmp_path, tmp_port_factory):
 
     # Calling setup an other time doesn't overwrite configuration
     configdir = instance.datadir
-    pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
+    confd = conf_info(configdir)[0]
+    pgconfigfile = confd / "pgbackrest.conf"
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     pgbackrest.setup(ctx, instance)
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime

@@ -23,17 +23,15 @@ def make(instance: str, **confitems: Any) -> pgconf.Configuration:
     return conf
 
 
-def info(configdir: Path, name: str = "user.conf") -> Tuple[Path, Path, str]:
-    """Return (confd, conffile, include) where `confd` is the path to
-    directory where managed configuration files live; `conffile` is the path
-    configuration file `name` and `include` is an include directive to be
-    inserted in main 'postgresql.conf'.
+def info(configdir: Path) -> Tuple[Path, str]:
+    """Return (confd, include) where `confd` is the path to
+    directory where managed configuration files live and `include` is an
+    include directive to be inserted in main 'postgresql.conf'.
     """
     confd = Path(f"conf.{pkgname}.d")
     include = f"include_dir = '{confd}'"
     confd = configdir / confd
-    conffile = confd / name
-    return confd, conffile, include
+    return confd, include
 
 
 F = Callable[["Instance", Path], None]

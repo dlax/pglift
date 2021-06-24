@@ -184,7 +184,8 @@ class Instance(BaseInstance):
         :raises FileNotFoundError: if expected configuration file is missing
         """
         if managed_only:
-            conffile = conf.info(self.datadir)[1]
+            confd = conf.info(self.datadir)[0]
+            conffile = confd / "user.conf"
             return pgconf.parse(conffile)
 
         postgresql_conf = self.datadir / "postgresql.conf"

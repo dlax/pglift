@@ -90,7 +90,8 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
     base_cmd = make_cmd(instance, settings)
 
     configdir = instance.datadir
-    pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
+    confd = conf_info(configdir)[0]
+    pgconfigfile = confd / "pgbackrest.conf"
     if not pgconfigfile.exists():
         pgconfig = pgconf.Configuration()
         pgconfig.archive_command = " ".join(base_cmd + ["archive-push", "%p"])
@@ -120,7 +121,8 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
         pass
 
     configdir = instance.datadir
-    pgconfigfile = conf_info(configdir, name="pgbackrest.conf")[1]
+    confd = conf_info(configdir)[0]
+    pgconfigfile = confd / "pgbackrest.conf"
     if pgconfigfile.exists():
         pgconfigfile.unlink()
 
