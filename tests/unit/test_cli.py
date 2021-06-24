@@ -45,7 +45,7 @@ def test_instance_schema(runner, ctx):
     assert schema["description"] == "PostgreSQL instance"
 
 
-def test_instance_describe(runner, ctx):
+def test_instance_describe(runner, ctx, instance):
     result = runner.invoke(cli, ["instance", "describe"], obj=ctx)
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.output
@@ -107,7 +107,7 @@ def test_instance_list(runner, instance, ctx):
     assert not result.output
 
 
-def test_instance_drop(runner, ctx):
+def test_instance_drop(runner, ctx, instance):
     result = runner.invoke(cli, ["instance", "drop"], obj=ctx)
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.output
@@ -127,7 +127,7 @@ def test_instance_status(runner, instance, ctx):
     assert result.stdout == "not running\n"
     assert patched.call_count == 1
     args, kwargs = patched.call_args
-    assert args[1] == instance.as_spec()
+    assert args[1] == instance
     assert kwargs == {}
 
 

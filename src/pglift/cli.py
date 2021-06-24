@@ -6,6 +6,7 @@ import click
 import pydantic.json
 from tabulate import tabulate
 
+from . import exceptions
 from . import instance as instance_mod
 from . import manifest, pgbackrest, pm, roles
 from .ctx import Context
@@ -55,11 +56,12 @@ name_argument = click.argument("name", type=click.STRING)
 version_argument = click.argument("version", required=False, type=click.STRING)
 
 
-def get_instance(ctx: Context, name: str, version: Optional[str]) -> InstanceSpec:
+def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
     if version:
-        return InstanceSpec(name, version, settings=ctx.settings)
+        spec = InstanceSpec(name, version, settings=ctx.settings)
     else:
-        return InstanceSpec.default_version(name, ctx)
+        spec = InstanceSpec.default_version(name, ctx)
+    return Instance.from_spec(spec)
 
 
 def instance_lookup(ctx: Context, instance_id: str) -> Instance:
@@ -68,7 +70,7 @@ def instance_lookup(ctx: Context, instance_id: str) -> Instance:
         version, name = instance_id.split("/", 1)
     except ValueError:
         name = instance_id
-    return Instance.from_spec(get_instance(ctx, name, version))
+    return get_instance(ctx, name, version)
 
 
 @instance.command("describe")
@@ -140,7 +142,7 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
 @click.pass_obj
 def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Start a PostgreSQL instance"""
-    instance = Instance.from_spec(get_instance(ctx, name, version))
+    instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.start(ctx, instance)
 
@@ -151,7 +153,7 @@ def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 @click.pass_obj
 def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Stop a PostgreSQL instance"""
-    instance = Instance.from_spec(get_instance(ctx, name, version))
+    instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.stop(ctx, instance)
 
@@ -162,7 +164,7 @@ def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 @click.pass_obj
 def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Reload a PostgreSQL instance"""
-    instance = Instance.from_spec(get_instance(ctx, name, version))
+    instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.reload(ctx, instance)
 
@@ -173,7 +175,7 @@ def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 @click.pass_obj
 def restart_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Restart a PostgreSQL instance"""
-    instance = Instance.from_spec(get_instance(ctx, name, version))
+    instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.restart(ctx, instance)
 
@@ -193,7 +195,7 @@ def backup_instance(
     ctx: Context, name: str, version: Optional[str], type: str, purge: bool
 ) -> None:
     """Back up a PostgreSQL instance"""
-    instance = Instance.from_spec(get_instance(ctx, name, version))
+    instance = get_instance(ctx, name, version)
     pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
     if purge:
         pgbackrest.expire(ctx, instance)
