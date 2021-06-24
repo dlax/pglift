@@ -14,7 +14,7 @@ from pydantic import (
     validator,
 )
 
-from . import model
+from . import model, settings
 from .ctx import BaseContext
 
 
@@ -113,6 +113,26 @@ class Instance(Manifest):
         # Avoid dash as this will break systemd instance unit.
         if "-" in v:
             raise ValueError("instance name must not contain dashes")
+        return v
+
+    @validator("version")
+    def __validate_version_(cls, v: Optional[str]) -> Optional[str]:
+        """Validate 'version' field.
+
+        >>> Instance(name="x", version=None).version
+        >>> Instance(name="x", version="13").version
+        '13'
+        >>> Instance(name="x", version="9")
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        version
+          unsupported PostgreSQL version: 9 (type=value_error)
+        """
+        if v is None:
+            return None
+        if v not in settings.POSTGRESQL_SUPPORTED_VERSIONS:
+            raise ValueError(f"unsupported PostgreSQL version: {v}")
         return v
 
     @root_validator
