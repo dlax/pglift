@@ -4,11 +4,13 @@ import shutil
 from pathlib import Path, PosixPath
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar, Union
 
+import yaml
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
 from typing_extensions import Literal, TypedDict
 
 from . import __name__ as pkgname
+from . import datapath
 from .types import Role
 from .util import xdg_data_home
 
@@ -261,6 +263,18 @@ class PrometheusSettings(BaseSettings):
     """Path to the queries file."""
 
 
+def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
+    """Load settings values 'settings.yaml' file if found in data directory."""
+    fpath = datapath / "settings.yaml"
+    if not fpath.exists():
+        return {}
+    with fpath.open() as f:
+        settings = yaml.safe_load(f)
+    if not isinstance(settings, dict):
+        raise TypeError(f"expecting an object while loading settings from {fpath}")
+    return settings
+
+
 def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values from 'SETTINGS' environment variable.
 
@@ -325,6 +339,7 @@ class Settings(BaseSettings):
             return (
                 init_settings,
                 env_settings,
+                yaml_settings_source,
                 json_config_settings_source,
             )
 

@@ -3,7 +3,7 @@ Settings
 
 The details of most operations can be configured by defining the *settings* of
 an installation. These settings are usually gathered in a configuration file,
-in JSON format, and some can be overridden from environment variables.
+in YAML format, and some can be overridden from environment variables.
 
 A typical settings document looks like:
 
@@ -63,6 +63,9 @@ To view current settings, run:
 
     $ python -m pglift.settings
 
+
+Site (or installation) settings are located alongside with pglift's Python
+code in a ``settings.yaml`` file.
 
 To override installed settings, the ``SETTINGS`` environment variable can be
 used. It accepts either a JSON-dumped value or a file path, prepended with
