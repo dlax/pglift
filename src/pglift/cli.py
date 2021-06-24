@@ -57,11 +57,16 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
-    if version:
-        spec = InstanceSpec(name, version, settings=ctx.settings)
-    else:
-        spec = InstanceSpec.default_version(name, ctx)
-    return Instance.from_spec(spec)
+    try:
+        if version:
+            spec = InstanceSpec(name, version, settings=ctx.settings)
+        else:
+            spec = InstanceSpec.default_version(name, ctx)
+        return Instance.from_spec(spec)
+    except exceptions.InstanceNotFound as e:
+        raise click.ClickException(f"Instance {e} not found")
+    except Exception as e:
+        raise click.ClickException(str(e))
 
 
 def instance_lookup(ctx: Context, instance_id: str) -> Instance:
