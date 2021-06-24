@@ -6,7 +6,7 @@ PostgreSQL infrastructure based on [pglift](../../../../docs/index.rst).
 
 ## Tested with Ansible
 
-2.10
+4.1
 
 ## Included content
 ### modules
