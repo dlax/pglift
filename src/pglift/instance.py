@@ -173,22 +173,27 @@ def configure(
 
     format_memory_values(confitems)
 
-    config = conf.make(instance.name, **confitems)
+    def make_config(fpath: Path, items: Dict[str, Any]) -> ConfigChanges:
+        config = conf.make(instance.name, **items)
 
-    config_before = {}
-    if user_conffile.exists():
-        config_before = {e.name: e.value for e in pgconf.parse(user_conffile)}
-    config_after = {e.name: e.value for e in config}
-    changes: ConfigChanges = {}
-    for k in set(config_before) | set(config_after):
-        pv = config_before.get(k)
-        nv = config_after.get(k)
-        if nv != pv:
-            changes[k] = (pv, nv)
+        config_before = {}
+        if fpath.exists():
+            config_before = {e.name: e.value for e in pgconf.parse(fpath)}
+        config_after = {e.name: e.value for e in config}
+        changes: ConfigChanges = {}
+        for k in set(config_before) | set(config_after):
+            pv = config_before.get(k)
+            nv = config_after.get(k)
+            if nv != pv:
+                changes[k] = (pv, nv)
 
-    if changes:
-        with user_conffile.open("w") as f:
-            config.save(f)
+        if changes:
+            with fpath.open("w") as f:
+                config.save(f)
+
+        return changes
+
+    changes = make_config(user_conffile, confitems)
 
     i_config = instance.config()
     if "log_directory" in i_config:
