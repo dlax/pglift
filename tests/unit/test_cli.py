@@ -24,7 +24,7 @@ def test_cli(runner, ctx):
 
 
 def test_instance_apply(tmp_path, runner, ctx):
-    result = runner.invoke(cli, ["instance", "apply"], obj=ctx)
+    result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=ctx)
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.output
 

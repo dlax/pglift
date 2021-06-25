@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import IO, Optional
 
 import click
@@ -14,9 +15,17 @@ from .task import runner
 
 
 @click.group()
+@click.option(
+    "--log-level",
+    type=click.Choice(
+        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
+)
 @click.pass_context
-def cli(ctx: click.core.Context) -> None:
+def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
     """Deploy production-ready instances of PostgreSQL"""
+    if log_level is not None:
+        logging.basicConfig(level=log_level)
 
     if not ctx.obj:
         ctx.obj = Context(plugin_manager=pm.PluginManager.get(), settings=SETTINGS)
