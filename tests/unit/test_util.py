@@ -1,6 +1,8 @@
 import stat
 from pathlib import Path
 
+import pytest
+
 from pglift import util
 
 
@@ -26,3 +28,14 @@ def test_gen_certificate(tmp_path):
     assert key.exists()
     assert stat.filemode(crt.stat().st_mode) == "-rw-------"
     assert stat.filemode(key.stat().st_mode) == "-rw-------"
+
+
+def test_total_memory(meminfo):
+    assert util.total_memory(meminfo) == 6166585344.0
+
+
+def test_total_memory_error(tmp_path):
+    meminfo = tmp_path / "meminfo"
+    meminfo.touch()
+    with pytest.raises(Exception, match="could not retrieve memory information from"):
+        util.total_memory(meminfo)

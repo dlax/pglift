@@ -49,3 +49,19 @@ def instance(pg_version: str, settings: Settings) -> Instance:
         "\n".join(["port = 999", "unix_socket_directories = /socks"])
     )
     return instance
+
+
+@pytest.fixture
+def meminfo(tmp_path: Path) -> Path:
+    fpath = tmp_path / "meminfo"
+    fpath.write_text(
+        "\n".join(
+            [
+                "MemTotal:        6022056 kB",
+                "MemFree:         3226640 kB",
+                "MemAvailable:    4235060 kB",
+                "Buffers:          206512 kB",
+            ]
+        )
+    )
+    return fpath
