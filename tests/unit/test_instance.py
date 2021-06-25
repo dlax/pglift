@@ -61,9 +61,20 @@ def test_configure(ctx_nohook, instance):
         f.write("bonjour_name = 'test'\n")
     initial_content = postgresql_conf.read_text()
 
-    changes = instance_mod.configure(ctx, instance, port=5433, max_connections=100)
+    changes = instance_mod.configure(
+        ctx,
+        instance,
+        port=5433,
+        max_connections=100,
+        shared_buffers="10 %",
+        effective_cache_size="5MB",
+    )
+    old_shared_buffers, new_shared_buffers = changes.pop("shared_buffers")
+    assert old_shared_buffers is None
+    assert new_shared_buffers is not None and new_shared_buffers != "10 %"
     assert changes == {
         "cluster_name": (None, "test"),
+        "effective_cache_size": (None, "5MB"),
         "max_connections": (None, 100),
         "port": (None, 5433),
     }
@@ -86,9 +97,11 @@ def test_configure(ctx_nohook, instance):
         ctx, instance, listen_address="*", ssl=True, port=None
     )
     assert changes == {
+        "effective_cache_size": ("5MB", None),
         "listen_address": (None, "*"),
         "max_connections": (100, None),
         "port": (5433, None),
+        "shared_buffers": (new_shared_buffers, None),
         "ssl": (None, True),
     }
     # Same configuration, no change.

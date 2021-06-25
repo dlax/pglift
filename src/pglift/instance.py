@@ -128,6 +128,10 @@ def configure(
     If True, a self-signed certificate is generated. A tuple of two
     `~pathlib.Path` corresponding to the location of SSL cert file and key
     file to use may also be passed.
+
+    'shared_buffers' and 'effective_cache_size' setting, if defined and set to
+    a percent-value, will be converted to proper memory value relative to the
+    total memory available on the system.
     """
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
@@ -153,6 +157,21 @@ def configure(
         with postgresql_conf.open("w") as f:
             f.write(f"{include}\n\n")
             f.write(original_content)
+
+    def format_memory_values(
+        confitems: Dict[str, Any], memtotal: float = util.total_memory()
+    ) -> None:
+        for k in ("shared_buffers", "effective_cache_size"):
+            try:
+                v = confitems[k]
+            except KeyError:
+                continue
+            try:
+                confitems[k] = util.percent_memory(v, memtotal)
+            except ValueError:
+                pass
+
+    format_memory_values(confitems)
 
     config = conf.make(instance.name, **confitems)
 
