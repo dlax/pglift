@@ -29,3 +29,20 @@ class Role(Protocol):
     name: str
     password: Optional[SecretStr]
     pgpass: bool
+
+
+class Logger(Protocol):
+    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        ...

@@ -82,7 +82,6 @@ class Context(BaseContext):
     error = _logger.error
     exception = _logger.exception
 
-    @staticmethod
-    def run(args: Sequence[str], **kwargs: Any) -> CompletedProcess:
+    def run(self, args: Sequence[str], **kwargs: Any) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
-        return cmd.run(args, **kwargs)
+        return cmd.run(args, logger=self, **kwargs)

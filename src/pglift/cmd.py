@@ -1,11 +1,12 @@
 import asyncio
 import asyncio.subprocess
+import shlex
 import subprocess
 import sys
 from subprocess import DEVNULL, PIPE, CalledProcessError
 from typing import Any, Callable, Optional, Sequence, Tuple
 
-from .types import CompletedProcess
+from .types import CompletedProcess, Logger
 
 
 async def process_stream_with(
@@ -118,6 +119,7 @@ def run(
     redirect_output: bool = True,
     check: bool = False,
     shell: bool = False,
+    logger: Optional[Logger] = None,
     **kwargs: Any,
 ) -> CompletedProcess:
     """Run a command as a subprocess.
@@ -163,11 +165,17 @@ def run(
                 )
             kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
-    def process_stdout(out: str) -> None:
+    prog = " ".join(shlex.quote(a) for a in args)  # shlex.join() for Python >= 3.8
+
+    def process_stdout(out: str, prog: str = prog) -> None:
+        if logger:
+            logger.debug("%s: %s", prog, out)
         if shell and redirect_output:
             sys.stdout.write(out)
 
-    def process_stderr(err: str) -> None:
+    def process_stderr(err: str, prog: str = prog) -> None:
+        if logger:
+            logger.error("%s: %s", prog, err)
         if shell and redirect_output:
             sys.stderr.write(err)
 
