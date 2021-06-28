@@ -3,7 +3,7 @@ Ansible
 
 .. highlight:: console
 
-This tutorial illustrates the use of the `postgresql_instance` Ansible module.
+This tutorial illustrates the use of the `pglift.instance` Ansible module.
 
 First, ``ansible`` needs to be installed in the :ref:`development environment
 <devenv>`:

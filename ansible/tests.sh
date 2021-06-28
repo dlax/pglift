@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Functional tests for Ansible playbooks in the docs/ansible (and the
-# postgresql_instance Ansible module).
+# Functional tests for Ansible playbooks in the docs/ansible (and pglift
+# Ansible modules).
 #
 set -e
 

@@ -9,7 +9,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = """
 ---
-module: postgresql_instance
+module: instance
 
 short_description: Create, update and delete a PostgreSQL server instance
 
@@ -65,7 +65,7 @@ author:
 EXAMPLES = """
 # A PostgreSQL instance with SSL and a custom certificates:
 - name: Production DB instance
-  postgresql_instance:
+  dalibo.pglift.instance:
     name: prod
     ssl:
       - /etc/certs/db.cert
@@ -76,7 +76,7 @@ EXAMPLES = """
 
 # A PostgreSQL instance with a generated self-signed certificate, not started:
 - name: Pre-production DB instance
-  postgresql_instance:
+  dalibo.pglift.instance:
     name: preprod
     version: 12
     state: stopped
@@ -85,7 +85,7 @@ EXAMPLES = """
 
 # A PostgreSQL instance without SSL and with some custom settings:
 - name: Dev DB instance
-  postgresql_instance:
+  dalibo.pglift.instance:
     name: dev
     version: 13
     port: 5455
