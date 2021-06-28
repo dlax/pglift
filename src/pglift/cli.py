@@ -12,7 +12,7 @@ from . import instance as instance_mod
 from . import pgbackrest, pm, roles
 from .ctx import Context
 from .models import helpers, interface
-from .models.system import Instance, InstanceSpec, PrometheusService
+from .models.system import Instance
 from .settings import SETTINGS
 from .task import runner
 
@@ -94,13 +94,7 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
     try:
-        if version:
-            spec = InstanceSpec(
-                name, version, settings=ctx.settings, prometheus=PrometheusService()
-            )
-        else:
-            spec = InstanceSpec.default_version(name, ctx)
-        return Instance.from_spec(spec)
+        return Instance.system_lookup(ctx, (name, version))
     except exceptions.InstanceNotFound as e:
         raise click.ClickException(e.show())
     except Exception as e:

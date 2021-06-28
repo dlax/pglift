@@ -171,7 +171,7 @@ def test_instance_status(runner, instance, ctx):
     assert result.stdout == "not running\n"
     assert patched.call_count == 1
     args, kwargs = patched.call_args
-    assert args[1] == instance
+    assert args[1].name == instance.name
     assert kwargs == {}
 
 

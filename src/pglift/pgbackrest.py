@@ -141,7 +141,7 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
-    i = PostgreSQLInstance.from_spec(instance)
+    i = PostgreSQLInstance.system_lookup(ctx, instance)
     setup(ctx, i)
     init(ctx, i)
 

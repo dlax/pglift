@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
@@ -13,12 +13,27 @@ from ..util import short_version
 from ..validators import known_postgresql_version
 
 
+def default_postgresql_version(ctx: BaseContext) -> str:
+    version = ctx.settings.postgresql.default_version
+    if version is None:
+        version = short_version(ctx.pg_ctl(None).version)
+    return version
+
+
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class PrometheusService:
     """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
 
     port: int = 9187
     """TCP port for the web interface and telemetry."""
+
+    T = TypeVar("T", bound="PrometheusService")
+
+    @classmethod
+    def system_lookup(cls: Type[T], ctx: BaseContext, instance: "BaseInstance") -> T:
+        from .. import prometheus
+
+        return cls(port=prometheus.port(ctx, instance))
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -73,19 +88,11 @@ class InstanceSpec(BaseInstance):
 
     @classmethod
     def default_version(
-        cls: Type[T],
-        name: str,
-        ctx: BaseContext,
-        *,
-        prometheus: Optional[PrometheusService] = None,
+        cls: Type[T], name: str, ctx: BaseContext, *, prometheus: PrometheusService
     ) -> T:
         """Build an instance by guessing its version from installed PostgreSQL."""
+        version = default_postgresql_version(ctx)
         settings = ctx.settings
-        version = settings.postgresql.default_version
-        if version is None:
-            version = short_version(ctx.pg_ctl(None).version)
-        if prometheus is None:
-            prometheus = PrometheusService()  # XXX
         return cls(name=name, version=version, settings=settings, prometheus=prometheus)
 
 
@@ -96,12 +103,41 @@ class PostgreSQLInstance(BaseInstance):
     T = TypeVar("T", bound="PostgreSQLInstance")
 
     @classmethod
-    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
-        """Build a (real) instance from a spec object."""
-        instance = cls(**{k: getattr(spec, k) for k in attr.fields_dict(cls)})
-        if not instance.exists():
-            raise exceptions.InstanceNotFound(str(instance))
-        return instance
+    def default_version(cls: Type[T], name: str, ctx: BaseContext) -> T:
+        """Build an instance by guessing its version from installed PostgreSQL."""
+        version = default_postgresql_version(ctx)
+        settings = ctx.settings
+        return cls(name=name, version=version, settings=settings)
+
+    @classmethod
+    def system_lookup(
+        cls: Type[T],
+        ctx: BaseContext,
+        value: Union[BaseInstance, Tuple[str, Optional[str]]],
+    ) -> T:
+        """Build a (real) instance by system lookup.
+
+        :param value: either a BaseInstance object or a (name, version) tuple.
+
+        :raises ~exceptions.InstanceNotFound: if the instance could not be
+            found by system lookup.
+        """
+        if not isinstance(value, BaseInstance):
+            try:
+                name, version = value
+            except ValueError:
+                raise TypeError(
+                    "expecting either a BaseInstance or a (name, version) tuple as 'value' argument"
+                )
+        else:
+            name, version = value.name, value.version
+        if version is None:
+            self = cls.default_version(name, ctx)
+        else:
+            self = cls(name, version, ctx.settings)
+        if not self.exists():
+            raise exceptions.InstanceNotFound(str(self))
+        return self
 
     @classmethod
     def from_stanza(cls: Type[T], stanza: str, **kwargs: Any) -> T:
@@ -160,6 +196,19 @@ class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
     prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
+
+    T = TypeVar("T", bound="Instance")
+
+    @classmethod
+    def system_lookup(
+        cls: Type[T],
+        ctx: BaseContext,
+        value: Union[BaseInstance, Tuple[str, Optional[str]]],
+    ) -> T:
+        pg_instance = PostgreSQLInstance.system_lookup(ctx, value)
+        values = attr.asdict(pg_instance)
+        values["prometheus"] = PrometheusService.system_lookup(ctx, pg_instance)
+        return cls(**values)
 
     def as_spec(self) -> InstanceSpec:
         return InstanceSpec(

@@ -13,14 +13,12 @@ def test_systemd_unit(pg_version, instance):
 
 
 def test_port(ctx, instance):
+    port = prometheus.port(ctx, instance)
+    assert port == 9817
+
     configpath = pathlib.Path(
         str(ctx.settings.prometheus.configpath).format(instance=instance)
     )
-    configpath.parent.mkdir(parents=True)
-    configpath.write_text("\nPG_EXPORTER_WEB_LISTEN_ADDRESS=:123\n")
-    port = prometheus.port(ctx, instance)
-    assert port == 123
-
     configpath.write_text("\nempty\n")
     with pytest.raises(LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"):
         prometheus.port(ctx, instance)

@@ -178,7 +178,7 @@ def configure(
     make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
-    i = PostgreSQLInstance.from_spec(instance)
+    i = PostgreSQLInstance.system_lookup(ctx, instance)
     i_config = i.config()
     ctx.pm.hook.instance_configure(
         ctx=ctx, instance=instance, config=i_config, changes=changes
@@ -202,7 +202,7 @@ def revert_configure(
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
-    pg_instance = PostgreSQLInstance.from_spec(instance)
+    pg_instance = PostgreSQLInstance.system_lookup(ctx, instance)
     i_config = pg_instance.config()
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
@@ -291,7 +291,7 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
     if hba_path.read_text() == hba:
         return
 
-    i = PostgreSQLInstance.from_spec(instance)
+    i = PostgreSQLInstance.system_lookup(ctx, instance)
     with running(ctx, i):
         roles.set_password_for(ctx, i, surole)
 
@@ -404,12 +404,13 @@ def apply(
 
     if state == States.absent:
         if instance_spec.exists():
-            instance = Instance.from_spec(instance_spec)
+            instance = Instance.system_lookup(ctx, instance_spec)
             drop(ctx, instance)
         return None
 
     if not instance_spec.exists():
         init(ctx, instance_spec)
+
     configure_options = instance_manifest.configuration or {}
     changes = configure(
         ctx,
@@ -418,7 +419,7 @@ def apply(
         port=instance_manifest.port,
         **configure_options,
     )
-    instance = Instance.from_spec(instance_spec)
+    instance = Instance.system_lookup(ctx, instance_spec)
 
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:
@@ -490,7 +491,7 @@ def list(
                 d.name, ver, settings=ctx.settings, prometheus=PrometheusService()
             )
             try:
-                instance = Instance.from_spec(instance_spec)
+                instance = Instance.system_lookup(ctx, instance_spec)
             except exceptions.InstanceNotFound:
                 continue
 

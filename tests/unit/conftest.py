@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from pglift import pm
+from pglift import pm, prometheus
 from pglift.ctx import Context
 from pglift.models.system import Instance, PrometheusService
 from pglift.settings import Settings
@@ -43,17 +43,23 @@ def ctx(settings: Settings) -> Context:
 
 @pytest.fixture
 def instance(pg_version: str, settings: Settings) -> Instance:
+    prometheus_port = 9817
     instance = Instance(
         name="test",
         version=pg_version,
         settings=settings,
-        prometheus=PrometheusService(),
+        prometheus=PrometheusService(port=prometheus_port),
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
     (instance.datadir / "postgresql.conf").write_text(
         "\n".join(["port = 999", "unix_socket_directories = /socks"])
     )
+
+    prometheus_config = prometheus._configpath(instance, settings.prometheus)
+    prometheus_config.parent.mkdir(parents=True)
+    prometheus_config.write_text(f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus_port}")
+
     return instance
 
 

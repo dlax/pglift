@@ -175,7 +175,7 @@ def instance(
     configure_instance(
         ctx, i, port=port, socket_path=tmp_path, log_directory=str(log_directory)
     )
-    return system.Instance.from_spec(i)
+    return system.Instance.system_lookup(ctx, i)
 
 
 @pytest.fixture(scope="session")
