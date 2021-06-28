@@ -38,7 +38,7 @@ def instance() -> None:
 
 
 @instance.command("apply")
-@click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
+@click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @click.pass_obj
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
