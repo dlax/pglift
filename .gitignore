@@ -1,6 +1,7 @@
 docs/_build
 build/
 dist/
+.eggs/
 *.egg-info/
 *.egg
 *.py[cod]
