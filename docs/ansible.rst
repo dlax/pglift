@@ -39,6 +39,7 @@ PostgreSQL instances, data and configuration files:
     }
     EOF
     $ export SETTINGS="@$settings"
+    $ export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
 
 Then, proceed with post-installation step (preparing systemd templates, in
 particular):
@@ -51,7 +52,7 @@ Finally, run:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play1.yml
+    (.venv) $ ansible-playbook docs/ansible/play1.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -135,7 +136,7 @@ configuration:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play2.yml
+    (.venv) $ ansible-playbook docs/ansible/play2.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -182,7 +183,7 @@ Finally, in this last playbook, we drop all our instances:
 
 ::
 
-    (.venv) $ ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+    (.venv) $ ansible-playbook docs/ansible/play3.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
