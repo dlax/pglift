@@ -1,9 +1,12 @@
+import logging
 import sys
 from typing import Optional
 
 from . import systemd
 from .settings import PostgreSQLSettings, PrometheusSettings, Settings
 from .task import runner, task
+
+LOGGER = logging.getLogger(__name__)
 
 
 @task
@@ -71,14 +74,14 @@ def revert_postgresql_backup_systemd_templates(*, env: Optional[str] = None) -> 
 
 
 def do(settings: Settings, env: Optional[str] = None) -> None:
-    with runner():
+    with runner(LOGGER):
         postgresql_systemd_unit_template(settings.postgresql, env=env)
         postgres_exporter_systemd_unit_template(settings.prometheus)
         postgresql_backup_systemd_templates(env=env)
 
 
 def undo(settings: Settings) -> None:
-    with runner():
+    with runner(LOGGER):
         revert_postgresql_backup_systemd_templates()
         revert_postgres_exporter_systemd_unit_template(settings.prometheus)
         revert_postgresql_systemd_unit_template(settings.postgresql)
@@ -103,6 +106,8 @@ if __name__ == "__main__":  # pragma: nocover
         help="perform an uninstallation",
     )
     args = parser.parse_args()
+
+    logging.basicConfig(level="ERROR")
 
     if args.uninstall:
         undo(SETTINGS)

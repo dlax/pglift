@@ -41,7 +41,7 @@ def instance() -> None:
 @click.pass_obj
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
-    with runner():
+    with runner(ctx):
         instance_mod.apply(ctx, manifest.Instance.parse_yaml(file))
 
 
@@ -113,7 +113,7 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
 def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
     """Drop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    with runner():
+    with runner(ctx):
         instance_mod.drop(ctx, instance)
 
 
@@ -128,7 +128,7 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
     datadir') and exit with respective status code (0, 3, 4).
     """
     instance = get_instance(ctx.obj, name, version)
-    with runner():
+    with runner(ctx.obj):
         status = instance_mod.status(ctx.obj, instance)
     click.echo(status.name.replace("_", " "))
     ctx.exit(status.value)
@@ -141,7 +141,7 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
 def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Start a PostgreSQL instance"""
     instance = Instance.from_spec(get_instance(ctx, name, version))
-    with runner():
+    with runner(ctx):
         instance_mod.start(ctx, instance)
 
 
@@ -152,7 +152,7 @@ def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Stop a PostgreSQL instance"""
     instance = Instance.from_spec(get_instance(ctx, name, version))
-    with runner():
+    with runner(ctx):
         instance_mod.stop(ctx, instance)
 
 
@@ -163,7 +163,7 @@ def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Reload a PostgreSQL instance"""
     instance = Instance.from_spec(get_instance(ctx, name, version))
-    with runner():
+    with runner(ctx):
         instance_mod.reload(ctx, instance)
 
 
@@ -174,7 +174,7 @@ def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 def restart_instance(ctx: Context, name: str, version: Optional[str]) -> None:
     """Restart a PostgreSQL instance"""
     instance = Instance.from_spec(get_instance(ctx, name, version))
-    with runner():
+    with runner(ctx):
         instance_mod.restart(ctx, instance)
 
 
@@ -220,7 +220,7 @@ def role_schema() -> None:
 def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a role"""
     i = instance_lookup(ctx, instance)
-    with runner():
+    with runner(ctx):
         roles.apply(ctx, i, manifest.Role.parse_yaml(file))
 
 

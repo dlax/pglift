@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -65,3 +66,8 @@ def meminfo(tmp_path: Path) -> Path:
         )
     )
     return fpath
+
+
+@pytest.fixture
+def logger() -> logging.Logger:
+    return logging.getLogger()

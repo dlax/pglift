@@ -182,7 +182,7 @@ def run_module() -> None:
     confitems["port"] = module.params["port"]
     ssl = module.params["ssl"] or False
     try:
-        with runner():
+        with runner(ctx):
             if state == "absent":
                 if instance.exists():
                     if status == PGStatus.running:

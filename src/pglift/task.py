@@ -15,6 +15,8 @@ from typing import (
     cast,
 )
 
+from .types import Logger
+
 A = TypeVar("A", bound=Callable[..., Any])
 
 Call = Tuple["task", Tuple[Any, ...], Dict[str, Any]]
@@ -50,7 +52,7 @@ class task(Generic[A]):
 
 
 @contextlib.contextmanager
-def runner() -> Iterator[None]:
+def runner(logger: Logger) -> Iterator[None]:
     """Context manager handling possible revert of a chain to task calls."""
     if task._calls is not None:
         raise RuntimeError("inconsistent task state")
@@ -59,6 +61,7 @@ def runner() -> Iterator[None]:
     try:
         yield None
     except Exception as exc:
+        logger.exception(str(exc))
         while True:
             try:
                 t, args, kwargs = task._calls.pop()
