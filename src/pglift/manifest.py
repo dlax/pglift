@@ -85,13 +85,21 @@ class Instance(Manifest):
     """PostgreSQL instance"""
 
     class Prometheus(BaseModel):
-        port: int = 9187
-        """TCP port for the web interface and telemetry."""
+        port: int = Field(
+            default=9187,
+            description="TCP port for the web interface and telemetry of Prometheus",
+        )
 
     name: str
-    version: Optional[str] = None
-    port: Optional[int] = None
-    state: InstanceState = InstanceState.started
+    version: Optional[str] = Field(default=None, description="PostgreSQL version")
+    port: Optional[int] = Field(
+        default=None,
+        description="TCP port the postgresql instance will be listening to",
+    )
+    state: InstanceState = Field(
+        default=InstanceState.started,
+        description="Runtime state",
+    )
     ssl: Union[bool, Tuple[Path, Path]] = False
     configuration: Dict[str, Any] = Field(default_factory=dict)
 
