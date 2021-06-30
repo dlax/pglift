@@ -54,9 +54,19 @@ def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
 
 @contextmanager
 def connect(
-    instance: "Instance", role: "Role", *, dbname: str = "postgres"
+    instance: "Instance",
+    role: "Role",
+    *,
+    dbname: str = "postgres",
+    autocommit: bool = False,
 ) -> Iterator[psycopg2.extensions.connection]:
     """Connect to specified database of `instance` with `role`."""
     conninfo = dsn(instance, role, dbname=dbname)
-    with psycopg2.connect(conninfo) as conn:
+    conn = psycopg2.connect(conninfo)
+    if autocommit:
+        conn.autocommit = True
+        yield conn
+        return
+
+    with conn as conn:
         yield conn
