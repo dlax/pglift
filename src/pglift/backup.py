@@ -22,8 +22,7 @@ def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> N
     """Enable scheduled backup job for configured instance."""
     if ctx.settings.scheduler == "systemd":
         unit = systemd_timer(instance)
-        if not systemd.is_enabled(ctx, unit):
-            systemd.enable(ctx, unit)
+        systemd.enable(ctx, unit)
 
 
 @hookimpl  # type: ignore[misc]

@@ -108,9 +108,7 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> Instance:
 def revert_init(ctx: BaseContext, instance: InstanceSpec) -> Any:
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
-        unit = systemd_unit(instance)
-        if systemd.is_enabled(ctx, unit):
-            systemd.disable(ctx, unit, now=True)
+        systemd.disable(ctx, systemd_unit(instance), now=True)
 
     settings = ctx.settings.postgresql
     if instance.path.exists():

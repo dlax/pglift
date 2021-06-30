@@ -35,6 +35,9 @@ def is_enabled(ctx: BaseContext, unit: str) -> bool:
 
 
 def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
+    if is_enabled(ctx, unit):
+        ctx.debug("systemd unit %s already enabled, 'enable' action skipped", unit)
+        return
     cmd = ["systemctl", "--user", "enable", unit]
     if now:
         cmd.append("--now")
@@ -42,6 +45,9 @@ def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
 
 
 def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
+    if not is_enabled(ctx, unit):
+        ctx.debug("systemd unit %s not enabled, 'disable' action skipped", unit)
+        return
     cmd = ["systemctl", "--user", "disable", unit]
     if now:
         cmd.append("--now")
