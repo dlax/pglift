@@ -201,3 +201,9 @@ class Role(Manifest):
         default=False, description="add an entry in password file for this role"
     )
     state: State = Field(default=State.present, cli={"hide": True})
+
+
+class Database(Manifest):
+    """PostgreSQL database"""
+
+    name: str

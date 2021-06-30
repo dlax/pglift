@@ -7,4 +7,4 @@ Exceptions
    :members: object_type, show
 .. autoclass:: InstanceNotFound
 .. autoclass:: RoleNotFound
-
+.. autoclass:: DatabaseNotFound

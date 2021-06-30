@@ -24,3 +24,9 @@ class RoleNotFound(NotFound):
     """PostgreSQL role not found."""
 
     object_type = "role"
+
+
+class DatabaseNotFound(NotFound):
+    """PostgreSQL database not found."""
+
+    object_type = "database"
