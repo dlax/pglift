@@ -99,9 +99,10 @@ class Instance(Manifest):
     state: InstanceState = Field(
         default=InstanceState.started,
         description="Runtime state",
+        cli={"choices": [InstanceState.started.value, InstanceState.stopped.value]},
     )
-    ssl: Union[bool, Tuple[Path, Path]] = False
-    configuration: Dict[str, Any] = Field(default_factory=dict)
+    ssl: Union[bool, Tuple[Path, Path]] = Field(default=False, cli={"hide": True})
+    configuration: Dict[str, Any] = Field(default_factory=dict, cli={"hide": True})
 
     prometheus: Prometheus = Prometheus()
 

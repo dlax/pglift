@@ -10,7 +10,7 @@ from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import manifest as manifest_mod
 from pglift import pgbackrest, roles
-from pglift.cli import cli
+from pglift.cli import cli, instance_init
 from pglift.ctx import Context
 
 
@@ -22,6 +22,35 @@ def runner():
 def test_cli(runner, ctx):
     result = runner.invoke(cli, obj=ctx)
     assert result.exit_code == 0
+
+
+def test_instance_init(runner, ctx, instance):
+    assert [p.name for p in instance_init.params] == [
+        "name",
+        "version",
+        "port",
+        "state",
+        "prometheus_port",
+    ]
+
+    with patch.object(instance_mod, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["instance", "init", instance.name, f"--version={instance.version}"],
+            obj=ctx,
+        )
+    assert not apply.call_count
+    assert result.exit_code == 1
+    assert "instance already exists" in result.stdout
+
+    with patch.object(instance_mod, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["instance", "init", "new", "--port=1234"],
+            obj=ctx,
+        )
+    apply.assert_called_once_with(ctx, manifest_mod.Instance(name="new", port=1234))
+    assert result.exit_code == 0, result
 
 
 def test_instance_apply(tmp_path, runner, ctx):

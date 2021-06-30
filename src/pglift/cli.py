@@ -8,7 +8,7 @@ from tabulate import tabulate
 
 from . import exceptions
 from . import instance as instance_mod
-from . import manifest, pgbackrest, pm, roles
+from . import manifest, pgbackrest, pm, roles, uihelpers
 from .ctx import Context
 from .model import Instance, InstanceSpec
 from .settings import SETTINGS
@@ -35,6 +35,17 @@ def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
 @cli.group("instance")
 def instance() -> None:
     """Manipulate instances"""
+
+
+@instance.command("init")
+@uihelpers.parameters_from_model(manifest.Instance)
+@click.pass_obj
+def instance_init(ctx: Context, m: manifest.Instance) -> None:
+    """Initialize a PostgreSQL instance"""
+    if m.model(ctx).exists():
+        raise click.ClickException("instance already exists")
+    with runner(ctx):
+        instance_mod.apply(ctx, m)
 
 
 @instance.command("apply")
