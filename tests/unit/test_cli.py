@@ -198,15 +198,15 @@ def test_role_apply(runner, tmp_path, ctx, instance):
 
 
 def test_role_describe(runner, ctx, instance):
-    with patch.object(roles, "describe", return_value=None) as describe:
+    with patch.object(roles, "describe", side_effect=LookupError("absent")) as describe:
         result = runner.invoke(
             cli,
             ["role", "describe", str(instance), "absent"],
             obj=ctx,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
-    assert result.exit_code == 0
-    assert result.stdout == ""
+    assert result.exit_code == 1
+    assert result.stdout.strip() == "Error: role 'absent' not found"
 
     with patch.object(
         roles,
@@ -229,6 +229,16 @@ def test_role_describe(runner, ctx, instance):
 
 
 def test_role_drop(runner, ctx, instance):
+    with patch.object(roles, "drop", side_effect=LookupError("bar")) as drop:
+        result = runner.invoke(
+            cli,
+            ["role", "drop", str(instance), "foo"],
+            obj=ctx,
+        )
+    drop.assert_called_once_with(ctx, instance, "foo")
+    assert result.exit_code == 1
+    assert result.stdout.strip() == "Error: role 'bar' not found"
+
     with patch.object(roles, "drop") as drop:
         result = runner.invoke(
             cli,

@@ -1,10 +1,9 @@
 import builtins
 import contextlib
-import functools
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
@@ -25,31 +24,6 @@ from .ctx import BaseContext
 from .model import BaseInstance, Instance, InstanceSpec
 from .task import task
 from .types import ConfigChanges
-
-R = TypeVar("R")
-
-
-def bypass_absent_instance(
-    fn: Callable[[BaseContext, Instance], R]
-) -> Callable[[BaseContext, Union[InstanceSpec, Instance]], Optional[R]]:
-    """Bypass decorated function if `instance` argument is an InstanceSpec and
-    the underlying Instance does not exists.
-
-    A real Instance is then passed to the decorated function.
-    """
-
-    @functools.wraps(fn)
-    def wrapper(
-        ctx: BaseContext, instance: Union[InstanceSpec, Instance]
-    ) -> Optional[R]:
-        if isinstance(instance, InstanceSpec):
-            try:
-                instance = Instance.from_spec(instance)
-            except exceptions.InstanceNotFound:
-                return None
-        return fn(ctx, instance)
-
-    return wrapper
 
 
 def systemd_unit(instance: BaseInstance) -> str:
@@ -422,7 +396,9 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[In
     state = instance_manifest.state
 
     if state == States.absent:
-        drop(ctx, instance_spec)
+        if instance_spec.exists():
+            instance = Instance.from_spec(instance_spec)
+            drop(ctx, instance)
         return None
 
     if not instance_spec.exists():
@@ -456,11 +432,8 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[In
     return instance
 
 
-@bypass_absent_instance
 def describe(ctx: BaseContext, instance: Instance) -> manifest.Instance:
-    """Return an instance described as a manifest (or None if the instance
-    does not exists).
-    """
+    """Return an instance described as a manifest."""
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
@@ -475,12 +448,8 @@ def describe(ctx: BaseContext, instance: Instance) -> manifest.Instance:
     )
 
 
-@bypass_absent_instance
 def drop(ctx: BaseContext, instance: Instance) -> None:
-    """Drop an instance.
-
-    No-op if instance does not exist.
-    """
+    """Drop an instance."""
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
     revert_configure(ctx, instance)

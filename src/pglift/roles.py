@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pgtoolkit import pgpass
 
 from . import db, hookimpl, manifest
@@ -67,14 +65,13 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) ->
     set_pgpass_entry_for(ctx, instance, role_manifest)
 
 
-def describe(
-    ctx: BaseContext, instance: Instance, name: str
-) -> Optional[manifest.Role]:
-    """Return a role described as a manifest or None if no role with specified
-    'name' exists.
+def describe(ctx: BaseContext, instance: Instance, name: str) -> manifest.Role:
+    """Return a role described as a manifest.
+
+    :raises LookupError: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
-        return None
+        raise LookupError(name)
     role = manifest.Role(name=name)
     if has_password(ctx, instance, role):
         role = role.copy(update={"password": "<set>"})
@@ -86,10 +83,10 @@ def describe(
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a role from instance.
 
-    No-op if the role does not exists.
+    :raises LookupError: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
-        return
+        raise LookupError(name)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_drop", username=name))

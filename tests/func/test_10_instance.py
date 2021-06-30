@@ -7,7 +7,6 @@ from pgtoolkit.ctl import Status
 from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import manifest, systemd
-from pglift.model import InstanceSpec
 
 from . import reconfigure_instance
 
@@ -177,12 +176,6 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe_absent(ctx, installed, settings):
-    i = InstanceSpec("absent", "13", settings)
-    im = instance_mod.describe(ctx, i)
-    assert im is None
-
-
 def test_describe(ctx, instance, log_directory):
     i = instance
     im = instance_mod.describe(ctx, i)
@@ -195,11 +188,6 @@ def test_describe(ctx, instance, log_directory):
         assert config.pop("log_directory") == str(log_directory)
     assert config == {}
     assert im.state.name == "stopped"
-
-
-def test_drop_absent(ctx, installed, settings):
-    i = InstanceSpec("absent", "13", settings)
-    instance_mod.drop(ctx, i)
 
 
 def test_list(ctx, instance):

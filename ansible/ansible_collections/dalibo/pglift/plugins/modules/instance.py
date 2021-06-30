@@ -185,8 +185,9 @@ def run_module() -> None:
         with runner(ctx):
             if state == "absent":
                 if instance.exists():
+                    instance = model.Instance.from_spec(instance)
                     if status == PGStatus.running:
-                        instance_mod.stop(ctx, model.Instance.from_spec(instance))
+                        instance_mod.stop(ctx, instance)
                     instance_mod.drop(ctx, instance)
                     result["changed"] = True
             else:

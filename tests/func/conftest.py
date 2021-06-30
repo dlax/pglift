@@ -182,7 +182,6 @@ def instance_dropped(
     ctx: Context, instance: model.Instance
 ) -> Tuple[model.InstanceSpec, pgtoolkit.conf.Configuration]:
     config = instance.config()
-    spec = instance.as_spec()
     if instance.exists():
-        instance_mod.drop(ctx, spec)
-    return spec, config
+        instance_mod.drop(ctx, instance)
+    return instance.as_spec(), config

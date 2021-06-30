@@ -86,8 +86,7 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     described = instance_mod.describe(ctx, instance)
-    if described:
-        print(described.yaml(), end="")
+    print(described.yaml(), end="")
 
 
 @instance.command("list")
@@ -238,9 +237,11 @@ def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
 def role_describe(ctx: Context, instance: str, name: str) -> None:
     """Describe a role"""
     i = instance_lookup(ctx, instance)
-    described = roles.describe(ctx, i, name)
-    if described:
-        print(described.yaml(), end="")
+    try:
+        described = roles.describe(ctx, i, name)
+    except LookupError as e:
+        raise click.ClickException(f"role '{e}' not found")
+    print(described.yaml(), end="")
 
 
 @role.command("drop")
@@ -250,4 +251,7 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
 def role_drop(ctx: Context, instance: str, name: str) -> None:
     """Drop a role"""
     i = instance_lookup(ctx, instance)
-    roles.drop(ctx, i, name)
+    try:
+        roles.drop(ctx, i, name)
+    except LookupError as e:
+        raise click.ClickException(f"role '{e}' not found")

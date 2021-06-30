@@ -94,7 +94,8 @@ def test_apply(ctx, instance):
 
 
 def test_describe(ctx, instance, role_factory):
-    assert roles.describe(ctx, instance, "absent") is None
+    with pytest.raises(LookupError, match="absent"):
+        roles.describe(ctx, instance, "absent")
 
     postgres = roles.describe(ctx, instance, "postgres")
     assert postgres is not None
@@ -107,7 +108,8 @@ def test_describe(ctx, instance, role_factory):
 
 
 def test_drop(ctx, instance, role_factory):
-    roles.drop(ctx, instance, "dropping_absent")
+    with pytest.raises(LookupError, match="dropping_absent"):
+        roles.drop(ctx, instance, "dropping_absent")
     role_factory("dropme")
     roles.drop(ctx, instance, "dropme")
     assert not roles.exists(ctx, instance, "dropme")
