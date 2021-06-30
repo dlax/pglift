@@ -13,8 +13,8 @@ Install the project in a Python3 virtualenv:
 ::
 
     $ python3 -m venv .venv
-    $ .venv/bin/activate
-    (.venv) $ pip install -e .[dev,test]
+    $ . .venv/bin/activate
+    (.venv) $ pip install -e ".[dev,test]"
 
 Running tests
 -------------
