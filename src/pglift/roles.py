@@ -1,6 +1,6 @@
 from pgtoolkit import pgpass
 
-from . import db, hookimpl, manifest
+from . import db, exceptions, hookimpl, manifest
 from .ctx import BaseContext
 from .model import Instance
 from .types import ConfigChanges, Role
@@ -68,10 +68,10 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) ->
 def describe(ctx: BaseContext, instance: Instance, name: str) -> manifest.Role:
     """Return a role described as a manifest.
 
-    :raises LookupError: if no role with specified 'name' exists.
+    :raises ~exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
-        raise LookupError(name)
+        raise exceptions.RoleNotFound(name)
     role = manifest.Role(name=name)
     if has_password(ctx, instance, role):
         role = role.copy(update={"password": "<set>"})
@@ -83,10 +83,10 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> manifest.Role:
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a role from instance.
 
-    :raises LookupError: if no role with specified 'name' exists.
+    :raises ~exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
-        raise LookupError(name)
+        raise exceptions.RoleNotFound(name)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_drop", username=name))

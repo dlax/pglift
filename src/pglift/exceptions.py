@@ -18,3 +18,9 @@ class InstanceNotFound(NotFound):
     """PostgreSQL instance not found or mis-configured."""
 
     object_type = "instance"
+
+
+class RoleNotFound(NotFound):
+    """PostgreSQL role not found."""
+
+    object_type = "role"

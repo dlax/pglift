@@ -6,6 +6,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import manifest as manifest_mod
 from pglift import pgbackrest, roles
@@ -198,7 +199,9 @@ def test_role_apply(runner, tmp_path, ctx, instance):
 
 
 def test_role_describe(runner, ctx, instance):
-    with patch.object(roles, "describe", side_effect=LookupError("absent")) as describe:
+    with patch.object(
+        roles, "describe", side_effect=exceptions.RoleNotFound("absent")
+    ) as describe:
         result = runner.invoke(
             cli,
             ["role", "describe", str(instance), "absent"],
@@ -229,7 +232,9 @@ def test_role_describe(runner, ctx, instance):
 
 
 def test_role_drop(runner, ctx, instance):
-    with patch.object(roles, "drop", side_effect=LookupError("bar")) as drop:
+    with patch.object(
+        roles, "drop", side_effect=exceptions.RoleNotFound("bar")
+    ) as drop:
         result = runner.invoke(
             cli,
             ["role", "drop", str(instance), "foo"],

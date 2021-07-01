@@ -1,6 +1,7 @@
 import pytest
 from pydantic import SecretStr
 
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import manifest, roles, types
 
@@ -94,7 +95,7 @@ def test_apply(ctx, instance):
 
 
 def test_describe(ctx, instance, role_factory):
-    with pytest.raises(LookupError, match="absent"):
+    with pytest.raises(exceptions.RoleNotFound, match="absent"):
         roles.describe(ctx, instance, "absent")
 
     postgres = roles.describe(ctx, instance, "postgres")
@@ -108,7 +109,7 @@ def test_describe(ctx, instance, role_factory):
 
 
 def test_drop(ctx, instance, role_factory):
-    with pytest.raises(LookupError, match="dropping_absent"):
+    with pytest.raises(exceptions.RoleNotFound, match="dropping_absent"):
         roles.drop(ctx, instance, "dropping_absent")
     role_factory("dropme")
     roles.drop(ctx, instance, "dropme")

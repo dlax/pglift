@@ -239,8 +239,8 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
     i = instance_lookup(ctx, instance)
     try:
         described = roles.describe(ctx, i, name)
-    except LookupError as e:
-        raise click.ClickException(f"role '{e}' not found")
+    except exceptions.RoleNotFound as e:
+        raise click.ClickException(e.show())
     print(described.yaml(), end="")
 
 
@@ -253,5 +253,5 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
     i = instance_lookup(ctx, instance)
     try:
         roles.drop(ctx, i, name)
-    except LookupError as e:
-        raise click.ClickException(f"role '{e}' not found")
+    except exceptions.RoleNotFound as e:
+        raise click.ClickException(e.show())
