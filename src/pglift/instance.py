@@ -174,13 +174,12 @@ def configure(
 
     if not isinstance(instance, Instance):
         instance = Instance.from_spec(instance)
+    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance, changes=changes)
 
     i_config = instance.config()
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(instance, logdir)
-
-    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance, changes=changes)
 
     return changes
 
