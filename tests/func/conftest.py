@@ -173,7 +173,6 @@ def instance(
     configure_instance(
         ctx, i, port=port, socket_path=tmp_path, log_directory=str(log_directory)
     )
-    assert i.config()
     return i
 
 

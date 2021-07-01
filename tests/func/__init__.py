@@ -20,7 +20,6 @@ def configure_instance(
 ) -> None:
     if port is None or socket_path is None:
         config = i.config()
-        assert config is not None
         if port is None:
             port = config.port  # type: ignore[assignment]
         if not socket_path:
