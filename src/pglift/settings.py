@@ -81,10 +81,15 @@ class PostgreSQLVersionSettings(BaseSettings):
 
 
 def _postgresql_bindir() -> str:
-    prefix = Path("/usr/lib")
-    for name in ("postgresql", "pgsql"):
-        if (prefix / name).exists():
-            return str(prefix / name / "{version}" / "bin")
+    usrdir = Path("/usr")
+    for version in POSTGRESQL_SUPPORTED_VERSIONS:
+        # Debian packages
+        if (usrdir / "lib" / "postgresql" / version).exists():
+            return str(usrdir / "lib" / "postgresql" / "{version}" / "bin")
+
+        # RPM packages from the PGDG
+        if (usrdir / f"pgsql-{version}").exists():
+            return str(usrdir / "pgsql-{version}" / "bin")
     else:
         raise EnvironmentError("no PostgreSQL installation found")
 
