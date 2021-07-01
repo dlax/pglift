@@ -3,5 +3,7 @@
 Exceptions
 ==========
 
+.. autoclass:: NotFound
+   :members: object_type, show
 .. autoclass:: InstanceNotFound
 

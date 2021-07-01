@@ -64,7 +64,7 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
             spec = InstanceSpec.default_version(name, ctx)
         return Instance.from_spec(spec)
     except exceptions.InstanceNotFound as e:
-        raise click.ClickException(f"instance {e} not found")
+        raise click.ClickException(e.show())
     except Exception as e:
         raise click.ClickException(str(e))
 
