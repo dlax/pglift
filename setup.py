@@ -48,6 +48,7 @@ setup(
         "humanize",
         "pgtoolkit >= 0.17.0",
         "pluggy",
+        "psycopg2",
         "pydantic",
         "tabulate",
         "typing-extensions",
@@ -64,7 +65,6 @@ setup(
         + extras_typing,
         "test": [
             "port-for",
-            "psycopg2-binary",
             "pytest",
             "pytest-cov",
             "requests",
@@ -72,7 +72,6 @@ setup(
         ],
         "typing": extras_typing,
         "docs": [
-            "psycopg2-binary",
             "sphinx",
         ],
     },
