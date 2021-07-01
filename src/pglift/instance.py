@@ -22,14 +22,14 @@ def systemd_unit(instance: BaseInstance) -> str:
 
 
 @task
-def init(ctx: BaseContext, instance: InstanceSpec) -> Instance:
+def init(ctx: BaseContext, instance: InstanceSpec) -> None:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
     initdb_settings = settings.initdb
     surole = settings.surole
     try:
         if instance.exists():
-            return Instance.from_spec(instance)
+            return None
     except LookupError as exc:
         raise Exception(f"instance lookup failed: {exc}")
 
@@ -59,11 +59,11 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> Instance:
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
 
-    return Instance.from_spec(instance)
+    return None
 
 
 @init.revert
-def revert_init(ctx: BaseContext, instance: InstanceSpec) -> Any:
+def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
         systemd.disable(ctx, systemd_unit(instance), now=True)
@@ -83,7 +83,7 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> Any:
 @task
 def configure(
     ctx: BaseContext,
-    instance: Instance,
+    instance: Union[InstanceSpec, Instance],
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **confitems: Any,
@@ -172,6 +172,9 @@ def configure(
     make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
+    if not isinstance(instance, Instance):
+        instance = Instance.from_spec(instance)
+
     i_config = instance.config()
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
@@ -185,7 +188,7 @@ def configure(
 @configure.revert
 def revert_configure(
     ctx: BaseContext,
-    instance: Instance,
+    instance: Union[InstanceSpec, Instance],
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **kwargs: Any,
@@ -193,10 +196,11 @@ def revert_configure(
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
-    i_config = instance.config()
-    if "log_directory" in i_config:
-        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        conf.remove_log_directory(instance, logdir)
+    if isinstance(instance, Instance):
+        i_config = instance.config()
+        if "log_directory" in i_config:
+            logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
+            conf.remove_log_directory(instance, logdir)
 
     configdir = instance.datadir
     confd, include = conf.info(configdir)
@@ -391,17 +395,16 @@ def apply(
         return None
 
     if not instance_spec.exists():
-        instance = init(ctx, instance_spec)
-    else:
-        instance = Instance.from_spec(instance_spec)
+        init(ctx, instance_spec)
     configure_options = instance_manifest.configuration or {}
     changes = configure(
         ctx,
-        instance,
+        instance_spec,
         ssl=instance_manifest.ssl,
         port=instance_manifest.port,
         **configure_options,
     )
+    instance = Instance.from_spec(instance_spec)
 
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:

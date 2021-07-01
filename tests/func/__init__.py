@@ -1,28 +1,29 @@
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator, Optional, Tuple, overload
+from typing import Any, Iterator, Optional, Tuple, Union, overload
 
 from typing_extensions import Literal
 
 from pglift import db
 from pglift import instance as instance_mod
 from pglift.ctx import BaseContext
-from pglift.models.system import Instance
+from pglift.models.system import Instance, InstanceSpec
 
 
 def configure_instance(
     ctx: BaseContext,
-    i: Instance,
+    i: Union[Instance, InstanceSpec],
     *,
     port: Optional[int] = None,
     socket_path: Optional[Path] = None,
     **confitems: Any
 ) -> None:
     if port is None or socket_path is None:
-        config = i.config()
+        assert isinstance(i, Instance)
         if port is None:
-            port = config.port  # type: ignore[assignment]
+            port = i.port
         if not socket_path:
+            config = i.config()
             socket_path = Path(config.unix_socket_directories)  # type: ignore[arg-type]
     instance_mod.configure(
         ctx, i, port=port, unix_socket_directories=str(socket_path), **confitems

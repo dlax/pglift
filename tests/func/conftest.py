@@ -149,11 +149,11 @@ def instance_spec(
 @pytest.fixture(scope="session")
 def instance_initialized(
     ctx: Context, instance_spec: system.InstanceSpec, installed: None
-) -> system.Instance:
+) -> system.InstanceSpec:
     assert instance_mod.status(ctx, instance_spec) == Status.unspecified_datadir
-    i = instance_mod.init(ctx, instance_spec)
-    assert instance_mod.status(ctx, i) == Status.not_running
-    return i
+    instance_mod.init(ctx, instance_spec)
+    assert instance_mod.status(ctx, instance_spec) == Status.not_running
+    return instance_spec
 
 
 @pytest.fixture(scope="session")
@@ -164,7 +164,7 @@ def log_directory(tmp_path_factory):
 @pytest.fixture(scope="session")
 def instance(
     ctx: Context,
-    instance_initialized: system.Instance,
+    instance_initialized: system.InstanceSpec,
     tmp_port_factory: Iterator[int],
     tmp_path_factory: pytest.TempPathFactory,
     log_directory: pathlib.Path,
@@ -175,7 +175,7 @@ def instance(
     configure_instance(
         ctx, i, port=port, socket_path=tmp_path, log_directory=str(log_directory)
     )
-    return i
+    return system.Instance.from_spec(i)
 
 
 @pytest.fixture(scope="session")
