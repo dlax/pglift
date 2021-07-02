@@ -13,11 +13,10 @@ pglift provides a CLI that can be used as follows:
     Deploy production-ready instances of PostgreSQL
 
     Options:
-      --help  Show this message and exit.
+      ...
 
     Commands:
-      install   Manage installation of extra data files
-      instance  Manipulate instances via CLI
+      ...
 
 For example, you can describe an instance using the following command:
 
