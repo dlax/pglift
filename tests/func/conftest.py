@@ -9,7 +9,7 @@ import port_for
 import pytest
 from pgtoolkit.ctl import Status
 
-from pglift import install
+from pglift import _install
 from pglift import instance as instance_mod
 from pglift import model, pm
 from pglift.ctx import Context
@@ -96,25 +96,26 @@ def pg_version(request, settings):
 
 
 @pytest.fixture(scope="session")
-def installed(settings, tmp_path_factory):
+def ctx(settings):
+    p = pm.PluginManager.get()
+    p.trace.root.setwriter(print)
+    p.enable_tracing()
+    return Context(plugin_manager=p, settings=settings)
+
+
+@pytest.fixture(scope="session")
+def installed(ctx, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("config")
+    settings = ctx.settings
     if settings.service_manager != "systemd":
         yield
         return
 
     custom_settings = tmp_path / "settings.json"
     custom_settings.write_text(settings.json())
-    install.do(settings, env=f"SETTINGS=@{custom_settings}")
+    _install.do(ctx, env=f"SETTINGS=@{custom_settings}")
     yield
-    install.undo(settings)
-
-
-@pytest.fixture(scope="session")
-def ctx(settings):
-    p = pm.PluginManager.get()
-    p.trace.root.setwriter(print)
-    p.enable_tracing()
-    return Context(plugin_manager=p, settings=settings)
+    _install.undo(ctx)
 
 
 @pytest.fixture(scope="session")

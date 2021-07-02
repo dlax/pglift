@@ -1,12 +1,13 @@
 import json
 import logging
-from typing import IO, Optional
+from typing import IO, Optional, Union
 
 import click
 import pydantic.json
 from tabulate import tabulate
+from typing_extensions import Literal
 
-from . import exceptions
+from . import _install, exceptions
 from . import instance as instance_mod
 from . import manifest, pgbackrest, pm, roles, uihelpers
 from .ctx import Context
@@ -30,6 +31,29 @@ def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
 
     if not ctx.obj:
         ctx.obj = Context(plugin_manager=pm.PluginManager.get(), settings=SETTINGS)
+
+
+@cli.command(
+    "site-configure",
+    hidden=True,
+    help="Manage installation of extra data files for pglift.\n\nThis is an INTERNAL command.",
+)
+@click.argument(
+    "action", type=click.Choice(["install", "uninstall"]), default="install"
+)
+@click.option("--settings", type=click.Path(exists=True), help="custom settings file")
+@click.pass_obj
+def site_configure(
+    ctx: Context,
+    action: Union[Literal["install"], Literal["uninstall"]],
+    settings: Optional[str],
+) -> None:
+    if action == "install":
+        if settings:
+            env = f"SETTINGS=@{settings}"
+        _install.do(ctx, env=env)
+    elif action == "uninstall":
+        _install.undo(ctx)
 
 
 @cli.group("instance")

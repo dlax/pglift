@@ -46,7 +46,7 @@ particular):
 
 ::
 
-    (.venv) $ python -m pglift.install --settings=$settings
+    (.venv) $ pglift site-configure install --settings=$settings
 
 Finally, run:
 

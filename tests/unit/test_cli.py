@@ -6,7 +6,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
-from pglift import exceptions
+from pglift import _install, exceptions
 from pglift import instance as instance_mod
 from pglift import manifest as manifest_mod
 from pglift import pgbackrest, roles
@@ -22,6 +22,20 @@ def runner():
 def test_cli(runner, ctx):
     result = runner.invoke(cli, obj=ctx)
     assert result.exit_code == 0
+
+
+def test_site_configure(runner, ctx, tmp_path):
+    with patch.object(_install, "do") as do_install:
+        result = runner.invoke(
+            cli, ["site-configure", "install", f"--settings={tmp_path}"], obj=ctx
+        )
+    assert result.exit_code == 0, result
+    do_install.assert_called_once_with(ctx, env=f"SETTINGS=@{tmp_path}")
+
+    with patch.object(_install, "undo") as undo_install:
+        result = runner.invoke(cli, ["site-configure", "uninstall"], obj=ctx)
+    assert result.exit_code == 0, result
+    undo_install.assert_called_once_with(ctx)
 
 
 def test_instance_init(runner, ctx, instance):
