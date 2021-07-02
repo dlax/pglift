@@ -120,7 +120,7 @@ from ansible.module_utils.basic import AnsibleModule
 from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
 from pglift.instance import Status as PGStatus
-from pglift.models import system
+from pglift.models import helpers, interface, system
 from pglift.pm import PluginManager
 from pglift.settings import SETTINGS
 from pglift.task import runner
@@ -128,31 +128,8 @@ from pglift.task import runner
 
 def run_module() -> None:
     settings = SETTINGS
-    module_args = {
-        "name": {"type": "str", "required": True},
-        "version": {
-            "type": "str",
-            "required": False,
-            "choices": list(settings.postgresql.versions),
-        },
-        "port": {
-            "type": "int",
-            "required": False,
-        },
-        "state": {
-            "type": "str",
-            "choices": ["started", "stopped", "absent"],
-            "default": "started",
-        },
-        "ssl": {
-            "type": "bool",  # XXX or type: list
-            "required": False,
-            "default": False,
-        },
-        "configuration": {"type": "dict", "required": False},
-        "prometheus_port": {"type": "int", "required": False, "default": 9187},
-    }
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    argspec = helpers.argspec_from_model(interface.Instance)
+    module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
     prometheus = system.PrometheusService(port=module.params["prometheus_port"])
