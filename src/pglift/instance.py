@@ -146,7 +146,7 @@ def configure(
     if site_config_template.exists():
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
-    def format_memory_values(
+    def format_values(
         confitems: Dict[str, Any], memtotal: float = util.total_memory()
     ) -> None:
         for k in ("shared_buffers", "effective_cache_size"):
@@ -158,9 +158,12 @@ def configure(
                 confitems[k] = util.percent_memory(v, memtotal)
             except ValueError:
                 pass
+        for k, v in confitems.items():
+            if isinstance(v, str):
+                confitems[k] = v.format(settings=ctx.settings.postgresql)
 
-    format_memory_values(confitems)
-    format_memory_values(site_confitems)
+    format_values(confitems)
+    format_values(site_confitems)
 
     def make_config(fpath: Path, items: Dict[str, Any]) -> ConfigChanges:
         config = conf.make(instance.name, **items)

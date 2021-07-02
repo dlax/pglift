@@ -230,6 +230,9 @@ class PostgreSQLSettings(BaseSettings):
     pid_directory: RunPath = RunPath("postgresql")
     """Path to directory where postgres process PID file will be written."""
 
+    socket_directory: RunPath = RunPath("postgresql")
+    """Path to directory where postgres unix socket will be written."""
+
 
 @frozen
 class PgBackRestSettings(BaseSettings):

@@ -90,6 +90,10 @@ def test_configure(ctx_nohook, instance):
     assert "cluster_name = 'test'" in site_config.splitlines()
     assert re.search(r"shared_buffers = '\d+ [kMGT]?B'", site_config)
     assert "effective_cache_size" in site_config
+    assert (
+        f"unix_socket_directories = '{ctx.settings.prefix}/run/postgresql'"
+        in site_config
+    )
 
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
