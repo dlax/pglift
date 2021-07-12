@@ -38,12 +38,18 @@ class Address(BaseModel):
         ansible={"choices": [Country.France.value, Country.UnitedKindom.value]},
     )
 
+    class Config:
+        extra = "forbid"
+
 
 class Person(BaseModel):
     name: str
     gender: Optional[Gender]
     age: Optional[int] = Field(description="age")
     address: Optional[Address]
+
+    class Config:
+        extra = "forbid"
 
 
 def test_parameters_from_model():
