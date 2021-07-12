@@ -29,7 +29,7 @@ def _decorators_from_model(
                 try:
                     choices = cli_config["choices"]
                 except KeyError:
-                    choices = [v.name for v in field.type_.__members__.values()]
+                    choices = [v.name for v in field.type_]
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(field.type_, pydantic.BaseModel):
                 yield from _decorators_from_model(field.type_, _prefix=field.name)
