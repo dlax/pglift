@@ -172,12 +172,20 @@ class Instance(Manifest):
 
     def model(self, ctx: BaseContext) -> system_model.InstanceSpec:
         """Return a model Instance matching this manifest."""
+        prometheus = system_model.PrometheusService(port=self.prometheus.port)
         if self.version is not None:
             return system_model.InstanceSpec(
-                self.name, self.version, settings=ctx.settings
+                self.name,
+                self.version,
+                settings=ctx.settings,
+                prometheus=prometheus,
             )
         else:
-            return system_model.InstanceSpec.default_version(self.name, ctx)
+            return system_model.InstanceSpec.default_version(
+                self.name,
+                ctx,
+                prometheus=prometheus,
+            )
 
 
 class Role(Manifest):
