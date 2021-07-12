@@ -374,14 +374,14 @@ def reload(
 
 def apply(
     ctx: BaseContext, instance_manifest: interface.Instance
-) -> Optional[Instance]:
+) -> Optional[Tuple[Instance, ConfigChanges]]:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
     instance may be created or updated or dropped.
 
-    Unless the target state is 'absent' an :class:`~pglift.model.Instance`
-    object is returned.
+    Unless the target state is 'absent', return an
+    :class:`~pglift.model.Instance` object along with configuration changes.
 
     If configuration changes are detected and the instance was previously
     running, it will be reloaded. Note that some changes require a full
@@ -425,7 +425,7 @@ def apply(
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
-    return instance
+    return instance, changes
 
 
 def describe(ctx: BaseContext, instance: Instance) -> interface.Instance:

@@ -148,21 +148,30 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
         configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
     )
-    i = instance_mod.apply(ctx, im)
+    r = instance_mod.apply(ctx, im)
+    assert r is not None
+    i, changes = r
     assert i is not None
     assert i.exists()
     assert i.port == port
+    assert changes["port"] == (None, port)
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
 
     assert instance_mod.status(ctx, i) == Status.not_running
     im.state = interface.InstanceState.started
-    instance_mod.apply(ctx, im)
+    r = instance_mod.apply(ctx, im)
+    assert r is not None
+    i, changes = r
+    assert not changes
     assert instance_mod.status(ctx, i) == Status.running
 
     im.configuration["bonjour"] = False
-    instance_mod.apply(ctx, im)
+    r = instance_mod.apply(ctx, im)
+    assert r is not None
+    i, changes = r
+    assert changes == {"bonjour": (None, False)}
     assert instance_mod.status(ctx, i) == Status.running
 
     im.state = interface.InstanceState.stopped
@@ -170,7 +179,8 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert instance_mod.status(ctx, i) == Status.not_running
 
     im.state = interface.InstanceState.absent
-    instance_mod.apply(ctx, im)
+    r = instance_mod.apply(ctx, im)
+    assert r is None
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()
     assert not i.as_spec().exists()
