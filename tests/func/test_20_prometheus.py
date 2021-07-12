@@ -35,7 +35,7 @@ def test(ctx, installed, instance, tmp_port_factory):
     queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
     assert queriespath.exists()
 
-    @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))  # type: ignore[no-untyped-call]
+    @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
     def request_metrics() -> requests.Response:
         return requests.get(f"http://0.0.0.0:{port}/metrics")
 

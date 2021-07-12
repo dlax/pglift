@@ -68,7 +68,7 @@ setup(
             "pytest",
             "pytest-cov",
             "requests",
-            "tenacity",
+            "tenacity >= 8.0.0",
         ],
         "typing": extras_typing,
         "docs": [
