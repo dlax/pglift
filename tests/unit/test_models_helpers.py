@@ -96,6 +96,31 @@ def test_parameters_from_model():
     }
 
 
+def test_parse_params_as():
+    params = {
+        "name": "alice",
+        "age": 42,
+        "gender": "F",
+        "address": {
+            "city": "paris",
+            "country": "fr",
+            "street": "bd montparnasse",
+            "zipcode": 0,
+        },
+    }
+    assert helpers.parse_params_as(Person, params) == Person(
+        name="alice",
+        age=42,
+        gender=Gender.F,
+        address=Address(
+            street="bd montparnasse",
+            zipcode=0,
+            city="paris",
+            country=Country.France,
+        ),
+    )
+
+
 def test_argspec_from_model():
     argspec = helpers.argspec_from_model(Person)
     assert argspec == {

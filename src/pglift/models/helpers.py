@@ -1,6 +1,6 @@
 import enum
 import functools
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Type, Union
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Type, TypeVar, Union
 
 import click
 import pydantic
@@ -9,6 +9,20 @@ from typing_extensions import TypedDict
 
 Callback = Callable[..., None]
 ModelType = Type[pydantic.BaseModel]
+T = TypeVar("T", bound=pydantic.BaseModel)
+
+
+def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
+    obj: Dict[str, Any] = {}
+    for k, v in params.items():
+        if v is None:
+            continue
+        if "_" in k:
+            k, kk = k.split("_", 1)
+            obj.setdefault(k, {})[kk] = v
+        else:
+            obj[k] = v
+    return model_type.parse_obj(obj)
 
 
 def _decorators_from_model(
@@ -53,16 +67,7 @@ def parameters_from_model(
     def decorator(f: Callback) -> Callback:
         @functools.wraps(f)
         def callback(**kwargs: Any) -> None:
-            obj = {}  # type: ignore[var-annotated]
-            for k, v in kwargs.items():
-                if v is None:
-                    continue
-                if "_" in k:
-                    k, kk = k.split("_", 1)
-                    obj.setdefault(k, {})[kk] = v
-                else:
-                    obj[k] = v
-            model = model_type.parse_obj(obj)
+            model = parse_params_as(model_type, kwargs)
             return f(model)
 
         cb = callback
