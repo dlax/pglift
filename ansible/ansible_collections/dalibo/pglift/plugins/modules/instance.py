@@ -99,18 +99,9 @@ instance:
   description: Fully qualified name of the instance
   type: str
   returned: always
-datadir:
-  description: Path to PostgreSQL server instance data directory
-  type: str
-  returned: always
-waldir:
-  description: Path to PostgreSQL server instance WAL directory
-  type: str
-  returned: always
 configuration_changes:
   description: Changes to PostgreSQL instance configuration
   type: dict
-  returned: always
 """
 
 from typing import Any, Dict
@@ -119,8 +110,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
-from pglift.instance import Status as PGStatus
-from pglift.models import helpers, interface, system
+from pglift.models import helpers, interface
 from pglift.pm import PluginManager
 from pglift.settings import SETTINGS
 from pglift.task import runner
@@ -130,61 +120,34 @@ def run_module() -> None:
     settings = SETTINGS
     argspec = helpers.argspec_from_model(interface.Instance)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
-
+    m = helpers.parse_params_as(interface.Instance, module.params)
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
-    prometheus = system.PrometheusService(port=module.params["prometheus_port"])
-    instance: system.BaseInstance
-    if module.params["version"]:
-        instance = system.InstanceSpec(
-            name=module.params["name"],
-            version=module.params["version"],
-            settings=settings,
-            prometheus=prometheus,
-        )
-    else:
-        instance = system.InstanceSpec.default_version(
-            module.params["name"], prometheus=prometheus, ctx=ctx
-        )
-    result = {"changed": False, "instance": str(instance)}
+
+    result = {"changed": False, "instance": str(m)}
 
     if module.check_mode:
         module.exit_json(**result)
 
-    result["state"] = state = module.params["state"]
+    instance_exists = m.model(ctx).exists()
 
-    status = instance_mod.status(ctx, instance)
-    confitems = module.params["configuration"] or {}
-    if "port" in confitems:
-        module.fail_json(msg="port should not be specified in configuration field")
-    confitems["port"] = module.params["port"]
-    ssl = module.params["ssl"] or False
     try:
         with runner(ctx):
-            if state == "absent":
-                if instance.exists():
-                    instance = system.Instance.from_spec(instance)
-                    if status == PGStatus.running:
-                        instance_mod.stop(ctx, instance)
-                    instance_mod.drop(ctx, instance)
-                    result["changed"] = True
-            else:
-                result["changed"] = not instance.exists()
-                instance = instance_mod.init(ctx, instance)
-                result["datadir"] = str(instance.datadir)
-                result["waldir"] = str(instance.waldir)
-                result["configuration_changes"] = instance_mod.configure(
-                    ctx, instance, ssl=ssl, **confitems
-                )
-                result["changed"] = result["changed"] or result["configuration_changes"]
-                status = instance_mod.status(ctx, instance)
-                if state == "started" and status == PGStatus.not_running:
-                    instance_mod.start(ctx, instance)
-                    result["changed"] = True
-                elif state == "stopped" and status == PGStatus.running:
-                    instance_mod.stop(ctx, instance)
-                    result["changed"] = True
+            instance_and_changes = instance_mod.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
+
+    if instance_exists:
+        if not instance_and_changes:  # Dropped
+            result["changed"] = True
+        else:
+            instance, changes = instance_and_changes
+            if changes:
+                result["changed"] = True
+                result["configuration_changes"] = changes
+    elif instance_and_changes:  # Created
+        instance, changes = instance_and_changes
+        result["changed"] = True
+        result["configuration_changes"] = changes
 
     if module._diff:
         diff: Dict[str, Any] = {}
