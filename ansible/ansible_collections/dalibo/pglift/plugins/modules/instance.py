@@ -106,6 +106,7 @@ configuration_changes:
 
 from typing import Any, Dict
 
+import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
@@ -120,7 +121,12 @@ def run_module() -> None:
     settings = SETTINGS
     argspec = helpers.argspec_from_model(interface.Instance)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
-    m = helpers.parse_params_as(interface.Instance, module.params)
+
+    try:
+        m = helpers.parse_params_as(interface.Instance, module.params)
+    except pydantic.ValidationError as exc:
+        module.fail_json("; ".join(e["msg"] for e in exc.errors()))
+
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
 
     result = {"changed": False, "instance": str(m)}
