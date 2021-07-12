@@ -9,7 +9,7 @@ cleanup () (
     set +e
     ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
     unset -v SETTINGS
-    pglift site-configure --uninstall
+    pglift site-configure uninstall
     rm -rf "$tmpdir"
 )
 trap cleanup EXIT INT
