@@ -7,7 +7,7 @@ from typing_extensions import Literal
 from pglift import db
 from pglift import instance as instance_mod
 from pglift.ctx import BaseContext
-from pglift.model import Instance
+from pglift.models.system import Instance
 
 
 def configure_instance(

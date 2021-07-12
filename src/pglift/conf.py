@@ -8,7 +8,7 @@ from pgtoolkit import conf as pgconf
 from . import __name__ as pkgname
 
 if TYPE_CHECKING:
-    from .model import Instance
+    from .models.system import Instance
 
 
 def make(instance: str, **confitems: Any) -> pgconf.Configuration:

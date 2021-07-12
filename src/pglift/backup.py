@@ -2,7 +2,7 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext, Context
-from .model import Instance
+from .models.system import Instance
 from .pgbackrest import BackupType, backup
 
 

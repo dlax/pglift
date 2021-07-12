@@ -2,10 +2,11 @@ import io
 
 import yaml
 
-from pglift import manifest, util
+from pglift import util
+from pglift.models import interface
 
 
-class Point(manifest.Manifest):
+class Point(interface.Manifest):
     x: float
     y: float
 
@@ -25,7 +26,7 @@ def test_yaml():
 
 
 def test_instance_model(ctx):
-    i = manifest.Instance(name="test", version="12").model(ctx)
+    i = interface.Instance(name="test", version="12").model(ctx)
     assert str(i) == "12/test"
-    i = manifest.Instance(name="test").model(ctx)
+    i = interface.Instance(name="test").model(ctx)
     assert str(i) == f"{util.short_version(ctx.pg_ctl(None).version)}/test"

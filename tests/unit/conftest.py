@@ -5,7 +5,7 @@ import pytest
 
 from pglift import pm
 from pglift.ctx import Context
-from pglift.model import Instance
+from pglift.models.system import Instance
 from pglift.settings import Settings
 
 

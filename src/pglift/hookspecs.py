@@ -2,7 +2,7 @@ import pluggy
 
 from . import __name__ as pkgname
 from .ctx import BaseContext
-from .model import Instance
+from .models.system import Instance
 from .types import ConfigChanges
 
 hookspec = pluggy.HookspecMarker(pkgname)

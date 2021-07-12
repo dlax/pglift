@@ -7,7 +7,7 @@ from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
 from pglift import task
-from pglift.model import InstanceSpec
+from pglift.models.system import InstanceSpec
 
 
 def test_init_lookup_failed(pg_version, settings, ctx):

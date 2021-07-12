@@ -118,9 +118,9 @@ from typing import Any, Dict
 from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
-from pglift import model
 from pglift.ansible import AnsibleContext
 from pglift.instance import Status as PGStatus
+from pglift.models import system
 from pglift.pm import PluginManager
 from pglift.settings import SETTINGS
 from pglift.task import runner
@@ -155,17 +155,17 @@ def run_module() -> None:
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
 
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
-    prometheus = model.PrometheusService(port=module.params["prometheus_port"])
-    instance: model.BaseInstance
+    prometheus = system.PrometheusService(port=module.params["prometheus_port"])
+    instance: system.BaseInstance
     if module.params["version"]:
-        instance = model.InstanceSpec(
+        instance = system.InstanceSpec(
             name=module.params["name"],
             version=module.params["version"],
             settings=settings,
             prometheus=prometheus,
         )
     else:
-        instance = model.InstanceSpec.default_version(
+        instance = system.InstanceSpec.default_version(
             module.params["name"], prometheus=prometheus, ctx=ctx
         )
     result = {"changed": False, "instance": str(instance)}
@@ -185,7 +185,7 @@ def run_module() -> None:
         with runner(ctx):
             if state == "absent":
                 if instance.exists():
-                    instance = model.Instance.from_spec(instance)
+                    instance = system.Instance.from_spec(instance)
                     if status == PGStatus.running:
                         instance_mod.stop(ctx, instance)
                     instance_mod.drop(ctx, instance)

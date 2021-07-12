@@ -6,11 +6,11 @@ from attr.validators import instance_of
 from pgtoolkit import conf as pgconf
 from pgtoolkit.conf import Configuration
 
-from . import conf, exceptions
-from .ctx import BaseContext
-from .settings import Settings
-from .util import short_version
-from .validators import known_postgresql_version
+from .. import conf, exceptions
+from ..ctx import BaseContext
+from ..settings import Settings
+from ..util import short_version
+from ..validators import known_postgresql_version
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)

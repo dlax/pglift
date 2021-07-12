@@ -11,7 +11,7 @@ from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
-from .model import Instance
+from .models.system import Instance
 from .settings import PgBackRestSettings
 from .task import task
 

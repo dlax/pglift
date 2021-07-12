@@ -3,7 +3,8 @@ from pydantic import SecretStr
 
 from pglift import exceptions
 from pglift import instance as instance_mod
-from pglift import manifest, roles, types
+from pglift import roles, types
+from pglift.models import interface
 
 from . import execute
 
@@ -37,13 +38,13 @@ def test_exists(ctx, instance, role_factory):
 
 
 def test_create(ctx, instance, role_factory):
-    role = manifest.Role(name="nopassword")
+    role = interface.Role(name="nopassword")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role)
 
-    role = manifest.Role(name="password", password="scret")
+    role = interface.Role(name="password", password="scret")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
@@ -64,31 +65,31 @@ def test_apply(ctx, instance):
                     return True
         return False
 
-    role = manifest.Role(name=rolname)
+    role = interface.Role(name=rolname)
     assert not roles.exists(ctx, instance, role.name)
     roles.apply(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role)
     assert not role_in_pgpass(role)
 
-    role = manifest.Role(name=rolname, password=SecretStr("passw0rd"))
+    role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert not role_in_pgpass(role)
 
-    role = manifest.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
+    role = interface.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert role_in_pgpass(role)
 
-    role = manifest.Role(
+    role = interface.Role(
         name=rolname, password=SecretStr("passw0rd_changed"), pgpass=True
     )
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert role_in_pgpass(role)
 
-    role = manifest.Role(name=rolname, pgpass=False)
+    role = interface.Role(name=rolname, pgpass=False)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert not role_in_pgpass(role)

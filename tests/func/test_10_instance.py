@@ -6,7 +6,8 @@ from pgtoolkit.ctl import Status
 
 from pglift import exceptions
 from pglift import instance as instance_mod
-from pglift import manifest, systemd
+from pglift import systemd
+from pglift.models import interface
 
 from . import reconfigure_instance
 
@@ -139,11 +140,11 @@ def test_start_stop(ctx, instance, tmp_path):
 def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
-    im = manifest.Instance(
+    im = interface.Instance(
         name="test_apply",
         port=port,
         ssl=True,
-        state=manifest.InstanceState.stopped,
+        state=interface.InstanceState.stopped,
         configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
     )
@@ -156,7 +157,7 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert pgconfig.ssl
 
     assert instance_mod.status(ctx, i) == Status.not_running
-    im.state = manifest.InstanceState.started
+    im.state = interface.InstanceState.started
     instance_mod.apply(ctx, im)
     assert instance_mod.status(ctx, i) == Status.running
 
@@ -164,11 +165,11 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     instance_mod.apply(ctx, im)
     assert instance_mod.status(ctx, i) == Status.running
 
-    im.state = manifest.InstanceState.stopped
+    im.state = interface.InstanceState.stopped
     instance_mod.apply(ctx, im)
     assert instance_mod.status(ctx, i) == Status.not_running
 
-    im.state = manifest.InstanceState.absent
+    im.state = interface.InstanceState.absent
     instance_mod.apply(ctx, im)
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()

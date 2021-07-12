@@ -11,8 +11,9 @@ from pgtoolkit.ctl import Status
 
 from pglift import _install
 from pglift import instance as instance_mod
-from pglift import model, pm
+from pglift import pm
 from pglift.ctx import Context
+from pglift.models import system
 from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 
 from . import configure_instance
@@ -135,20 +136,20 @@ def tmp_port_factory() -> Iterator[int]:
 @pytest.fixture(scope="session")
 def instance_spec(
     pg_version: str, settings: Settings, tmp_port_factory: Iterator[int]
-) -> model.InstanceSpec:
+) -> system.InstanceSpec:
     prometheus_port = next(tmp_port_factory)
-    return model.InstanceSpec(
+    return system.InstanceSpec(
         name="test",
         version=pg_version,
-        prometheus=model.PrometheusService(prometheus_port),
+        prometheus=system.PrometheusService(prometheus_port),
         settings=settings,
     )
 
 
 @pytest.fixture(scope="session")
 def instance_initialized(
-    ctx: Context, instance_spec: model.InstanceSpec, installed: None
-) -> model.Instance:
+    ctx: Context, instance_spec: system.InstanceSpec, installed: None
+) -> system.Instance:
     assert instance_mod.status(ctx, instance_spec) == Status.unspecified_datadir
     i = instance_mod.init(ctx, instance_spec)
     assert instance_mod.status(ctx, i) == Status.not_running
@@ -163,11 +164,11 @@ def log_directory(tmp_path_factory):
 @pytest.fixture(scope="session")
 def instance(
     ctx: Context,
-    instance_initialized: model.Instance,
+    instance_initialized: system.Instance,
     tmp_port_factory: Iterator[int],
     tmp_path_factory: pytest.TempPathFactory,
     log_directory: pathlib.Path,
-) -> model.Instance:
+) -> system.Instance:
     port = next(tmp_port_factory)
     i = instance_initialized
     tmp_path = tmp_path_factory.mktemp("run")
@@ -179,8 +180,8 @@ def instance(
 
 @pytest.fixture(scope="session")
 def instance_dropped(
-    ctx: Context, instance: model.Instance
-) -> Tuple[model.InstanceSpec, pgtoolkit.conf.Configuration]:
+    ctx: Context, instance: system.Instance
+) -> Tuple[system.InstanceSpec, pgtoolkit.conf.Configuration]:
     config = instance.config()
     if instance.exists():
         instance_mod.drop(ctx, instance)

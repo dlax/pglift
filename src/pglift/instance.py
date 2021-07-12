@@ -9,19 +9,10 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import (
-    conf,
-    datapath,
-    exceptions,
-    hookimpl,
-    manifest,
-    roles,
-    systemd,
-    template,
-    util,
-)
+from . import conf, datapath, exceptions, hookimpl, roles, systemd, template, util
 from .ctx import BaseContext
-from .model import BaseInstance, Instance, InstanceSpec
+from .models import interface
+from .models.system import BaseInstance, Instance, InstanceSpec
 from .task import task
 from .types import ConfigChanges
 
@@ -381,7 +372,9 @@ def reload(
         systemd.reload(ctx, systemd_unit(instance))
 
 
-def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[Instance]:
+def apply(
+    ctx: BaseContext, instance_manifest: interface.Instance
+) -> Optional[Instance]:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
@@ -395,7 +388,7 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[In
     restart, this needs to be handled manually.
     """
     instance_spec = instance_manifest.model(ctx)
-    States = manifest.InstanceState
+    States = interface.InstanceState
     state = instance_manifest.state
 
     if state == States.absent:
@@ -435,13 +428,13 @@ def apply(ctx: BaseContext, instance_manifest: manifest.Instance) -> Optional[In
     return instance
 
 
-def describe(ctx: BaseContext, instance: Instance) -> manifest.Instance:
+def describe(ctx: BaseContext, instance: Instance) -> interface.Instance:
     """Return an instance described as a manifest."""
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
-    state = manifest.InstanceState.from_pg_status(status(ctx, instance))
-    return manifest.Instance(
+    state = interface.InstanceState.from_pg_status(status(ctx, instance))
+    return interface.Instance(
         name=instance.name,
         version=instance.version,
         port=instance.port,
@@ -461,7 +454,7 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
 
 def list(
     ctx: BaseContext, *, version: Optional[str] = None
-) -> Iterator[manifest.InstanceListItem]:
+) -> Iterator[interface.InstanceListItem]:
     """Yield instances found by system lookup.
 
     :param version: filter instances matching a given version.
@@ -488,7 +481,7 @@ def list(
             except exceptions.InstanceNotFound:
                 continue
 
-            yield manifest.InstanceListItem(
+            yield interface.InstanceListItem(
                 name=instance.name,
                 path=str(instance.path),
                 port=instance.port,

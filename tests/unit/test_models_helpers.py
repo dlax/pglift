@@ -6,7 +6,7 @@ import click
 from click.testing import CliRunner
 from pydantic import BaseModel, Field
 
-from pglift import uihelpers
+from pglift.models import helpers
 
 
 class Gender(enum.Enum):
@@ -38,7 +38,7 @@ class Person(BaseModel):
 
 def test_parameters_from_model():
     @click.command("add-person")
-    @uihelpers.parameters_from_model(Person)
+    @helpers.parameters_from_model(Person)
     @click.pass_context
     def add_person(ctx: click.core.Context, person: Person) -> None:
         """Add a new person."""

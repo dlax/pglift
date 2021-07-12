@@ -1,8 +1,9 @@
 from pgtoolkit import pgpass
 
-from . import db, exceptions, hookimpl, manifest
+from . import db, exceptions, hookimpl
 from .ctx import BaseContext
-from .model import Instance
+from .models import interface
+from .models.system import Instance
 from .types import ConfigChanges, Role
 
 
@@ -52,7 +53,7 @@ def instance_drop(ctx: BaseContext, instance: Instance) -> None:
         passfile_path.unlink()
 
 
-def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) -> None:
+def apply(ctx: BaseContext, instance: Instance, role_manifest: interface.Role) -> None:
     """Apply state described by specified role manifest as a PostgreSQL instance.
 
     The instance should be running.
@@ -65,14 +66,14 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: manifest.Role) ->
     set_pgpass_entry_for(ctx, instance, role_manifest)
 
 
-def describe(ctx: BaseContext, instance: Instance, name: str) -> manifest.Role:
+def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
     """Return a role described as a manifest.
 
     :raises ~exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
-    role = manifest.Role(name=name)
+    role = interface.Role(name=name)
     if has_password(ctx, instance, role):
         role = role.copy(update={"password": "<set>"})
     if in_pgpass(ctx, instance, role):
@@ -91,7 +92,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_drop", username=name))
         cnx.commit()
-    role = manifest.Role(name=name, pgpass=False)
+    role = interface.Role(name=name, pgpass=False)
     set_pgpass_entry_for(ctx, instance, role)
 
 

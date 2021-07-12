@@ -8,10 +8,10 @@ from pgtoolkit.ctl import Status
 
 from pglift import _install, exceptions
 from pglift import instance as instance_mod
-from pglift import manifest as manifest_mod
 from pglift import pgbackrest, roles
 from pglift.cli import cli, instance_init
 from pglift.ctx import Context
+from pglift.models import interface
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def test_instance_init(runner, ctx, instance):
             ["instance", "init", "new", "--port=1234"],
             obj=ctx,
         )
-    apply.assert_called_once_with(ctx, manifest_mod.Instance(name="new", port=1234))
+    apply.assert_called_once_with(ctx, interface.Instance(name="new", port=1234))
     assert result.exit_code == 0, result
 
 
@@ -79,7 +79,7 @@ def test_instance_apply(tmp_path, runner, ctx):
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=ctx)
     mock_method.assert_called_once()
     assert mock_method.call_args[0][0] == ctx
-    assert isinstance(mock_method.call_args[0][1], manifest_mod.Instance)
+    assert isinstance(mock_method.call_args[0][1], interface.Instance)
 
 
 def test_instance_schema(runner, ctx):
@@ -94,7 +94,7 @@ def test_instance_describe(runner, ctx, instance):
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.output
 
-    instance = manifest_mod.Instance(name="test")
+    instance = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=instance) as mock_method:
         result = runner.invoke(cli, ["instance", "describe", "test"], obj=ctx)
     mock_method.assert_called_once()
@@ -257,7 +257,7 @@ def test_role_describe(runner, ctx, instance):
     with patch.object(
         roles,
         "describe",
-        return_value=manifest_mod.Role(name="present", pgpass=True, password="hidden"),
+        return_value=interface.Role(name="present", pgpass=True, password="hidden"),
     ) as describe:
         result = runner.invoke(
             cli,

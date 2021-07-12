@@ -9,9 +9,10 @@ from typing_extensions import Literal
 
 from . import _install, exceptions
 from . import instance as instance_mod
-from . import manifest, pgbackrest, pm, roles, uihelpers
+from . import pgbackrest, pm, roles
 from .ctx import Context
-from .model import Instance, InstanceSpec
+from .models import helpers, interface
+from .models.system import Instance, InstanceSpec
 from .settings import SETTINGS
 from .task import runner
 
@@ -62,9 +63,9 @@ def instance() -> None:
 
 
 @instance.command("init")
-@uihelpers.parameters_from_model(manifest.Instance)
+@helpers.parameters_from_model(interface.Instance)
 @click.pass_obj
-def instance_init(ctx: Context, m: manifest.Instance) -> None:
+def instance_init(ctx: Context, m: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
     if m.model(ctx).exists():
         raise click.ClickException("instance already exists")
@@ -78,13 +79,13 @@ def instance_init(ctx: Context, m: manifest.Instance) -> None:
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     with runner(ctx):
-        instance_mod.apply(ctx, manifest.Instance.parse_yaml(file))
+        instance_mod.apply(ctx, interface.Instance.parse_yaml(file))
 
 
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    print(manifest.Instance.schema_json(indent=2))
+    print(interface.Instance.schema_json(indent=2))
 
 
 name_argument = click.argument("name", type=click.STRING)
@@ -140,7 +141,7 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
         print(json.dumps(list(instances), default=pydantic.json.pydantic_encoder))
         return
 
-    props = manifest.InstanceListItem.__fields__
+    props = interface.InstanceListItem.__fields__
     content = [[getattr(item, p) for p in props] for item in instances]
     if content:
         headers = [p.capitalize() for p in props]
@@ -251,7 +252,7 @@ def role() -> None:
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
-    print(manifest.Role.schema_json(indent=2))
+    print(interface.Role.schema_json(indent=2))
 
 
 @role.command("apply")
@@ -262,7 +263,7 @@ def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a role"""
     i = instance_lookup(ctx, instance)
     with runner(ctx):
-        roles.apply(ctx, i, manifest.Role.parse_yaml(file))
+        roles.apply(ctx, i, interface.Role.parse_yaml(file))
 
 
 @role.command("describe")

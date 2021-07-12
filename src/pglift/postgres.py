@@ -5,7 +5,7 @@ from typing import Optional, Sequence
 
 from .ctx import Context
 from .exceptions import InstanceNotFound
-from .model import Instance
+from .models.system import Instance
 from .pm import PluginManager
 from .settings import SETTINGS
 

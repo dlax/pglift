@@ -14,8 +14,9 @@ from pydantic import (
     validator,
 )
 
-from . import model, settings
-from .ctx import BaseContext
+from .. import settings
+from ..ctx import BaseContext
+from . import system as system_model
 
 
 @enum.unique
@@ -161,12 +162,14 @@ class Instance(Manifest):
             raise ValueError("port should not be specified in configuration field")
         return values
 
-    def model(self, ctx: BaseContext) -> model.InstanceSpec:
+    def model(self, ctx: BaseContext) -> system_model.InstanceSpec:
         """Return a model Instance matching this manifest."""
         if self.version is not None:
-            return model.InstanceSpec(self.name, self.version, settings=ctx.settings)
+            return system_model.InstanceSpec(
+                self.name, self.version, settings=ctx.settings
+            )
         else:
-            return model.InstanceSpec.default_version(self.name, ctx)
+            return system_model.InstanceSpec.default_version(self.name, ctx)
 
 
 class Role(Manifest):

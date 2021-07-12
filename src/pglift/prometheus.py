@@ -3,7 +3,7 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext
-from .model import Instance
+from .models.system import Instance
 from .settings import PrometheusSettings
 from .task import task
 

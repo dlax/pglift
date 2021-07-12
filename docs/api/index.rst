@@ -9,7 +9,6 @@ API
     roles
     conf
     pgbackrest
-    manifest
     ctx
     cmd
     exceptions
