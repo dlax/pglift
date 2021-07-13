@@ -25,8 +25,9 @@ def configure_instance(
         if not socket_path:
             config = i.config()
             socket_path = Path(config.unix_socket_directories)  # type: ignore[arg-type]
+    spec = i.as_spec() if isinstance(i, Instance) else i
     instance_mod.configure(
-        ctx, i, port=port, unix_socket_directories=str(socket_path), **confitems
+        ctx, spec, port=port, unix_socket_directories=str(socket_path), **confitems
     )
 
 

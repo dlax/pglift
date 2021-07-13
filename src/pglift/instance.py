@@ -12,7 +12,7 @@ from typing_extensions import Literal
 from . import conf, datapath, exceptions, hookimpl, roles, systemd, template, util
 from .ctx import BaseContext
 from .models import interface
-from .models.system import BaseInstance, Instance, InstanceSpec
+from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .task import task
 from .types import ConfigChanges
 
@@ -83,7 +83,7 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
 @task
 def configure(
     ctx: BaseContext,
-    instance: Union[InstanceSpec, Instance],
+    instance: InstanceSpec,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **confitems: Any,
@@ -172,11 +172,10 @@ def configure(
     make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
-    if not isinstance(instance, Instance):
-        instance = Instance.from_spec(instance)
-    ctx.pm.hook.instance_configure(ctx=ctx, instance=instance, changes=changes)
+    i = Instance.from_spec(instance)
+    ctx.pm.hook.instance_configure(ctx=ctx, instance=i, changes=changes)
 
-    i_config = instance.config()
+    i_config = i.config()
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(instance, logdir)
@@ -187,7 +186,7 @@ def configure(
 @configure.revert
 def revert_configure(
     ctx: BaseContext,
-    instance: Union[InstanceSpec, Instance],
+    instance: InstanceSpec,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **kwargs: Any,
@@ -195,11 +194,11 @@ def revert_configure(
     """Remove custom instance configuration, leaving the default
     'postgresql.conf'.
     """
-    if isinstance(instance, Instance):
-        i_config = instance.config()
-        if "log_directory" in i_config:
-            logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-            conf.remove_log_directory(instance, logdir)
+    pg_instance = PostgreSQLInstance.from_spec(instance)
+    i_config = pg_instance.config()
+    if "log_directory" in i_config:
+        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
+        conf.remove_log_directory(instance, logdir)
 
     configdir = instance.datadir
     confd, include = conf.info(configdir)
@@ -443,8 +442,9 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
     """Drop an instance."""
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
-    revert_configure(ctx, instance)
-    revert_init(ctx, instance.as_spec())
+    spec = instance.as_spec()
+    revert_configure(ctx, spec)
+    revert_init(ctx, spec)
 
 
 def list(
