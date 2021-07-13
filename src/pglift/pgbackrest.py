@@ -17,14 +17,6 @@ from .task import task
 
 
 def make_cmd(instance: Instance, settings: PgBackRestSettings, *args: str) -> List[str]:
-    """Return the base command for pgbackrest as a list of strings.
-
-    >>> from pglift.settings import Settings
-    >>> settings = Settings.parse_obj({"pgbackrest": {"configpath": "/tmp/pgbackrest.conf"}})
-    >>> instance = Instance("test", "11", settings)
-    >>> " ".join(make_cmd(instance, settings.pgbackrest, 'stanza-upgrade'))
-    '/usr/bin/pgbackrest --config=/tmp/pgbackrest.conf --stanza=11-test stanza-upgrade'
-    """
     configpath = _configpath(instance, settings)
     stanza = _stanza(instance)
     return [
@@ -181,17 +173,6 @@ def backup_command(
     :param type: backup type (one of 'full', 'incr', 'diff').
 
     Ref.: https://pgbackrest.org/command.html#command-backup
-
-    >>> from pglift.settings import Settings
-    >>> instance = Instance("backmeup", "13", Settings())
-    >>> print(" ".join(backup_command(instance, type=BackupType.full)))  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
-    /usr/bin/pgbackrest
-        --config=...etc/pgbackrest/pgbackrest-13-backmeup.conf
-        --stanza=13-backmeup --type=full
-        --repo1-retention-full=9999999
-        --repo1-retention-archive=9999999
-        --repo1-retention-diff=9999999
-        backup
     """
     args = [
         f"--type={type.name}",
@@ -225,14 +206,6 @@ def expire_command(instance: Instance) -> List[str]:
     """Return the full pgbackrest command to expire backups for ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
-
-    >>> from pglift.settings import Settings
-    >>> instance = Instance("backmeup", "13", Settings())
-    >>> print(" ".join(expire_command(instance)))  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
-    /usr/bin/pgbackrest
-        --config=...etc/pgbackrest/pgbackrest-13-backmeup.conf
-        --stanza=13-backmeup
-        expire
     """
     return make_cmd(instance, instance.settings.pgbackrest, "expire")
 
