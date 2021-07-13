@@ -11,7 +11,7 @@ from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
-from .models.system import BaseInstance, Instance
+from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
 
@@ -37,7 +37,7 @@ def _stanza(instance: BaseInstance) -> str:
 
 
 @task
-def setup(ctx: BaseContext, instance: Instance) -> None:
+def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     """Setup pgBackRest"""
     settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
@@ -100,7 +100,7 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
 
 
 @setup.revert
-def revert_setup(ctx: BaseContext, instance: Instance) -> None:
+def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     """Un-setup pgBackRest"""
     settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
