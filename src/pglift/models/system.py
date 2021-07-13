@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Type, TypeVar
 
 import attr
 from attr.validators import instance_of
@@ -68,14 +68,16 @@ class BaseInstance:
 class InstanceSpec(BaseInstance):
     """Spec for an instance, to be created"""
 
+    T = TypeVar("T", bound="InstanceSpec")
+
     @classmethod
     def default_version(
-        cls,
+        cls: Type[T],
         name: str,
         ctx: BaseContext,
         *,
         prometheus: Optional[PrometheusService] = None,
-    ) -> "InstanceSpec":
+    ) -> T:
         """Build an instance by guessing its version from installed PostgreSQL."""
         settings = ctx.settings
         version = settings.postgresql.default_version
@@ -111,8 +113,10 @@ class InstanceSpec(BaseInstance):
 class Instance(BaseInstance):
     """A PostgreSQL instance with satellite services"""
 
+    T = TypeVar("T", bound="Instance")
+
     @classmethod
-    def from_spec(cls, spec: InstanceSpec) -> "Instance":
+    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
         """Build a (real) instance from a spec object."""
         instance = cls(
             **{k: getattr(spec, k) for k in attr.fields_dict(spec.__class__)}
@@ -129,7 +133,7 @@ class Instance(BaseInstance):
         )
 
     @classmethod
-    def from_stanza(cls, stanza: str, **kwargs: Any) -> "Instance":
+    def from_stanza(cls: Type[T], stanza: str, **kwargs: Any) -> T:
         """Build an Instance from a '<version>-<name>' string."""
         try:
             version, name = stanza.split("-", 1)
