@@ -8,7 +8,7 @@ import psycopg2.extensions
 from psycopg2 import sql
 
 if TYPE_CHECKING:  # pragma: nocover
-    from .models.system import Instance
+    from .models.system import PostgreSQLInstance
     from .types import Role
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
@@ -32,7 +32,7 @@ def queries() -> Iterator[Tuple[str, str]]:
         yield qname.strip(), query.strip()
 
 
-def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
+def dsn(instance: "PostgreSQLInstance", role: "Role", **kwargs: Any) -> str:
     for badarg in ("port", "user", "password", "passfile", "host"):
         if badarg in kwargs:
             raise TypeError(f"unexpected '{badarg}' argument")
@@ -54,7 +54,7 @@ def dsn(instance: "Instance", role: "Role", **kwargs: Any) -> str:
 
 @contextmanager
 def connect(
-    instance: "Instance",
+    instance: "PostgreSQLInstance",
     role: "Role",
     *,
     dbname: str = "postgres",
