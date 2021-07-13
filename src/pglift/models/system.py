@@ -117,6 +117,14 @@ class PostgreSQLInstance(BaseInstance):
     T = TypeVar("T", bound="PostgreSQLInstance")
 
     @classmethod
+    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
+        """Build a (real) instance from a spec object."""
+        instance = cls(**{k: getattr(spec, k) for k in attr.fields_dict(cls)})
+        if not instance.exists():
+            raise exceptions.InstanceNotFound(str(instance))
+        return instance
+
+    @classmethod
     def from_stanza(cls: Type[T], stanza: str, **kwargs: Any) -> T:
         """Build an Instance from a '<version>-<name>' string."""
         try:
@@ -173,20 +181,6 @@ class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
     prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
-
-    T = TypeVar("T", bound="Instance")
-
-    @classmethod
-    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
-        """Build a (real) instance from a spec object."""
-        instance = cls(
-            **{k: getattr(spec, k) for k in attr.fields_dict(spec.__class__)}
-        )
-        try:
-            instance.config()
-        except Exception:
-            raise exceptions.InstanceNotFound(str(instance))
-        return instance
 
     def as_spec(self) -> InstanceSpec:
         return InstanceSpec(

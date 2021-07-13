@@ -27,6 +27,16 @@ def test_instance_default_version(ctx):
     assert i.version == major_version
 
 
+def test_postgresqlinstance_from_spec(instance):
+    spec = system.InstanceSpec(
+        instance.name, instance.version, settings=instance.settings
+    )
+    from_spec = system.PostgreSQLInstance.from_spec(spec)
+    assert from_spec == system.PostgreSQLInstance(
+        instance.name, instance.version, instance.settings
+    )
+
+
 def test_instance_from_spec(instance):
     spec = system.InstanceSpec(
         instance.name, instance.version, settings=instance.settings
