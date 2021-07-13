@@ -3,7 +3,7 @@ from pgtoolkit import pgpass
 from . import db, exceptions, hookimpl
 from .ctx import BaseContext
 from .models import interface
-from .models.system import Instance
+from .models.system import Instance, InstanceSpec, PostgreSQLInstance
 from .types import ConfigChanges, Role
 
 
@@ -133,7 +133,9 @@ def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
         cnx.commit()
 
 
-def set_password_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
+def set_password_for(
+    ctx: BaseContext, instance: PostgreSQLInstance, role: Role
+) -> None:
     """Set password for a PostgreSQL role on instance."""
     if role.password is None:
         return
