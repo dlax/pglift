@@ -91,6 +91,7 @@ class ArgSpec(TypedDict, total=False):
     type: str
     default: Any
     choices: List[str]
+    description: List[str]
 
 
 def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
@@ -130,6 +131,10 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
                     default = default.name
                 arg_spec["default"] = default
 
+            if field.field_info.description:
+                arg_spec["description"] = [
+                    s.strip() for s in field.field_info.description.split(".")
+                ]
         spec[field.name] = arg_spec
 
     return spec

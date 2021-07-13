@@ -132,8 +132,12 @@ def test_argspec_from_model():
     assert argspec == {
         "name": {"required": True, "type": "str"},
         "gender": {"choices": ["M", "F"]},
-        "age": {"type": "int"},
-        "address_street": {"required": True, "type": "str"},
+        "age": {"type": "int", "description": ["age"]},
+        "address_street": {
+            "required": True,
+            "type": "str",
+            "description": ["the street"],
+        },
         "address_city": {"type": "str", "description": "the city"},
         "address_country": {"choices": ["fr", "gb"], "required": True},
     }
