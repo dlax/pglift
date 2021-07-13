@@ -230,7 +230,7 @@ def revert_configure(
 @contextlib.contextmanager
 def running(
     ctx: BaseContext,
-    instance: Instance,
+    instance: Union[PostgreSQLInstance, Instance],
     *,
     timeout: int = 10,
     run_hooks: bool = False,
@@ -246,6 +246,9 @@ def running(
     if status(ctx, instance) == Status.running:
         yield
         return
+
+    if run_hooks and not isinstance(instance, Instance):
+        raise TypeError("expecting a full instance")
 
     start(ctx, instance, run_hooks=run_hooks)
     for __ in range(timeout):
@@ -295,7 +298,7 @@ def instance_configure(
 @task
 def start(
     ctx: BaseContext,
-    instance: Instance,
+    instance: Union[PostgreSQLInstance, Instance],
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
@@ -305,6 +308,9 @@ def start(
 
     :param run_hooks: controls whether start-up hook will be triggered or not.
     """
+    if run_hooks and not isinstance(instance, Instance):
+        raise TypeError("expecting a full instance")
+
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).start(instance.datadir, wait=wait, logfile=logfile)
     elif ctx.settings.service_manager == "systemd":
@@ -322,7 +328,7 @@ def status(ctx: BaseContext, instance: BaseInstance) -> Status:
 @task
 def stop(
     ctx: BaseContext,
-    instance: Instance,
+    instance: Union[PostgreSQLInstance, Instance],
     *,
     mode: str = "fast",
     wait: bool = True,
@@ -332,6 +338,9 @@ def stop(
 
     :param run_hooks: controls whether stop hook will be triggered or not.
     """
+    if run_hooks and not isinstance(instance, Instance):
+        raise TypeError("expecting a full instance")
+
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
