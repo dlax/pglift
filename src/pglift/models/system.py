@@ -30,43 +30,22 @@ class BaseInstance:
     prometheus: PrometheusService = attr.ib(factory=PrometheusService)
 
     def __str__(self) -> str:
-        """Return str(self).
-
-        >>> i = Instance("main", "12", Settings())
-        >>> str(i)
-        '12/main'
-        """
         return f"{self.version}/{self.name}"
 
     @property
     def path(self) -> Path:
-        """Base directory path for this instance.
-
-        >>> i = Instance("main", "12", Settings())
-        >>> print(i.path)  # doctest: +ELLIPSIS
-        /.../srv/pgsql/12/main
-        """
+        """Base directory path for this instance."""
         pg_settings = self.settings.postgresql
         return pg_settings.root / self.version / self.name
 
     @property
     def datadir(self) -> Path:
-        """Path to data directory for this instance.
-
-        >>> i = Instance("main", "12", Settings())
-        >>> print(i.datadir)  # doctest: +ELLIPSIS
-        /.../srv/pgsql/12/main/data
-        """
+        """Path to data directory for this instance."""
         return self.path / self.settings.postgresql.datadir
 
     @property
     def waldir(self) -> Path:
-        """Path to WAL directory for this instance.
-
-        >>> i = Instance("main", "12", Settings())
-        >>> print(i.waldir)  # doctest: +ELLIPSIS
-        /.../srv/pgsql/12/main/wal
-        """
+        """Path to WAL directory for this instance."""
         return self.path / self.settings.postgresql.waldir
 
     def exists(self) -> bool:

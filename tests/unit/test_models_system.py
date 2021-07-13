@@ -4,6 +4,23 @@ from pglift import exceptions
 from pglift.models import system
 
 
+def test_baseinstance_str(pg_version, instance):
+    assert str(instance) == f"{pg_version}/test"
+
+
+@pytest.mark.parametrize(
+    ["attrname", "expected_suffix"],
+    [
+        ("path", "srv/pgsql/{version}/test"),
+        ("datadir", "srv/pgsql/{version}/test/data"),
+        ("waldir", "srv/pgsql/{version}/test/wal"),
+    ],
+)
+def test_baseinstance_paths(pg_version, instance, attrname, expected_suffix):
+    path = getattr(instance, attrname)
+    assert path.match(expected_suffix.format(version=pg_version))
+
+
 def test_instance_default_version(ctx):
     i = system.InstanceSpec.default_version("test", ctx=ctx)
     major_version = str(ctx.pg_ctl(None).version)[:2]
