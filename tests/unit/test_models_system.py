@@ -50,8 +50,10 @@ def test_instance_as_spec(instance):
     )
 
 
-def test_instance_exists(pg_version, settings):
-    instance = system.Instance(name="exists", version=pg_version, settings=settings)
+def test_postgresqlinstance_exists(pg_version, settings):
+    instance = system.PostgreSQLInstance(
+        name="exists", version=pg_version, settings=settings
+    )
     with pytest.raises(exceptions.InstanceNotFound):
         instance.exists()
     instance.datadir.mkdir(parents=True)
@@ -62,12 +64,14 @@ def test_instance_exists(pg_version, settings):
     assert instance.exists()
 
 
-def test_instance_port(instance):
+def test_postgresqlinstance_port(instance):
     assert instance.port == 999
 
 
-def test_instance_config(pg_version, settings):
-    instance = system.Instance(name="configured", version=pg_version, settings=settings)
+def test_postgresqlinstance_config(pg_version, settings):
+    instance = system.PostgreSQLInstance(
+        name="configured", version=pg_version, settings=settings
+    )
     datadir = instance.datadir
     datadir.mkdir(parents=True)
     postgresql_conf = datadir / "postgresql.conf"

@@ -27,7 +27,6 @@ class BaseInstance:
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
     settings: Settings = attr.ib(validator=instance_of(Settings))
-    prometheus: PrometheusService = attr.ib(factory=PrometheusService)
 
     def __str__(self) -> str:
         return f"{self.version}/{self.name}"
@@ -67,6 +66,8 @@ class BaseInstance:
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class InstanceSpec(BaseInstance):
     """Spec for an instance, to be created"""
+
+    prometheus: PrometheusService = attr.ib(factory=PrometheusService)
 
     T = TypeVar("T", bound="InstanceSpec")
 
@@ -110,27 +111,10 @@ class InstanceSpec(BaseInstance):
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
-class Instance(BaseInstance):
-    """A PostgreSQL instance with satellite services"""
+class PostgreSQLInstance(BaseInstance):
+    """A bare PostgreSQL instance."""
 
-    T = TypeVar("T", bound="Instance")
-
-    @classmethod
-    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
-        """Build a (real) instance from a spec object."""
-        instance = cls(
-            **{k: getattr(spec, k) for k in attr.fields_dict(spec.__class__)}
-        )
-        try:
-            instance.config()
-        except Exception:
-            raise exceptions.InstanceNotFound(str(instance))
-        return instance
-
-    def as_spec(self) -> InstanceSpec:
-        return InstanceSpec(
-            **{k: getattr(self, k) for k in attr.fields_dict(self.__class__)}
-        )
+    T = TypeVar("T", bound="PostgreSQLInstance")
 
     @classmethod
     def from_stanza(cls: Type[T], stanza: str, **kwargs: Any) -> T:
@@ -182,3 +166,29 @@ class Instance(BaseInstance):
     def port(self) -> int:
         """TCP port the server listens on."""
         return int(self.config().get("port", 5432))  # type: ignore[arg-type]
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class Instance(PostgreSQLInstance):
+    """A PostgreSQL instance with satellite services."""
+
+    prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
+
+    T = TypeVar("T", bound="Instance")
+
+    @classmethod
+    def from_spec(cls: Type[T], spec: InstanceSpec) -> T:
+        """Build a (real) instance from a spec object."""
+        instance = cls(
+            **{k: getattr(spec, k) for k in attr.fields_dict(spec.__class__)}
+        )
+        try:
+            instance.config()
+        except Exception:
+            raise exceptions.InstanceNotFound(str(instance))
+        return instance
+
+    def as_spec(self) -> InstanceSpec:
+        return InstanceSpec(
+            **{k: getattr(self, k) for k in attr.fields_dict(self.__class__)}
+        )

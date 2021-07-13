@@ -5,7 +5,7 @@ from typing import Optional, Sequence
 
 from .ctx import Context
 from .exceptions import InstanceNotFound
-from .models.system import Instance
+from .models.system import PostgreSQLInstance
 from .pm import PluginManager
 from .settings import SETTINGS
 
@@ -26,7 +26,7 @@ def main(
         ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
 
     try:
-        instance = Instance.from_stanza(args.instance, settings=ctx.settings)
+        instance = PostgreSQLInstance.from_stanza(args.instance, settings=ctx.settings)
     except ValueError as e:
         parser.error(str(e))
     except InstanceNotFound as e:

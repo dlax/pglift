@@ -5,7 +5,7 @@ import pytest
 
 from pglift import pm
 from pglift.ctx import Context
-from pglift.models.system import Instance
+from pglift.models.system import Instance, PrometheusService
 from pglift.settings import Settings
 
 
@@ -43,7 +43,12 @@ def ctx(settings: Settings) -> Context:
 
 @pytest.fixture
 def instance(pg_version: str, settings: Settings) -> Instance:
-    instance = Instance(name="test", version=pg_version, settings=settings)
+    instance = Instance(
+        name="test",
+        version=pg_version,
+        settings=settings,
+        prometheus=PrometheusService(),
+    )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
     (instance.datadir / "postgresql.conf").write_text(

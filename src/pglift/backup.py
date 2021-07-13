@@ -2,7 +2,7 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext, Context
-from .models.system import BaseInstance, Instance
+from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .pgbackrest import BackupType, backup
 
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":  # pragma: nocover
     args = parser.parse_args()
     ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
     try:
-        instance = Instance.from_stanza(args.stanza, settings=SETTINGS)
+        instance = PostgreSQLInstance.from_stanza(args.stanza, settings=SETTINGS)
     except ValueError as e:
         parser.error(str(e))
     if not instance.exists():
