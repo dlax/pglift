@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import Any
 
+from pgtoolkit.conf import Configuration
+
 from . import hookimpl, systemd
 from .ctx import BaseContext
-from .models.system import BaseInstance, Instance
+from .models.system import BaseInstance, Instance, InstanceSpec
 from .settings import PrometheusSettings
 from .task import task
 
@@ -42,15 +44,18 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
 
 
 @task
-def setup(ctx: BaseContext, instance: Instance) -> None:
+def setup(
+    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
+) -> None:
     """Setup postgres_exporter for Prometheus"""
     settings = ctx.settings.prometheus
     configpath = _configpath(instance, settings)
     role = ctx.settings.postgresql.surole
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
 
-    dsn = [f"port={instance.port}"]
-    instance_config = instance.config()
+    dsn = []
+    if "port" in instance_config:
+        dsn.append(f"port={instance_config.port}")
     host = instance_config.get("unix_socket_directories")
     if host:
         dsn.append(f"host={host}")
@@ -94,7 +99,9 @@ def setup(ctx: BaseContext, instance: Instance) -> None:
 
 
 @setup.revert
-def revert_setup(ctx: BaseContext, instance: Instance) -> None:
+def revert_setup(
+    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
+) -> None:
     """Un-setup postgres_exporter for Prometheus"""
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(instance)
@@ -112,9 +119,11 @@ def revert_setup(ctx: BaseContext, instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
+def instance_configure(
+    ctx: BaseContext, instance: InstanceSpec, config: Configuration, **kwargs: Any
+) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
-    setup(ctx, instance)
+    setup(ctx, instance, config)
 
 
 @hookimpl  # type: ignore[misc]
@@ -134,4 +143,4 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     """Uninstall postgres_exporter from an instance being dropped."""
-    revert_setup(ctx, instance)
+    revert_setup(ctx, instance.as_spec(), instance.config())

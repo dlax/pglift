@@ -2,7 +2,7 @@ from typing import Any
 
 from . import hookimpl, systemd
 from .ctx import BaseContext, Context
-from .models.system import BaseInstance, Instance, PostgreSQLInstance
+from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .pgbackrest import BackupType, backup
 
 
@@ -11,7 +11,7 @@ def systemd_timer(instance: BaseInstance) -> str:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
+def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Enable scheduled backup job for configured instance."""
     if ctx.settings.scheduler == "systemd":
         unit = systemd_timer(instance)

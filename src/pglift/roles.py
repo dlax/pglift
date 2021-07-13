@@ -1,4 +1,4 @@
-from pgtoolkit import pgpass
+from pgtoolkit import conf, pgpass
 
 from . import db, exceptions, hookimpl
 from .ctx import BaseContext
@@ -9,7 +9,10 @@ from .types import ConfigChanges, Role
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: BaseContext, instance: Instance, changes: ConfigChanges
+    ctx: BaseContext,
+    instance: InstanceSpec,
+    config: conf.Configuration,
+    changes: ConfigChanges,
 ) -> None:
     """Set / update passfile entry for PostgreSQL roles upon instance
     configuration.
@@ -24,7 +27,7 @@ def instance_configure(
         try:
             old_port, port = changes["port"]
         except KeyError:
-            old_port = port = instance.port
+            old_port = port = config.get("port", 5432)
         assert isinstance(port, int)
 
         username = surole.name

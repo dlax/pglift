@@ -178,10 +178,12 @@ def configure(
     make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
-    i = Instance.from_spec(instance)
-    ctx.pm.hook.instance_configure(ctx=ctx, instance=i, changes=changes)
-
+    i = PostgreSQLInstance.from_spec(instance)
     i_config = i.config()
+    ctx.pm.hook.instance_configure(
+        ctx=ctx, instance=instance, config=i_config, changes=changes
+    )
+
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(instance, logdir)
@@ -270,9 +272,7 @@ def running(
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(
-    ctx: BaseContext, instance: Instance, changes: ConfigChanges
-) -> None:
+def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf
     and pg_ident.conf.
@@ -291,8 +291,9 @@ def instance_configure(
     if hba_path.read_text() == hba:
         return
 
-    with running(ctx, instance):
-        roles.set_password_for(ctx, instance, surole)
+    i = PostgreSQLInstance.from_spec(instance)
+    with running(ctx, i):
+        roles.set_password_for(ctx, i, surole)
 
     hba_path.write_text(hba)
 

@@ -11,7 +11,7 @@ from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
-from .models.system import BaseInstance, Instance, PostgreSQLInstance
+from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
 
@@ -122,7 +122,7 @@ def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 
 
 @task
-def init(ctx: BaseContext, instance: Instance) -> None:
+def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     settings = ctx.settings.pgbackrest
     base_cmd = make_cmd(instance, settings)
 
@@ -139,10 +139,11 @@ def init(ctx: BaseContext, instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
+def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
-    setup(ctx, instance)
-    init(ctx, instance)
+    i = PostgreSQLInstance.from_spec(instance)
+    setup(ctx, i)
+    init(ctx, i)
 
 
 @hookimpl  # type: ignore[misc]
