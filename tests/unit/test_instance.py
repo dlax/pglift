@@ -10,6 +10,12 @@ from pglift import task
 from pglift.models.system import InstanceSpec
 
 
+def test_systemd_unit(pg_version, instance):
+    assert (
+        instance_mod.systemd_unit(instance) == f"postgresql@{pg_version}-test.service"
+    )
+
+
 def test_init_lookup_failed(pg_version, settings, ctx):
     i = InstanceSpec(name="dirty", version=pg_version, settings=settings)
     i.datadir.mkdir(parents=True)
