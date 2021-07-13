@@ -17,13 +17,6 @@ def _queriespath(instance: Instance, settings: PrometheusSettings) -> Path:
 
 
 def systemd_unit(instance: Instance) -> str:
-    """Return systemd unit service name for 'instance'.
-
-    >>> from pglift.settings import Settings
-    >>> instance = Instance("test", "13", Settings())
-    >>> systemd_unit(instance)
-    'postgres_exporter@13-test.service'
-    """
     return f"postgres_exporter@{instance.version}-{instance.name}.service"
 
 
