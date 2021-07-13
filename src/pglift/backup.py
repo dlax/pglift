@@ -7,13 +7,6 @@ from .pgbackrest import BackupType, backup
 
 
 def systemd_timer(instance: Instance) -> str:
-    """Return systemd timer name for 'instance'.
-
-    >>> from pglift.settings import Settings
-    >>> instance = Instance("test", "13", Settings())
-    >>> systemd_timer(instance)
-    'postgresql-backup@13-test.timer'
-    """
     return f"postgresql-backup@{instance.version}-{instance.name}.timer"
 
 
