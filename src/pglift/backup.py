@@ -66,7 +66,7 @@ if __name__ == "__main__":  # pragma: nocover
     args = parser.parse_args()
     ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
     try:
-        instance = PostgreSQLInstance.from_stanza(args.stanza, settings=SETTINGS)
+        instance = PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:
         parser.error(str(e))
     except exceptions.InstanceNotFound as e:

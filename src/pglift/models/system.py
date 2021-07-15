@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional, Tuple, Type, TypeVar, Union
+from typing import Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
@@ -140,16 +140,13 @@ class PostgreSQLInstance(BaseInstance):
         return self
 
     @classmethod
-    def from_stanza(cls: Type[T], stanza: str, **kwargs: Any) -> T:
+    def from_stanza(cls: Type[T], ctx: BaseContext, stanza: str) -> T:
         """Build an Instance from a '<version>-<name>' string."""
         try:
             version, name = stanza.split("-", 1)
         except ValueError:
             raise ValueError(f"invalid stanza '{stanza}'") from None
-        instance = cls(name, version, **kwargs)
-        if not instance.exists():
-            raise exceptions.InstanceNotFound(str(instance))
-        return instance
+        return cls.system_lookup(ctx, (name, version))
 
     def exists(self) -> bool:
         """Return True if the instance exists and its configuration is valid.

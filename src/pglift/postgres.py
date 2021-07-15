@@ -26,7 +26,7 @@ def main(
         ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
 
     try:
-        instance = PostgreSQLInstance.from_stanza(args.instance, settings=ctx.settings)
+        instance = PostgreSQLInstance.from_stanza(ctx, args.instance)
     except ValueError as e:
         parser.error(str(e))
     except InstanceNotFound as e:
