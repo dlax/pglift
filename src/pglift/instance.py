@@ -464,6 +464,8 @@ def list(
     """Yield instances found by system lookup.
 
     :param version: filter instances matching a given version.
+
+    :raises ValueError: if specified version is unknown.
     """
     versions = builtins.list(ctx.settings.postgresql.versions)
     if version:
