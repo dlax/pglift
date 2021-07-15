@@ -12,6 +12,7 @@ See the [tutorial](../../../../docs/ansible).
 ## Included content
 ### modules
 - instance: manage pglift (PostgreSQL) instances
+- role: manage roles in a pglift instance
 
 ## Roadmap
 FIXME

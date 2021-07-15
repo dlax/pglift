@@ -75,6 +75,7 @@ list_timers
 
 ansible-playbook docs/ansible/play2.yml
 cat "$passfile"
+grep bob "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 check_postgres_exporter 9187
