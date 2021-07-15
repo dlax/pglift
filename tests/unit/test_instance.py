@@ -7,7 +7,7 @@ from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
 from pglift import task
-from pglift.models.system import InstanceSpec
+from pglift.models.system import InstanceSpec, PrometheusService
 
 
 def test_systemd_unit(pg_version, instance):
@@ -17,7 +17,12 @@ def test_systemd_unit(pg_version, instance):
 
 
 def test_init_lookup_failed(pg_version, settings, ctx):
-    i = InstanceSpec(name="dirty", version=pg_version, settings=settings)
+    i = InstanceSpec(
+        name="dirty",
+        version=pg_version,
+        settings=settings,
+        prometheus=PrometheusService(),
+    )
     i.datadir.mkdir(parents=True)
     (i.datadir / "postgresql.conf").touch()
     pg_version = i.datadir / "PG_VERSION"
@@ -29,7 +34,12 @@ def test_init_lookup_failed(pg_version, settings, ctx):
 
 
 def test_init_dirty(pg_version, settings, ctx, monkeypatch):
-    i = InstanceSpec(name="dirty", version=pg_version, settings=settings)
+    i = InstanceSpec(
+        name="dirty",
+        version=pg_version,
+        settings=settings,
+        prometheus=PrometheusService(),
+    )
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []
@@ -49,7 +59,9 @@ def test_init_version_not_available(ctx):
     version = "10"
     if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
         pytest.skip(f"PostgreSQL {version} seems available")
-    i = InstanceSpec(f"pg{version}", version, settings=settings)
+    i = InstanceSpec(
+        f"pg{version}", version, settings=settings, prometheus=PrometheusService()
+    )
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
         instance_mod.init(ctx, i)
 

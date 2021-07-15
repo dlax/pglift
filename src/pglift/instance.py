@@ -12,7 +12,13 @@ from typing_extensions import Literal
 from . import conf, datapath, exceptions, hookimpl, roles, systemd, template, util
 from .ctx import BaseContext
 from .models import interface
-from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
+from .models.system import (
+    BaseInstance,
+    Instance,
+    InstanceSpec,
+    PostgreSQLInstance,
+    PrometheusService,
+)
 from .task import task
 from .types import ConfigChanges
 
@@ -479,7 +485,9 @@ def list(
         for d in version_path.iterdir():
             if not d.is_dir():
                 continue
-            instance_spec = InstanceSpec(d.name, ver, settings=ctx.settings)
+            instance_spec = InstanceSpec(
+                d.name, ver, settings=ctx.settings, prometheus=PrometheusService()
+            )
             try:
                 instance = Instance.from_spec(instance_spec)
             except exceptions.InstanceNotFound:

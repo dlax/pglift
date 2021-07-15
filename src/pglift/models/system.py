@@ -67,7 +67,7 @@ class BaseInstance:
 class InstanceSpec(BaseInstance):
     """Spec for an instance, to be created"""
 
-    prometheus: PrometheusService = attr.ib(factory=PrometheusService)
+    prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
 
     T = TypeVar("T", bound="InstanceSpec")
 
@@ -84,10 +84,9 @@ class InstanceSpec(BaseInstance):
         version = settings.postgresql.default_version
         if version is None:
             version = short_version(ctx.pg_ctl(None).version)
-        extras = {}
-        if prometheus is not None:
-            extras["prometheus"] = prometheus
-        return cls(name=name, version=version, settings=settings, **extras)
+        if prometheus is None:
+            prometheus = PrometheusService()  # XXX
+        return cls(name=name, version=version, settings=settings, prometheus=prometheus)
 
     @classmethod
     def from_stanza(
@@ -107,6 +106,7 @@ class InstanceSpec(BaseInstance):
             version, name = stanza.split("-", 1)
         except ValueError:
             raise ValueError(f"invalid stanza '{stanza}'") from None
+        kwargs.setdefault("prometheus", PrometheusService())  # XXX
         return cls(name, version, settings, **kwargs)
 
 

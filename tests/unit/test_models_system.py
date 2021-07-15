@@ -4,6 +4,16 @@ from pglift import exceptions
 from pglift.models import system
 
 
+@pytest.fixture
+def instance_spec(instance):
+    return system.InstanceSpec(
+        instance.name,
+        instance.version,
+        settings=instance.settings,
+        prometheus=system.PrometheusService(),
+    )
+
+
 def test_baseinstance_str(pg_version, instance):
     assert str(instance) == f"{pg_version}/test"
 
@@ -27,37 +37,26 @@ def test_instance_default_version(ctx):
     assert i.version == major_version
 
 
-def test_postgresqlinstance_from_spec(instance):
-    spec = system.InstanceSpec(
-        instance.name, instance.version, settings=instance.settings
-    )
-    from_spec = system.PostgreSQLInstance.from_spec(spec)
+def test_postgresqlinstance_from_spec(instance, instance_spec):
+    from_spec = system.PostgreSQLInstance.from_spec(instance_spec)
     assert from_spec == system.PostgreSQLInstance(
         instance.name, instance.version, instance.settings
     )
 
 
-def test_instance_from_spec(instance):
-    spec = system.InstanceSpec(
-        instance.name, instance.version, settings=instance.settings
-    )
-    from_spec = system.Instance.from_spec(spec)
+def test_instance_from_spec(instance, instance_spec):
+    from_spec = system.Instance.from_spec(instance_spec)
     assert from_spec == instance
 
 
-def test_instance_from_spec_misconfigured(instance):
-    spec = system.InstanceSpec(
-        instance.name, instance.version, settings=instance.settings
-    )
-    (spec.datadir / "postgresql.conf").unlink()
-    with pytest.raises(exceptions.InstanceNotFound, match=str(spec)):
-        system.Instance.from_spec(spec)
+def test_instance_from_spec_misconfigured(instance, instance_spec):
+    (instance_spec.datadir / "postgresql.conf").unlink()
+    with pytest.raises(exceptions.InstanceNotFound, match=str(instance_spec)):
+        system.Instance.from_spec(instance_spec)
 
 
-def test_instance_as_spec(instance):
-    assert instance.as_spec() == system.InstanceSpec(
-        instance.name, instance.version, settings=instance.settings
-    )
+def test_instance_as_spec(instance, instance_spec):
+    assert instance.as_spec() == instance_spec
 
 
 def test_postgresqlinstance_exists(pg_version, settings):
