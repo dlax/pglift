@@ -39,7 +39,6 @@ def _decorators_from_model(
             yield click.argument(field.name, type=field.type_)
         else:
             fname = f"--{_prefix}-{field.name}" if _prefix else f"--{field.name}"
-            param_decls = (fname,)
             attrs: Dict[str, Any] = {}
             if lenient_issubclass(field.type_, enum.Enum):
                 try:
@@ -57,7 +56,7 @@ def _decorators_from_model(
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
-            yield click.option(*param_decls, **attrs)
+            yield click.option(fname, **attrs)
 
 
 def parameters_from_model(
