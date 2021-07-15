@@ -56,13 +56,35 @@ class Person(BaseModel):
         extra = "forbid"
 
 
+def test_parameters_from_model_typeerror():
+    with pytest.raises(TypeError, match="expecting a 'person: Person' parameter"):
+
+        @click.command("add-person")
+        @helpers.parameters_from_model(Person)
+        @click.pass_context
+        def cb1(ctx: click.core.Context, x: Person) -> None:
+            pass
+
+    with pytest.raises(TypeError, match="expecting a 'person: Person' parameter"):
+
+        @click.command("add-person")
+        @helpers.parameters_from_model(Person)
+        @click.pass_context
+        def cb2(ctx: click.core.Context, person: str) -> None:
+            pass
+
+
 def test_parameters_from_model():
     @click.command("add-person")
+    @click.option("--sort-keys", is_flag=True, default=False)
     @helpers.parameters_from_model(Person)
+    @click.option("--indent", type=int)
     @click.pass_context
-    def add_person(ctx: click.core.Context, person: Person) -> None:
+    def add_person(
+        ctx: click.core.Context, sort_keys: bool, person: Person, indent: int
+    ) -> None:
         """Add a new person."""
-        click.echo(person.json(indent=2, sort_keys=True))
+        click.echo(person.json(indent=indent, sort_keys=sort_keys))
 
     runner = CliRunner()
     result = runner.invoke(add_person, ["--help"])
@@ -73,6 +95,7 @@ def test_parameters_from_model():
         "  Add a new person.\n"
         "\n"
         "Options:\n"
+        "  --sort-keys\n"
         "  --gender [M|F]\n"
         "  --age AGE                       Age.\n"
         "  --address-street STREET         The street.\n"
@@ -81,6 +104,7 @@ def test_parameters_from_model():
         "  --address-shared / --no-address-shared\n"
         "                                  Is this a collocation?\n"
         "  --address-primary               Is this person's primary address?\n"
+        "  --indent INTEGER\n"
         "  --help                          Show this message and exit.\n"
     )
 
@@ -95,6 +119,7 @@ def test_parameters_from_model():
             "--address-country=fr",
             "--address-primary",
             "--no-address-shared",
+            "--indent=2",
         ],
     )
     assert result.exit_code == 0, result

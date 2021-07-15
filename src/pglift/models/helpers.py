@@ -1,6 +1,18 @@
 import enum
 import functools
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Type, TypeVar, Union
+import inspect
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import click
 import pydantic
@@ -27,18 +39,23 @@ def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
 
 def _decorators_from_model(
     model_type: ModelType, *, _prefix: str = ""
-) -> Iterator[Callable[[Callback], Callback]]:
+) -> Iterator[Tuple[str, Callable[[Callback], Callback]]]:
     """Yield click.{argument,option} decorators corresponding to fields of
-    a pydantic model type.
+    a pydantic model type along with respective callback argument name.
     """
     for field in model_type.__fields__.values():
         cli_config = field.field_info.extra.get("cli", {})
         if cli_config.get("hide", False):
             continue
         if not _prefix and field.required:
-            yield click.argument(field.name, type=field.type_)
+            yield field.name, click.argument(field.name, type=field.type_)
         else:
-            fname = f"--{_prefix}-{field.name}" if _prefix else f"--{field.name}"
+            if _prefix:
+                fname = f"--{_prefix}-{field.name}"
+                argname = f"{_prefix}_{field.name}"
+            else:
+                fname = f"--{field.name}"
+                argname = field.name
             attrs: Dict[str, Any] = {}
             if lenient_issubclass(field.type_, enum.Enum):
                 try:
@@ -61,7 +78,7 @@ def _decorators_from_model(
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
-            yield click.option(fname, **attrs)
+            yield argname, click.option(fname, **attrs)
 
 
 def parameters_from_model(
@@ -69,16 +86,61 @@ def parameters_from_model(
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.
+
+    >>> class Obj(pydantic.BaseModel):
+    ...     message: str
+
+    >>> @click.command("echo")
+    ... @parameters_from_model(Obj)
+    ... @click.option("--caps", is_flag=True, default=False)
+    ... @click.pass_context
+    ... def cmd(ctx, obj, caps):
+    ...     output = obj.message
+    ...     if caps:
+    ...         output = output.upper()
+    ...     click.echo(output)
+
+    The argument in callback function must match the base name (lower-case) of
+    the pydantic model class. In the example above, this is named "obj".
+    Otherwise, a TypeError is raised.
+
+    >>> from click.testing import CliRunner
+    >>> runner = CliRunner()
+    >>> r = runner.invoke(cmd, ["hello, world"])
+    >>> print(r.stdout.strip())
+    hello, world
+    >>> r = runner.invoke(cmd, ["hello, world", "--caps"])
+    >>> print(r.stdout.strip())
+    HELLO, WORLD
     """
 
     def decorator(f: Callback) -> Callback:
+
+        argnames, param_decorators = zip(
+            *reversed(list(_decorators_from_model(model_type)))
+        )
+
+        s = inspect.signature(f)
+        model_argname = model_type.__name__.lower()
+        type_error = TypeError(
+            f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
+        )
+        try:
+            model_param = s.parameters[model_argname]
+        except KeyError:
+            raise type_error
+        if model_param.annotation not in (model_type, inspect.Signature.empty):
+            raise type_error
+
         @functools.wraps(f)
         def callback(**kwargs: Any) -> None:
-            model = parse_params_as(model_type, kwargs)
-            return f(model)
+            params = {n: kwargs.pop(n) for n in argnames}
+            model = parse_params_as(model_type, params)
+            kwargs[model_argname] = model
+            return f(**kwargs)
 
         cb = callback
-        for param_decorator in reversed(list(_decorators_from_model(model_type))):
+        for param_decorator in param_decorators:
             cb = param_decorator(cb)
         return cb
 

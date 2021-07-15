@@ -64,12 +64,12 @@ def instance() -> None:
 @instance.command("init")
 @helpers.parameters_from_model(interface.Instance)
 @click.pass_obj
-def instance_init(ctx: Context, m: interface.Instance) -> None:
+def instance_init(ctx: Context, instance: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
-    if m.spec(ctx).exists():
+    if instance.spec(ctx).exists():
         raise click.ClickException("instance already exists")
     with runner(ctx):
-        instance_mod.apply(ctx, m)
+        instance_mod.apply(ctx, instance)
 
 
 @instance.command("apply")
