@@ -88,27 +88,6 @@ class InstanceSpec(BaseInstance):
             prometheus = PrometheusService()  # XXX
         return cls(name=name, version=version, settings=settings, prometheus=prometheus)
 
-    @classmethod
-    def from_stanza(
-        cls, stanza: str, settings: Settings, **kwargs: Any
-    ) -> "InstanceSpec":
-        """Build an Instance from a '<version>-<name>' string.
-
-        >>> s = Settings()
-        >>> InstanceSpec.from_stanza('12-main', s)  # doctest: +ELLIPSIS
-        InstanceSpec(name='main', version='12', ...)
-        >>> InstanceSpec.from_stanza('bad', s)
-        Traceback (most recent call last):
-            ...
-        ValueError: invalid stanza 'bad'
-        """
-        try:
-            version, name = stanza.split("-", 1)
-        except ValueError:
-            raise ValueError(f"invalid stanza '{stanza}'") from None
-        kwargs.setdefault("prometheus", PrometheusService())  # XXX
-        return cls(name, version, settings, **kwargs)
-
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class PostgreSQLInstance(BaseInstance):
