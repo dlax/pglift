@@ -4,10 +4,16 @@
     "type": "str"
   },
   "password": {
+    "description": [
+      "role password"
+    ],
     "type": "str"
   },
   "pgpass": {
     "default": false,
+    "description": [
+      "add an entry in password file for this role"
+    ],
     "type": "bool"
   }
 }

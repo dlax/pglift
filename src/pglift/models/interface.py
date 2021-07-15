@@ -192,5 +192,7 @@ class Role(Manifest):
     """PostgreSQL role"""
 
     name: str
-    password: Optional[SecretStr] = None
-    pgpass: bool = False
+    password: Optional[SecretStr] = Field(default=None, description="role password")
+    pgpass: bool = Field(
+        default=False, description="add an entry in password file for this role"
+    )
