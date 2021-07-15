@@ -119,11 +119,12 @@ from pglift.task import runner
 
 def run_module() -> None:
     settings = SETTINGS
-    argspec = helpers.argspec_from_model(interface.Instance)
+    model_type = interface.Instance
+    argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
     try:
-        m = helpers.parse_params_as(interface.Instance, module.params)
+        m = helpers.parse_params_as(model_type, module.params)
     except pydantic.ValidationError as exc:
         module.fail_json("; ".join(e["msg"] for e in exc.errors()))
 
