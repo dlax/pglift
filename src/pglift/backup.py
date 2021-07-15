@@ -1,6 +1,6 @@
 from typing import Any
 
-from . import hookimpl, systemd
+from . import exceptions, hookimpl, systemd
 from .ctx import BaseContext, Context
 from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .pgbackrest import BackupType, backup
@@ -42,7 +42,6 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 # This entry point is used by systemd 'postgresql-backup@' service.
 if __name__ == "__main__":  # pragma: nocover
     import argparse
-    import sys
 
     from .pm import PluginManager
     from .settings import SETTINGS
@@ -70,7 +69,6 @@ if __name__ == "__main__":  # pragma: nocover
         instance = PostgreSQLInstance.from_stanza(args.stanza, settings=SETTINGS)
     except ValueError as e:
         parser.error(str(e))
-    if not instance.exists():
-        print(f"error: instance {instance} not found", file=sys.stderr)
-        sys.exit(1)
+    except exceptions.InstanceNotFound as e:
+        parser.exit(2, e.show())
     args.func(ctx, instance, args)
