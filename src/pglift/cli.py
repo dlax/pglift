@@ -50,8 +50,7 @@ def site_configure(
     settings: Optional[str],
 ) -> None:
     if action == "install":
-        if settings:
-            env = f"SETTINGS=@{settings}"
+        env = f"SETTINGS=@{settings}" if settings else None
         _install.do(ctx, env=env)
     elif action == "uninstall":
         _install.undo(ctx)
