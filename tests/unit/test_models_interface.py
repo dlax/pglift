@@ -25,12 +25,12 @@ def test_yaml():
     assert s == "x: 0.0\ny: 1.2\n"
 
 
-def test_instance_model(ctx):
+def test_instance_spec(ctx):
     i = interface.Instance(
         name="test", version="12", prometheus=interface.Instance.Prometheus(port=98)
-    ).model(ctx)
+    ).spec(ctx)
     assert str(i) == "12/test"
     assert i.prometheus.port == 98
-    i = interface.Instance(name="test").model(ctx)
+    i = interface.Instance(name="test").spec(ctx)
     assert str(i) == f"{util.short_version(ctx.pg_ctl(None).version)}/test"
     assert i.prometheus.port == 9187

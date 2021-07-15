@@ -170,8 +170,8 @@ class Instance(Manifest):
             raise ValueError("port should not be specified in configuration field")
         return values
 
-    def model(self, ctx: BaseContext) -> system_model.InstanceSpec:
-        """Return a model Instance matching this manifest."""
+    def spec(self, ctx: BaseContext) -> system_model.InstanceSpec:
+        """Return an InstanceSpec matching this manifest."""
         prometheus = system_model.PrometheusService(port=self.prometheus.port)
         if self.version is not None:
             return system_model.InstanceSpec(

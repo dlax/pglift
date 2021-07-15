@@ -67,7 +67,7 @@ def instance() -> None:
 @click.pass_obj
 def instance_init(ctx: Context, m: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
-    if m.model(ctx).exists():
+    if m.spec(ctx).exists():
         raise click.ClickException("instance already exists")
     with runner(ctx):
         instance_mod.apply(ctx, m)

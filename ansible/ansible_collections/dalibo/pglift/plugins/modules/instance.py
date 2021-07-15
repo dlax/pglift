@@ -134,7 +134,7 @@ def run_module() -> None:
     if module.check_mode:
         module.exit_json(**result)
 
-    instance_exists = m.model(ctx).exists()
+    instance_exists = m.spec(ctx).exists()
 
     try:
         with runner(ctx):

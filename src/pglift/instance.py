@@ -391,7 +391,7 @@ def apply(
     running, it will be reloaded. Note that some changes require a full
     restart, this needs to be handled manually.
     """
-    instance_spec = instance_manifest.model(ctx)
+    instance_spec = instance_manifest.spec(ctx)
     States = interface.InstanceState
     state = instance_manifest.state
 
