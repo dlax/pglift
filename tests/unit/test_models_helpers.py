@@ -37,6 +37,10 @@ class Address(BaseModel):
         cli={"choices": [Country.France.value, Country.Belgium.value]},
         ansible={"choices": [Country.France.value, Country.UnitedKindom.value]},
     )
+    shared: bool = Field(description="is this a collocation?")
+    primary: bool = Field(
+        default=False, description="is this person's primary address?"
+    )
 
     class Config:
         extra = "forbid"
@@ -70,11 +74,14 @@ def test_parameters_from_model():
         "\n"
         "Options:\n"
         "  --gender [M|F]\n"
-        "  --age AGE                  Age.\n"
-        "  --address-street STREET    The street.\n"
-        "  --address-city CITY        City.\n"
+        "  --age AGE                       Age.\n"
+        "  --address-street STREET         The street.\n"
+        "  --address-city CITY             City.\n"
         "  --address-country [fr|be]\n"
-        "  --help                     Show this message and exit.\n"
+        "  --address-shared / --no-address-shared\n"
+        "                                  Is this a collocation?\n"
+        "  --address-primary               Is this person's primary address?\n"
+        "  --help                          Show this message and exit.\n"
     )
 
     result = runner.invoke(
@@ -86,6 +93,8 @@ def test_parameters_from_model():
             "--address-street=bd montparnasse",
             "--address-city=paris",
             "--address-country=fr",
+            "--address-primary",
+            "--no-address-shared",
         ],
     )
     assert result.exit_code == 0, result
@@ -95,6 +104,8 @@ def test_parameters_from_model():
             "country": "fr",
             "street": "bd montparnasse",
             "zipcode": 0,
+            "primary": True,
+            "shared": False,
         },
         "age": 42,
         "gender": "F",
@@ -112,6 +123,7 @@ def test_parse_params_as():
             "country": "fr",
             "street": "bd montparnasse",
             "zipcode": 0,
+            "shared": True,
         },
     }
     assert helpers.parse_params_as(Person, params) == Person(
@@ -123,6 +135,7 @@ def test_parse_params_as():
             zipcode=0,
             city="paris",
             country=Country.France,
+            shared=True,
         ),
     )
 
@@ -140,6 +153,16 @@ def test_argspec_from_model():
         },
         "address_city": {"type": "str", "description": "the city"},
         "address_country": {"choices": ["fr", "gb"], "required": True},
+        "address_shared": {
+            "type": "bool",
+            "required": True,
+            "description": ["is this a collocation?"],
+        },
+        "address_primary": {
+            "type": "bool",
+            "default": False,
+            "description": ["is this person's primary address?"],
+        },
     }
 
 

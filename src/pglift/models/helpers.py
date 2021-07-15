@@ -49,6 +49,11 @@ def _decorators_from_model(
             elif lenient_issubclass(field.type_, pydantic.BaseModel):
                 yield from _decorators_from_model(field.type_, _prefix=field.name)
                 continue
+            elif lenient_issubclass(field.type_, bool):
+                if field.default is False:
+                    attrs["is_flag"] = True
+                else:
+                    fname = f"{fname}/--no-{fname[2:]}"
             else:
                 attrs["metavar"] = field.name.upper()
             if field.field_info.description:
