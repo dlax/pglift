@@ -70,9 +70,9 @@ def test_parameters_from_model():
         "\n"
         "Options:\n"
         "  --gender [M|F]\n"
-        "  --age AGE                  age\n"
-        "  --address-street STREET    the street\n"
-        "  --address-city CITY        city\n"
+        "  --age AGE                  Age.\n"
+        "  --address-street STREET    The street.\n"
+        "  --address-city CITY        City.\n"
         "  --address-country [fr|be]\n"
         "  --help                     Show this message and exit.\n"
     )

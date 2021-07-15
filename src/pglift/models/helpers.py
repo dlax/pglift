@@ -53,7 +53,10 @@ def _decorators_from_model(
             else:
                 attrs["metavar"] = field.name.upper()
             if field.field_info.description:
-                attrs["help"] = field.field_info.description
+                description = field.field_info.description.capitalize()
+                if description[-1] not in ".?":
+                    description += "."
+                attrs["help"] = description
             yield click.option(*param_decls, **attrs)
 
 
