@@ -215,6 +215,43 @@ def test_backup_instance(runner, instance, ctx):
     assert expire.called
 
 
+def test_role_create(ctx, instance, runner):
+    with patch.object(roles, "exists", return_value=False) as exists, patch.object(
+        roles, "apply"
+    ) as apply:
+        result = runner.invoke(
+            cli,
+            [
+                "role",
+                "create",
+                f"{instance.version}/{instance.name}",
+                "rob",
+                "--password=ert",
+                "--pgpass",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result
+    exists.assert_called_once_with(ctx, instance, "rob")
+    role = interface.Role.parse_obj({"name": "rob", "password": "ert", "pgpass": True})
+    apply.assert_called_once_with(ctx, instance, role)
+
+    with patch.object(roles, "exists", return_value=True) as exists:
+        result = runner.invoke(
+            cli,
+            [
+                "role",
+                "create",
+                f"{instance.version}/{instance.name}",
+                "bob",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 1
+    assert "role already exists" in result.stdout
+    exists.assert_called_once_with(ctx, instance, "bob")
+
+
 def test_role_schema(runner):
     result = runner.invoke(cli, ["role", "schema"])
     schema = json.loads(result.output)

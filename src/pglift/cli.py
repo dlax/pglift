@@ -244,6 +244,19 @@ def role() -> None:
     """Manipulate roles"""
 
 
+@role.command("create")
+@instance_identifier
+@helpers.parameters_from_model(interface.Role)
+@click.pass_obj
+def role_create(ctx: Context, instance: str, role: interface.Role) -> None:
+    """Create a role in a PostgreSQL instance"""
+    i = instance_lookup(ctx, instance)
+    if roles.exists(ctx, i, role.name):
+        raise click.ClickException("role already exists")
+    with runner(ctx):
+        roles.apply(ctx, i, role)
+
+
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
