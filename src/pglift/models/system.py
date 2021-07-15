@@ -163,5 +163,5 @@ class Instance(PostgreSQLInstance):
 
     def as_spec(self) -> InstanceSpec:
         return InstanceSpec(
-            **{k: getattr(self, k) for k in attr.fields_dict(self.__class__)}
+            **{k: getattr(self, k) for k in attr.fields_dict(InstanceSpec)}
         )
