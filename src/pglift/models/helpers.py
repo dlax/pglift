@@ -80,20 +80,21 @@ def parameters_from_model(
     return decorator
 
 
-PYDANTIC2ANSIBLE_TYPES: Mapping[Union[Type[Any], str], str] = {
-    bool: "bool",
-    int: "int",
-    str: "str",
-    pydantic.SecretStr: "str",
-}
-
-
 class ArgSpec(TypedDict, total=False):
     required: bool
     type: str
     default: Any
     choices: List[str]
     description: List[str]
+    no_log: bool
+
+
+PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], ArgSpec] = {
+    bool: {"type": "bool"},
+    int: {"type": "int"},
+    str: {"type": "str"},
+    pydantic.SecretStr: {"type": "str", "no_log": True},
+}
 
 
 def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
@@ -109,7 +110,7 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
             arg_spec = ArgSpec()
             ftype = field.type_
             try:
-                arg_spec["type"] = PYDANTIC2ANSIBLE_TYPES[ftype]
+                arg_spec.update(PYDANTIC2ANSIBLE[ftype])
             except KeyError:
                 if lenient_issubclass(ftype, enum.Enum):
                     try:
