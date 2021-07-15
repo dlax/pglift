@@ -3,6 +3,7 @@
 ## Description
 This collection provides a few roles and modules to configure and manage your
 PostgreSQL infrastructure based on [pglift](../../../../docs/index.rst).
+See the [tutorial](../../../../docs/ansible).
 
 ## Tested with Ansible
 
@@ -10,8 +11,7 @@ PostgreSQL infrastructure based on [pglift](../../../../docs/index.rst).
 
 ## Included content
 ### modules
-- [postgresql__instance](../../../../docs/ansible) this module allows to
-  configure a PostgreSQL instance based on pglift
+- instance: manage pglift (PostgreSQL) instances
 
 ## Roadmap
 FIXME
