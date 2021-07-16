@@ -73,6 +73,8 @@ def revert_postgresql_backup_systemd_templates(*, env: Optional[str] = None) -> 
 
 def do(ctx: BaseContext, env: Optional[str] = None) -> None:
     settings = ctx.settings
+    if settings.service_manager != "systemd":
+        return
     with runner(ctx):
         postgresql_systemd_unit_template(settings.postgresql, env=env)
         postgres_exporter_systemd_unit_template(settings.prometheus)
@@ -81,6 +83,8 @@ def do(ctx: BaseContext, env: Optional[str] = None) -> None:
 
 def undo(ctx: BaseContext) -> None:
     settings = ctx.settings
+    if settings.service_manager != "systemd":
+        return
     with runner(ctx):
         revert_postgresql_backup_systemd_templates()
         revert_postgres_exporter_systemd_unit_template(settings.prometheus)
