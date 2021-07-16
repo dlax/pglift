@@ -13,12 +13,11 @@
           shared_buffers: 1GB
           unix_socket_directories: /tmp
 
-    - name: a role in production instance
+    - name: bob, dropped
       dalibo.pglift.role:
         instance: prod
         name: bob
-        password: s3kret
-        pgpass: true
+        state: absent
 
     - name: pre-production instance, now dropped
       dalibo.pglift.instance:

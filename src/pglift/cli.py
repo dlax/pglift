@@ -287,7 +287,7 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
             described = roles.describe(ctx, i, name)
     except exceptions.RoleNotFound as e:
         raise click.ClickException(e.show())
-    print(described.yaml(), end="")
+    print(described.yaml(exclude={"state"}), end="")
 
 
 @role.command("drop")

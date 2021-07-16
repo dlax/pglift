@@ -61,6 +61,11 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: interface.Role) -
 
     The instance should be running.
     """
+    if role_manifest.state == interface.Role.State.absent:
+        if exists(ctx, instance, role_manifest.name):
+            drop(ctx, instance, role_manifest.name)
+        return None
+
     if not exists(ctx, instance, role_manifest.name):
         create(ctx, instance, role_manifest)
     if role_manifest.password:

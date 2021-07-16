@@ -16,5 +16,12 @@
       "add an entry in password file for this role"
     ],
     "type": "bool"
+  },
+  "state": {
+    "choices": [
+      "present",
+      "absent"
+    ],
+    "default": "present"
   }
 }

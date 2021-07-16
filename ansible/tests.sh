@@ -76,7 +76,11 @@ list_timers
 
 ansible-playbook docs/ansible/play2.yml
 cat "$passfile"
-grep -q bob "$passfile"
+if grep -q bob "$passfile";
+then
+    echo "'bob' user still present in password file $passfile"
+    exit 1
+fi
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 check_postgres_exporter 9187

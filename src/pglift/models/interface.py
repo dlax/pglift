@@ -191,8 +191,13 @@ class Instance(Manifest):
 class Role(Manifest):
     """PostgreSQL role"""
 
+    class State(enum.Enum):
+        present = "present"
+        absent = "absent"
+
     name: str
     password: Optional[SecretStr] = Field(default=None, description="role password")
     pgpass: bool = Field(
         default=False, description="add an entry in password file for this role"
     )
+    state: State = Field(default=State.present, cli={"hide": True})

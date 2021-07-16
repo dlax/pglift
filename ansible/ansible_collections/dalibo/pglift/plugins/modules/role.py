@@ -25,6 +25,9 @@ options:
     required: true
     description:
       - Role name.
+  state:
+    choices: [ present, absent ]
+    default: present
   password:
     type: str
     required: false
