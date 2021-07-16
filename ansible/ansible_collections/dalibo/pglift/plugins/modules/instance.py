@@ -143,6 +143,7 @@ def run_module() -> None:
     if instance_exists:
         if not instance_and_changes:  # Dropped
             result["changed"] = True
+            instance = None
         else:
             instance, changes = instance_and_changes
             if changes:
@@ -152,13 +153,15 @@ def run_module() -> None:
         instance, changes = instance_and_changes
         result["changed"] = True
         result["configuration_changes"] = changes
+    else:
+        instance = None
 
     if module._diff:
         diff: Dict[str, Any] = {}
         before = diff["before"] = {}
         after = diff["after"] = {}
         # TODO: use configuration file path instead
-        diff["before_header"] = diff["after_header"] = str(instance)
+        diff["before_header"] = diff["after_header"] = str(instance or m)
         for k, (before_val, after_val) in result.get(  # type: ignore[attr-defined]
             "configuration_changes", {}
         ).items():
