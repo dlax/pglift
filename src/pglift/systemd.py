@@ -29,6 +29,10 @@ def uninstall(name: str) -> None:
         path.unlink()
 
 
+def daemon_reload(ctx: BaseContext) -> None:
+    ctx.run(["systemctl", "--user", "daemon-reload"], check=True)
+
+
 def is_enabled(ctx: BaseContext, unit: str) -> bool:
     r = ctx.run(["systemctl", "--quiet", "--user", "is-enabled", unit], check=False)
     return r.returncode == 0

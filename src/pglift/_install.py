@@ -79,6 +79,7 @@ def do(ctx: BaseContext, env: Optional[str] = None) -> None:
         postgresql_systemd_unit_template(settings.postgresql, env=env)
         postgres_exporter_systemd_unit_template(settings.prometheus)
         postgresql_backup_systemd_templates(env=env)
+        systemd.daemon_reload(ctx)
 
 
 def undo(ctx: BaseContext) -> None:
@@ -89,3 +90,4 @@ def undo(ctx: BaseContext) -> None:
         revert_postgresql_backup_systemd_templates()
         revert_postgres_exporter_systemd_unit_template(settings.prometheus)
         revert_postgresql_systemd_unit_template(settings.postgresql)
+        systemd.daemon_reload(ctx)
