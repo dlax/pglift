@@ -76,9 +76,9 @@ class Manifest(BaseModel):
         data = yaml.safe_load(stream)
         return cls.parse_obj(data)
 
-    def yaml(self) -> str:
+    def yaml(self, **kwargs: Any) -> str:
         """Return a YAML serialization of this manifest."""
-        data = json.loads(self.json())
+        data = json.loads(self.json(**kwargs))
         return yaml.dump(data, sort_keys=False)  # type: ignore[no-any-return]
 
 
