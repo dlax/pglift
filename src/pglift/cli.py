@@ -251,10 +251,11 @@ def role() -> None:
 def role_create(ctx: Context, instance: str, role: interface.Role) -> None:
     """Create a role in a PostgreSQL instance"""
     i = instance_lookup(ctx, instance)
-    if roles.exists(ctx, i, role.name):
-        raise click.ClickException("role already exists")
-    with runner(ctx):
-        roles.apply(ctx, i, role)
+    with instance_mod.running(ctx, i):
+        if roles.exists(ctx, i, role.name):
+            raise click.ClickException("role already exists")
+        with runner(ctx):
+            roles.apply(ctx, i, role)
 
 
 @role.command("schema")
@@ -270,7 +271,7 @@ def role_schema() -> None:
 def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a role"""
     i = instance_lookup(ctx, instance)
-    with runner(ctx):
+    with runner(ctx), instance_mod.running(ctx, i):
         roles.apply(ctx, i, interface.Role.parse_yaml(file))
 
 
@@ -282,7 +283,8 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
     """Describe a role"""
     i = instance_lookup(ctx, instance)
     try:
-        described = roles.describe(ctx, i, name)
+        with instance_mod.running(ctx, i):
+            described = roles.describe(ctx, i, name)
     except exceptions.RoleNotFound as e:
         raise click.ClickException(e.show())
     print(described.yaml(), end="")
@@ -296,6 +298,7 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
     """Drop a role"""
     i = instance_lookup(ctx, instance)
     try:
-        roles.drop(ctx, i, name)
+        with instance_mod.running(ctx, i):
+            roles.drop(ctx, i, name)
     except exceptions.RoleNotFound as e:
         raise click.ClickException(e.show())

@@ -1,5 +1,6 @@
 import json
-from unittest.mock import patch
+from typing import Iterator
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -17,6 +18,12 @@ from pglift.models import interface
 @pytest.fixture
 def runner():
     return CliRunner()
+
+
+@pytest.fixture
+def running() -> Iterator[MagicMock]:
+    with patch("pglift.instance.running") as m:
+        yield m
 
 
 def test_cli(runner, ctx):
@@ -215,7 +222,7 @@ def test_backup_instance(runner, instance, ctx):
     assert expire.called
 
 
-def test_role_create(ctx, instance, runner):
+def test_role_create(ctx, instance, runner, running):
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"
     ) as apply:
@@ -235,6 +242,9 @@ def test_role_create(ctx, instance, runner):
     exists.assert_called_once_with(ctx, instance, "rob")
     role = interface.Role.parse_obj({"name": "rob", "password": "ert", "pgpass": True})
     apply.assert_called_once_with(ctx, instance, role)
+    running.assert_called_once_with(ctx, instance)
+
+    running.reset_mock()
 
     with patch.object(roles, "exists", return_value=True) as exists:
         result = runner.invoke(
@@ -250,6 +260,7 @@ def test_role_create(ctx, instance, runner):
     assert result.exit_code == 1
     assert "role already exists" in result.stdout
     exists.assert_called_once_with(ctx, instance, "bob")
+    running.assert_called_once_with(ctx, instance)
 
 
 def test_role_schema(runner):
@@ -259,7 +270,7 @@ def test_role_schema(runner):
     assert schema["description"] == "PostgreSQL role"
 
 
-def test_role_apply(runner, tmp_path, ctx, instance):
+def test_role_apply(runner, tmp_path, ctx, instance, running):
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "roltest", "pgpass": True})
     manifest.write_text(content)
@@ -271,6 +282,7 @@ def test_role_apply(runner, tmp_path, ctx, instance):
         )
     assert result.exit_code == 0
     apply.assert_called_once()
+    running.assert_called_once_with(ctx, instance)
     (call_ctx, call_instance, call_role), kwargs = apply.call_args
     assert call_ctx == ctx
     assert call_instance == instance
@@ -278,7 +290,7 @@ def test_role_apply(runner, tmp_path, ctx, instance):
     assert kwargs == {}
 
 
-def test_role_describe(runner, ctx, instance):
+def test_role_describe(runner, ctx, instance, running):
     with patch.object(
         roles, "describe", side_effect=exceptions.RoleNotFound("absent")
     ) as describe:
@@ -288,8 +300,11 @@ def test_role_describe(runner, ctx, instance):
             obj=ctx,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
+    running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
     assert result.stdout.strip() == "Error: role 'absent' not found"
+
+    running.reset_mock()
 
     with patch.object(
         roles,
@@ -302,6 +317,7 @@ def test_role_describe(runner, ctx, instance):
             obj=ctx,
         )
     describe.assert_called_once_with(ctx, instance, "present")
+    running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     described = yaml.safe_load(result.stdout)
     assert described == {
@@ -311,7 +327,7 @@ def test_role_describe(runner, ctx, instance):
     }
 
 
-def test_role_drop(runner, ctx, instance):
+def test_role_drop(runner, ctx, instance, running):
     with patch.object(
         roles, "drop", side_effect=exceptions.RoleNotFound("bar")
     ) as drop:
@@ -321,8 +337,11 @@ def test_role_drop(runner, ctx, instance):
             obj=ctx,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
     assert result.stdout.strip() == "Error: role 'bar' not found"
+
+    running.reset_mock()
 
     with patch.object(roles, "drop") as drop:
         result = runner.invoke(
@@ -331,4 +350,5 @@ def test_role_drop(runner, ctx, instance):
             obj=ctx,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
