@@ -95,6 +95,11 @@ def _decorators_from_model(
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
                 attrs["metavar"] = metavar
+            elif lenient_issubclass(ftype, pydantic.SecretStr):
+                attrs["prompt"] = True
+                attrs["prompt_required"] = False
+                attrs["confirmation_prompt"] = True
+                attrs["hide_input"] = True
             elif lenient_issubclass(ftype, bool):
                 if field.default is False:
                     attrs["is_flag"] = True

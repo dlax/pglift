@@ -6,7 +6,7 @@ from typing import List, Optional
 import click
 import pytest
 from click.testing import CliRunner
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from pglift.models import helpers, interface
 
@@ -51,6 +51,7 @@ class Address(BaseModel):
 
 class Person(BaseModel):
     name: str
+    nickname: Optional[SecretStr]
     gender: Optional[Gender]
     age: Optional[int] = Field(description="age")
     address: Optional[Address]
@@ -88,9 +89,9 @@ def test_parameters_from_model():
         ctx: click.core.Context, sort_keys: bool, person: Person, indent: int
     ) -> None:
         """Add a new person."""
-        click.echo(person.json(indent=indent, sort_keys=sort_keys))
+        click.echo(person.json(indent=indent, sort_keys=sort_keys), err=True)
 
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(add_person, ["--help"])
     assert result.exit_code == 0
     assert result.stdout == (
@@ -100,6 +101,7 @@ def test_parameters_from_model():
         "\n"
         "Options:\n"
         "  --sort-keys\n"
+        "  --nickname TEXT\n"
         "  --gender [M|F]\n"
         "  --age AGE                       Age.\n"
         "  --address-street STREET         Street lines.\n"
@@ -128,10 +130,12 @@ def test_parameters_from_model():
             "--birthdate=1981-02-18T01:02",
             "--no-address-shared",
             "--indent=2",
+            "--nickname",
         ],
+        input="alc\nalc\n",
     )
     assert result.exit_code == 0, result
-    assert json.loads(result.stdout) == {
+    assert json.loads(result.stderr) == {
         "address": {
             "building": None,
             "city": "paris",
@@ -145,6 +149,7 @@ def test_parameters_from_model():
         "dob": "1981-02-18T01:02:00",
         "gender": "F",
         "name": "alice",
+        "nickname": "**********",
     }
 
 
@@ -197,6 +202,7 @@ def test_argspec_from_model():
     argspec = helpers.argspec_from_model(Person)
     assert argspec == {
         "name": {"required": True, "type": "str"},
+        "nickname": {"no_log": True, "type": "str"},
         "gender": {"choices": ["M", "F"]},
         "age": {"type": "int", "description": ["age"]},
         "birthdate": {"description": ["date of birth"]},
