@@ -187,4 +187,4 @@ def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> No
             if role.pgpass and password is not None:
                 entry = pgpass.PassEntry("*", port, "*", username, password)
                 passfile.lines.append(entry)
-        passfile.sort()
+                passfile.sort()
