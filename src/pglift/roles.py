@@ -169,8 +169,8 @@ def in_pgpass(ctx: BaseContext, instance: Instance, role: Role) -> bool:
 
 def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Add, update or remove a password file entry for 'role' of 'instance'."""
-    port = int(instance.config().port)  # type: ignore[arg-type]
 
+    port = instance.port
     username = role.name
     password = None
     if role.password:
