@@ -191,8 +191,6 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
                     for subname, subspec in argspec_from_model(ftype).items():
                         spec[f"{field.name}_{subname}"] = subspec
                     continue
-                else:
-                    raise ValueError(f"unhandled field type {ftype}")
 
             if field.required:
                 arg_spec["required"] = True
