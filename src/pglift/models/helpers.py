@@ -172,6 +172,12 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
     """
     spec = {}
     for field in model_type.__fields__.values():
+        ftype = field.type_
+        if lenient_issubclass(ftype, pydantic.BaseModel):
+            for subname, subspec in argspec_from_model(ftype).items():
+                spec[f"{field.name}_{subname}"] = subspec
+            continue
+
         ansible_config = field.field_info.extra.get("ansible", {})
         if ansible_config.get("hide", False):
             continue
@@ -179,7 +185,6 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
             arg_spec: ArgSpec = ansible_config["spec"]
         except KeyError:
             arg_spec = ArgSpec()
-            ftype = field.type_
             try:
                 arg_spec.update(PYDANTIC2ANSIBLE[ftype])
             except KeyError:
@@ -189,10 +194,6 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
                     except KeyError:
                         choices = [f.name for f in ftype]
                     arg_spec["choices"] = choices
-                elif lenient_issubclass(ftype, pydantic.BaseModel):
-                    for subname, subspec in argspec_from_model(ftype).items():
-                        spec[f"{field.name}_{subname}"] = subspec
-                    continue
 
             if field.required:
                 arg_spec["required"] = True
