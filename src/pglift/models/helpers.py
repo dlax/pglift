@@ -64,6 +64,7 @@ def _decorators_from_model(
                     choices = [v.name for v in field.type_]
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(field.type_, pydantic.BaseModel):
+                assert not _prefix, "only one nesting level is supported"
                 yield from _decorators_from_model(field.type_, _prefix=field.name)
                 continue
             elif lenient_issubclass(field.type_, bool):
