@@ -1,7 +1,7 @@
 import enum
 import json
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 import click
 import pytest
@@ -23,7 +23,7 @@ class Country(enum.Enum):
 
 
 class Address(BaseModel):
-    street: str = Field(description="the street")
+    street: List[str] = Field(description="street lines")
     zipcode: int = Field(
         default=0,
         description="ZIP code",
@@ -100,7 +100,7 @@ def test_parameters_from_model():
         "  --sort-keys\n"
         "  --gender [M|F]\n"
         "  --age AGE                       Age.\n"
-        "  --address-street STREET         The street.\n"
+        "  --address-street STREET         Street lines.\n"
         "  --address-city CITY             City.\n"
         "  --address-country [fr|be]\n"
         "  --address-shared / --no-address-shared\n"
@@ -118,6 +118,7 @@ def test_parameters_from_model():
             "--age=42",
             "--gender=F",
             "--address-street=bd montparnasse",
+            "--address-street=far far away",
             "--address-city=paris",
             "--address-country=fr",
             "--address-primary",
@@ -131,7 +132,7 @@ def test_parameters_from_model():
         "address": {
             "city": "paris",
             "country": "fr",
-            "street": "bd montparnasse",
+            "street": ["bd montparnasse", "far far away"],
             "zipcode": 0,
             "primary": True,
             "shared": False,
@@ -151,7 +152,7 @@ def test_parse_params_as():
         "address": {
             "city": "paris",
             "country": "fr",
-            "street": "bd montparnasse",
+            "street": ["bd montparnasse"],
             "zipcode": 0,
             "shared": True,
         },
@@ -161,7 +162,7 @@ def test_parse_params_as():
         age=42,
         gender=Gender.F,
         address=Address(
-            street="bd montparnasse",
+            street=["bd montparnasse"],
             zipcode=0,
             city="paris",
             country=Country.France,
@@ -179,8 +180,8 @@ def test_argspec_from_model():
         "dob": {"description": ["date of birth"]},
         "address_street": {
             "required": True,
-            "type": "str",
-            "description": ["the street"],
+            "type": "list",
+            "description": ["street lines"],
         },
         "address_city": {"type": "str", "description": "the city"},
         "address_country": {"choices": ["fr", "gb"], "required": True},

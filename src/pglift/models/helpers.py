@@ -1,6 +1,7 @@
 import enum
 import functools
 import inspect
+import typing
 from typing import (
     Any,
     Callable,
@@ -22,6 +23,14 @@ from typing_extensions import TypedDict
 Callback = Callable[..., None]
 ModelType = Type[pydantic.BaseModel]
 T = TypeVar("T", bound=pydantic.BaseModel)
+
+try:
+    get_origin = getattr(typing, "get_origin")
+except AttributeError:  # Python < 3.8
+
+    def get_origin(tp: Any) -> Any:
+        # Works only for GenericAlias, which should be enough for us.
+        return getattr(tp, "__origin__", None)
 
 
 def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
@@ -48,7 +57,7 @@ def _decorators_from_model(
         if cli_config.get("hide", False):
             continue
         argname = field.name
-        ftype = field.type_
+        ftype = field.outer_type_
         if not _prefix and field.required:
             yield argname, click.argument(field.name, type=ftype)
         else:
@@ -58,6 +67,8 @@ def _decorators_from_model(
             else:
                 fname = f"--{field.name}"
             attrs: Dict[str, Any] = {}
+            origin_type = get_origin(field.outer_type_)
+            metavar = field.name.upper()
             if lenient_issubclass(ftype, enum.Enum):
                 try:
                     choices = cli_config["choices"]
@@ -68,13 +79,16 @@ def _decorators_from_model(
                 assert not _prefix, "only one nesting level is supported"
                 yield from _decorators_from_model(ftype, _prefix=field.name)
                 continue
+            elif origin_type is not None and issubclass(origin_type, list):
+                attrs["multiple"] = True
+                attrs["metavar"] = metavar
             elif lenient_issubclass(ftype, bool):
                 if field.default is False:
                     attrs["is_flag"] = True
                 else:
                     fname = f"{fname}/--no-{fname[2:]}"
             else:
-                attrs["metavar"] = field.name.upper()
+                attrs["metavar"] = metavar
             if field.field_info.description:
                 description = field.field_info.description.capitalize()
                 if description[-1] not in ".?":
@@ -172,7 +186,7 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
     """
     spec = {}
     for field in model_type.__fields__.values():
-        ftype = field.type_
+        ftype = field.outer_type_
         if lenient_issubclass(ftype, pydantic.BaseModel):
             for subname, subspec in argspec_from_model(ftype).items():
                 spec[f"{field.name}_{subname}"] = subspec
@@ -188,12 +202,15 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
             try:
                 arg_spec.update(PYDANTIC2ANSIBLE[ftype])
             except KeyError:
+                origin_type = get_origin(ftype)
                 if lenient_issubclass(ftype, enum.Enum):
                     try:
                         choices = ansible_config["choices"]
                     except KeyError:
                         choices = [f.name for f in ftype]
                     arg_spec["choices"] = choices
+                elif origin_type is not None and issubclass(origin_type, list):
+                    arg_spec["type"] = "list"
 
             if field.required:
                 arg_spec["required"] = True
