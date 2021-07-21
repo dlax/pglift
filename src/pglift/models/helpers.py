@@ -167,7 +167,9 @@ PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], ArgSpec] = {
 
 
 def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
-    """Return the Ansible module argument spec object a pydantic model class."""
+    """Return the Ansible module argument spec object corresponding to a
+    pydantic model class.
+    """
     spec = {}
     for field in model_type.__fields__.values():
         ansible_config = field.field_info.extra.get("ansible", {})
