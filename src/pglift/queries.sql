@@ -2,7 +2,7 @@
 SELECT true FROM pg_roles WHERE rolname = %(username)s
 
 -- name: role_create
-CREATE ROLE {username} PASSWORD %(password)s
+CREATE ROLE {username} PASSWORD %(password)s LOGIN NOINHERIT
 
 -- name: role_has_password
 SELECT
@@ -11,7 +11,7 @@ WHERE
     rolname = %(username)s
 
 -- name: role_create_no_password
-CREATE ROLE {username}
+CREATE ROLE {username} LOGIN NOINHERIT
 
 -- name: role_alter_password
 ALTER ROLE {username} PASSWORD %(password)s
