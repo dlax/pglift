@@ -47,27 +47,28 @@ def _decorators_from_model(
         cli_config = field.field_info.extra.get("cli", {})
         if cli_config.get("hide", False):
             continue
+        argname = field.name
+        ftype = field.type_
         if not _prefix and field.required:
-            yield field.name, click.argument(field.name, type=field.type_)
+            yield argname, click.argument(field.name, type=ftype)
         else:
             if _prefix:
                 fname = f"--{_prefix}-{field.name}"
                 argname = f"{_prefix}_{field.name}"
             else:
                 fname = f"--{field.name}"
-                argname = field.name
             attrs: Dict[str, Any] = {}
-            if lenient_issubclass(field.type_, enum.Enum):
+            if lenient_issubclass(ftype, enum.Enum):
                 try:
                     choices = cli_config["choices"]
                 except KeyError:
-                    choices = [v.name for v in field.type_]
+                    choices = [v.name for v in ftype]
                 attrs["type"] = click.Choice(choices)
-            elif lenient_issubclass(field.type_, pydantic.BaseModel):
+            elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
-                yield from _decorators_from_model(field.type_, _prefix=field.name)
+                yield from _decorators_from_model(ftype, _prefix=field.name)
                 continue
-            elif lenient_issubclass(field.type_, bool):
+            elif lenient_issubclass(ftype, bool):
                 if field.default is False:
                     attrs["is_flag"] = True
                 else:
