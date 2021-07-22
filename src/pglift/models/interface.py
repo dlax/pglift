@@ -45,9 +45,9 @@ class InstanceState(enum.Enum):
         """
         return cls(
             {
-                status.running: "started",
-                status.not_running: "stopped",
-                status.unspecified_datadir: "absent",
+                status.running: cls.started,
+                status.not_running: cls.stopped,
+                status.unspecified_datadir: cls.absent,
             }[status]
         )
 
