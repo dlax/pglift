@@ -5,6 +5,12 @@
     ],
     "type": "int"
   },
+  "in_roles": {
+    "description": [
+      "list of roles to which the new role will be added as a new member"
+    ],
+    "type": "list"
+  },
   "inherit": {
     "default": true,
     "description": [

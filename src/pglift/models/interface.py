@@ -2,7 +2,7 @@ import enum
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import IO, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import yaml
 from pgtoolkit.ctl import Status
@@ -212,6 +212,11 @@ class Role(Manifest):
     )
     validity: Optional[datetime] = Field(
         description="sets a date and time after which the role's password is no longer valid"
+    )
+    in_roles: List[str] = Field(
+        default_factory=list,
+        description="list of roles to which the new role will be added as a new member",
+        cli={"name": "in-role"},
     )
     state: State = Field(default=State.present, cli={"hide": True})
 

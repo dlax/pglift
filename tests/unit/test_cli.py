@@ -237,13 +237,21 @@ def test_role_create(ctx, instance, runner, running):
                 "--password=ert",
                 "--pgpass",
                 "--no-inherit",
+                "--in-role=monitoring",
+                "--in-role=backup",
             ],
             obj=ctx,
         )
     assert result.exit_code == 0, result
     exists.assert_called_once_with(ctx, instance, "rob")
     role = interface.Role.parse_obj(
-        {"name": "rob", "password": "ert", "pgpass": True, "inherit": False}
+        {
+            "name": "rob",
+            "password": "ert",
+            "pgpass": True,
+            "inherit": False,
+            "in_roles": ["monitoring", "backup"],
+        }
     )
     apply.assert_called_once_with(ctx, instance, role)
     running.assert_called_once_with(ctx, instance)
@@ -321,6 +329,7 @@ def test_role_describe(runner, ctx, instance, running):
                 "inherit": False,
                 "validity": datetime.datetime(2022, 1, 1),
                 "connection_limit": 5,
+                "in_roles": ["observers", "monitoring"],
             }
         ),
     ) as describe:
@@ -341,6 +350,7 @@ def test_role_describe(runner, ctx, instance, running):
         "login": False,
         "connection_limit": 5,
         "validity": "2022-01-01T00:00:00",
+        "in_roles": ["observers", "monitoring"],
     }
 
 

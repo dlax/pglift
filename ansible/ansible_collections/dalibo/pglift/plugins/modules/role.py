@@ -43,6 +43,11 @@ options:
     required: false
     description:
       - How many concurrent connections the role can make.
+  in_roles:
+    type: list[str]
+    required: false
+    description:
+      - Roles to which the new role will be added as a new member.
   inherit:
     type: bool
     required: false

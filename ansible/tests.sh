@@ -66,6 +66,7 @@ grep -q bob "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
 psql -w -t -e -c "select rolname,rolinherit,rolcanlogin,rolconnlimit,rolpassword,rolvaliduntil from pg_roles where rolname = 'bob';" "host=/tmp user=postgres dbname=postgres port=5433"
+psql -w -t -e -c "SELECT r.rolname AS role, ARRAY_AGG(m.rolname) AS member_of FROM pg_auth_members JOIN pg_authid m ON pg_auth_members.roleid = m.oid JOIN pg_authid r ON pg_auth_members.member = r.oid GROUP BY r.rolname" "host=/tmp user=postgres dbname=postgres port=5433"
 check_postgres_exporter 9187
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 check_postgres_exporter 9188

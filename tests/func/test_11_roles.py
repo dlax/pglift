@@ -56,6 +56,7 @@ def test_create(ctx, instance, role_factory):
         login=True,
         connection_limit=5,
         validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
+        in_roles=["pg_monitor"],
     )
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
@@ -71,6 +72,22 @@ def test_create(ctx, instance, role_factory):
     )
     assert valid_until == role.validity
     assert connection_limit == role.connection_limit
+    r = execute(
+        ctx,
+        instance,
+        """
+        SELECT
+            r.rolname AS role,
+            ARRAY_AGG(m.rolname) AS member_of
+        FROM
+            pg_auth_members
+            JOIN pg_authid m ON pg_auth_members.roleid = m.oid
+            JOIN pg_authid r ON pg_auth_members.member = r.oid
+        GROUP BY
+            r.rolname
+        """,
+    )
+    assert ("password", ["pg_monitor"]) in r
 
     nologin = interface.Role(name="nologin", password="passwd", login=False)
     roles.create(ctx, instance, nologin)
