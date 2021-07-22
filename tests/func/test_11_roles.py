@@ -54,6 +54,7 @@ def test_create(ctx, instance, role_factory):
         name="password",
         password="scret",
         login=True,
+        connection_limit=5,
         validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
     )
     assert not roles.exists(ctx, instance, role.name)
@@ -62,13 +63,14 @@ def test_create(ctx, instance, role_factory):
     assert roles.has_password(ctx, instance, role)
     r = execute(ctx, instance, "select 1", role=role)
     assert r == [(1,)]
-    ((valid_until,),) = execute(
+    ((valid_until, connection_limit),) = execute(
         ctx,
         instance,
-        f"select rolvaliduntil from pg_roles where rolname = '{role.name}'",
+        f"select rolvaliduntil, rolconnlimit from pg_roles where rolname = '{role.name}'",
         role=role,
     )
     assert valid_until == role.validity
+    assert connection_limit == role.connection_limit
 
     nologin = interface.Role(name="nologin", password="passwd", login=False)
     roles.create(ctx, instance, nologin)

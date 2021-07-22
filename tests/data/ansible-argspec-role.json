@@ -1,4 +1,10 @@
 {
+  "connection_limit": {
+    "description": [
+      "how many concurrent connections the role can make"
+    ],
+    "type": "int"
+  },
   "inherit": {
     "default": true,
     "description": [

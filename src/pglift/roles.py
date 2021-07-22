@@ -153,6 +153,13 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
             )
         )
         args["validity"] = role.validity.isoformat()
+    if role.connection_limit is not None:
+        opts.append(
+            db.sql.SQL(" ").join(
+                (db.sql.SQL("CONNECTION LIMIT"), db.sql.Placeholder("connection_limit"))
+            )
+        )
+        args["connection_limit"] = role.connection_limit
     options = db.sql.SQL(" ").join(opts)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:

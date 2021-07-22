@@ -38,6 +38,11 @@ options:
     required: false
     description:
       - If True, add an entry in password file for this role.
+  connection_limit:
+    type: int
+    required: false
+    description:
+      - How many concurrent connections the role can make.
   inherit:
     type: bool
     required: false

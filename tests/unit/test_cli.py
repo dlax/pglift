@@ -320,6 +320,7 @@ def test_role_describe(runner, ctx, instance, running):
                 "password": "hidden",
                 "inherit": False,
                 "validity": datetime.datetime(2022, 1, 1),
+                "connection_limit": 5,
             }
         ),
     ) as describe:
@@ -338,6 +339,7 @@ def test_role_describe(runner, ctx, instance, running):
         "pgpass": True,
         "inherit": False,
         "login": False,
+        "connection_limit": 5,
         "validity": "2022-01-01T00:00:00",
     }
 

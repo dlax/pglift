@@ -20,6 +20,7 @@
         password: s3kret
         pgpass: true
         login: true
+        connection_limit: 10
         validity: '2025-01-01T00:00'
 
     - name: a database in production instance
