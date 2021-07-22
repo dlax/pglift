@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from pgtoolkit import conf, pgpass
 
 from . import db, exceptions, hookimpl
@@ -136,7 +138,7 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         db.sql.SQL("LOGIN" if role.login else "NOLOGIN"),
     ]
-    args = {}
+    args: Dict[str, Any] = {}
     if role.password is not None:
         opts.append(
             db.sql.SQL(" ").join(
@@ -144,6 +146,13 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
             )
         )
         args["password"] = role.password.get_secret_value()
+    if role.validity is not None:
+        opts.append(
+            db.sql.SQL(" ").join(
+                (db.sql.SQL("VALID UNTIL"), db.sql.Placeholder("validity"))
+            )
+        )
+        args["validity"] = role.validity.isoformat()
     options = db.sql.SQL(" ").join(opts)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:

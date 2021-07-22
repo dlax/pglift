@@ -1,5 +1,6 @@
 import enum
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import IO, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
@@ -205,6 +206,9 @@ class Role(Manifest):
         description="let the role inherits the privileges of the roles its is a member of",
     )
     login: bool = Field(default=False, description="allow the role to log in")
+    validity: Optional[datetime] = Field(
+        description="sets a date and time after which the role's password is no longer valid"
+    )
     state: State = Field(default=State.present, cli={"hide": True})
 
 

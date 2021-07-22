@@ -50,6 +50,11 @@ options:
     default: false
     description:
       - Allow the role to log in.
+  validity:
+    type: timestamp
+    required: false
+    description:
+      - Sets a date and time after which the role's password is no longer valid.
 
 author:
 - Dalibo (@dalibo)

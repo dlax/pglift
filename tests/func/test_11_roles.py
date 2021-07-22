@@ -1,3 +1,4 @@
+import datetime
 import functools
 import pathlib
 from typing import Optional, Union
@@ -49,13 +50,25 @@ def test_create(ctx, instance, role_factory):
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role)
 
-    role = interface.Role(name="password", password="scret", login=True)
+    role = interface.Role(
+        name="password",
+        password="scret",
+        login=True,
+        validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
+    )
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role)
     r = execute(ctx, instance, "select 1", role=role)
     assert r == [(1,)]
+    ((valid_until,),) = execute(
+        ctx,
+        instance,
+        f"select rolvaliduntil from pg_roles where rolname = '{role.name}'",
+        role=role,
+    )
+    assert valid_until == role.validity
 
     nologin = interface.Role(name="nologin", password="passwd", login=False)
     roles.create(ctx, instance, nologin)

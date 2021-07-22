@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Iterator
 from unittest.mock import MagicMock, patch
@@ -312,8 +313,14 @@ def test_role_describe(runner, ctx, instance, running):
     with patch.object(
         roles,
         "describe",
-        return_value=interface.Role(
-            name="present", pgpass=True, password="hidden", inherit=False
+        return_value=interface.Role.parse_obj(
+            {
+                "name": "present",
+                "pgpass": True,
+                "password": "hidden",
+                "inherit": False,
+                "validity": datetime.datetime(2022, 1, 1),
+            }
         ),
     ) as describe:
         result = runner.invoke(
@@ -331,6 +338,7 @@ def test_role_describe(runner, ctx, instance, running):
         "pgpass": True,
         "inherit": False,
         "login": False,
+        "validity": "2022-01-01T00:00:00",
     }
 
 
