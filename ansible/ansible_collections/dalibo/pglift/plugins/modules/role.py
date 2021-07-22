@@ -44,6 +44,12 @@ options:
     default: true
     description:
       - Let the role inherits the privileges of the roles its is a member of.
+  login:
+    type: bool
+    required: false
+    default: false
+    description:
+      - Allow the role to log in.
 
 author:
 - Dalibo (@dalibo)

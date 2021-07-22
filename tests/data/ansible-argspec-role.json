@@ -6,6 +6,13 @@
     ],
     "type": "bool"
   },
+  "login": {
+    "default": false,
+    "description": [
+      "allow the role to log in"
+    ],
+    "type": "bool"
+  },
   "name": {
     "required": true,
     "type": "str"

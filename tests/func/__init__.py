@@ -7,6 +7,7 @@ from pglift import db
 from pglift import instance as instance_mod
 from pglift.ctx import BaseContext
 from pglift.models.system import Instance, InstanceSpec
+from pglift.types import Role
 
 
 def configure_instance(
@@ -44,6 +45,7 @@ def execute(
     query: str,
     fetch: Literal[True],
     autocommit: bool = False,
+    role: Optional[Role] = None,
 ) -> List[Any]:
     ...
 
@@ -55,6 +57,7 @@ def execute(
     query: str,
     fetch: bool = False,
     autocommit: bool = False,
+    role: Optional[Role] = None,
 ) -> List[Any]:
     ...
 
@@ -65,11 +68,12 @@ def execute(
     query: str,
     fetch: bool = True,
     autocommit: bool = False,
+    role: Optional[Role] = None,
 ) -> Optional[List[Any]]:
+    if role is None:
+        role = ctx.settings.postgresql.surole
     with instance_mod.running(ctx, instance):
-        with db.connect(
-            instance, ctx.settings.postgresql.surole, autocommit=autocommit
-        ) as conn:
+        with db.connect(instance, role, autocommit=autocommit) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 conn.commit()

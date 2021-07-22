@@ -2,6 +2,7 @@ import functools
 import pathlib
 from typing import Optional, Union
 
+import psycopg2
 import pytest
 from pydantic import SecretStr
 
@@ -48,11 +49,20 @@ def test_create(ctx, instance, role_factory):
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role)
 
-    role = interface.Role(name="password", password="scret")
+    role = interface.Role(name="password", password="scret", login=True)
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role)
+    r = execute(ctx, instance, "select 1", role=role)
+    assert r == [(1,)]
+
+    nologin = interface.Role(name="nologin", password="passwd", login=False)
+    roles.create(ctx, instance, nologin)
+    with pytest.raises(
+        psycopg2.OperationalError, match='role "nologin" is not permitted to log in'
+    ):
+        execute(ctx, instance, "select 1", role=nologin)
 
 
 def role_in_pgpass(

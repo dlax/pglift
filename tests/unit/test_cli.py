@@ -330,6 +330,7 @@ def test_role_describe(runner, ctx, instance, running):
         "password": "**********",
         "pgpass": True,
         "inherit": False,
+        "login": False,
     }
 
 

@@ -132,7 +132,10 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
 
     The instance should be running and the role should not exist already.
     """
-    opts = [db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT")]
+    opts = [
+        db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
+        db.sql.SQL("LOGIN" if role.login else "NOLOGIN"),
+    ]
     args = {}
     if role.password is not None:
         opts.append(

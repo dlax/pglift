@@ -204,6 +204,7 @@ class Role(Manifest):
         default=True,
         description="let the role inherits the privileges of the roles its is a member of",
     )
+    login: bool = Field(default=False, description="allow the role to log in")
     state: State = Field(default=State.present, cli={"hide": True})
 
 
