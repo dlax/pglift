@@ -200,6 +200,10 @@ class Role(Manifest):
     pgpass: bool = Field(
         default=False, description="add an entry in password file for this role"
     )
+    inherit: bool = Field(
+        default=True,
+        description="let the role inherits the privileges of the roles its is a member of",
+    )
     state: State = Field(default=State.present, cli={"hide": True})
 
 

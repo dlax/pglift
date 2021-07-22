@@ -235,12 +235,15 @@ def test_role_create(ctx, instance, runner, running):
                 "rob",
                 "--password=ert",
                 "--pgpass",
+                "--no-inherit",
             ],
             obj=ctx,
         )
     assert result.exit_code == 0, result
     exists.assert_called_once_with(ctx, instance, "rob")
-    role = interface.Role.parse_obj({"name": "rob", "password": "ert", "pgpass": True})
+    role = interface.Role.parse_obj(
+        {"name": "rob", "password": "ert", "pgpass": True, "inherit": False}
+    )
     apply.assert_called_once_with(ctx, instance, role)
     running.assert_called_once_with(ctx, instance)
 
@@ -309,7 +312,9 @@ def test_role_describe(runner, ctx, instance, running):
     with patch.object(
         roles,
         "describe",
-        return_value=interface.Role(name="present", pgpass=True, password="hidden"),
+        return_value=interface.Role(
+            name="present", pgpass=True, password="hidden", inherit=False
+        ),
     ) as describe:
         result = runner.invoke(
             cli,
@@ -324,6 +329,7 @@ def test_role_describe(runner, ctx, instance, running):
         "name": "present",
         "password": "**********",
         "pgpass": True,
+        "inherit": False,
     }
 
 

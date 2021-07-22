@@ -1,4 +1,11 @@
 {
+  "inherit": {
+    "default": true,
+    "description": [
+      "let the role inherits the privileges of the roles its is a member of"
+    ],
+    "type": "bool"
+  },
   "name": {
     "required": true,
     "type": "str"

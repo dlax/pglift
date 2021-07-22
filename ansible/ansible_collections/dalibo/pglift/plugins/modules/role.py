@@ -38,6 +38,12 @@ options:
     required: false
     description:
       - If True, add an entry in password file for this role.
+  inherit:
+    type: bool
+    required: false
+    default: true
+    description:
+      - Let the role inherits the privileges of the roles its is a member of.
 
 author:
 - Dalibo (@dalibo)

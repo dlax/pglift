@@ -127,20 +127,31 @@ def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
             return haspassword  # type: ignore[no-any-return]
 
 
-def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
+def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     """Create 'role' in 'instance'.
 
     The instance should be running and the role should not exist already.
     """
+    opts = [db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT")]
+    args = {}
     if role.password is not None:
-        query = "role_create"
-        args = {"password": role.password.get_secret_value()}
-    else:
-        query = "role_create_no_password"
-        args = {}
+        opts.append(
+            db.sql.SQL(" ").join(
+                [db.sql.SQL("PASSWORD"), db.sql.Placeholder("password")]
+            )
+        )
+        args["password"] = role.password.get_secret_value()
+    options = db.sql.SQL(" ").join(opts)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query(query, username=db.sql.Identifier(role.name)), args)
+            cur.execute(
+                db.query(
+                    "role_create",
+                    username=db.sql.Identifier(role.name),
+                    options=options,
+                ),
+                args,
+            )
         cnx.commit()
 
 
