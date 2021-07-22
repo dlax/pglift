@@ -16,20 +16,20 @@ from pydantic import (
 
 from .. import settings
 from ..ctx import BaseContext
+from ..types import AutoStrEnum
 from . import system as system_model
 
 
-@enum.unique
-class InstanceState(enum.Enum):
+class InstanceState(AutoStrEnum):
     """Instance state."""
 
-    stopped = "stopped"
+    stopped = enum.auto()
     """stopped"""
 
-    started = "started"
+    started = enum.auto()
     """started"""
 
-    absent = "absent"
+    absent = enum.auto()
     """absent"""
 
     @classmethod
@@ -191,9 +191,9 @@ class Instance(Manifest):
 class Role(Manifest):
     """PostgreSQL role"""
 
-    class State(enum.Enum):
-        present = "present"
-        absent = "absent"
+    class State(AutoStrEnum):
+        present = enum.auto()
+        absent = enum.auto()
 
     name: str
     password: Optional[SecretStr] = Field(default=None, description="role password")

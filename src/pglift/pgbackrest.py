@@ -14,6 +14,7 @@ from .ctx import BaseContext
 from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
+from .types import AutoStrEnum
 
 
 def make_cmd(
@@ -152,15 +153,14 @@ def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     revert_setup(ctx, instance)
 
 
-@enum.unique
-class BackupType(enum.Enum):
+class BackupType(AutoStrEnum):
     """Backup type."""
 
-    full = "full"
+    full = enum.auto()
     """full backup"""
-    incr = "incr"
+    incr = enum.auto()
     """incremental backup"""
-    diff = "diff"
+    diff = enum.auto()
     """differential backup"""
 
     @classmethod

@@ -1,3 +1,4 @@
+import enum
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
@@ -46,3 +47,24 @@ class Logger(Protocol):
 
     def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
         ...
+
+
+class StrEnum(str, enum.Enum):
+    pass
+
+
+@enum.unique
+class AutoStrEnum(StrEnum):
+    """Enum base class with automatic values set to member name.
+
+    >>> class State(AutoStrEnum):
+    ...     running = enum.auto()
+    ...     stopped = enum.auto()
+    >>> State.running
+    <State.running: 'running'>
+    >>> State.stopped
+    <State.stopped: 'stopped'>
+    """
+
+    def _generate_next_value_(name, *args: Any) -> str:  # type: ignore[override]
+        return name
