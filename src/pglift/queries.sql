@@ -1,29 +1,29 @@
 -- name: role_exists
-SELECT true FROM pg_roles WHERE rolname = %(username)s
+SELECT true FROM pg_roles WHERE rolname = %(username)s;
 
 -- name: role_create
-CREATE ROLE {username} PASSWORD %(password)s
+CREATE ROLE {username} PASSWORD %(password)s;
 
 -- name: role_has_password
 SELECT
     rolpassword IS NOT NULL FROM pg_authid
 WHERE
-    rolname = %(username)s
+    rolname = %(username)s;
 
 -- name: role_create_no_password
-CREATE ROLE {username}
+CREATE ROLE {username};
 
 -- name: role_alter_password
-ALTER ROLE {username} PASSWORD %(password)s
+ALTER ROLE {username} PASSWORD %(password)s;
 
 -- name: role_drop
-DROP ROLE {username}
+DROP ROLE {username};
 
 -- name: database_exists
-SELECT true FROM pg_database WHERE datname = %(database)s
+SELECT true FROM pg_database WHERE datname = %(database)s;
 
 -- name: database_create
-CREATE DATABASE {database}
+CREATE DATABASE {database};
 
 -- name: database_drop
-DROP DATABASE {database}
+DROP DATABASE {database};
