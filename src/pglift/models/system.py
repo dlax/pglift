@@ -82,17 +82,29 @@ class InstanceSpec(BaseInstance):
     """Spec for an instance, to be created"""
 
     prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
+    standby_for: Optional[str]
 
     T = TypeVar("T", bound="InstanceSpec")
 
     @classmethod
     def default_version(
-        cls: Type[T], name: str, ctx: BaseContext, *, prometheus: PrometheusService
+        cls: Type[T],
+        name: str,
+        ctx: BaseContext,
+        *,
+        prometheus: PrometheusService,
+        standby_for: Optional[str],
     ) -> T:
         """Build an instance by guessing its version from installed PostgreSQL."""
         version = default_postgresql_version(ctx)
         settings = ctx.settings
-        return cls(name=name, version=version, settings=settings, prometheus=prometheus)
+        return cls(
+            name=name,
+            version=version,
+            settings=settings,
+            prometheus=prometheus,
+            standby_for=standby_for,
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -137,6 +149,18 @@ class PostgreSQLInstance(BaseInstance):
         if not self.exists():
             raise exceptions.InstanceNotFound(str(self))
         return self
+
+    @property
+    def standby_for(self) -> Optional[str]:
+        """Return primary_conninfo of standby if streaming replication is enabled"""
+        standbyfile = "standby.signal" if int(self.version) >= 12 else "recovery.conf"
+        if not (self.datadir / standbyfile).exists():
+            return None
+        # primary_conninfo must be present here, otherwise this is considered
+        # as an error
+        primary_conninfo = self.config()["primary_conninfo"]
+        assert isinstance(primary_conninfo, str)
+        return primary_conninfo
 
     @classmethod
     def from_stanza(cls: Type[T], ctx: BaseContext, stanza: str) -> T:

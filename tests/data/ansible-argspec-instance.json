@@ -25,6 +25,18 @@
     "required": false,
     "type": "bool"
   },
+  "standby_for": {
+    "description": [
+      "DSN of primary for streaming replication"
+    ],
+    "type": "str"
+  },
+  "standby_status": {
+    "choices": [
+      "demoted",
+      "promoted"
+    ]
+  },
   "state": {
     "choices": [
       "stopped",

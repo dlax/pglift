@@ -86,6 +86,26 @@ class Manifest(BaseModel):
 class Instance(Manifest):
     """PostgreSQL instance"""
 
+    class Standby(BaseModel):
+        @enum.unique
+        class State(AutoStrEnum):
+            """Instance standby status"""
+
+            demoted = enum.auto()
+            """demoted"""
+
+            promoted = enum.auto()
+            """promoted"""
+
+        for_: str = Field(
+            alias="for",
+            description="DSN of primary for streaming replication",
+        )
+        status: State = Field(
+            cli={"hide": True},
+            default=State.demoted,
+        )
+
     class Prometheus(BaseModel):
         port: int = Field(
             default=9187,
@@ -113,6 +133,8 @@ class Instance(Manifest):
         cli={"hide": True},
         ansible={"spec": {"type": "dict", "required": False}},
     )
+
+    standby: Optional[Standby] = None
 
     prometheus: Prometheus = Prometheus()
 
@@ -174,18 +196,21 @@ class Instance(Manifest):
     def spec(self, ctx: BaseContext) -> system_model.InstanceSpec:
         """Return an InstanceSpec matching this manifest."""
         prometheus = system_model.PrometheusService(port=self.prometheus.port)
+        standby_for = None if self.standby is None else self.standby.for_
         if self.version is not None:
             return system_model.InstanceSpec(
                 self.name,
                 self.version,
                 settings=ctx.settings,
                 prometheus=prometheus,
+                standby_for=standby_for,
             )
         else:
             return system_model.InstanceSpec.default_version(
                 self.name,
                 ctx,
                 prometheus=prometheus,
+                standby_for=standby_for,
             )
 
 

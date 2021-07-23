@@ -54,6 +54,15 @@ options:
     type: int
     required: true
     default: 9187
+  standby_for:
+    description:
+      - DSN of primary for streaming replication
+    type: str
+  standby_status:
+    description:
+      - Instance standby state
+    choices: [ demoted, promoted ]
+    default: demoted
 
 author:
 - Dalibo (@dalibo)

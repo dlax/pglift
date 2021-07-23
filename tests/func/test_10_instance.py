@@ -3,13 +3,17 @@ from pathlib import Path
 import psycopg2
 import pytest
 from pgtoolkit.ctl import Status
+from tenacity import retry
+from tenacity.retry import retry_if_exception_type
+from tenacity.stop import stop_after_attempt
+from tenacity.wait import wait_fixed
 
 from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import systemd
-from pglift.models import interface
+from pglift.models import interface, system
 
-from . import reconfigure_instance
+from . import configure_instance, execute, reconfigure_instance
 
 
 def test_init(ctx, instance_initialized, monkeypatch):
@@ -217,3 +221,57 @@ def test_list(ctx, instance):
         v for v in ctx.settings.postgresql.versions if v != instance.version
     )
     assert list(instance_mod.list(ctx, version=other_version)) == []
+
+
+def test_standby(
+    ctx, instance, settings, tmp_port_factory, tmp_path_factory, pg_version
+):
+    socket_directory = instance.settings.postgresql.socket_directory
+    surole = instance.settings.postgresql.surole
+    standby_for = f"host={socket_directory} port={instance.port} user={surole.name}"
+    if not surole.pgpass and surole.password:
+        standby_for += f" password={surole.password.get_secret_value()}"
+    standby = system.InstanceSpec(
+        name="standby",
+        version=pg_version,
+        prometheus=system.PrometheusService(next(tmp_port_factory)),
+        settings=settings,
+        standby_for=standby_for,
+    )
+    with instance_mod.running(ctx, instance):
+        execute(ctx, instance, "CREATE TABLE t AS (SELECT 1 AS i)", fetch=False)
+        instance_mod.init(ctx, standby)
+        configure_instance(
+            ctx,
+            standby,
+            port=next(tmp_port_factory),
+            log_directory=str(tmp_path_factory.mktemp("postgres-standby-logs")),
+        )
+        standby_instance = system.Instance.system_lookup(ctx, standby)
+        assert standby_instance.standby_for
+        try:
+            with instance_mod.running(ctx, standby_instance):
+                assert execute(
+                    ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
+                ) == [[True]]
+                assert execute(ctx, standby_instance, "SELECT * FROM t") == [[1]]
+                execute(ctx, instance, "UPDATE t SET i = 42", fetch=False)
+
+                @retry(
+                    retry=retry_if_exception_type(AssertionError),
+                    wait=wait_fixed(1),
+                    stop=stop_after_attempt(4),
+                )
+                def assert_replicated() -> None:
+                    assert execute(ctx, standby_instance, "SELECT * FROM t") == [[42]]
+
+                assert_replicated()
+
+                instance_mod.promote(ctx, standby_instance)
+                standby_instance = system.Instance.system_lookup(ctx, standby)
+                assert not standby_instance.standby_for
+                assert execute(
+                    ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
+                ) == [[False]]
+        finally:
+            instance_mod.drop(ctx, standby_instance)

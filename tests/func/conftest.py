@@ -144,6 +144,7 @@ def instance_spec(
         version=pg_version,
         prometheus=system.PrometheusService(prometheus_port),
         settings=settings,
+        standby_for=None,
     )
 
 
