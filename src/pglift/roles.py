@@ -80,7 +80,7 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: interface.Role) -
 def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
     """Return a role described as a manifest.
 
-    :raises ~exceptions.RoleNotFound: if no role with specified 'name' exists.
+    :raises ~pglift.exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
@@ -95,7 +95,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a role from instance.
 
-    :raises ~exceptions.RoleNotFound: if no role with specified 'name' exists.
+    :raises ~pglift.exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
