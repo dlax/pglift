@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Any, Iterator, Optional, Tuple, Union, overload
+from typing import Any, Iterator, List, Optional, Union, overload
 
 from typing_extensions import Literal
 
@@ -55,12 +55,12 @@ def execute(
     query: str,
     fetch: Literal[True],
     autocommit: bool = False,
-) -> Tuple[Any, ...]:
+) -> List[Any]:
     ...
 
 
 @overload
-def execute(ctx: BaseContext, instance: Instance, query: str) -> Tuple[Any, ...]:
+def execute(ctx: BaseContext, instance: Instance, query: str) -> List[Any]:
     ...
 
 
@@ -70,7 +70,7 @@ def execute(
     query: str,
     fetch: bool = True,
     autocommit: bool = False,
-) -> Optional[Tuple[Any, ...]]:
+) -> Optional[List[Any]]:
     with instance_mod.running(ctx, instance):
         with db.connect(
             instance, ctx.settings.postgresql.surole, autocommit=autocommit
