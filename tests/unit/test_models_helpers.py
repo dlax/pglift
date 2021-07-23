@@ -52,7 +52,7 @@ class Person(BaseModel):
     gender: Optional[Gender]
     age: Optional[int] = Field(description="age")
     address: Optional[Address]
-    dob: Optional[datetime] = Field(description="date of birth")
+    dob: Optional[datetime] = Field(alias="birthdate", description="date of birth")
 
     class Config:
         extra = "forbid"
@@ -106,7 +106,7 @@ def test_parameters_from_model():
         "  --address-shared / --no-address-shared\n"
         "                                  Is this a collocation?\n"
         "  --address-primary               Is this person's primary address?\n"
-        "  --dob DOB                       Date of birth.\n"
+        "  --birthdate BIRTHDATE           Date of birth.\n"
         "  --indent INTEGER\n"
         "  --help                          Show this message and exit.\n"
     )
@@ -122,7 +122,7 @@ def test_parameters_from_model():
             "--address-city=paris",
             "--address-country=fr",
             "--address-primary",
-            "--dob=1981-02-18T01:02",
+            "--birthdate=1981-02-18T01:02",
             "--no-address-shared",
             "--indent=2",
         ],
@@ -177,7 +177,7 @@ def test_argspec_from_model():
         "name": {"required": True, "type": "str"},
         "gender": {"choices": ["M", "F"]},
         "age": {"type": "int", "description": ["age"]},
-        "dob": {"description": ["date of birth"]},
+        "birthdate": {"description": ["date of birth"]},
         "address_street": {
             "required": True,
             "type": "list",

@@ -56,19 +56,19 @@ def _decorators_from_model(
         cli_config = field.field_info.extra.get("cli", {})
         if cli_config.get("hide", False):
             continue
-        argname = field.name
+        argname = field.alias
         ftype = field.outer_type_
         if not _prefix and field.required:
-            yield argname, click.argument(field.name, type=ftype)
+            yield argname, click.argument(field.alias, type=ftype)
         else:
             if _prefix:
-                fname = f"--{_prefix}-{field.name}"
-                argname = f"{_prefix}_{field.name}"
+                fname = f"--{_prefix}-{field.alias}"
+                argname = f"{_prefix}_{field.alias}"
             else:
-                fname = f"--{field.name}"
+                fname = f"--{field.alias}"
             attrs: Dict[str, Any] = {}
             origin_type = get_origin(field.outer_type_)
-            metavar = field.name.upper()
+            metavar = field.alias.upper()
             if lenient_issubclass(ftype, enum.Enum):
                 try:
                     choices = cli_config["choices"]
@@ -77,7 +77,7 @@ def _decorators_from_model(
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
-                yield from _decorators_from_model(ftype, _prefix=field.name)
+                yield from _decorators_from_model(ftype, _prefix=field.alias)
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
@@ -189,7 +189,7 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
         ftype = field.outer_type_
         if lenient_issubclass(ftype, pydantic.BaseModel):
             for subname, subspec in argspec_from_model(ftype).items():
-                spec[f"{field.name}_{subname}"] = subspec
+                spec[f"{field.alias}_{subname}"] = subspec
             continue
 
         ansible_config = field.field_info.extra.get("ansible", {})
@@ -225,6 +225,6 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
                 arg_spec["description"] = [
                     s.strip() for s in field.field_info.description.split(".")
                 ]
-        spec[field.name] = arg_spec
+        spec[field.alias] = arg_spec
 
     return spec
