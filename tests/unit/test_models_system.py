@@ -103,32 +103,10 @@ def test_postgresqlinstance_port(instance):
     assert instance.port == 999
 
 
-def test_postgresqlinstance_config(pg_version, settings):
-    instance = system.PostgreSQLInstance(
-        name="configured", version=pg_version, settings=settings
-    )
-    datadir = instance.datadir
-    datadir.mkdir(parents=True)
-    postgresql_conf = datadir / "postgresql.conf"
-    postgresql_conf.touch()
-    assert instance.port == 5432
-    postgresql_conf.write_text("\n".join(["bonjour = hello", "port=1234"]))
-
+def test_postgresqlinstance_config(instance):
     config = instance.config()
-    config.bonjour == "hello"
-    config.port == 1234
-
-    assert instance.port == 1234
-
-    user_conf = datadir / "conf.pglift.d" / "user.conf"
-    with pytest.raises(FileNotFoundError, match=str(user_conf)):
-        instance.config(True)
-    user_conf.parent.mkdir(parents=True)
-    user_conf.write_text("\n".join(["port=5555"]))
-    mconf = instance.config(True)
-    assert mconf is not None
-    assert mconf.port == 5555
-    assert instance.port == 1234
+    assert config.port == 999
+    assert config.unix_socket_directories == "/socks"
 
 
 def test_instancespec_default_version(pg_version, ctx):

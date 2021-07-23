@@ -33,6 +33,27 @@ def info(configdir: Path) -> Tuple[Path, str]:
     return confd, include
 
 
+def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
+    """Return parsed PostgreSQL configuration for given `configdir`.
+
+    If ``managed_only`` is ``True``, only the managed configuration is
+    returned, otherwise the fully parsed configuration is returned.
+
+    :raises FileNotFoundError: if expected configuration file is missing
+    """
+    if managed_only:
+        confd = info(configdir)[0]
+        conffile = confd / "user.conf"
+        return pgconf.parse(conffile)
+
+    postgresql_conf = configdir / "postgresql.conf"
+    config = pgconf.parse(postgresql_conf)
+    postgresql_auto_conf = configdir / "postgresql.auto.conf"
+    if postgresql_auto_conf.exists():
+        config += pgconf.parse(postgresql_auto_conf)
+    return config
+
+
 F = Callable[["BaseInstance", Path], None]
 
 

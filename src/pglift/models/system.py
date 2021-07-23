@@ -3,7 +3,6 @@ from typing import Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
-from pgtoolkit import conf as pgconf
 from pgtoolkit.conf import Configuration
 
 from .. import conf, exceptions
@@ -165,22 +164,9 @@ class PostgreSQLInstance(BaseInstance):
     def config(self, managed_only: bool = False) -> Configuration:
         """Return parsed PostgreSQL configuration for this instance.
 
-        If ``managed_only`` is ``True``, only the managed configuration is
-        returned, otherwise the fully parsed configuration is returned.
-
-        :raises FileNotFoundError: if expected configuration file is missing
+        Refer to :func:`pglift.conf.read` for complete documentation.
         """
-        if managed_only:
-            confd = conf.info(self.datadir)[0]
-            conffile = confd / "user.conf"
-            return pgconf.parse(conffile)
-
-        postgresql_conf = self.datadir / "postgresql.conf"
-        config = pgconf.parse(postgresql_conf)
-        postgresql_auto_conf = self.datadir / "postgresql.auto.conf"
-        if postgresql_auto_conf.exists():
-            config += pgconf.parse(postgresql_auto_conf)
-        return config
+        return conf.read(self.datadir, managed_only=managed_only)
 
     @property
     def port(self) -> int:
