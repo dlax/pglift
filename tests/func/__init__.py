@@ -39,14 +39,22 @@ def reconfigure_instance(ctx: BaseContext, i: Instance, *, port: int) -> Iterato
 
 @overload
 def execute(
-    ctx: BaseContext, instance: Instance, query: str, fetch: Literal[False]
+    ctx: BaseContext,
+    instance: Instance,
+    query: str,
+    fetch: Literal[False],
+    autocommit: bool = False,
 ) -> None:
     ...
 
 
 @overload
 def execute(
-    ctx: BaseContext, instance: Instance, query: str, fetch: Literal[True]
+    ctx: BaseContext,
+    instance: Instance,
+    query: str,
+    fetch: Literal[True],
+    autocommit: bool = False,
 ) -> Tuple[Any, ...]:
     ...
 
@@ -57,10 +65,16 @@ def execute(ctx: BaseContext, instance: Instance, query: str) -> Tuple[Any, ...]
 
 
 def execute(
-    ctx: BaseContext, instance: Instance, query: str, fetch: bool = True
+    ctx: BaseContext,
+    instance: Instance,
+    query: str,
+    fetch: bool = True,
+    autocommit: bool = False,
 ) -> Optional[Tuple[Any, ...]]:
     with instance_mod.running(ctx, instance):
-        with db.connect(instance, ctx.settings.postgresql.surole) as conn:
+        with db.connect(
+            instance, ctx.settings.postgresql.surole, autocommit=autocommit
+        ) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 conn.commit()
