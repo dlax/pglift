@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Iterator, Optional, Tuple, Union, overload
 
 from typing_extensions import Literal
@@ -15,20 +14,14 @@ def configure_instance(
     i: Union[Instance, InstanceSpec],
     *,
     port: Optional[int] = None,
-    socket_path: Optional[Path] = None,
     **confitems: Any
 ) -> None:
-    if port is None or socket_path is None:
+    if port is None:
         assert isinstance(i, Instance)
         if port is None:
             port = i.port
-        if not socket_path:
-            config = i.config()
-            socket_path = Path(config.unix_socket_directories)  # type: ignore[arg-type]
     spec = i.as_spec() if isinstance(i, Instance) else i
-    instance_mod.configure(
-        ctx, spec, port=port, unix_socket_directories=str(socket_path), **confitems
-    )
+    instance_mod.configure(ctx, spec, port=port, **confitems)
 
 
 @contextmanager

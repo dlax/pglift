@@ -72,6 +72,7 @@ def settings(request, tmp_path_factory):
     passfile.write_text("#hostname:port:database:username:password\n")
 
     prefix = tmp_path_factory.mktemp("prefix")
+    (prefix / "run" / "postgresql").mkdir(parents=True)
     obj = copy.deepcopy(request.param)
     assert "prefix" not in obj
     obj["prefix"] = str(prefix)
@@ -166,15 +167,11 @@ def instance(
     ctx: Context,
     instance_initialized: system.InstanceSpec,
     tmp_port_factory: Iterator[int],
-    tmp_path_factory: pytest.TempPathFactory,
     log_directory: pathlib.Path,
 ) -> system.Instance:
     port = next(tmp_port_factory)
     i = instance_initialized
-    tmp_path = tmp_path_factory.mktemp("run")
-    configure_instance(
-        ctx, i, port=port, socket_path=tmp_path, log_directory=str(log_directory)
-    )
+    configure_instance(ctx, i, port=port, log_directory=str(log_directory))
     return system.Instance.system_lookup(ctx, i)
 
 

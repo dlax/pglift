@@ -194,7 +194,6 @@ def test_describe(ctx, instance, log_directory):
     assert im.name == "test"
     config = im.configuration
     assert im.port == i.port
-    config.pop("unix_socket_directories")
     if "log_directory" in config:
         assert config.pop("log_directory") == str(log_directory)
     assert config == {}
