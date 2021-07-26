@@ -11,6 +11,8 @@ System model
 
 .. currentmodule:: pglift.models.system
 
+.. autoclass:: PostgreSQLInstance
+   :members:
 .. autoclass:: Instance
    :members:
 .. autoclass:: InstanceSpec
