@@ -14,10 +14,9 @@ if TYPE_CHECKING:  # pragma: nocover
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 
 
-def query(name: str, **kwargs: str) -> sql.Composed:
+def query(name: str, **kwargs: sql.Composable) -> sql.Composed:
     for qname, qstr in queries():
         if qname == name:
-            kwargs = {k: sql.Identifier(v) for k, v in kwargs.items()}
             return sql.SQL(qstr).format(**kwargs)
     raise ValueError(name)
 

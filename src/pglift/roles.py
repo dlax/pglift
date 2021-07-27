@@ -101,7 +101,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
         raise exceptions.RoleNotFound(name)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query("role_drop", username=name))
+            cur.execute(db.query("role_drop", username=db.sql.Identifier(name)))
         cnx.commit()
     role = interface.Role(name=name, pgpass=False)
     set_pgpass_entry_for(ctx, instance, role)
@@ -140,7 +140,7 @@ def create(ctx: BaseContext, instance: Instance, role: Role) -> None:
         args = {}
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query(query, username=role.name), args)
+            cur.execute(db.query(query, username=db.sql.Identifier(role.name)), args)
         cnx.commit()
 
 
@@ -155,7 +155,7 @@ def set_password_for(
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
-                db.query("role_alter_password", username=role.name),
+                db.query("role_alter_password", username=db.sql.Identifier(role.name)),
                 {"password": role.password.get_secret_value()},
             )
 

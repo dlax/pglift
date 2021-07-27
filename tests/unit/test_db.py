@@ -19,7 +19,7 @@ def test_queries(datadir, regen_test_data):
 
 
 def test_query():
-    query = db.query("role_alter_password", username="bob")
+    query = db.query("role_alter_password", username=db.sql.Identifier("bob"))
     qs = "".join(q.string for q in query.seq)
     assert qs == "ALTER ROLE bob PASSWORD %(password)s;"
 
