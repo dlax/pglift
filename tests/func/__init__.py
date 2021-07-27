@@ -42,9 +42,9 @@ def execute(
     ctx: BaseContext,
     instance: Instance,
     query: str,
-    fetch: Literal[False],
+    fetch: Literal[True],
     autocommit: bool = False,
-) -> None:
+) -> List[Any]:
     ...
 
 
@@ -53,14 +53,9 @@ def execute(
     ctx: BaseContext,
     instance: Instance,
     query: str,
-    fetch: Literal[True],
+    fetch: bool = False,
     autocommit: bool = False,
 ) -> List[Any]:
-    ...
-
-
-@overload
-def execute(ctx: BaseContext, instance: Instance, query: str) -> List[Any]:
     ...
 
 
