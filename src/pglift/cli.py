@@ -7,7 +7,7 @@ import pydantic.json
 from tabulate import tabulate
 from typing_extensions import Literal
 
-from . import _install, exceptions
+from . import _install, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest, pm, roles
 from .ctx import Context
@@ -302,3 +302,22 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
             roles.drop(ctx, i, name)
     except exceptions.RoleNotFound as e:
         raise click.ClickException(e.show())
+
+
+@cli.group("database")
+def database() -> None:
+    """Manipulate databases"""
+
+
+@database.command("create")
+@instance_identifier
+@helpers.parameters_from_model(interface.Database)
+@click.pass_obj
+def database_create(ctx: Context, instance: str, database: interface.Database) -> None:
+    """Create a database in a PostgreSQL instance"""
+    i = instance_lookup(ctx, instance)
+    with instance_mod.running(ctx, i):
+        if databases.exists(ctx, i, database.name):
+            raise click.ClickException("database already exists")
+        with runner(ctx):
+            databases.apply(ctx, i, database)

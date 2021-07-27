@@ -7,7 +7,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
-from pglift import _install, exceptions
+from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, roles
 from pglift.cli import cli, instance_init
@@ -352,3 +352,42 @@ def test_role_drop(runner, ctx, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
+
+
+def test_database_create(ctx, instance, runner, running):
+    with patch.object(databases, "exists", return_value=False) as exists, patch.object(
+        databases, "apply"
+    ) as apply:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "create",
+                f"{instance.version}/{instance.name}",
+                "db_test1",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result
+    exists.assert_called_once_with(ctx, instance, "db_test1")
+    database = interface.Database.parse_obj({"name": "db_test1"})
+    apply.assert_called_once_with(ctx, instance, database)
+    running.assert_called_once_with(ctx, instance)
+
+    running.reset_mock()
+
+    with patch.object(databases, "exists", return_value=True) as exists:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "create",
+                f"{instance.version}/{instance.name}",
+                "db_test2",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 1
+    assert "database already exists" in result.stdout
+    exists.assert_called_once_with(ctx, instance, "db_test2")
+    running.assert_called_once_with(ctx, instance)
