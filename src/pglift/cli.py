@@ -338,3 +338,18 @@ def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     i = instance_lookup(ctx, instance)
     with runner(ctx), instance_mod.running(ctx, i):
         databases.apply(ctx, i, interface.Database.parse_yaml(file))
+
+
+@database.command("describe")
+@instance_identifier
+@click.argument("name")
+@click.pass_obj
+def database_describe(ctx: Context, instance: str, name: str) -> None:
+    """Describe a database"""
+    i = instance_lookup(ctx, instance)
+    try:
+        with instance_mod.running(ctx, i):
+            described = databases.describe(ctx, i, name)
+    except exceptions.DatabaseNotFound as e:
+        raise click.ClickException(e.show())
+    print(described.yaml(exclude={"state"}), end="")

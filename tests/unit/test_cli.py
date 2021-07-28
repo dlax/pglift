@@ -418,3 +418,38 @@ def test_database_apply(runner, tmp_path, ctx, instance, running):
     assert call_instance == instance
     assert call_database.name == "dbtest"
     assert kwargs == {}
+
+
+def test_database_describe(runner, ctx, instance, running):
+    with patch.object(
+        databases, "describe", side_effect=exceptions.DatabaseNotFound("absent")
+    ) as describe:
+        result = runner.invoke(
+            cli,
+            ["database", "describe", str(instance), "absent"],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "absent")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 1
+    assert result.stdout.strip() == "Error: database 'absent' not found"
+
+    running.reset_mock()
+
+    with patch.object(
+        databases,
+        "describe",
+        return_value=interface.Database(name="present"),
+    ) as describe:
+        result = runner.invoke(
+            cli,
+            ["database", "describe", instance.name, "present"],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "present")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0
+    described = yaml.safe_load(result.stdout)
+    assert described == {
+        "name": "present",
+    }
