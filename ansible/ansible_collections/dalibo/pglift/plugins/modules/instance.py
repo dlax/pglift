@@ -123,7 +123,7 @@ def run_module() -> None:
     try:
         m = helpers.parse_params_as(model_type, module.params)
     except pydantic.ValidationError as exc:
-        module.fail_json("; ".join(e["msg"] for e in exc.errors()))
+        module.fail_json(exc.errors())
 
     ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
 
