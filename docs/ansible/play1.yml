@@ -19,6 +19,8 @@
         name: bob
         password: s3kret
         pgpass: true
+        login: true
+        validity: '2025-01-01T00:00'
 
     - name: a database in production instance
       dalibo.pglift.database:

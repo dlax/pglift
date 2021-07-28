@@ -65,6 +65,7 @@ cat "$passfile"
 grep -q bob "$passfile"
 
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5433"  # prod
+psql -w -t -e -c "select rolname,rolinherit,rolcanlogin,rolconnlimit,rolpassword,rolvaliduntil from pg_roles where rolname = 'bob';" "host=/tmp user=postgres dbname=postgres port=5433"
 check_postgres_exporter 9187
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5434"  # preprod
 check_postgres_exporter 9188
