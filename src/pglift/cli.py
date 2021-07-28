@@ -321,3 +321,9 @@ def database_create(ctx: Context, instance: str, database: interface.Database) -
             raise click.ClickException("database already exists")
         with runner(ctx):
             databases.apply(ctx, i, database)
+
+
+@database.command("schema")
+def database_schema() -> None:
+    """Print the JSON schema of database model"""
+    print(interface.Database.schema_json(indent=2))

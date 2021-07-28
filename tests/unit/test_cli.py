@@ -391,3 +391,10 @@ def test_database_create(ctx, instance, runner, running):
     assert "database already exists" in result.stdout
     exists.assert_called_once_with(ctx, instance, "db_test2")
     running.assert_called_once_with(ctx, instance)
+
+
+def test_database_schema(runner):
+    result = runner.invoke(cli, ["database", "schema"])
+    schema = json.loads(result.output)
+    assert schema["title"] == "Database"
+    assert schema["description"] == "PostgreSQL database"
