@@ -453,3 +453,30 @@ def test_database_describe(runner, ctx, instance, running):
     assert described == {
         "name": "present",
     }
+
+
+def test_database_drop(runner, ctx, instance, running):
+    with patch.object(
+        databases, "drop", side_effect=exceptions.DatabaseNotFound("bar")
+    ) as drop:
+        result = runner.invoke(
+            cli,
+            ["database", "drop", str(instance), "foo"],
+            obj=ctx,
+        )
+    drop.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 1
+    assert result.stdout.strip() == "Error: database 'bar' not found"
+
+    running.reset_mock()
+
+    with patch.object(databases, "drop") as drop:
+        result = runner.invoke(
+            cli,
+            ["database", "drop", str(instance), "foo"],
+            obj=ctx,
+        )
+    drop.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0

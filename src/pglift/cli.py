@@ -353,3 +353,17 @@ def database_describe(ctx: Context, instance: str, name: str) -> None:
     except exceptions.DatabaseNotFound as e:
         raise click.ClickException(e.show())
     print(described.yaml(exclude={"state"}), end="")
+
+
+@database.command("drop")
+@instance_identifier
+@click.argument("name")
+@click.pass_obj
+def database_drop(ctx: Context, instance: str, name: str) -> None:
+    """Drop a database"""
+    i = instance_lookup(ctx, instance)
+    try:
+        with instance_mod.running(ctx, i):
+            databases.drop(ctx, i, name)
+    except exceptions.DatabaseNotFound as e:
+        raise click.ClickException(e.show())
