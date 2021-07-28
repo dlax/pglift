@@ -398,3 +398,23 @@ def test_database_schema(runner):
     schema = json.loads(result.output)
     assert schema["title"] == "Database"
     assert schema["description"] == "PostgreSQL database"
+
+
+def test_database_apply(runner, tmp_path, ctx, instance, running):
+    manifest = tmp_path / "manifest.yml"
+    content = yaml.dump({"name": "dbtest"})
+    manifest.write_text(content)
+    with patch.object(databases, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["database", "apply", str(instance), "-f", str(manifest)],
+            obj=ctx,
+        )
+    assert result.exit_code == 0
+    apply.assert_called_once()
+    running.assert_called_once_with(ctx, instance)
+    (call_ctx, call_instance, call_database), kwargs = apply.call_args
+    assert call_ctx == ctx
+    assert call_instance == instance
+    assert call_database.name == "dbtest"
+    assert kwargs == {}

@@ -327,3 +327,14 @@ def database_create(ctx: Context, instance: str, database: interface.Database) -
 def database_schema() -> None:
     """Print the JSON schema of database model"""
     print(interface.Database.schema_json(indent=2))
+
+
+@database.command("apply")
+@instance_identifier
+@click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
+@click.pass_obj
+def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
+    """Apply manifest as a database"""
+    i = instance_lookup(ctx, instance)
+    with runner(ctx), instance_mod.running(ctx, i):
+        databases.apply(ctx, i, interface.Database.parse_yaml(file))
