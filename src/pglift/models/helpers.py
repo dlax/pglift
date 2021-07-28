@@ -35,14 +35,19 @@ except AttributeError:  # Python < 3.8
 
 def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
     obj: Dict[str, Any] = {}
+    known_fields = {f.alias or f.name for f in model_type.__fields__.values()}
     for k, v in params.items():
         if v is None:
             continue
-        if "_" in k:
-            k, kk = k.split("_", 1)
-            obj.setdefault(k, {})[kk] = v
-        else:
+        if k in known_fields:
             obj[k] = v
+        elif "_" in k:
+            p, subk = k.split("_", 1)
+            if p not in known_fields:
+                raise ValueError(k)
+            obj.setdefault(p, {})[subk] = v
+        else:
+            raise ValueError(k)
     return model_type.parse_obj(obj)
 
 

@@ -24,7 +24,7 @@ class Country(enum.Enum):
 
 class Address(BaseModel):
     street: List[str] = Field(description="street lines")
-    zipcode: int = Field(
+    zip_code: int = Field(
         default=0,
         description="ZIP code",
         cli={"hide": True},
@@ -133,7 +133,7 @@ def test_parameters_from_model():
             "city": "paris",
             "country": "fr",
             "street": ["bd montparnasse", "far far away"],
-            "zipcode": 0,
+            "zip_code": 0,
             "primary": True,
             "shared": False,
         },
@@ -145,30 +145,48 @@ def test_parameters_from_model():
 
 
 def test_parse_params_as():
+    address_params = {
+        "city": "paris",
+        "country": "fr",
+        "street": ["bd montparnasse"],
+        "zip_code": 0,
+        "shared": True,
+    }
+    address = Address(
+        street=["bd montparnasse"],
+        zip_code=0,
+        city="paris",
+        country=Country.France,
+        shared=True,
+    )
+    assert helpers.parse_params_as(Address, address_params) == address
+
     params = {
         "name": "alice",
         "age": 42,
         "gender": "F",
-        "address": {
-            "city": "paris",
-            "country": "fr",
-            "street": ["bd montparnasse"],
-            "zipcode": 0,
-            "shared": True,
-        },
+        "address": address_params,
     }
-    assert helpers.parse_params_as(Person, params) == Person(
+    person = Person(
         name="alice",
         age=42,
         gender=Gender.F,
-        address=Address(
-            street=["bd montparnasse"],
-            zipcode=0,
-            city="paris",
-            country=Country.France,
-            shared=True,
-        ),
+        address=address,
     )
+    assert helpers.parse_params_as(Person, params) == person
+
+    params_nested = {
+        "name": "alice",
+        "age": 42,
+        "gender": "F",
+    }
+    params_nested.update({f"address_{k}": v for k, v in address_params.items()})
+    assert helpers.parse_params_as(Person, params_nested) == person
+
+    with pytest.raises(ValueError, match="invalid"):
+        helpers.parse_params_as(Person, {"age": None, "invalid": "value"})
+    with pytest.raises(ValueError, match="in_va_lid"):
+        helpers.parse_params_as(Person, {"age": None, "in_va_lid": "value"})
 
 
 def test_argspec_from_model():
