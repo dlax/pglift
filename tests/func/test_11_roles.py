@@ -88,6 +88,11 @@ def test_apply(ctx, instance):
     assert not roles.has_password(ctx, instance, role)
     assert not _role_in_pgpass(role)
 
+    role = interface.Role(name=rolname, state="absent")
+    assert roles.exists(ctx, instance, role.name)
+    roles.apply(ctx, instance, role)
+    assert not roles.exists(ctx, instance, role.name)
+
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
