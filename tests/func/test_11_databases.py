@@ -64,6 +64,11 @@ def test_apply(ctx, instance, database_factory):
     database = interface.Database(name="apply")
     databases.apply(ctx, instance, database)
 
+    database = interface.Database(name="db2", state="absent")
+    assert databases.exists(ctx, instance, database.name)
+    databases.apply(ctx, instance, database)
+    assert not databases.exists(ctx, instance, database.name)
+
 
 def test_describe(ctx, instance, database_factory):
     with pytest.raises(exceptions.DatabaseNotFound, match="absent"):

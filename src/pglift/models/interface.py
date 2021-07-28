@@ -206,4 +206,9 @@ class Role(Manifest):
 class Database(Manifest):
     """PostgreSQL database"""
 
+    class State(AutoStrEnum):
+        present = enum.auto()
+        absent = enum.auto()
+
     name: str
+    state: State = Field(default=State.present, cli={"hide": True})
