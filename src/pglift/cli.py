@@ -266,7 +266,7 @@ def role_schema() -> None:
 
 @role.command("apply")
 @instance_identifier
-@click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
+@click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @click.pass_obj
 def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a role"""
@@ -331,7 +331,7 @@ def database_schema() -> None:
 
 @database.command("apply")
 @instance_identifier
-@click.option("-f", "--file", type=click.File("rb"), metavar="MANIFEST", required=True)
+@click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @click.pass_obj
 def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a database"""
