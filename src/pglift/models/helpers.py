@@ -53,27 +53,35 @@ def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
 
 def _decorators_from_model(
     model_type: ModelType, *, _prefix: str = ""
-) -> Iterator[Tuple[str, Callable[[Callback], Callback]]]:
+) -> Iterator[Tuple[Tuple[str, str], Callable[[Callback], Callback]]]:
     """Yield click.{argument,option} decorators corresponding to fields of
-    a pydantic model type along with respective callback argument name.
+    a pydantic model type along with respective callback argument name and
+    model name.
     """
     for field in model_type.__fields__.values():
         cli_config = field.field_info.extra.get("cli", {})
         if cli_config.get("hide", False):
             continue
-        argname = field.alias
+        argname = cli_config.get("name", field.alias)
+        modelname = field.alias
         ftype = field.outer_type_
         if not _prefix and field.required:
-            yield argname, click.argument(field.alias, type=ftype)
+            yield (modelname, argname.replace("-", "_")), click.argument(
+                argname, type=ftype
+            )
         else:
+            metavar = argname.upper()
             if _prefix:
-                fname = f"--{_prefix}-{field.alias}"
-                argname = f"{_prefix}_{field.alias}"
+                fname = f"--{_prefix}-{argname}"
+                modelname, argname = (
+                    f"{_prefix}_{modelname}",
+                    f"{_prefix}_{argname.replace('-', '_')}",
+                )
             else:
-                fname = f"--{field.alias}"
+                fname = f"--{argname}"
+                argname = argname.replace("-", "_")
             attrs: Dict[str, Any] = {}
             origin_type = get_origin(field.outer_type_)
-            metavar = field.alias.upper()
             if lenient_issubclass(ftype, enum.Enum):
                 try:
                     choices = cli_config["choices"]
@@ -82,7 +90,7 @@ def _decorators_from_model(
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
-                yield from _decorators_from_model(ftype, _prefix=field.alias)
+                yield from _decorators_from_model(ftype, _prefix=argname)
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
@@ -99,7 +107,7 @@ def _decorators_from_model(
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
-            yield argname, click.option(fname, **attrs)
+            yield (modelname, argname), click.option(fname, **attrs)
 
 
 def parameters_from_model(
@@ -137,7 +145,7 @@ def parameters_from_model(
 
     def decorator(f: Callback) -> Callback:
 
-        argnames, param_decorators = zip(
+        modelnames_and_argnames, param_decorators = zip(
             *reversed(list(_decorators_from_model(model_type)))
         )
 
@@ -155,7 +163,10 @@ def parameters_from_model(
 
         @functools.wraps(f)
         def callback(**kwargs: Any) -> None:
-            params = {n: kwargs.pop(n) for n in argnames}
+            params = {
+                modelname: kwargs.pop(argname)
+                for modelname, argname in modelnames_and_argnames
+            }
             model = parse_params_as(model_type, params)
             kwargs[model_argname] = model
             return f(**kwargs)

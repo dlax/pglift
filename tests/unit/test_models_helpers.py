@@ -24,15 +24,17 @@ class Country(enum.Enum):
 
 class Address(BaseModel):
     street: List[str] = Field(description="street lines")
+    building: Optional[str] = Field(cli={"hide": True}, ansible={"hide": True})
     zip_code: int = Field(
         default=0,
         description="ZIP code",
-        cli={"hide": True},
+        cli={"name": "zip-code"},
         ansible={"hide": True},
     )
     city: str = Field(
         description="city",
         ansible={"spec": {"type": "str", "description": "the city"}},
+        cli={"name": "town"},
     )
     country: Country = Field(
         cli={"choices": [Country.France.value, Country.Belgium.value]},
@@ -101,7 +103,8 @@ def test_parameters_from_model():
         "  --gender [M|F]\n"
         "  --age AGE                       Age.\n"
         "  --address-street STREET         Street lines.\n"
-        "  --address-city CITY             City.\n"
+        "  --address-zip-code ZIP-CODE     Zip code.\n"
+        "  --address-town TOWN             City.\n"
         "  --address-country [fr|be]\n"
         "  --address-shared / --no-address-shared\n"
         "                                  Is this a collocation?\n"
@@ -119,7 +122,7 @@ def test_parameters_from_model():
             "--gender=F",
             "--address-street=bd montparnasse",
             "--address-street=far far away",
-            "--address-city=paris",
+            "--address-town=paris",
             "--address-country=fr",
             "--address-primary",
             "--birthdate=1981-02-18T01:02",
@@ -130,6 +133,7 @@ def test_parameters_from_model():
     assert result.exit_code == 0, result
     assert json.loads(result.stdout) == {
         "address": {
+            "building": None,
             "city": "paris",
             "country": "fr",
             "street": ["bd montparnasse", "far far away"],
