@@ -25,10 +25,10 @@ def instance_running(ctx, instance):
 def role_factory(ctx, instance):
     rolnames = set()
 
-    def factory(name: str) -> None:
+    def factory(name: str, options: str = "") -> None:
         if name in rolnames:
             raise ValueError(f"'{name}' name already taken")
-        execute(ctx, instance, f"CREATE ROLE {name}", fetch=False)
+        execute(ctx, instance, f"CREATE ROLE {name} {options}", fetch=False)
         rolnames.add(name)
 
     yield factory
@@ -158,7 +158,7 @@ def test_apply(ctx, instance):
     assert not _role_in_pgpass(role)
 
 
-def test_describe(ctx, instance):
+def test_describe(ctx, instance, role_factory):
     with pytest.raises(exceptions.RoleNotFound, match="absent"):
         roles.describe(ctx, instance, "absent")
 
@@ -167,9 +167,22 @@ def test_describe(ctx, instance):
     surole = ctx.settings.postgresql.surole
     assert postgres.name == "postgres"
     if surole.password:
-        assert postgres.password is not None
+        assert postgres.password == "<set>"
     if surole.pgpass:
         assert postgres.pgpass is not None
+    assert postgres.login
+
+    role_factory(
+        "r1",
+        "LOGIN NOINHERIT VALID UNTIL '2051-07-29T00:00+00:00' IN ROLE pg_monitor CONNECTION LIMIT 10",
+    )
+    r1 = roles.describe(ctx, instance, "r1")
+    assert r1.password is None
+    assert not r1.inherit
+    assert r1.login
+    assert r1.connection_limit == 10
+    assert r1.in_roles == ["pg_monitor"]
+    assert r1.validity == datetime.datetime(2051, 7, 29, tzinfo=datetime.timezone.utc)
 
 
 def test_drop(ctx, instance, role_factory):

@@ -87,11 +87,14 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
     role = interface.Role(name=name)
-    if has_password(ctx, instance, role):
-        role = role.copy(update={"password": "<set>"})
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        cnx.autocommit = True
+        with cnx.cursor() as cur:
+            cur.execute(db.query("role_inspect"), {"username": name})
+            update = dict(cur.fetchone())
     if in_pgpass(ctx, instance, role):
-        role = role.copy(update={"pgpass": True})
-    return role
+        update["pgpass"] = True
+    return role.copy(update=update)
 
 
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:

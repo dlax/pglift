@@ -6,5 +6,6 @@
   "role_create": "CREATE ROLE {username} {options};",
   "role_drop": "DROP ROLE {username};",
   "role_exists": "SELECT true FROM pg_roles WHERE rolname = %(username)s;",
-  "role_has_password": "SELECT\n    rolpassword IS NOT NULL FROM pg_authid\nWHERE\n    rolname = %(username)s;"
+  "role_has_password": "SELECT\n    rolpassword IS NOT NULL FROM pg_authid\nWHERE\n    rolname = %(username)s;",
+  "role_inspect": "SELECT\n    CASE WHEN r.rolpassword IS NOT NULL THEN\n        '<set>'\n    ELSE\n        NULL\n    END AS password,\n    r.rolinherit AS inherit,\n    r.rolcanlogin AS login,\n    CASE WHEN r.rolconnlimit <> - 1 THEN\n        r.rolconnlimit\n    ELSE\n        NULL\n    END AS connection_limit,\n    r.rolvaliduntil AS validity,\n    CASE WHEN COUNT(gi) <> 0 THEN\n        ARRAY_AGG(gi.rolname)\n    ELSE\n        ARRAY[]::text[]\n    END AS in_roles\nFROM\n    pg_authid r\n    LEFT OUTER JOIN pg_auth_members g ON g.member = r.oid\n    LEFT OUTER JOIN pg_authid gi ON g.roleid = gi.oid\nWHERE\n    r.rolname = %(username)s\nGROUP BY\n    r.rolpassword, r.rolinherit, r.rolcanlogin, r.rolconnlimit, r.rolvaliduntil;"
 }
