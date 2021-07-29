@@ -146,16 +146,21 @@ def test_apply(ctx, instance):
     assert _role_in_pgpass(role)
 
     role = interface.Role(
-        name=rolname, password=SecretStr("passw0rd_changed"), pgpass=True
+        name=rolname,
+        password=SecretStr("passw0rd_changed"),
+        pgpass=True,
+        connection_limit=5,
     )
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert _role_in_pgpass(role)
+    assert roles.describe(ctx, instance, rolname).connection_limit == 5
 
     role = interface.Role(name=rolname, pgpass=False)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role)
     assert not _role_in_pgpass(role)
+    assert roles.describe(ctx, instance, rolname).connection_limit is None
 
 
 def test_describe(ctx, instance, role_factory):

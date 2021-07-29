@@ -73,9 +73,8 @@ def apply(ctx: BaseContext, instance: Instance, role_manifest: interface.Role) -
 
     if not exists(ctx, instance, role_manifest.name):
         create(ctx, instance, role_manifest)
-    if role_manifest.password:
-        if not has_password(ctx, instance, role_manifest):
-            set_password_for(ctx, instance, role_manifest)
+    else:
+        alter(ctx, instance, role_manifest)
     set_pgpass_entry_for(ctx, instance, role_manifest)
 
 
