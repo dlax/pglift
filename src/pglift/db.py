@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Tuple
 
 import psycopg2
 import psycopg2.extensions
+import psycopg2.extras
 from psycopg2 import sql as sql
 
 if TYPE_CHECKING:  # pragma: nocover
@@ -61,7 +62,7 @@ def connect(
 ) -> Iterator[psycopg2.extensions.connection]:
     """Connect to specified database of `instance` with `role`."""
     conninfo = dsn(instance, role, dbname=dbname)
-    conn = psycopg2.connect(conninfo)
+    conn = psycopg2.connect(conninfo, connection_factory=psycopg2.extras.DictConnection)
     if autocommit:
         conn.autocommit = True
         yield conn

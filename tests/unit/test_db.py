@@ -2,6 +2,7 @@ import json
 from typing import Optional
 from unittest.mock import MagicMock, patch
 
+import psycopg2.extras
 import pytest
 from pydantic import SecretStr
 
@@ -70,4 +71,7 @@ def test_connect(instance):
         assert not connect.called
         with cnx:
             pass
-    connect.assert_called_once_with("dbname=postgres port=999 user=dba host=/socks")
+    connect.assert_called_once_with(
+        "dbname=postgres port=999 user=dba host=/socks",
+        connection_factory=psycopg2.extras.DictConnection,
+    )

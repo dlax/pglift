@@ -63,7 +63,7 @@ def test_create(ctx, instance):
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role)
     r = execute(ctx, instance, "select 1", role=role)
-    assert r == [(1,)]
+    assert r[0][0] == 1
     ((valid_until, connection_limit),) = execute(
         ctx,
         instance,
@@ -87,7 +87,7 @@ def test_create(ctx, instance):
             r.rolname
         """,
     )
-    assert ("password", ["pg_monitor"]) in r
+    assert ["password", ["pg_monitor"]] in r
 
     nologin = interface.Role(name="nologin", password="passwd", login=False)
     roles.create(ctx, instance, nologin)
