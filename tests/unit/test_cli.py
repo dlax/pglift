@@ -185,12 +185,13 @@ def test_instance_status(runner, instance, ctx):
 
 @pytest.mark.parametrize(
     "action",
-    ["start-instance", "stop-instance", "reload-instance", "restart-instance"],
+    ["start", "stop", "reload", "restart"],
 )
 def test_instance_operations(runner, instance, ctx, action):
-    patched_fn = action.split("-", 1)[0]
-    with patch.object(instance_mod, patched_fn) as patched:
-        result = runner.invoke(cli, [action, instance.name, instance.version], obj=ctx)
+    with patch.object(instance_mod, action) as patched:
+        result = runner.invoke(
+            cli, ["instance", action, instance.name, instance.version], obj=ctx
+        )
     assert result.exit_code == 0, result
     assert patched.call_count == 1
     args, kwargs = patched.call_args
@@ -198,13 +199,13 @@ def test_instance_operations(runner, instance, ctx, action):
     assert kwargs == {}
 
 
-def test_backup_instance(runner, instance, ctx):
+def test_instance_backup(runner, instance, ctx):
     patch_backup = patch.object(pgbackrest, "backup")
     patch_expire = patch.object(pgbackrest, "expire")
     with patch_backup as backup, patch_expire as expire:
         result = runner.invoke(
             cli,
-            ["backup-instance", instance.name, instance.version, "--type=diff"],
+            ["instance", "backup", instance.name, instance.version, "--type=diff"],
             obj=ctx,
         )
     assert result.exit_code == 0, result
@@ -215,7 +216,7 @@ def test_backup_instance(runner, instance, ctx):
     with patch_backup as backup, patch_expire as expire:
         result = runner.invoke(
             cli,
-            ["backup-instance", instance.name, instance.version, "--purge"],
+            ["instance", "backup", instance.name, instance.version, "--purge"],
             obj=ctx,
         )
     assert result.exit_code == 0, result

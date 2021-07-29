@@ -171,51 +171,51 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
     ctx.exit(status.value)
 
 
-@cli.command("start-instance")
+@instance.command("start")
 @name_argument
 @version_argument
 @click.pass_obj
-def start_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_start(ctx: Context, name: str, version: Optional[str]) -> None:
     """Start a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.start(ctx, instance)
 
 
-@cli.command("stop-instance")
+@instance.command("stop")
 @name_argument
 @version_argument
 @click.pass_obj
-def stop_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_stop(ctx: Context, name: str, version: Optional[str]) -> None:
     """Stop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.stop(ctx, instance)
 
 
-@cli.command("reload-instance")
+@instance.command("reload")
 @name_argument
 @version_argument
 @click.pass_obj
-def reload_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_reload(ctx: Context, name: str, version: Optional[str]) -> None:
     """Reload a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.reload(ctx, instance)
 
 
-@cli.command("restart-instance")
+@instance.command("restart")
 @name_argument
 @version_argument
 @click.pass_obj
-def restart_instance(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
     """Restart a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     with runner(ctx):
         instance_mod.restart(ctx, instance)
 
 
-@cli.command("backup-instance")
+@instance.command("backup")
 @name_argument
 @version_argument
 @click.option(
@@ -226,7 +226,7 @@ def restart_instance(ctx: Context, name: str, version: Optional[str]) -> None:
 )
 @click.option("--purge", is_flag=True, default=False, help="Purge old backups")
 @click.pass_obj
-def backup_instance(
+def instance_backup(
     ctx: Context, name: str, version: Optional[str], type: str, purge: bool
 ) -> None:
     """Back up a PostgreSQL instance"""
