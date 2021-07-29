@@ -43,7 +43,7 @@ def test_exists(ctx, instance, role_factory):
     assert roles.exists(ctx, instance, "present")
 
 
-def test_create(ctx, instance, role_factory):
+def test_create(ctx, instance):
     role = interface.Role(name="nopassword")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
@@ -158,7 +158,7 @@ def test_apply(ctx, instance):
     assert not _role_in_pgpass(role)
 
 
-def test_describe(ctx, instance, role_factory):
+def test_describe(ctx, instance):
     with pytest.raises(exceptions.RoleNotFound, match="absent"):
         roles.describe(ctx, instance, "absent")
 
