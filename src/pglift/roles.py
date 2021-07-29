@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from pgtoolkit import conf, pgpass
 
@@ -132,15 +132,14 @@ def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
             return haspassword  # type: ignore[no-any-return]
 
 
-def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
-    """Create 'role' in 'instance'.
-
-    The instance should be running and the role should not exist already.
-    """
+def options_and_args(role: interface.Role) -> Tuple[db.sql.Composable, Dict[str, Any]]:
     opts = [
         db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         db.sql.SQL("LOGIN" if role.login else "NOLOGIN"),
     ]
+    """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
+    based on 'role' model along with query arguments.
+    """
     args: Dict[str, Any] = {}
     if role.password is not None:
         opts.append(
@@ -174,7 +173,15 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
                 ]
             )
         )
-    options = db.sql.SQL(" ").join(opts)
+    return db.sql.SQL(" ").join(opts), args
+
+
+def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
+    """Create 'role' in 'instance'.
+
+    The instance should be running and the role should not exist already.
+    """
+    options, args = options_and_args(role)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
