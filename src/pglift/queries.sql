@@ -10,6 +10,9 @@ SELECT
 WHERE
     rolname = %(username)s;
 
+-- name: role_alter
+ALTER ROLE {username} {options};
+
 -- name: role_alter_password
 ALTER ROLE {username} PASSWORD %(password)s;
 

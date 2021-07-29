@@ -8,7 +8,8 @@ from pglift import db, roles
 from pglift.models import interface
 
 
-def test_options_and_args():
+@pytest.mark.parametrize("with_password", [True, False])
+def test_options_and_args(with_password):
     role = interface.Role(
         name="r",
         password="skret",
@@ -18,31 +19,39 @@ def test_options_and_args():
         validity=datetime.datetime(2024, 1, 1),
         in_roles=["pg_monitor"],
     )
-    options, args = roles.options_and_args(role)
+    options, args = roles.options_and_args(role, with_password=with_password)
 
     SQL = db.sql.SQL
     Composed = db.sql.Composed
     Identifier = db.sql.Identifier
     Placeholder = db.sql.Placeholder
-    assert options.seq == [
-        SQL("NOINHERIT"),
-        SQL(" "),
-        SQL("LOGIN"),
-        SQL(" "),
-        Composed([SQL("PASSWORD"), SQL(" "), Placeholder("password")]),
-        SQL(" "),
-        Composed([SQL("VALID UNTIL"), SQL(" "), Placeholder("validity")]),
-        SQL(" "),
-        Composed([SQL("CONNECTION LIMIT"), SQL(" "), Placeholder("connection_limit")]),
-        SQL(" "),
-        Composed([SQL("IN ROLE"), SQL(" "), Composed([Identifier("pg_monitor")])]),
-    ]
 
-    assert args == {
+    expected_seq = (
+        [SQL("NOINHERIT"), SQL(" "), SQL("LOGIN"), SQL(" ")]
+        + (
+            [Composed([SQL("PASSWORD"), SQL(" "), Placeholder("password")]), SQL(" ")]
+            if with_password
+            else []
+        )
+        + [
+            Composed([SQL("VALID UNTIL"), SQL(" "), Placeholder("validity")]),
+            SQL(" "),
+            Composed(
+                [SQL("CONNECTION LIMIT"), SQL(" "), Placeholder("connection_limit")]
+            ),
+            SQL(" "),
+            Composed([SQL("IN ROLE"), SQL(" "), Composed([Identifier("pg_monitor")])]),
+        ]
+    )
+
+    assert options.seq == expected_seq
+    expected_args = {
         "connection_limit": 2,
-        "password": "skret",
         "validity": "2024-01-01T00:00:00",
     }
+    if with_password:
+        expected_args["password"] = "skret"
+    assert args == expected_args
 
 
 class Role:

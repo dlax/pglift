@@ -185,6 +185,22 @@ def test_describe(ctx, instance, role_factory):
     assert r1.validity == datetime.datetime(2051, 7, 29, tzinfo=datetime.timezone.utc)
 
 
+def test_alter(ctx, instance, role_factory):
+    role = interface.Role(
+        name="alter",
+        password="scret",
+        login=True,
+        connection_limit=5,
+        validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
+    )
+    with pytest.raises(exceptions.RoleNotFound, match="alter"):
+        roles.alter(ctx, instance, role)
+    role_factory("alter")
+    roles.alter(ctx, instance, role)
+    expected = role.copy(update={"password": "<set>"})
+    assert roles.describe(ctx, instance, "alter") == expected
+
+
 def test_drop(ctx, instance, role_factory):
     with pytest.raises(exceptions.RoleNotFound, match="dropping_absent"):
         roles.drop(ctx, instance, "dropping_absent")

@@ -132,7 +132,9 @@ def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
             return haspassword  # type: ignore[no-any-return]
 
 
-def options_and_args(role: interface.Role) -> Tuple[db.sql.Composable, Dict[str, Any]]:
+def options_and_args(
+    role: interface.Role, *, with_password: bool = True, in_roles: bool = True
+) -> Tuple[db.sql.Composable, Dict[str, Any]]:
     opts = [
         db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         db.sql.SQL("LOGIN" if role.login else "NOLOGIN"),
@@ -141,7 +143,7 @@ def options_and_args(role: interface.Role) -> Tuple[db.sql.Composable, Dict[str,
     based on 'role' model along with query arguments.
     """
     args: Dict[str, Any] = {}
-    if role.password is not None:
+    if with_password and role.password is not None:
         opts.append(
             db.sql.SQL(" ").join(
                 [db.sql.SQL("PASSWORD"), db.sql.Placeholder("password")]
@@ -162,7 +164,7 @@ def options_and_args(role: interface.Role) -> Tuple[db.sql.Composable, Dict[str,
             )
         )
         args["connection_limit"] = role.connection_limit
-    if role.in_roles:
+    if in_roles and role.in_roles:
         opts.append(
             db.sql.SQL(" ").join(
                 [
@@ -187,6 +189,29 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
             cur.execute(
                 db.query(
                     "role_create",
+                    username=db.sql.Identifier(role.name),
+                    options=options,
+                ),
+                args,
+            )
+        cnx.commit()
+
+
+def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
+    """Alter 'role' in 'instance'.
+
+    The instance should be running and the role should exist already.
+    """
+    if not exists(ctx, instance, role.name):
+        raise exceptions.RoleNotFound(role.name)
+    options, args = options_and_args(
+        role, with_password=not has_password(ctx, instance, role), in_roles=False
+    )
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(
+                db.query(
+                    "role_alter",
                     username=db.sql.Identifier(role.name),
                     options=options,
                 ),
