@@ -20,6 +20,11 @@
         password: s3kret
         pgpass: true
 
+    - name: a database in production instance
+      dalibo.pglift.database:
+        instance: prod
+        name: db
+
     - name: pre-production instance
       dalibo.pglift.instance:
         name: preprod

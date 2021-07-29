@@ -19,6 +19,12 @@
         name: bob
         state: absent
 
+    - name: db, dropped
+      dalibo.pglift.database:
+        instance: prod
+        name: db
+        state: absent
+
     - name: pre-production instance, now dropped
       dalibo.pglift.instance:
         name: preprod
