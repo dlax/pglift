@@ -196,15 +196,24 @@ PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], ArgSpec] = {
 }
 
 
-def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
+def argspec_from_model(
+    model_type: ModelType,
+    force_non_required: bool = False,
+) -> Dict[str, ArgSpec]:
     """Return the Ansible module argument spec object corresponding to a
     pydantic model class.
+
+    When `force_non_required` is True, force all field to be non-required,
+    this is useful when sub-models are optionals.
     """
     spec = {}
     for field in model_type.__fields__.values():
         ftype = field.outer_type_
         if lenient_issubclass(ftype, pydantic.BaseModel):
-            for subname, subspec in argspec_from_model(ftype).items():
+            for subname, subspec in argspec_from_model(
+                ftype,
+                force_non_required or (not field.required and field.default is None),
+            ).items():
                 spec[f"{field.alias}_{subname}"] = subspec
             continue
 
@@ -228,10 +237,10 @@ def argspec_from_model(model_type: ModelType) -> Dict[str, ArgSpec]:
                 elif origin_type is not None and issubclass(origin_type, list):
                     arg_spec["type"] = "list"
 
-            if field.required:
+            if field.required and not force_non_required:
                 arg_spec["required"] = True
 
-            if field.default is not None:
+            if not force_non_required and field.default is not None:
                 default = field.default
                 if lenient_issubclass(ftype, enum.Enum):
                     default = default.name

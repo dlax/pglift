@@ -201,22 +201,70 @@ def test_argspec_from_model():
         "age": {"type": "int", "description": ["age"]},
         "birthdate": {"description": ["date of birth"]},
         "address_street": {
-            "required": True,
             "type": "list",
             "description": ["street lines"],
         },
         "address_city": {"type": "str", "description": "the city"},
-        "address_country": {"choices": ["fr", "gb"], "required": True},
+        "address_country": {"choices": ["fr", "gb"]},
         "address_shared": {
             "type": "bool",
-            "required": True,
             "description": ["is this a collocation?"],
         },
         "address_primary": {
             "type": "bool",
-            "default": False,
             "description": ["is this person's primary address?"],
         },
+    }
+
+
+def test_argspec_from_model_nested_optional():
+    """An optional nested model should propagate non-required on all nested models."""
+
+    class Sub(BaseModel):
+        f: int
+
+    class Nested(BaseModel):
+        s: Sub
+
+    assert helpers.argspec_from_model(Nested) == {
+        "s_f": {"required": True, "type": "int"},
+    }
+
+    class Model(BaseModel):
+        n: Optional[Nested]
+
+    assert helpers.argspec_from_model(Model) == {
+        "n_s_f": {"type": "int"},
+    }
+
+
+def test_argspec_from_model_nested_default():
+    """A default value on a optional nested model should not be set as "default" in ansible"""
+
+    class Nested(BaseModel):
+        r: int
+        d: int = 42
+
+    class Model(BaseModel):
+        n: Optional[Nested]
+
+    assert helpers.argspec_from_model(Model) == {
+        "n_r": {"type": "int"},
+        "n_d": {"type": "int"},
+    }
+
+
+def test_argspec_from_model_keep_default():
+    """A non-required field with a default value should keep the "default" in ansible"""
+
+    class Nested(BaseModel):
+        f: int = 42
+
+    class Model(BaseModel):
+        n: Nested = Nested()
+
+    assert helpers.argspec_from_model(Model) == {
+        "n_f": {"default": 42, "type": "int"},
     }
 
 
