@@ -85,6 +85,7 @@ def test_instance_apply(tmp_path, runner, ctx):
     manifest.write_text(content)
     with patch.object(instance_mod, "apply") as mock_method:
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=ctx)
+    assert result.exit_code == 0, (result, result.output)
     mock_method.assert_called_once()
     assert mock_method.call_args[0][0] == ctx
     assert isinstance(mock_method.call_args[0][1], interface.Instance)
@@ -105,6 +106,7 @@ def test_instance_describe(runner, ctx, instance):
     instance = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=instance) as mock_method:
         result = runner.invoke(cli, ["instance", "describe", "test"], obj=ctx)
+    assert result.exit_code == 0, (result, result.output)
     mock_method.assert_called_once()
     assert isinstance(mock_method.call_args[0][0], Context)
     assert "name: test" in result.output
@@ -166,6 +168,7 @@ def test_instance_drop(runner, ctx, instance):
 
     with patch.object(instance_mod, "drop") as mock_method:
         result = runner.invoke(cli, ["instance", "drop", "test"], obj=ctx)
+    assert result.exit_code == 0, (result, result.output)
     mock_method.assert_called_once()
     assert isinstance(mock_method.call_args[0][0], Context)
 
@@ -175,7 +178,7 @@ def test_instance_status(runner, instance, ctx):
         instance_mod, "status", return_value=Status.not_running
     ) as patched:
         result = runner.invoke(cli, ["instance", "status", instance.name], obj=ctx)
-    assert result.exit_code == 3, result
+    assert result.exit_code == 3, (result, result.output)
     assert result.stdout == "not running\n"
     assert patched.call_count == 1
     args, kwargs = patched.call_args
@@ -314,7 +317,7 @@ def test_role_describe(runner, ctx, instance, running):
         )
     describe.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
-    assert result.exit_code == 1
+    assert result.exit_code == 1, (result, result.output)
     assert result.stdout.strip() == "Error: role 'absent' not found"
 
     running.reset_mock()
