@@ -157,13 +157,14 @@ def options_and_args(
             )
         )
         args["validity"] = role.validity.isoformat()
-    if role.connection_limit is not None:
-        opts.append(
-            db.sql.SQL(" ").join(
-                (db.sql.SQL("CONNECTION LIMIT"), db.sql.Placeholder("connection_limit"))
-            )
+    opts.append(
+        db.sql.SQL(" ").join(
+            (db.sql.SQL("CONNECTION LIMIT"), db.sql.Placeholder("connection_limit"))
         )
-        args["connection_limit"] = role.connection_limit
+    )
+    args["connection_limit"] = (
+        role.connection_limit if role.connection_limit is not None else -1
+    )
     if in_roles and role.in_roles:
         opts.append(
             db.sql.SQL(" ").join(
