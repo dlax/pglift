@@ -45,6 +45,12 @@ WHERE
 GROUP BY
     r.rolpassword, r.rolinherit, r.rolcanlogin, r.rolconnlimit, r.rolvaliduntil;
 
+-- name: role_grant
+GRANT {rolname} TO {rolspec};
+
+-- name: role_revoke
+REVOKE {rolname} FROM {rolspec};
+
 -- name: role_drop
 DROP ROLE {username};
 

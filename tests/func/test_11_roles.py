@@ -197,10 +197,11 @@ def test_alter(ctx, instance, role_factory):
         login=True,
         connection_limit=5,
         validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
+        in_roles=["pg_read_all_stats", "pg_read_server_files"],
     )
     with pytest.raises(exceptions.RoleNotFound, match="alter"):
         roles.alter(ctx, instance, role)
-    role_factory("alter")
+    role_factory("alter", "IN ROLE pg_read_all_settings, pg_read_all_stats")
     roles.alter(ctx, instance, role)
     expected = role.copy(update={"password": "<set>"})
     assert roles.describe(ctx, instance, "alter") == expected

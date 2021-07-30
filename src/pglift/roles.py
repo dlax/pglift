@@ -202,11 +202,14 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
 
     The instance should be running and the role should exist already.
     """
-    if not exists(ctx, instance, role.name):
-        raise exceptions.RoleNotFound(role.name)
+    actual_role = describe(ctx, instance, role.name)
     options, args = options_and_args(
         role, with_password=not has_password(ctx, instance, role), in_roles=False
     )
+    in_roles = {
+        "grant": set(role.in_roles) - set(actual_role.in_roles),
+        "revoke": set(actual_role.in_roles) - set(role.in_roles),
+    }
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
@@ -217,6 +220,18 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
                 ),
                 args,
             )
+            for action, values in in_roles.items():
+                if values:
+                    cur.execute(
+                        db.query(
+                            f"role_{action}",
+                            rolname=db.sql.SQL(", ").join(
+                                db.sql.Identifier(r) for r in values
+                            ),
+                            rolspec=db.sql.Identifier(role.name),
+                        ),
+                        args,
+                    )
         cnx.commit()
 
 
