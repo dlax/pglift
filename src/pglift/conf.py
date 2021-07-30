@@ -48,9 +48,12 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
 
     postgresql_conf = configdir / "postgresql.conf"
     config = pgconf.parse(postgresql_conf)
-    postgresql_auto_conf = configdir / "postgresql.auto.conf"
-    if postgresql_auto_conf.exists():
-        config += pgconf.parse(postgresql_auto_conf)
+
+    for extra_conf in ("postgresql.auto.conf", "recovery.conf"):
+        try:
+            config += pgconf.parse(configdir / extra_conf)
+        except FileNotFoundError:
+            pass
     return config
 
 
