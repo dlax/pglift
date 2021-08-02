@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import psycopg2.extras
 import pytest
+from psycopg2 import sql
 from pydantic import SecretStr
 
 from pglift import db
@@ -20,7 +21,7 @@ def test_queries(datadir, regen_test_data):
 
 
 def test_query():
-    query = db.query("role_alter_password", username=db.sql.Identifier("bob"))
+    query = db.query("role_alter_password", username=sql.Identifier("bob"))
     qs = "".join(q.string for q in query.seq)
     assert qs == "ALTER ROLE bob PASSWORD %(password)s;"
 

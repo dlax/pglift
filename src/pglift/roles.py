@@ -1,6 +1,7 @@
 from typing import Any, Dict, Tuple
 
 from pgtoolkit import conf, pgpass
+from psycopg2 import sql
 
 from . import db, exceptions, hookimpl
 from .ctx import BaseContext
@@ -105,7 +106,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
         raise exceptions.RoleNotFound(name)
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query("role_drop", username=db.sql.Identifier(name)))
+            cur.execute(db.query("role_drop", username=sql.Identifier(name)))
         cnx.commit()
     role = interface.Role(name=name, pgpass=False)
     set_pgpass_entry_for(ctx, instance, role)
@@ -133,10 +134,10 @@ def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
 
 def options_and_args(
     role: interface.Role, *, with_password: bool = True, in_roles: bool = True
-) -> Tuple[db.sql.Composable, Dict[str, Any]]:
+) -> Tuple[sql.Composable, Dict[str, Any]]:
     opts = [
-        db.sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
-        db.sql.SQL("LOGIN" if role.login else "NOLOGIN"),
+        sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
+        sql.SQL("LOGIN" if role.login else "NOLOGIN"),
     ]
     """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
     based on 'role' model along with query arguments.
@@ -144,21 +145,17 @@ def options_and_args(
     args: Dict[str, Any] = {}
     if with_password and role.password is not None:
         opts.append(
-            db.sql.SQL(" ").join(
-                [db.sql.SQL("PASSWORD"), db.sql.Placeholder("password")]
-            )
+            sql.SQL(" ").join([sql.SQL("PASSWORD"), sql.Placeholder("password")])
         )
         args["password"] = role.password.get_secret_value()
     if role.validity is not None:
         opts.append(
-            db.sql.SQL(" ").join(
-                (db.sql.SQL("VALID UNTIL"), db.sql.Placeholder("validity"))
-            )
+            sql.SQL(" ").join((sql.SQL("VALID UNTIL"), sql.Placeholder("validity")))
         )
         args["validity"] = role.validity.isoformat()
     opts.append(
-        db.sql.SQL(" ").join(
-            (db.sql.SQL("CONNECTION LIMIT"), db.sql.Placeholder("connection_limit"))
+        sql.SQL(" ").join(
+            (sql.SQL("CONNECTION LIMIT"), sql.Placeholder("connection_limit"))
         )
     )
     args["connection_limit"] = (
@@ -166,16 +163,16 @@ def options_and_args(
     )
     if in_roles and role.in_roles:
         opts.append(
-            db.sql.SQL(" ").join(
+            sql.SQL(" ").join(
                 [
-                    db.sql.SQL("IN ROLE"),
-                    db.sql.SQL(", ").join(
-                        db.sql.Identifier(in_role) for in_role in role.in_roles
+                    sql.SQL("IN ROLE"),
+                    sql.SQL(", ").join(
+                        sql.Identifier(in_role) for in_role in role.in_roles
                     ),
                 ]
             )
         )
-    return db.sql.SQL(" ").join(opts), args
+    return sql.SQL(" ").join(opts), args
 
 
 def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
@@ -189,7 +186,7 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
             cur.execute(
                 db.query(
                     "role_create",
-                    username=db.sql.Identifier(role.name),
+                    username=sql.Identifier(role.name),
                     options=options,
                 ),
                 args,
@@ -215,7 +212,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
             cur.execute(
                 db.query(
                     "role_alter",
-                    username=db.sql.Identifier(role.name),
+                    username=sql.Identifier(role.name),
                     options=options,
                 ),
                 args,
@@ -225,10 +222,10 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
                     cur.execute(
                         db.query(
                             f"role_{action}",
-                            rolname=db.sql.SQL(", ").join(
-                                db.sql.Identifier(r) for r in values
+                            rolname=sql.SQL(", ").join(
+                                sql.Identifier(r) for r in values
                             ),
-                            rolspec=db.sql.Identifier(role.name),
+                            rolspec=sql.Identifier(role.name),
                         ),
                         args,
                     )
@@ -246,7 +243,7 @@ def set_password_for(
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(
-                db.query("role_alter_password", username=db.sql.Identifier(role.name)),
+                db.query("role_alter_password", username=sql.Identifier(role.name)),
                 {"password": role.password.get_secret_value()},
             )
 

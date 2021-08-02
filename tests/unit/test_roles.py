@@ -2,9 +2,10 @@ import datetime
 from typing import Optional
 
 import pytest
+from psycopg2 import sql
 from pydantic import SecretStr
 
-from pglift import db, roles
+from pglift import roles
 from pglift.models import interface
 
 
@@ -21,10 +22,10 @@ def test_options_and_args(with_password):
     )
     options, args = roles.options_and_args(role, with_password=with_password)
 
-    SQL = db.sql.SQL
-    Composed = db.sql.Composed
-    Identifier = db.sql.Identifier
-    Placeholder = db.sql.Placeholder
+    SQL = sql.SQL
+    Composed = sql.Composed
+    Identifier = sql.Identifier
+    Placeholder = sql.Placeholder
 
     expected_seq = (
         [SQL("NOINHERIT"), SQL(" "), SQL("LOGIN"), SQL(" ")]

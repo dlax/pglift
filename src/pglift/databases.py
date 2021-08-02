@@ -1,3 +1,5 @@
+from psycopg2 import sql
+
 from . import db, exceptions
 from .ctx import BaseContext
 from .models import interface
@@ -41,7 +43,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
         raise exceptions.DatabaseNotFound(name)
     with db.connect(instance, ctx.settings.postgresql.surole, autocommit=True) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query("database_drop", database=db.sql.Identifier(name)))
+            cur.execute(db.query("database_drop", database=sql.Identifier(name)))
 
 
 def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
@@ -61,6 +63,6 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
     The instance should be running and the database should not exist already.
     """
     with db.connect(instance, ctx.settings.postgresql.surole, autocommit=True) as cnx:
-        query = db.query("database_create", database=db.sql.Identifier(database.name))
+        query = db.query("database_create", database=sql.Identifier(database.name))
         with cnx.cursor() as cur:
             cur.execute(query)
