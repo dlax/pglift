@@ -172,7 +172,7 @@ def test_describe(ctx, instance, role_factory):
     surole = ctx.settings.postgresql.surole
     assert postgres.name == "postgres"
     if surole.password:
-        assert postgres.password == "<set>"
+        assert postgres.password is not None
     if surole.pgpass:
         assert postgres.pgpass is not None
     assert postgres.login
@@ -203,8 +203,11 @@ def test_alter(ctx, instance, role_factory):
         roles.alter(ctx, instance, role)
     role_factory("alter", "IN ROLE pg_read_all_settings, pg_read_all_stats")
     roles.alter(ctx, instance, role)
-    expected = role.copy(update={"password": "<set>"})
-    assert roles.describe(ctx, instance, "alter") == expected
+    described = roles.describe(ctx, instance, "alter").dict()
+    described.pop("password").get_secret_value() == "<set>"
+    expected = role.dict()
+    del expected["password"]
+    assert described == expected
 
 
 def test_drop(ctx, instance, role_factory):

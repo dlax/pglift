@@ -333,7 +333,9 @@ class Settings(BaseSettings):
                 if isinstance(mf.type_, type) and issubclass(mf.type_, PrefixedPath)
             }
             if update:
-                values[key] = child.copy(update=update)
+                child_values = child.dict()
+                child_values.update(update)
+                values[key] = child.__class__(**child_values)
         return values
 
     class Config:
