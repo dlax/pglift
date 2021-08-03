@@ -17,6 +17,24 @@ from .settings import SETTINGS
 from .task import runner
 
 
+def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
+    try:
+        return Instance.system_lookup(ctx, (name, version))
+    except exceptions.InstanceNotFound as e:
+        raise click.ClickException(e.show())
+    except Exception as e:
+        raise click.ClickException(str(e))
+
+
+def instance_lookup(ctx: Context, instance_id: str) -> Instance:
+    version = None
+    try:
+        version, name = instance_id.split("/", 1)
+    except ValueError:
+        name = instance_id
+    return get_instance(ctx, name, version)
+
+
 @click.group()
 @click.option(
     "--log-level",
@@ -89,24 +107,6 @@ def instance_schema() -> None:
 
 name_argument = click.argument("name", type=click.STRING)
 version_argument = click.argument("version", required=False, type=click.STRING)
-
-
-def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
-    try:
-        return Instance.system_lookup(ctx, (name, version))
-    except exceptions.InstanceNotFound as e:
-        raise click.ClickException(e.show())
-    except Exception as e:
-        raise click.ClickException(str(e))
-
-
-def instance_lookup(ctx: Context, instance_id: str) -> Instance:
-    version = None
-    try:
-        version, name = instance_id.split("/", 1)
-    except ValueError:
-        name = instance_id
-    return get_instance(ctx, name, version)
 
 
 @instance.command("describe")
