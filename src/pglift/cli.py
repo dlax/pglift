@@ -1,9 +1,10 @@
 import json
 import logging
-from typing import IO, Optional, Union
+from typing import IO, Any, Optional, Union
 
 import click
 import pydantic.json
+from pydantic.utils import deep_update
 from tabulate import tabulate
 from typing_extensions import Literal
 
@@ -97,6 +98,24 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     with runner(ctx):
         instance_mod.apply(ctx, interface.Instance.parse_yaml(file))
+
+
+@instance.command("alter")
+@helpers.parameters_from_model(interface.Instance, False)
+@click.pass_obj
+def instance_alter(
+    ctx: Context, name: str, version: Optional[str] = None, **changes: Any
+) -> None:
+    """Alter a PostgreSQL instance"""
+    changes = helpers.unnest(interface.Instance, changes)
+    try:
+        values = instance_mod.describe(ctx, name, version).dict()
+    except exceptions.InstanceNotFound as e:
+        raise click.ClickException(e.show())
+    values = deep_update(values, changes)
+    altered = interface.Instance.parse_obj(values)
+    with runner(ctx):
+        instance_mod.apply(ctx, altered)
 
 
 @instance.command("schema")
@@ -260,6 +279,25 @@ def role_create(ctx: Context, instance: str, role: interface.Role) -> None:
             roles.apply(ctx, i, role)
 
 
+@role.command("alter")
+@instance_identifier
+@helpers.parameters_from_model(interface.Role, False)
+@click.pass_obj
+def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
+    """Alter a role in a PostgreSQL instance"""
+    i = instance_lookup(ctx, instance)
+    changes = helpers.unnest(interface.Role, changes)
+    with instance_mod.running(ctx, i):
+        try:
+            values = roles.describe(ctx, i, name).dict()
+        except exceptions.RoleNotFound as e:
+            raise click.ClickException(e.show())
+        values = deep_update(values, changes)
+        altered = interface.Role.parse_obj(values)
+        with runner(ctx):
+            roles.apply(ctx, i, altered)
+
+
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
@@ -323,6 +361,25 @@ def database_create(ctx: Context, instance: str, database: interface.Database) -
             raise click.ClickException("database already exists")
         with runner(ctx):
             databases.apply(ctx, i, database)
+
+
+@database.command("alter")
+@instance_identifier
+@helpers.parameters_from_model(interface.Database, False)
+@click.pass_obj
+def database_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
+    """Alter a database in a PostgreSQL instance"""
+    i = instance_lookup(ctx, instance)
+    changes = helpers.unnest(interface.Database, changes)
+    with instance_mod.running(ctx, i):
+        try:
+            values = databases.describe(ctx, i, name).dict()
+        except exceptions.DatabaseNotFound as e:
+            raise click.ClickException(e.show())
+        values = deep_update(values, changes)
+        altered = interface.Database.parse_obj(values)
+        with runner(ctx):
+            databases.apply(ctx, i, altered)
 
 
 @database.command("schema")

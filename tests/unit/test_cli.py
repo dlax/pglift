@@ -92,6 +92,42 @@ def test_instance_apply(tmp_path, runner, ctx):
     assert isinstance(mock_method.call_args[0][1], interface.Instance)
 
 
+def test_instance_alter(runner, ctx):
+    result = runner.invoke(
+        cli, ["instance", "alter", "notfound", "--version=11"], obj=ctx
+    )
+    assert result.exit_code == 1
+    assert "Error: instance '11/notfound' not found" in result.output
+
+    actual = interface.Instance.parse_obj(
+        {"name": "alterme", "prometheus": {"port": 1212}}
+    )
+    altered = interface.Instance.parse_obj(
+        {
+            "name": "alterme",
+            "state": "stopped",
+            "prometheus": {"port": 2121},
+        }
+    )
+    with patch.object(instance_mod, "apply") as apply, patch.object(
+        instance_mod, "describe", return_value=actual
+    ) as describe:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "alter",
+                "alterme",
+                "--state=stopped",
+                "--prometheus-port=2121",
+            ],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, "alterme", None)
+    apply.assert_called_once_with(ctx, altered)
+    assert result.exit_code == 0, result.output
+
+
 def test_instance_schema(runner, ctx):
     result = runner.invoke(cli, ["instance", "schema"], obj=ctx)
     schema = json.loads(result.output)
@@ -279,6 +315,40 @@ def test_role_create(ctx, instance, runner, running):
     running.assert_called_once_with(ctx, instance)
 
 
+def test_role_alter(runner, ctx, instance, running):
+    actual = interface.Role(name="alterme", connection_limit=3)
+    altered = interface.Role(
+        name="alterme",
+        connection_limit=30,
+        pgpass=True,
+        password="blah",
+        login=True,
+        inherit=False,
+    )
+
+    with patch.object(roles, "describe", return_value=actual) as describe, patch.object(
+        roles, "apply"
+    ) as apply:
+        result = runner.invoke(
+            cli,
+            [
+                "role",
+                "alter",
+                str(instance),
+                "alterme",
+                "--connection-limit=30",
+                "--pgpass",
+                "--password=blah",
+                "--login",
+                "--no-inherit",
+            ],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "alterme")
+    apply.assert_called_once_with(ctx, instance, altered)
+    assert result.exit_code == 0, result.output
+
+
 def test_role_schema(runner):
     result = runner.invoke(cli, ["role", "schema"])
     schema = json.loads(result.output)
@@ -422,6 +492,29 @@ def test_database_create(ctx, instance, runner, running):
     assert "database already exists" in result.stdout
     exists.assert_called_once_with(ctx, instance, "db_test2")
     running.assert_called_once_with(ctx, instance)
+
+
+def test_database_alter(runner, ctx, instance, running):
+    actual = interface.Database(name="alterme")
+    altered = interface.Database(name="alterme", owner="dba")
+
+    with patch.object(
+        databases, "describe", return_value=actual
+    ) as describe, patch.object(databases, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "alter",
+                str(instance),
+                "alterme",
+                "--owner=dba",
+            ],
+            obj=ctx,
+        )
+    describe.assert_called_once_with(ctx, instance, "alterme")
+    apply.assert_called_once_with(ctx, instance, altered)
+    assert result.exit_code == 0, result.output
 
 
 def test_database_schema(runner):
