@@ -9,6 +9,7 @@ recursive-include docs *.rst conf.py Makefile .gitignore
 recursive-include docs/ansible *.yml
 recursive-include docs/api *.rst
 recursive-include tests *.py *.json *.md
+recursive-include extras *.bash *.fish *.md *.zsh
 
 exclude .editorconfig
 exclude .gitlab-ci.yml
