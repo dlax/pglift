@@ -21,22 +21,6 @@ def instance_running(ctx, instance):
         yield
 
 
-@pytest.fixture(scope="module")
-def role_factory(ctx, instance):
-    rolnames = set()
-
-    def factory(name: str, options: str = "") -> None:
-        if name in rolnames:
-            raise ValueError(f"'{name}' name already taken")
-        execute(ctx, instance, f"CREATE ROLE {name} {options}", fetch=False)
-        rolnames.add(name)
-
-    yield factory
-
-    for name in rolnames:
-        execute(ctx, instance, f"DROP ROLE IF EXISTS {name}", fetch=False)
-
-
 def test_exists(ctx, instance, role_factory):
     assert not roles.exists(ctx, instance, "absent")
     role_factory("present")

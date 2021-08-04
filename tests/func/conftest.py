@@ -16,7 +16,7 @@ from pglift.ctx import Context
 from pglift.models import system
 from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 
-from . import configure_instance
+from . import configure_instance, execute
 
 
 @pytest.fixture(autouse=True)
@@ -184,3 +184,19 @@ def instance_dropped(
     if instance.exists():
         instance_mod.drop(ctx, instance)
     return instance.as_spec(), config
+
+
+@pytest.fixture(scope="module")
+def role_factory(ctx, instance):
+    rolnames = set()
+
+    def factory(name: str, options: str = "") -> None:
+        if name in rolnames:
+            raise ValueError(f"'{name}' name already taken")
+        execute(ctx, instance, f"CREATE ROLE {name} {options}", fetch=False)
+        rolnames.add(name)
+
+    yield factory
+
+    for name in rolnames:
+        execute(ctx, instance, f"DROP ROLE IF EXISTS {name}", fetch=False)
