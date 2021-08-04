@@ -115,9 +115,8 @@ def run(
     args: Sequence[str],
     *,
     input: Optional[str] = None,
-    redirect_output: bool = True,
+    redirect_output: bool = False,
     check: bool = False,
-    shell: bool = False,
     logger: Optional[Logger] = None,
     **kwargs: Any,
 ) -> CompletedProcess:
@@ -132,7 +131,7 @@ def run(
 
     >>> import tempfile
     >>> with tempfile.NamedTemporaryFile() as f:
-    ...     _ = run(["echo", "ahah"], stdout=f, stderr=None, shell=True)
+    ...     _ = run(["echo", "ahah"], stdout=f, stderr=None)
     ...     with open(f.name) as f:
     ...         print(f.read(), end="")
     ahah
@@ -172,21 +171,17 @@ def run(
     def process_stdout(out: str, prog: str = prog) -> None:
         if logger:
             logger.debug("%s: %s", prog, out)
-        if shell and redirect_output:
+        if redirect_output:
             sys.stdout.write(out)
 
     def process_stderr(err: str, prog: str = prog) -> None:
         if logger:
             logger.error("%s: %s", prog, err)
-        if shell and redirect_output:
+        if redirect_output:
             sys.stderr.write(err)
 
     async def run() -> Tuple[asyncio.subprocess.Process, str, str]:
-        if shell:
-            cmd = " ".join(args)
-            proc = await asyncio.create_subprocess_shell(cmd, stdin=stdin, **kwargs)
-        else:
-            proc = await asyncio.create_subprocess_exec(*args, stdin=stdin, **kwargs)
+        proc = await asyncio.create_subprocess_exec(*args, stdin=stdin, **kwargs)
         out, err = await communicate_with(proc, input, process_stdout, process_stderr)
         assert proc.returncode is not None
         return proc, out, err
