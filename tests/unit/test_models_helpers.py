@@ -274,7 +274,9 @@ def test_argspec_from_model_keep_default():
     }
 
 
-@pytest.mark.parametrize("manifest_type", [interface.Instance, interface.Role])
+@pytest.mark.parametrize(
+    "manifest_type", [interface.Instance, interface.Role, interface.Database]
+)
 def test_argspec_from_model_manifest(datadir, regen_test_data, manifest_type):
     actual = helpers.argspec_from_model(manifest_type)
     fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"

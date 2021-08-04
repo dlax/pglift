@@ -1,3 +1,5 @@
+from typing import Any, Dict, Tuple
+
 from psycopg2 import sql
 
 from . import db, exceptions
@@ -30,8 +32,11 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
     """
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
-    database = interface.Database(name=name)
-    return database
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(db.query("database_inspect"), {"datname": name})
+            values = dict(cur.fetchone())
+    return interface.Database(name=name, **values)
 
 
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
@@ -57,12 +62,34 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
             return cur.rowcount == 1  # type: ignore[no-any-return]
 
 
+def options_and_args(
+    database: interface.Database,
+) -> Tuple[sql.Composable, Dict[str, Any]]:
+    """Return the "options" part of CREATE DATABASE or ALTER DATABASE SQL
+    commands based on 'database' model along with query arguments.
+    """
+    opts = []
+    args: Dict[str, Any] = {}
+    if database.owner is not None:
+        opts.append(
+            sql.SQL(" ").join([sql.SQL("OWNER"), sql.Identifier(database.owner)])
+        )
+    return sql.SQL(" ").join(opts), args
+
+
 def create(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Create 'database' in 'instance'.
 
     The instance should be running and the database should not exist already.
     """
+    options, args = options_and_args(database)
     with db.connect(instance, ctx.settings.postgresql.surole, autocommit=True) as cnx:
-        query = db.query("database_create", database=sql.Identifier(database.name))
         with cnx.cursor() as cur:
-            cur.execute(query)
+            cur.execute(
+                db.query(
+                    "database_create",
+                    database=sql.Identifier(database.name),
+                    options=options,
+                ),
+                args,
+            )

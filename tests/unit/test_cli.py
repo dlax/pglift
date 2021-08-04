@@ -470,7 +470,7 @@ def test_database_describe(runner, ctx, instance, running):
     with patch.object(
         databases,
         "describe",
-        return_value=interface.Database(name="present"),
+        return_value=interface.Database(name="present", owner="dba"),
     ) as describe:
         result = runner.invoke(
             cli,
@@ -481,9 +481,7 @@ def test_database_describe(runner, ctx, instance, running):
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     described = yaml.safe_load(result.stdout)
-    assert described == {
-        "name": "present",
-    }
+    assert described == {"name": "present", "owner": "dba"}
 
 
 def test_database_drop(runner, ctx, instance, running):

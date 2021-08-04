@@ -1,7 +1,8 @@
 {
-  "database_create": "CREATE DATABASE {database};",
+  "database_create": "CREATE DATABASE {database} {options};",
   "database_drop": "DROP DATABASE {database};",
   "database_exists": "SELECT true FROM pg_database WHERE datname = %(database)s;",
+  "database_inspect": "SELECT\n    r.rolname AS owner\nFROM\n    pg_database db\n    JOIN pg_authid r ON db.datdba = r.oid\nWHERE\n    db.datname = %(datname)s;",
   "role_alter": "ALTER ROLE {username} {options};",
   "role_alter_password": "ALTER ROLE {username} PASSWORD %(password)s;",
   "role_create": "CREATE ROLE {username} {options};",

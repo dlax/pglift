@@ -58,7 +58,16 @@ DROP ROLE {username};
 SELECT true FROM pg_database WHERE datname = %(database)s;
 
 -- name: database_create
-CREATE DATABASE {database};
+CREATE DATABASE {database} {options};
+
+-- name: database_inspect
+SELECT
+    r.rolname AS owner
+FROM
+    pg_database db
+    JOIN pg_authid r ON db.datdba = r.oid
+WHERE
+    db.datname = %(datname)s;
 
 -- name: database_drop
 DROP DATABASE {database};

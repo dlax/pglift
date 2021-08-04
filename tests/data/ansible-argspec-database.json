@@ -1,0 +1,19 @@
+{
+  "name": {
+    "required": true,
+    "type": "str"
+  },
+  "owner": {
+    "description": [
+      "the role name of the user who will own the new database"
+    ],
+    "type": "str"
+  },
+  "state": {
+    "choices": [
+      "present",
+      "absent"
+    ],
+    "default": "present"
+  }
+}

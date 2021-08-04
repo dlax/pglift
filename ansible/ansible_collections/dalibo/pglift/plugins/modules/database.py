@@ -28,6 +28,10 @@ options:
   state:
     choices: [ present, absent ]
     default: present
+  owner:
+    type: str
+    description:
+      - The role name of the user who will own the new database.
 
 author:
 - Dalibo (@dalibo)

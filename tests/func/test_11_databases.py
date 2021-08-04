@@ -47,11 +47,22 @@ def test_exists(ctx, instance, database_factory):
     assert databases.exists(ctx, instance, "present")
 
 
-def test_create(ctx, instance):
+def test_create(ctx, instance, role_factory):
     database = interface.Database(name="db1")
     assert not databases.exists(ctx, instance, database.name)
     databases.create(ctx, instance, database)
-    assert databases.exists(ctx, instance, database.name)
+    assert databases.describe(ctx, instance, database.name) == database.copy(
+        update={"owner": "postgres"}
+    )
+
+    role_factory("dba1")
+    database = interface.Database(name="db2", owner="dba1")
+    databases.create(ctx, instance, database)
+    try:
+        assert databases.describe(ctx, instance, database.name) == database
+    finally:
+        # Drop database in order to allow the role to be dropped in fixture.
+        databases.drop(ctx, instance, database.name)
 
 
 def test_apply(ctx, instance, database_factory):

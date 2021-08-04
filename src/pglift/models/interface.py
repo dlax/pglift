@@ -254,4 +254,7 @@ class Database(Manifest):
         absent = enum.auto()
 
     name: str
+    owner: Optional[str] = Field(
+        description="the role name of the user who will own the new database"
+    )
     state: State = Field(default=State.present, cli={"hide": True})
