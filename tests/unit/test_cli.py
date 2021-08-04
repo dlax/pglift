@@ -105,11 +105,10 @@ def test_instance_describe(runner, ctx, instance):
     assert "Missing argument 'NAME'" in result.output
 
     instance = interface.Instance(name="test")
-    with patch.object(instance_mod, "describe", return_value=instance) as mock_method:
+    with patch.object(instance_mod, "describe", return_value=instance) as describe:
         result = runner.invoke(cli, ["instance", "describe", "test"], obj=ctx)
     assert result.exit_code == 0, (result, result.output)
-    mock_method.assert_called_once()
-    assert isinstance(mock_method.call_args[0][0], Context)
+    describe.assert_called_once_with(ctx, "test", None)
     assert "name: test" in result.output
 
 

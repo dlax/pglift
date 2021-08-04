@@ -504,8 +504,9 @@ def apply(
     return instance, changes
 
 
-def describe(ctx: BaseContext, instance: Instance) -> interface.Instance:
+def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.Instance:
     """Return an instance described as a manifest."""
+    instance = Instance.system_lookup(ctx, (name, version))
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)

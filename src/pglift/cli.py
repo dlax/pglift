@@ -115,8 +115,10 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 @click.pass_obj
 def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
-    described = instance_mod.describe(ctx, instance)
+    try:
+        described = instance_mod.describe(ctx, name, version)
+    except exceptions.InstanceNotFound as e:
+        raise click.ClickException(e.show())
     print(described.yaml(), end="")
 
 

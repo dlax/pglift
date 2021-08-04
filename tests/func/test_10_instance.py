@@ -192,12 +192,11 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
 
 
 def test_describe(ctx, instance, log_directory):
-    i = instance
-    im = instance_mod.describe(ctx, i)
+    im = instance_mod.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
     config = im.configuration
-    assert im.port == i.port
+    assert im.port == instance.port
     if "log_directory" in config:
         assert config.pop("log_directory") == str(log_directory)
     assert config == {}
