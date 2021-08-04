@@ -13,16 +13,16 @@
           shared_buffers: 1GB
           unix_socket_directories: /tmp
 
-    - name: bob, dropped
-      dalibo.pglift.role:
-        instance: prod
-        name: bob
-        state: absent
-
     - name: db, dropped
       dalibo.pglift.database:
         instance: prod
         name: db
+        state: absent
+
+    - name: bob, dropped
+      dalibo.pglift.role:
+        instance: prod
+        name: bob
         state: absent
 
     - name: pre-production instance, now dropped

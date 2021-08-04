@@ -65,7 +65,7 @@ def test_create(ctx, instance, role_factory):
         databases.drop(ctx, instance, database.name)
 
 
-def test_apply(ctx, instance, database_factory):
+def test_apply(ctx, instance, database_factory, role_factory):
     database = interface.Database(name="db2")
     assert not databases.exists(ctx, instance, database.name)
     databases.apply(ctx, instance, database)
@@ -74,6 +74,15 @@ def test_apply(ctx, instance, database_factory):
     database_factory("apply")
     database = interface.Database(name="apply")
     databases.apply(ctx, instance, database)
+    assert databases.describe(ctx, instance, "apply").owner == "postgres"
+
+    role_factory("dbapply")
+    database = interface.Database(name="apply", owner="dbapply")
+    databases.apply(ctx, instance, database)
+    try:
+        assert databases.describe(ctx, instance, "apply") == database
+    finally:
+        databases.drop(ctx, instance, "apply")
 
     database = interface.Database(name="db2", state="absent")
     assert databases.exists(ctx, instance, database.name)
@@ -88,6 +97,24 @@ def test_describe(ctx, instance, database_factory):
     database_factory("describeme")
     database = databases.describe(ctx, instance, "describeme")
     assert database.name == "describeme"
+
+
+def test_alter(ctx, instance, database_factory, role_factory):
+    database = interface.Database(name="alterme")
+    with pytest.raises(exceptions.DatabaseNotFound, match="alter"):
+        databases.alter(ctx, instance, database)
+
+    database_factory("alterme")
+    role_factory("alterdba")
+    database = interface.Database(name="alterme", owner="alterdba")
+    databases.alter(ctx, instance, database)
+    assert databases.describe(ctx, instance, "alterme") == database
+
+    database = interface.Database(name="alterme")
+    databases.alter(ctx, instance, database)
+    assert databases.describe(ctx, instance, "alterme") == database.copy(
+        update={"owner": "postgres"}
+    )
 
 
 def test_drop(ctx, instance, database_factory):

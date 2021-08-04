@@ -22,7 +22,8 @@ def apply(
 
     if not exists(ctx, instance, database_manifest.name):
         create(ctx, instance, database_manifest)
-    # TODO: implement update()
+    else:
+        alter(ctx, instance, database_manifest)
 
 
 def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Database:
@@ -93,3 +94,28 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
                 ),
                 args,
             )
+
+
+def alter(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
+    """Alter 'database' in 'instance'.
+
+    The instance should be running and the database should exist already.
+    """
+    if not exists(ctx, instance, database.name):
+        raise exceptions.DatabaseNotFound(database.name)
+
+    if database.owner is None:
+        owner = sql.SQL("CURRENT_USER")
+    else:
+        owner = sql.Identifier(database.owner)
+    options = sql.SQL(" ").join([sql.SQL("OWNER TO"), owner])
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with cnx.cursor() as cur:
+            cur.execute(
+                db.query(
+                    "database_alter_owner",
+                    database=sql.Identifier(database.name),
+                    options=options,
+                ),
+            )
+        cnx.commit()

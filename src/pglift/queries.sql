@@ -60,6 +60,9 @@ SELECT true FROM pg_database WHERE datname = %(database)s;
 -- name: database_create
 CREATE DATABASE {database} {options};
 
+-- name: database_alter_owner
+ALTER DATABASE {database} {options};
+
 -- name: database_inspect
 SELECT
     r.rolname AS owner
