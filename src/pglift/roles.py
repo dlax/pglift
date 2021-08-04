@@ -136,13 +136,13 @@ def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
 def options_and_args(
     role: interface.Role, *, with_password: bool = True, in_roles: bool = True
 ) -> Tuple[sql.Composable, Dict[str, Any]]:
+    """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
+    based on 'role' model along with query arguments.
+    """
     opts = [
         sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         sql.SQL("LOGIN" if role.login else "NOLOGIN"),
     ]
-    """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
-    based on 'role' model along with query arguments.
-    """
     args: Dict[str, Any] = {}
     if with_password and role.password is not None:
         opts.append(
