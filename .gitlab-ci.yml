@@ -20,6 +20,12 @@ typing:
   script:
     - tox -e typing
 
+bandit:
+  stage: test
+  image: $TESTING_CI_IMAGE
+  script:
+    - tox -e bandit
+
 tests:
   stage: test
   image: $TESTING_CI_IMAGE

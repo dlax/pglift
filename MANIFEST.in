@@ -11,6 +11,7 @@ recursive-include docs/api *.rst
 recursive-include tests *.py *.json *.md
 recursive-include extras *.bash *.fish *.md *.zsh
 
+include .bandit
 exclude .editorconfig
 exclude .gitlab-ci.yml
 exclude .pre-commit-config.yaml

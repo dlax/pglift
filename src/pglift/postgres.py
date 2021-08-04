@@ -40,7 +40,7 @@ def main(
     pidfile = piddir / f"postgresql-{instance.version}-{instance.name}.pid"
     if pidfile.exists():
         sys.exit(f"PID file {pidfile} already exists")
-    pid = subprocess.Popen(cmd).pid
+    pid = subprocess.Popen(cmd).pid  # nosec
     pidfile.write_text(str(pid))
 
 
