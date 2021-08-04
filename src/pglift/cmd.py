@@ -151,6 +151,9 @@ def run(
     """
     stdin = DEVNULL if input is None else PIPE
 
+    if not args:
+        raise ValueError("empty arguments sequence")
+
     try:
         capture_output = kwargs.pop("capture_output")
     except KeyError:
