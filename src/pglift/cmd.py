@@ -1,6 +1,5 @@
 import asyncio
 import asyncio.subprocess
-import shlex
 import subprocess
 import sys
 from subprocess import DEVNULL, PIPE, CalledProcessError
@@ -165,7 +164,7 @@ def run(
                 )
             kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
-    prog = " ".join(shlex.quote(a) for a in args)  # shlex.join() for Python >= 3.8
+    prog = args[0]
 
     def process_stdout(out: str, prog: str = prog) -> None:
         if logger:
