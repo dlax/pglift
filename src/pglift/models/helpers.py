@@ -121,7 +121,7 @@ def _decorators_from_model(
 
 
 def parameters_from_model(
-    model_type: ModelType,
+    model_type: ModelType, parse_model: bool = True
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.
@@ -159,27 +159,39 @@ def parameters_from_model(
             *reversed(list(_decorators_from_model(model_type)))
         )
 
-        s = inspect.signature(f)
-        model_argname = model_type.__name__.lower()
-        type_error = TypeError(
-            f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
-        )
-        try:
-            model_param = s.parameters[model_argname]
-        except KeyError:
-            raise type_error
-        if model_param.annotation not in (model_type, inspect.Signature.empty):
-            raise type_error
+        def params_to_modelargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+            args = {}
+            for modelname, argname in modelnames_and_argnames:
+                args[modelname] = kwargs.pop(argname)
+            return args
 
-        @functools.wraps(f)
-        def callback(**kwargs: Any) -> None:
-            params = {
-                modelname: kwargs.pop(argname)
-                for modelname, argname in modelnames_and_argnames
-            }
-            model = parse_params_as(model_type, params)
-            kwargs[model_argname] = model
-            return f(**kwargs)
+        if parse_model:
+            s = inspect.signature(f)
+            model_argname = model_type.__name__.lower()
+            type_error = TypeError(
+                f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
+            )
+            try:
+                model_param = s.parameters[model_argname]
+            except KeyError:
+                raise type_error
+            if model_param.annotation not in (model_type, inspect.Signature.empty):
+                raise type_error
+
+            @functools.wraps(f)
+            def callback(**kwargs: Any) -> None:
+                args = params_to_modelargs(kwargs)
+                model = parse_params_as(model_type, args)
+                kwargs[model_argname] = model
+                return f(**kwargs)
+
+        else:
+
+            @functools.wraps(f)
+            def callback(**kwargs: Any) -> None:
+                args = params_to_modelargs(kwargs)
+                kwargs.update(args)
+                return f(**kwargs)
 
         cb = callback
         for param_decorator in param_decorators:

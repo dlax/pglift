@@ -1,7 +1,7 @@
 import enum
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import click
 import pytest
@@ -150,6 +150,43 @@ def test_parameters_from_model():
         "gender": "F",
         "name": "alice",
         "nickname": "**********",
+    }
+
+
+def test_parameters_from_model_no_parse():
+    @click.command("add-person")
+    @helpers.parameters_from_model(Person, False)
+    @click.pass_context
+    def add_person(ctx: click.core.Context, **values: Any) -> None:
+        click.echo(json.dumps(values))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        add_person,
+        [
+            "alice",
+            "--age=42",
+            "--gender=F",
+            "--address-street=bd montparnasse",
+            "--address-town=paris",
+            "--address-country=fr",
+            "--address-primary",
+            "--birthdate=1981-02-18T01:02",
+        ],
+    )
+    assert result.exit_code == 0, result
+    assert json.loads(result.stdout) == {
+        "address_city": "paris",
+        "address_country": "fr",
+        "address_street": ["bd montparnasse"],
+        "address_zip_code": None,
+        "address_primary": True,
+        "address_shared": False,
+        "age": "42",
+        "birthdate": "1981-02-18T01:02",
+        "gender": "F",
+        "name": "alice",
+        "nickname": None,
     }
 
 
