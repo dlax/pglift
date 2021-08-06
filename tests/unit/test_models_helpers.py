@@ -153,6 +153,36 @@ def test_parameters_from_model():
     }
 
 
+def test_unnest():
+    params = {
+        "name": "alice",
+        "age": 42,
+        "gender": "F",
+        "address_city": "paris",
+        "address_country": "fr",
+        "address_street": ["bd montparnasse"],
+        "address_zip_code": 0,
+        "address_shared": True,
+    }
+    assert helpers.unnest(Person, params) == {
+        "name": "alice",
+        "age": 42,
+        "gender": "F",
+        "address": {
+            "city": "paris",
+            "country": "fr",
+            "street": ["bd montparnasse"],
+            "zip_code": 0,
+            "shared": True,
+        },
+    }
+
+    with pytest.raises(ValueError, match="invalid"):
+        helpers.unnest(Person, {"age": None, "invalid": "value"})
+    with pytest.raises(ValueError, match="in_va_lid"):
+        helpers.unnest(Person, {"age": None, "in_va_lid": "value"})
+
+
 def test_parse_params_as():
     address_params = {
         "city": "paris",
@@ -191,11 +221,6 @@ def test_parse_params_as():
     }
     params_nested.update({f"address_{k}": v for k, v in address_params.items()})
     assert helpers.parse_params_as(Person, params_nested) == person
-
-    with pytest.raises(ValueError, match="invalid"):
-        helpers.parse_params_as(Person, {"age": None, "invalid": "value"})
-    with pytest.raises(ValueError, match="in_va_lid"):
-        helpers.parse_params_as(Person, {"age": None, "in_va_lid": "value"})
 
 
 def test_argspec_from_model():

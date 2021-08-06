@@ -33,7 +33,7 @@ except AttributeError:  # Python < 3.8
         return getattr(tp, "__origin__", None)
 
 
-def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
+def unnest(model_type: Type[T], params: Dict[str, Any]) -> Dict[str, Any]:
     obj: Dict[str, Any] = {}
     known_fields = {f.alias or f.name for f in model_type.__fields__.values()}
     for k, v in params.items():
@@ -48,6 +48,11 @@ def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
             obj.setdefault(p, {})[subk] = v
         else:
             raise ValueError(k)
+    return obj
+
+
+def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
+    obj = unnest(model_type, params)
     return model_type.parse_obj(obj)
 
 
