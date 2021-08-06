@@ -22,11 +22,11 @@ for more details.
 
 # Getting Started
 
-* set up a [development environment][]
-* follow the [tutorial][ansible-tutorial] for usage through Ansible
+* walk through the [documentation][] for installation and tutorials
+* see also how to set up a [development environment][]
 
+[documentation]: https://pglift.readthedocs.io/
 [development environment]: https://pglift.readthedocs.io/en/latest/dev.html
-[ansible-tutorial]: https://pglift.readthedocs.io/en/latest/ansible.html
 
 # Documentation
 
