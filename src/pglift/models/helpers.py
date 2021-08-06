@@ -56,6 +56,9 @@ def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
     return model_type.parse_obj(obj)
 
 
+DEFAULT = object()
+
+
 def _decorators_from_model(
     model_type: ModelType, *, _prefix: str = ""
 ) -> Iterator[Tuple[Tuple[str, str], Callable[[Callback], Callback]]]:
@@ -63,6 +66,12 @@ def _decorators_from_model(
     a pydantic model type along with respective callback argument name and
     model name.
     """
+
+    def default(ctx: click.Context, param: click.Argument, value: Any) -> Any:
+        if (param.multiple and value == ()) or (value == param.default):
+            return DEFAULT
+        return value
+
     for field in model_type.__fields__.values():
         cli_config = field.field_info.extra.get("cli", {})
         if cli_config.get("hide", False):
@@ -110,6 +119,8 @@ def _decorators_from_model(
                     attrs["is_flag"] = True
                 else:
                     fname = f"{fname}/--no-{fname[2:]}"
+                # Use None to distinguish unspecified option from the default value.
+                attrs["default"] = None
             else:
                 attrs["metavar"] = metavar
             if field.field_info.description:
@@ -117,7 +128,7 @@ def _decorators_from_model(
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
-            yield (modelname, argname), click.option(fname, **attrs)
+            yield (modelname, argname), click.option(fname, callback=default, **attrs)
 
 
 def parameters_from_model(
@@ -162,7 +173,10 @@ def parameters_from_model(
         def params_to_modelargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             args = {}
             for modelname, argname in modelnames_and_argnames:
-                args[modelname] = kwargs.pop(argname)
+                value = kwargs.pop(argname)
+                if value is DEFAULT:
+                    continue
+                args[modelname] = value
             return args
 
         if parse_model:

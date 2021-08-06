@@ -179,14 +179,11 @@ def test_parameters_from_model_no_parse():
         "address_city": "paris",
         "address_country": "fr",
         "address_street": ["bd montparnasse"],
-        "address_zip_code": None,
         "address_primary": True,
-        "address_shared": False,
         "age": "42",
         "birthdate": "1981-02-18T01:02",
         "gender": "F",
         "name": "alice",
-        "nickname": None,
     }
 
 
