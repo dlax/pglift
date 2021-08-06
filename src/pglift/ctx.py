@@ -76,11 +76,20 @@ class Context(BaseContext):
 
     _logger = logging.getLogger(pkgname)
 
-    debug = _logger.debug
-    info = _logger.info
-    warning = _logger.warning
-    error = _logger.error
-    exception = _logger.exception
+    def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        return self._logger.debug(msg, *args, **kwargs)
+
+    def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        return self._logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        return self._logger.warning(msg, *args, **kwargs)
+
+    def error(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        return self._logger.error(msg, *args, **kwargs)
+
+    def exception(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        return self._logger.exception(msg, *args, **kwargs)
 
     def run(self, args: Sequence[str], **kwargs: Any) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
