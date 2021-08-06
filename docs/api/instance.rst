@@ -10,3 +10,4 @@ Instance operations
 .. autofunction:: init
 .. autofunction:: configure
 .. autofunction:: running
+.. autofunction:: promote
