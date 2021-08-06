@@ -9,8 +9,9 @@ pglift can be installed from PyPI, for instance in a virtualenv as follow:
     $ . .venv/bin/activate
     (.venv) $ pip install pglift
 
-The :doc:`Ansible <ansible>` collection is not shipped with the Python package, so
-follow the :doc:`development setup <dev>` to use the Ansible interface.
+The :doc:`Ansible <tutorials/ansible>` collection is not shipped with the
+Python package, so follow the :doc:`development setup <dev>` to use the
+Ansible interface.
 
 After package installation, it is necessary to also install data files using:
 

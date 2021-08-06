@@ -15,7 +15,7 @@ First, ``ansible`` needs to be installed in the :ref:`development environment
 The following playbook installs and configures 3 PostgreSQL instances on
 localhost; the first two ones are *started* while the third one is not.
 
-.. literalinclude:: ansible/play1.yml
+.. literalinclude:: ../ansible/play1.yml
     :language: yaml
     :caption: docs/ansible/play1.yml
 
@@ -130,7 +130,7 @@ In the following version of our previous playbook, we are dropping the "preprod"
 instance and set the "dev" one to be ``started`` while changing a bit its
 configuration:
 
-.. literalinclude:: ansible/play2.yml
+.. literalinclude:: ../ansible/play2.yml
     :language: yaml
     :caption: docs/ansible/play2.yml
 
@@ -177,7 +177,7 @@ configuration:
 
 Finally, in this last playbook, we drop all our instances:
 
-.. literalinclude:: ansible/play3.yml
+.. literalinclude:: ../ansible/play3.yml
     :language: yaml
     :caption: docs/ansible/play3.yml
 

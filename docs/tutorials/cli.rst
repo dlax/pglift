@@ -1,9 +1,6 @@
 Command Line Interface
 ======================
 
-Usage
------
-
 .. highlight:: console
 
 pglift provides a CLI that can be used as follows:

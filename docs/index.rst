@@ -6,12 +6,11 @@ Welcome to pglift's documentation!
     :caption: Contents:
 
     install
+    tutorials/index
     postgresql_configuration
     api/index
     datamodel
     settings
-    ansible
-    cli
     dev
 
 
