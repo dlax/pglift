@@ -238,6 +238,12 @@ def test_instance_operations(runner, instance, ctx, action):
     assert kwargs == {}
 
 
+def test_instance_shell(runner, instance, ctx, running):
+    with patch.object(instance_mod, "shell") as patched:
+        runner.invoke(cli, ["instance", "shell", instance.name, "-U", "bob"], obj=ctx)
+    patched.assert_called_once_with(ctx, instance, user="bob", dbname=None)
+
+
 def test_instance_backup(runner, instance, ctx):
     patch_backup = patch.object(pgbackrest, "backup")
     patch_expire = patch.object(pgbackrest, "expire")

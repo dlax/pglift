@@ -2,6 +2,7 @@ import builtins
 import contextlib
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 from pathlib import Path
@@ -569,3 +570,28 @@ def list(
                 status=status(ctx, instance).name,
                 version=instance.version,
             )
+
+
+def shell(
+    ctx: BaseContext, instance: Instance, *, user: Optional[str], dbname: Optional[str]
+) -> None:
+    """Start a PostgreSQL shell (psql)."""
+    config = instance.config()
+    try:
+        host = config.unix_socket_directories.split(",")[0]  # type: ignore[union-attr]
+    except (AttributeError, IndexError):
+        host = "localhost"
+    if user is None:
+        user = ctx.settings.postgresql.surole.name
+    cmd = [
+        str(ctx.pg_ctl(instance.version).bindir / "psql"),
+        "--port",
+        str(instance.port),
+        "--host",
+        host,
+        "--user",
+        user,
+    ]
+    if dbname is not None:
+        cmd.extend(["--dbname", dbname])
+    subprocess.call(cmd)  # nosec

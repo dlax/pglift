@@ -236,6 +236,33 @@ def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
         instance_mod.restart(ctx, instance)
 
 
+@instance.command("shell")
+@name_argument
+@version_argument
+@click.option(
+    "-d",
+    "--dbname",
+    metavar="DBNAME",
+    envvar="PGDATABASE",
+    help="database name to connect to",
+)
+@click.option(
+    "-U",
+    "--user",
+    metavar="USER",
+    envvar="PGUSER",
+    help="database user name",
+)
+@click.pass_obj
+def instance_shell(
+    ctx: Context, name: str, version: Optional[str], user: str, dbname: Optional[str]
+) -> None:
+    """Open a PostgreSQL interactive shell on instance."""
+    instance = get_instance(ctx, name, version)
+    with instance_mod.running(ctx, instance):
+        instance_mod.shell(ctx, instance, user=user, dbname=dbname)
+
+
 @instance.command("backup")
 @name_argument
 @version_argument

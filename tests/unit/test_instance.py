@@ -1,6 +1,7 @@
 import pathlib
 import re
 import subprocess
+from unittest.mock import patch
 
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
@@ -185,3 +186,20 @@ def test_configure(ctx_nohook, instance):
     instance_mod.revert_configure(ctx, instance, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
+
+
+def test_shell(ctx, instance):
+    with patch("subprocess.call") as patched:
+        instance_mod.shell(ctx, instance, user="test", dbname="test")
+    cmd = [
+        str(ctx.pg_ctl(instance.version).bindir / "psql"),
+        "--port",
+        str(instance.port),
+        "--host",
+        "/socks",
+        "--user",
+        "test",
+        "--dbname",
+        "test",
+    ]
+    patched.assert_called_once_with(cmd)
