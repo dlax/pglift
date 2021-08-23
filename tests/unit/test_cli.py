@@ -14,6 +14,7 @@ from pglift import pgbackrest, roles
 from pglift.cli import cli, instance_init
 from pglift.ctx import Context
 from pglift.models import interface
+from pglift.models.system import Instance
 
 
 @pytest.fixture
@@ -22,9 +23,10 @@ def runner():
 
 
 @pytest.fixture
-def running() -> Iterator[MagicMock]:
+def running(ctx: Context, instance: Instance) -> Iterator[MagicMock]:
     with patch("pglift.instance.running") as m:
         yield m
+    m.assert_called_once_with(ctx, instance)
 
 
 def test_cli(runner, ctx):
