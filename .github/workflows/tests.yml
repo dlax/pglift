@@ -1,0 +1,28 @@
+on: [push]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - name: add PGDG repository
+        run: |
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo curl --output /etc/apt/trusted.gpg.d/pgdg.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      - name: install PostgreSQL, related tools and test utilities
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -y install --no-install-recommends \
+            postgresql-13 pgbackrest prometheus-postgres-exporter tox
+      - name: start systemd user session
+        run: |
+          sudo systemctl start user@$(id -u).service
+          sudo systemctl status --full user@$(id -u).service
+      - name: test
+        run: |
+          env XDG_RUNTIME_DIR=/run/user/$(id -u) \
+              DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus \
+            tox -e tests

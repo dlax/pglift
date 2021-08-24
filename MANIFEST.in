@@ -16,6 +16,7 @@ exclude .editorconfig
 exclude .gitlab-ci.yml
 exclude .pre-commit-config.yaml
 exclude .readthedocs.yaml
+prune .github
 prune ansible
 prune ci
 prune debian
