@@ -9,6 +9,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 extras_typing = [
     "mypy >= 0.901",
     "types-PyYAML",
+    "types-python-dateutil",
     "types-requests",
 ]
 
@@ -50,6 +51,7 @@ setup(
         "pluggy",
         "psycopg2",
         "pydantic",
+        "python-dateutil",
         "tabulate",
         "typing-extensions",
         "PyYAML",

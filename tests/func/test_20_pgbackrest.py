@@ -1,4 +1,5 @@
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,7 @@ def test(ctx, installed, instance, tmp_path, tmp_port_factory):
         directory / f"backup/{instance.version}-{instance.name}/backup.info"
     ).exists()
 
+    before = datetime.now()
     assert not latest_backup.exists()
     with instance_mod.running(ctx, instance):
         pgbackrest.backup(
@@ -47,6 +49,11 @@ def test(ctx, installed, instance, tmp_path, tmp_port_factory):
         assert latest_backup.exists() and latest_backup.is_symlink()
         pgbackrest.expire(ctx, instance)
         # TODO: check some result from 'expire' command here.
+
+    (backup1,) = list(pgbackrest.iter_backups(ctx, instance))
+    assert backup1.type == "full"
+    assert backup1.databases == "postgres"
+    assert backup1.datetime.replace(tzinfo=None) > before
 
     # Calling setup an other time doesn't overwrite configuration
     configdir = instance.datadir

@@ -14,6 +14,7 @@ from pydantic import (
     root_validator,
     validator,
 )
+from typing_extensions import Literal
 
 from .. import settings
 from ..ctx import BaseContext
@@ -212,6 +213,15 @@ class Instance(Manifest):
                 prometheus=prometheus,
                 standby_for=standby_for,
             )
+
+
+class InstanceBackup(Manifest):
+    label: str
+    size: float
+    repo_size: float
+    datetime: datetime
+    type: Union[Literal["incr"], Literal["diff"], Literal["full"]]
+    databases: str
 
 
 class Role(Manifest):

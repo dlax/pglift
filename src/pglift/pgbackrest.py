@@ -1,16 +1,21 @@
 import configparser
+import datetime
 import enum
 import json
+import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterator, List, Optional, Union, overload
 
+from dateutil.tz import gettz
 from pgtoolkit import conf as pgconf
+from typing_extensions import Literal
 
 from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
+from .models.interface import InstanceBackup
 from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
@@ -37,14 +42,44 @@ def _stanza(instance: BaseInstance) -> str:
     return f"{instance.version}-{instance.name}"
 
 
-def backup_info(ctx: BaseContext, instance: BaseInstance) -> List[Dict[str, Any]]:
+@overload
+def backup_info(
+    ctx: BaseContext,
+    instance: BaseInstance,
+    backup_set: Optional[str] = None,
+    *,
+    output_json: Literal[False],
+) -> str:
+    ...
+
+
+@overload
+def backup_info(
+    ctx: BaseContext, instance: BaseInstance, backup_set: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    ...
+
+
+def backup_info(
+    ctx: BaseContext,
+    instance: BaseInstance,
+    backup_set: Optional[str] = None,
+    *,
+    output_json: bool = True,
+) -> Union[List[Dict[str, Any]], str]:
     """Call pgbackrest info command to obtain information about backups.
 
     Ref.: https://pgbackrest.org/command.html#command-info
     """
-    r = ctx.run(
-        make_cmd(instance, ctx.settings.pgbackrest, "--output=json", "info"), check=True
-    )
+    args = []
+    if backup_set is not None:
+        args.append(f"--set={backup_set}")
+    if output_json:
+        args.append("--output=json")
+    args.append("info")
+    r = ctx.run(make_cmd(instance, ctx.settings.pgbackrest, *args), check=True)
+    if not output_json:
+        return r.stdout
     return json.loads(r.stdout)  # type: ignore[no-any-return]
 
 
@@ -233,3 +268,61 @@ def expire(ctx: BaseContext, instance: BaseInstance) -> None:
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
     ctx.run(expire_command(instance), check=True)
+
+
+def _parse_backup_databases(info: str) -> List[str]:
+    """Parse output of pgbackrest info --set=<label> and return the list of
+    databases.
+
+    This is only required until "pgbackrest info" accepts options --set and
+    --output=json together.
+
+    >>> set_info = '''stanza: 13-main
+    ... status: ok
+    ... cipher: none
+    ...
+    ... db (current)
+    ...     wal archive min/max (13-1): 000000010000000000000001/000000010000000000000004
+    ...
+    ...     full backup: 20210121-153336F
+    ...         timestamp start/stop: 2021-01-21 15:33:36 / 2021-01-21 15:33:59
+    ...         wal start/stop: 000000010000000000000004 / 000000010000000000000004
+    ...         database size: 39.6MB, backup size: 39.6MB
+    ...         repository size: 4.9MB, repository backup size: 4.9MB
+    ...         database list: bar (16434), foo (16401), postgres (14174)
+    ...         symlinks:
+    ...             pg_wal => /var/lib/pgsql/13/main/pg_wal_mnt/pg_wal
+    ... '''
+    >>> _parse_backup_databases(set_info)
+    ['bar', 'foo', 'postgres']
+    """
+    dbs_pattern = re.compile(r"^\s*database list:\s*(.*)$")
+    db_pattern = re.compile(r"(\S+)\s*\(.*")
+    for line in info.splitlines():
+        m = dbs_pattern.match(line)
+        if m:
+            return [
+                re.sub(db_pattern, r"\g<1>", db.strip()) for db in m.group(1).split(",")
+            ]
+    return []
+
+
+def iter_backups(ctx: BaseContext, instance: BaseInstance) -> Iterator[InstanceBackup]:
+    """Yield information about backups on an instance."""
+    backups = backup_info(ctx, instance)[0]["backup"]
+
+    def started_at(entry: Any) -> float:
+        return entry["timestamp"]["start"]  # type: ignore[no-any-return]
+
+    for backup in sorted(backups, key=started_at, reverse=True):
+        info_set = backup_info(ctx, instance, backup["label"], output_json=False)
+        databases = _parse_backup_databases(info_set)
+        dt = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
+        yield InstanceBackup(
+            label=backup["label"],
+            size=backup["info"]["size"],
+            repo_size=backup["info"]["repository"]["size"],
+            datetime=dt.replace(tzinfo=gettz()),
+            type=backup["type"],
+            databases=", ".join(databases),
+        )
