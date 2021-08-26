@@ -284,6 +284,29 @@ def instance_backup(
         pgbackrest.expire(ctx, instance)
 
 
+@instance.command("restore")
+@name_argument
+@version_argument
+@click.option(
+    "-l",
+    "--list",
+    "list_only",
+    is_flag=True,
+    default=False,
+    help="Only list available backups",
+)
+@click.pass_obj
+def instance_restore(
+    ctx: Context, name: str, version: Optional[str], list_only: bool
+) -> None:
+    """Restore a PostgreSQL instance"""
+    instance = get_instance(ctx, name, version)
+    if list_only:
+        backups = [b.dict() for b in pgbackrest.iter_backups(ctx, instance)]
+        if backups:
+            click.echo(tabulate(backups, headers="keys"))
+
+
 instance_identifier = click.argument("instance", metavar="<version>/<instance>")
 
 

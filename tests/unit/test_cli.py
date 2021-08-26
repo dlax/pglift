@@ -271,6 +271,31 @@ def test_instance_backup(runner, instance, ctx):
     assert expire.called
 
 
+def test_instance_restore_list(runner, instance, ctx):
+    bck = interface.InstanceBackup(
+        label="foo",
+        size=12,
+        repo_size=13,
+        datetime=datetime.datetime(2012, 1, 1),
+        type="incr",
+        databases="postgres, prod",
+    )
+    with patch.object(pgbackrest, "iter_backups", return_value=[bck]) as iter_backups:
+        result = runner.invoke(
+            cli,
+            ["instance", "restore", instance.name, instance.version, "--list"],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result
+    assert iter_backups.call_count == 1
+
+    assert result.stdout == (
+        "label      size    repo_size  datetime             type    databases\n"
+        "-------  ------  -----------  -------------------  ------  --------------\n"
+        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod\n"
+    )
+
+
 def test_role_create(ctx, instance, runner, running):
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"
