@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from pglift import pgbackrest
 
 
@@ -8,6 +10,22 @@ def test_make_cmd(pg_version, settings, instance):
         f"--stanza={pg_version}-test",
         "stanza-upgrade",
     ]
+
+
+def test_backup_info(ctx, settings, pg_version, instance):
+    with patch.object(ctx, "run") as run:
+        run.return_value.stdout = "[]"
+        assert pgbackrest.backup_info(ctx, instance) == []
+    run.assert_called_once_with(
+        [
+            "/usr/bin/pgbackrest",
+            f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
+            f"--stanza={pg_version}-test",
+            "--output=json",
+            "info",
+        ],
+        check=True,
+    )
 
 
 def test_backup_command(pg_version, settings, instance):

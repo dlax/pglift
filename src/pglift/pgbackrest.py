@@ -3,7 +3,7 @@ import enum
 import json
 import shutil
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List
 
 from pgtoolkit import conf as pgconf
 
@@ -35,6 +35,17 @@ def _configpath(instance: BaseInstance, settings: PgBackRestSettings) -> Path:
 
 def _stanza(instance: BaseInstance) -> str:
     return f"{instance.version}-{instance.name}"
+
+
+def backup_info(ctx: BaseContext, instance: BaseInstance) -> List[Dict[str, Any]]:
+    """Call pgbackrest info command to obtain information about backups.
+
+    Ref.: https://pgbackrest.org/command.html#command-info
+    """
+    r = ctx.run(
+        make_cmd(instance, ctx.settings.pgbackrest, "--output=json", "info"), check=True
+    )
+    return json.loads(r.stdout)  # type: ignore[no-any-return]
 
 
 @task
@@ -125,18 +136,16 @@ def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 @task
 def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     settings = ctx.settings.pgbackrest
-    base_cmd = make_cmd(instance, settings)
+    info_json = backup_info(ctx, instance)
 
-    info = ctx.run(base_cmd + ["--output=json", "info"], check=True).stdout
-    info_json = json.loads(info)
     # If the stanza already exists, don't do anything
     if info_json and info_json[0]["status"]["code"] != 1:
         return
 
     with instance_mod.running(ctx, instance):
-        ctx.run(base_cmd + ["start"], check=True)
-        ctx.run(base_cmd + ["stanza-create"], check=True)
-        ctx.run(base_cmd + ["check"], check=True)
+        ctx.run(make_cmd(instance, settings, "start"), check=True)
+        ctx.run(make_cmd(instance, settings, "stanza-create"), check=True)
+        ctx.run(make_cmd(instance, settings, "check"), check=True)
 
 
 @hookimpl  # type: ignore[misc]
