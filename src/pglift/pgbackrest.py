@@ -88,9 +88,9 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     """Setup pgBackRest"""
     settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
+    configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     directory = Path(str(settings.directory).format(instance=instance))
     logpath = Path(str(settings.logpath).format(instance=instance))
-    configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     logpath.mkdir(exist_ok=True, parents=True)
 
     instance_config = instance.config()
