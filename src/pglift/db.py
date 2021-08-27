@@ -1,7 +1,7 @@
 import pathlib
 import re
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, ContextManager, Iterator, Tuple
 
 import psycopg2
 import psycopg2.extensions
@@ -53,15 +53,10 @@ def dsn(instance: "PostgreSQLInstance", role: "Role", **kwargs: Any) -> str:
 
 
 @contextmanager
-def connect(
-    instance: "PostgreSQLInstance",
-    role: "Role",
-    *,
-    dbname: str = "postgres",
-    autocommit: bool = False,
+def connect_dsn(
+    conninfo: str, autocommit: bool = False
 ) -> Iterator[psycopg2.extensions.connection]:
-    """Connect to specified database of `instance` with `role`."""
-    conninfo = dsn(instance, role, dbname=dbname)
+    """Connect to specified database of `conninfo` dsn string"""
     conn = psycopg2.connect(conninfo, connection_factory=psycopg2.extras.DictConnection)
     if autocommit:
         conn.autocommit = True
@@ -70,3 +65,15 @@ def connect(
 
     with conn as conn:
         yield conn
+
+
+def connect(
+    instance: "PostgreSQLInstance",
+    role: "Role",
+    *,
+    dbname: str = "postgres",
+    autocommit: bool = False,
+) -> ContextManager[psycopg2.extensions.connection]:
+    """Connect to specified database of `instance` with `role`."""
+    conninfo = dsn(instance, role, dbname=dbname)
+    return connect_dsn(conninfo, autocommit=autocommit)
