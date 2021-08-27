@@ -181,7 +181,7 @@ def test_alter(ctx, instance, role_factory):
         login=True,
         connection_limit=5,
         validity=datetime.datetime(2050, 1, 2, tzinfo=datetime.timezone.utc),
-        in_roles=["pg_read_all_stats", "pg_read_server_files"],
+        in_roles=["pg_read_all_stats", "pg_signal_backend"],
     )
     with pytest.raises(exceptions.RoleNotFound, match="alter"):
         roles.alter(ctx, instance, role)
