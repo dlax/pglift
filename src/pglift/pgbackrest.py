@@ -186,7 +186,7 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
-    if instance.standby_for:
+    if instance.standby:
         return
     i = PostgreSQLInstance.system_lookup(ctx, instance)
     setup(ctx, i)
@@ -196,7 +196,7 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     """Uninstall pgBackRest from an instance being dropped."""
-    if instance.standby_for:
+    if instance.standby:
         return
     revert_setup(ctx, instance)
 

@@ -106,6 +106,7 @@ class Instance(Manifest):
             cli={"hide": True},
             default=State.demoted,
         )
+        slot: Optional[str] = Field(description="replication slot name")
 
     class Prometheus(BaseModel):
         port: int = Field(
@@ -197,21 +198,25 @@ class Instance(Manifest):
     def spec(self, ctx: BaseContext) -> system_model.InstanceSpec:
         """Return an InstanceSpec matching this manifest."""
         prometheus = system_model.PrometheusService(port=self.prometheus.port)
-        standby_for = None if self.standby is None else self.standby.for_
+        standby = (
+            None
+            if self.standby is None
+            else system_model.Standby(for_=self.standby.for_, slot=self.standby.slot)
+        )
         if self.version is not None:
             return system_model.InstanceSpec(
                 self.name,
                 self.version,
                 settings=ctx.settings,
                 prometheus=prometheus,
-                standby_for=standby_for,
+                standby=standby,
             )
         else:
             return system_model.InstanceSpec.default_version(
                 self.name,
                 ctx,
                 prometheus=prometheus,
-                standby_for=standby_for,
+                standby=standby,
             )
 
 

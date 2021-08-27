@@ -1,9 +1,11 @@
 {
+  "create_replication_slot": "SELECT true FROM pg_create_physical_replication_slot(%(slot)s);",
   "database_alter_owner": "ALTER DATABASE {database} {options};",
   "database_create": "CREATE DATABASE {database} {options};",
   "database_drop": "DROP DATABASE {database};",
   "database_exists": "SELECT true FROM pg_database WHERE datname = %(database)s;",
   "database_inspect": "SELECT\n    r.rolname AS owner\nFROM\n    pg_database db\n    JOIN pg_authid r ON db.datdba = r.oid\nWHERE\n    db.datname = %(datname)s;",
+  "drop_replication_slot": "SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_slots WHERE slot_name = %(slot)s));",
   "role_alter": "ALTER ROLE {username} {options};",
   "role_alter_password": "ALTER ROLE {username} PASSWORD %(password)s;",
   "role_create": "CREATE ROLE {username} {options};",

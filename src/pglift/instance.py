@@ -12,7 +12,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, datapath, exceptions, hookimpl, roles, systemd, template, util
+from . import conf, datapath, db, exceptions, hookimpl, roles, systemd, template, util
 from .ctx import BaseContext
 from .models import interface
 from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
@@ -25,8 +25,16 @@ def systemd_unit(instance: BaseInstance) -> str:
 
 
 def init_replication(
-    ctx: BaseContext, instance: BaseInstance, standby_for: str
+    ctx: BaseContext, instance: BaseInstance, standby_for: str, slot: Optional[str]
 ) -> None:
+
+    # use existing PGPASSFILE env or use passfile from settings
+    passfile = (
+        None
+        if "PGPASSFILE" in os.environ
+        else str(instance.settings.postgresql.auth.passfile)
+    )
+
     with tempfile.TemporaryDirectory() as _tmpdir:
         tmpdir = Path(_tmpdir)
         # pg_basebackup will also copy config files from primary datadir.
@@ -39,29 +47,37 @@ def init_replication(
         shutil.rmtree(instance.datadir)
         shutil.rmtree(instance.waldir)
         bindir = ctx.pg_ctl(instance.version).bindir
+        cmd = [
+            str(bindir / "pg_basebackup"),
+            "--pgdata",
+            str(instance.datadir),
+            "--write-recovery-conf",
+            "--checkpoint=fast",
+            "--no-password",
+            "--progress",
+            "--verbose",
+            "--dbname",
+            standby_for,
+            "--waldir",
+            str(instance.waldir),
+        ]
+
+        if slot:
+            cmd += ["--slot", slot]
+            with db.connect_dsn(standby_for, passfile=passfile) as cnx:
+                # ensure the replication slot does not exists
+                # otherwise --create-slot will raise an error
+                with cnx.cursor() as cur:
+                    cur.execute(db.query("drop_replication_slot"), {"slot": slot})
+                    if int(instance.version) <= 10:
+                        cur.execute(db.query("create_replication_slot"), {"slot": slot})
+                    else:
+                        cmd += ["--create-slot"]
+
         env = os.environ.copy()
-        if "PGPASSFILE" not in env:
-            # This will also go in postgresql.auto.conf in primary_conninfo
-            env["PGPASSFILE"] = str(instance.settings.postgresql.auth.passfile)
-        ctx.run(
-            [
-                str(bindir / "pg_basebackup"),
-                "--pgdata",
-                str(instance.datadir),
-                "--write-recovery-conf",
-                "--checkpoint=fast",
-                "--no-password",
-                "--progress",
-                "--verbose",
-                "--dbname",
-                standby_for,
-                "--wal-method=fetch",
-                "--waldir",
-                str(instance.waldir),
-            ],
-            env=env,
-            check=True,
-        )
+        if passfile:
+            env["PGPASSFILE"] = passfile
+        ctx.run(cmd, env=env, check=True)
         for name in keep:
             shutil.copyfile(tmpdir / name, instance.datadir / name)
         # When primary is also managed by pglift, pg_basebackup will also copy
@@ -105,8 +121,8 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
         opts["data_checksums"] = True
 
     pg_ctl.init(instance.datadir, **opts)
-    if instance.standby_for:
-        init_replication(ctx, instance, instance.standby_for)
+    if instance.standby:
+        init_replication(ctx, instance, instance.standby.for_, instance.standby.slot)
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
@@ -337,7 +353,7 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
     if hba_path.read_text() == hba:
         return
 
-    if not instance.standby_for:
+    if not instance.standby:
         # standby instances are read-only
         i = PostgreSQLInstance.system_lookup(ctx, instance)
         with running(ctx, i):
@@ -498,7 +514,7 @@ def apply(
     if (
         instance_manifest.standby
         and instance_manifest.standby.status == StandbyState.promoted
-        and instance.standby_for is not None
+        and instance.standby is not None
     ):
         promote(ctx, instance)
 

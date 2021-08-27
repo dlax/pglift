@@ -11,7 +11,7 @@ def instance_spec(instance):
         instance.version,
         settings=instance.settings,
         prometheus=system.PrometheusService(instance.prometheus.port),
-        standby_for=None,
+        standby=None,
     )
 
 
@@ -114,14 +114,15 @@ def test_postgresqlinstance_standby_for(ctx, instance):
     (instance.datadir / "postgresql.auto.conf").write_text(
         "primary_conninfo = host=/tmp port=4242 user=pg\n"
     )
-    assert not instance.standby_for
+    assert not instance.standby
     standbyfile = "standby.signal" if int(instance.version) >= 12 else "recovery.conf"
     (instance.datadir / standbyfile).touch()
-    assert instance.standby_for == "host=/tmp port=4242 user=pg"
+    assert instance.standby
+    assert instance.standby.for_ == "host=/tmp port=4242 user=pg"
 
 
 def test_instancespec_default_version(pg_version, ctx):
     i = system.InstanceSpec.default_version(
-        "default", ctx=ctx, prometheus=system.PrometheusService(), standby_for=None
+        "default", ctx=ctx, prometheus=system.PrometheusService(), standby=None
     )
     assert i.version == pg_version

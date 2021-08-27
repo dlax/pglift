@@ -74,3 +74,9 @@ WHERE
 
 -- name: database_drop
 DROP DATABASE {database};
+
+-- name: drop_replication_slot
+SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_slots WHERE slot_name = %(slot)s));
+
+-- name: create_replication_slot
+SELECT true FROM pg_create_physical_replication_slot(%(slot)s);

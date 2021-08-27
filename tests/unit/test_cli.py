@@ -55,6 +55,7 @@ def test_instance_init(runner, ctx, instance):
         "port",
         "state",
         "standby_for",
+        "standby_slot",
         "prometheus_port",
     ]
 

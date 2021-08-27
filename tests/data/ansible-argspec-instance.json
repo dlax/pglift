@@ -31,6 +31,12 @@
     ],
     "type": "str"
   },
+  "standby_slot": {
+    "description": [
+      "replication slot name"
+    ],
+    "type": "str"
+  },
   "standby_status": {
     "choices": [
       "demoted",

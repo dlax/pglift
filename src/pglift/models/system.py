@@ -78,11 +78,36 @@ class BaseInstance:
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
+class Standby:
+    for_: str
+    slot: Optional[str]
+
+    T = TypeVar("T", bound="Standby")
+
+    @classmethod
+    def system_lookup(cls: Type[T], instance: "PostgreSQLInstance") -> Optional[T]:
+        standbyfile = (
+            "standby.signal" if int(instance.version) >= 12 else "recovery.conf"
+        )
+        if not (instance.datadir / standbyfile).exists():
+            return None
+        # primary_conninfo must be present here, otherwise this is considered
+        # as an error
+        config = instance.config()
+        primary_conninfo = config["primary_conninfo"]
+        assert isinstance(primary_conninfo, str)
+        slot = config.get("primary_slot_name")
+        if slot is not None:
+            assert isinstance(slot, str), slot
+        return cls(for_=primary_conninfo, slot=slot or None)
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
 class InstanceSpec(BaseInstance):
     """Spec for an instance, to be created"""
 
     prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
-    standby_for: Optional[str]
+    standby: Optional[Standby]
 
     T = TypeVar("T", bound="InstanceSpec")
 
@@ -93,7 +118,7 @@ class InstanceSpec(BaseInstance):
         ctx: BaseContext,
         *,
         prometheus: PrometheusService,
-        standby_for: Optional[str],
+        standby: Optional[Standby],
     ) -> T:
         """Build an instance by guessing its version from installed PostgreSQL."""
         version = default_postgresql_version(ctx)
@@ -103,7 +128,7 @@ class InstanceSpec(BaseInstance):
             version=version,
             settings=settings,
             prometheus=prometheus,
-            standby_for=standby_for,
+            standby=standby,
         )
 
 
@@ -151,16 +176,8 @@ class PostgreSQLInstance(BaseInstance):
         return self
 
     @property
-    def standby_for(self) -> Optional[str]:
-        """Return primary_conninfo of standby if streaming replication is enabled"""
-        standbyfile = "standby.signal" if int(self.version) >= 12 else "recovery.conf"
-        if not (self.datadir / standbyfile).exists():
-            return None
-        # primary_conninfo must be present here, otherwise this is considered
-        # as an error
-        primary_conninfo = self.config()["primary_conninfo"]
-        assert isinstance(primary_conninfo, str)
-        return primary_conninfo
+    def standby(self) -> Optional[Standby]:
+        return Standby.system_lookup(self)
 
     @classmethod
     def from_stanza(cls: Type[T], ctx: BaseContext, stanza: str) -> T:

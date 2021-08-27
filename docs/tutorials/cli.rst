@@ -34,6 +34,7 @@ pglift: instances, roles, databases, etc. Each entry point has its own help:
                                  listening to.
       --state [started|stopped]  Runtime state.
       --standby-for FOR          Dsn of primary for streaming replication.
+      --standby-slot SLOT        Replication slot name.
       --prometheus-port PORT     Tcp port for the web interface and telemetry of
                                  prometheus.
       --help                     Show this message and exit.

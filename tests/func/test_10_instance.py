@@ -1,5 +1,6 @@
 import contextlib
 from pathlib import Path
+from typing import List
 
 import psycopg2
 import pytest
@@ -223,8 +224,9 @@ def test_list(ctx, instance):
     assert list(instance_mod.list(ctx, version=other_version)) == []
 
 
+@pytest.mark.parametrize("slot", ["standby", None], ids=["with-slot", "no-slot"])
 def test_standby(
-    ctx, instance, settings, tmp_port_factory, tmp_path_factory, pg_version
+    ctx, instance, settings, tmp_port_factory, tmp_path_factory, pg_version, slot
 ):
     socket_directory = instance.settings.postgresql.socket_directory
     surole = instance.settings.postgresql.surole
@@ -236,7 +238,7 @@ def test_standby(
         version=pg_version,
         prometheus=system.PrometheusService(next(tmp_port_factory)),
         settings=settings,
-        standby_for=standby_for,
+        standby=system.Standby(for_=standby_for, slot=slot),
     )
 
     @contextlib.contextmanager
@@ -248,8 +250,16 @@ def test_standby(
             finally:
                 execute(ctx, instance, "DROP TABLE t", fetch=False)
 
+    def pg_replication_slots() -> List[List[str]]:
+        return execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
+
     with instance_running_with_table():
+        assert not pg_replication_slots()
         instance_mod.init(ctx, standby)
+        if slot:
+            assert pg_replication_slots() == [[slot]]
+        else:
+            assert not pg_replication_slots()
         configure_instance(
             ctx,
             standby,
@@ -257,7 +267,9 @@ def test_standby(
             log_directory=str(tmp_path_factory.mktemp("postgres-standby-logs")),
         )
         standby_instance = system.Instance.system_lookup(ctx, standby)
-        assert standby_instance.standby_for
+        assert standby_instance.standby
+        assert standby_instance.standby.for_
+        assert standby_instance.standby.slot == slot
         try:
             with instance_mod.running(ctx, standby_instance):
                 assert execute(
@@ -278,9 +290,16 @@ def test_standby(
 
                 instance_mod.promote(ctx, standby_instance)
                 standby_instance = system.Instance.system_lookup(ctx, standby)
-                assert not standby_instance.standby_for
+                assert not standby_instance.standby
                 assert execute(
                     ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
                 ) == [[False]]
         finally:
+            if slot:
+                execute(
+                    ctx,
+                    instance,
+                    f"SELECT true FROM pg_drop_replication_slot('{slot}')",
+                )
+            assert not pg_replication_slots()
             instance_mod.drop(ctx, standby_instance)
