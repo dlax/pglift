@@ -8,7 +8,7 @@ from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
 
-from . import reconfigure_instance
+from . import execute, reconfigure_instance
 
 pytestmark = pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
@@ -52,7 +52,7 @@ def test_configure(ctx, installed, instance, tmp_path, tmp_port_factory, directo
         assert f"pg1-port = {new_port}" in config_after.splitlines()
 
 
-def test_backup(ctx, instance, directory, database_factory):
+def test_backup_restore(ctx, instance, directory, database_factory):
     latest_backup = (
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )
@@ -69,6 +69,8 @@ def test_backup(ctx, instance, directory, database_factory):
     before = datetime.now()
     assert not latest_backup.exists()
     with instance_mod.running(ctx, instance):
+        rows = execute(ctx, instance, "SELECT datname FROM pg_database")
+        assert "backrest" in [r[0] for r in rows]
         pgbackrest.backup(
             ctx,
             instance,
@@ -78,7 +80,18 @@ def test_backup(ctx, instance, directory, database_factory):
         pgbackrest.expire(ctx, instance)
         # TODO: check some result from 'expire' command here.
 
+        ((before_drop,),) = execute(
+            ctx, instance, "SELECT current_timestamp", fetch=True
+        )
+
+        execute(ctx, instance, "DROP DATABASE backrest", autocommit=True, fetch=False)
+
     (backup1,) = list(pgbackrest.iter_backups(ctx, instance))
     assert backup1.type == "full"
     assert backup1.databases == "backrest, postgres"
     assert backup1.datetime.replace(tzinfo=None) > before
+
+    pgbackrest.restore(ctx, instance, date=before_drop)
+    with instance_mod.running(ctx, instance):
+        rows = execute(ctx, instance, "SELECT datname FROM pg_database")
+        assert "backrest" in [r[0] for r in rows]

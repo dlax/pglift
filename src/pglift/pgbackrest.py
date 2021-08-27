@@ -339,3 +339,57 @@ def iter_backups(ctx: BaseContext, instance: BaseInstance) -> Iterator[InstanceB
             type=backup["type"],
             databases=", ".join(databases),
         )
+
+
+def restore_command(
+    instance: BaseInstance,
+    *,
+    date: Optional[datetime.datetime] = None,
+    backup_set: Optional[str] = None,
+) -> List[str]:
+    """Return the pgbackrest restore for ``instance``.
+
+    Ref.: https://pgbackrest.org/command.html#command-restore
+    """
+    args = [
+        "--log-level-console=info",
+        "--link-all",
+        "--target-action=promote",
+    ]
+    if date is not None:
+        target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+        args.extend(["--type=time", f"--target={target}"])
+    if backup_set is not None:
+        args.append(f"--set={backup_set}")
+    args.append("restore")
+    return make_cmd(instance, instance.settings.pgbackrest, *args)
+
+
+def restore(
+    ctx: BaseContext,
+    instance: BaseInstance,
+    *,
+    label: Optional[str] = None,
+    date: Optional[datetime.datetime] = None,
+) -> None:
+    """Restore an instance, possibly only including specified databases.
+
+    The instance must not be running.
+
+    Ref.: https://pgbackrest.org/command.html#command-restore
+    """
+    assert (
+        instance_mod.status(ctx, instance) == instance_mod.Status.not_running
+    ), "instance must be stopped"
+
+    cmd = restore_command(instance, date=date, backup_set=label)
+
+    for dirpath in (instance.datadir, instance.waldir):
+        shutil.rmtree(dirpath, ignore_errors=True)
+        dirpath.mkdir(exist_ok=True)
+
+    ctx.run(cmd, check=True)
+
+    # TODO:
+    # - handle pg_wal symlink
+    # - account for recovery_end_command

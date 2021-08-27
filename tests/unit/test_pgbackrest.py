@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 from pglift import pgbackrest
@@ -48,4 +49,21 @@ def test_expire_command(pg_version, settings, instance):
         f"--stanza={pg_version}-test",
         "--log-level-console=info",
         "expire",
+    ]
+
+
+def test_restore_command(pg_version, settings, instance):
+    assert pgbackrest.restore_command(
+        instance, date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc), backup_set="x"
+    ) == [
+        "/usr/bin/pgbackrest",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
+        f"--stanza={pg_version}-test",
+        "--log-level-console=info",
+        "--link-all",
+        "--target-action=promote",
+        "--type=time",
+        "--target=2003-01-01 00:00:00.000000+0000",
+        "--set=x",
+        "restore",
     ]

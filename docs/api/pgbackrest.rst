@@ -7,5 +7,7 @@ Instance backup with pgBackRest
 .. autofunction:: backup
 .. autofunction:: expire_command
 .. autofunction:: expire
+.. autofunction:: iter_backups
+.. autofunction:: restore
 .. autoclass:: BackupType
     :members:

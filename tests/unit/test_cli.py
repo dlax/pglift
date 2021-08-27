@@ -297,6 +297,33 @@ def test_instance_restore_list(runner, instance, ctx):
     )
 
 
+def test_instance_restore(runner, instance, ctx):
+    with patch("pglift.instance.status", return_value=Status.running) as status:
+        result = runner.invoke(
+            cli,
+            ["instance", "restore", instance.name, instance.version],
+            obj=ctx,
+        )
+    assert result.exit_code == 1, result
+    assert "instance is running" in result.stdout
+    status.assert_called_once_with(ctx, instance)
+
+    with patch.object(pgbackrest, "restore") as restore:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "restore",
+                instance.name,
+                instance.version,
+                "--label=xyz",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result
+    assert restore.called_once_with(ctx, instance, label="xyz")
+
+
 def test_role_create(ctx, instance, runner, running):
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"

@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from typing import IO, Any, Optional, Union
 
 import click
@@ -295,9 +296,16 @@ def instance_backup(
     default=False,
     help="Only list available backups",
 )
+@click.option("--label", help="Label of backup to restore")
+@click.option("--date", type=click.DateTime(), help="Date of backup to restore")
 @click.pass_obj
 def instance_restore(
-    ctx: Context, name: str, version: Optional[str], list_only: bool
+    ctx: Context,
+    name: str,
+    version: Optional[str],
+    list_only: bool,
+    label: Optional[str],
+    date: Optional[datetime],
 ) -> None:
     """Restore a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
@@ -305,6 +313,14 @@ def instance_restore(
         backups = [b.dict() for b in pgbackrest.iter_backups(ctx, instance)]
         if backups:
             click.echo(tabulate(backups, headers="keys"))
+    else:
+        if instance_mod.status(ctx, instance) == instance_mod.Status.running:
+            raise click.ClickException("instance is running")
+        if label is not None and date is not None:
+            raise click.BadArgumentUsage(
+                "--label and --date arguments are mutually exclusive"
+            )
+        pgbackrest.restore(ctx, instance, label=label, date=date)
 
 
 instance_identifier = click.argument("instance", metavar="<version>/<instance>")
