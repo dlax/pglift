@@ -52,7 +52,7 @@ def test_configure(ctx, installed, instance, tmp_path, tmp_port_factory, directo
         assert f"pg1-port = {new_port}" in config_after.splitlines()
 
 
-def test_backup(ctx, instance, directory):
+def test_backup(ctx, instance, directory, database_factory):
     latest_backup = (
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )
@@ -63,6 +63,8 @@ def test_backup(ctx, instance, directory):
     assert (
         directory / f"backup/{instance.version}-{instance.name}/backup.info"
     ).exists()
+
+    database_factory("backrest")
 
     before = datetime.now()
     assert not latest_backup.exists()
@@ -78,5 +80,5 @@ def test_backup(ctx, instance, directory):
 
     (backup1,) = list(pgbackrest.iter_backups(ctx, instance))
     assert backup1.type == "full"
-    assert backup1.databases == "postgres"
+    assert backup1.databases == "backrest, postgres"
     assert backup1.datetime.replace(tzinfo=None) > before
