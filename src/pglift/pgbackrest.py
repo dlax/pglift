@@ -92,6 +92,8 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     directory = Path(str(settings.directory).format(instance=instance))
     logpath = Path(str(settings.logpath).format(instance=instance))
     logpath.mkdir(exist_ok=True, parents=True)
+    spoolpath = Path(str(settings.spoolpath).format(instance=instance))
+    spoolpath.mkdir(exist_ok=True, parents=True)
 
     instance_config = instance.config()
     stanza = _stanza(instance)
@@ -107,6 +109,7 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
             "repo1-retention-diff": "9999999",
             "repo1-retention-full": "9999999",
             "log-path": str(logpath),
+            "spool-path": str(spoolpath),
         },
         "global:archive-push": {
             "compress-level": "3",

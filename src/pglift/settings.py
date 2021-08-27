@@ -252,6 +252,11 @@ class PgBackRestSettings(BaseSettings):
     logpath: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}/logs")
     """Path where log files are stored."""
 
+    spoolpath: DataPath = DataPath(
+        "pgbackrest/{instance.version}-{instance.name}/spool"
+    )
+    """Spool path."""
+
 
 @frozen
 class PrometheusSettings(BaseSettings):
