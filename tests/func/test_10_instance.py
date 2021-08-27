@@ -1,3 +1,4 @@
+import contextlib
 from pathlib import Path
 
 import psycopg2
@@ -237,8 +238,17 @@ def test_standby(
         settings=settings,
         standby_for=standby_for,
     )
-    with instance_mod.running(ctx, instance):
-        execute(ctx, instance, "CREATE TABLE t AS (SELECT 1 AS i)", fetch=False)
+
+    @contextlib.contextmanager
+    def instance_running_with_table():
+        with instance_mod.running(ctx, instance):
+            execute(ctx, instance, "CREATE TABLE t AS (SELECT 1 AS i)", fetch=False)
+            try:
+                yield
+            finally:
+                execute(ctx, instance, "DROP TABLE t", fetch=False)
+
+    with instance_running_with_table():
         instance_mod.init(ctx, standby)
         configure_instance(
             ctx,
