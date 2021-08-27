@@ -51,9 +51,13 @@ def test_create(ctx, instance, role_factory):
     database = interface.Database(name="db1")
     assert not databases.exists(ctx, instance, database.name)
     databases.create(ctx, instance, database)
-    assert databases.describe(ctx, instance, database.name) == database.copy(
-        update={"owner": "postgres"}
-    )
+    try:
+        assert databases.describe(ctx, instance, database.name) == database.copy(
+            update={"owner": "postgres"}
+        )
+    finally:
+        # Drop database in order to avoid side effects in other tests.
+        databases.drop(ctx, instance, "db1")
 
     role_factory("dba1")
     database = interface.Database(name="db2", owner="dba1")
