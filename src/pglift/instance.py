@@ -268,7 +268,8 @@ def revert_configure(
     i_config = pg_instance.config()
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        conf.remove_log_directory(instance, logdir)
+        if logdir.exists():
+            conf.remove_log_directory(instance, logdir)
 
     configdir = instance.datadir
     confd, include = conf.info(configdir)
