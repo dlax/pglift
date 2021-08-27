@@ -4,41 +4,11 @@ from pglift import databases, exceptions
 from pglift import instance as instance_mod
 from pglift.models import interface
 
-from . import execute
-
 
 @pytest.fixture(scope="module", autouse=True)
 def instance_running(ctx, instance):
     with instance_mod.running(ctx, instance):
         yield
-
-
-@pytest.fixture(scope="module")
-def database_factory(ctx, instance):
-    datnames = set()
-
-    def factory(name: str) -> None:
-        if name in datnames:
-            raise ValueError(f"'{name}' name already taken")
-        execute(
-            ctx,
-            instance,
-            f"CREATE DATABASE {name}",
-            fetch=False,
-            autocommit=True,
-        )
-        datnames.add(name)
-
-    yield factory
-
-    for name in datnames:
-        execute(
-            ctx,
-            instance,
-            f"DROP DATABASE IF EXISTS {name}",
-            fetch=False,
-            autocommit=True,
-        )
 
 
 def test_exists(ctx, instance, database_factory):
