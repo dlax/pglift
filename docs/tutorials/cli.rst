@@ -23,7 +23,7 @@ pglift: instances, roles, databases, etc. Each entry point has its own help:
 
 ::
 
-    $ pglift instance --help
+    $ pglift instance init --help
     Usage: pglift instance init [OPTIONS] NAME
 
       Initialize a PostgreSQL instance
