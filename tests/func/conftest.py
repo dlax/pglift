@@ -1,4 +1,5 @@
 import copy
+import logging
 import pathlib
 import shutil
 import subprocess
@@ -17,6 +18,8 @@ from pglift.models import system
 from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 
 from . import configure_instance, execute
+
+logging.basicConfig(level="DEBUG")
 
 
 @pytest.fixture(autouse=True)
