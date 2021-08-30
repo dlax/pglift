@@ -98,9 +98,14 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 
     backuprole = ctx.settings.postgresql.surole
 
+    # Always use string values so that this would match with actual config (on
+    # disk) that's parsed later on.
     config = {
         "global": {
             "repo1-path": str(directory),
+            "repo1-retention-archive": "9999999",
+            "repo1-retention-diff": "9999999",
+            "repo1-retention-full": "9999999",
             "log-path": str(logpath),
         },
         "global:archive-push": {
@@ -230,9 +235,6 @@ def backup_command(
     """
     args = [
         f"--type={type.name}",
-        "--repo1-retention-full=9999999",
-        "--repo1-retention-archive=9999999",
-        "--repo1-retention-diff=9999999",
         "--log-level-console=info",
         "backup",
     ]
