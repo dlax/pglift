@@ -15,7 +15,7 @@ def configure_instance(
     i: Union[Instance, InstanceSpec],
     *,
     port: Optional[int] = None,
-    **confitems: Any
+    **confitems: Any,
 ) -> None:
     if port is None:
         assert isinstance(i, Instance)
