@@ -46,6 +46,7 @@ def execute(
     fetch: Literal[True],
     autocommit: bool = False,
     role: Optional[Role] = None,
+    **kwargs: Any,
 ) -> List[Any]:
     ...
 
@@ -58,6 +59,7 @@ def execute(
     fetch: bool = False,
     autocommit: bool = False,
     role: Optional[Role] = None,
+    **kwargs: Any,
 ) -> List[Any]:
     ...
 
@@ -69,11 +71,12 @@ def execute(
     fetch: bool = True,
     autocommit: bool = False,
     role: Optional[Role] = None,
+    **kwargs: Any,
 ) -> Optional[List[Any]]:
     if role is None:
         role = ctx.settings.postgresql.surole
     with instance_mod.running(ctx, instance):
-        with db.connect(instance, role, autocommit=autocommit) as conn:
+        with db.connect(instance, role, autocommit=autocommit, **kwargs) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 conn.commit()
