@@ -38,6 +38,7 @@ def test_backup_command(pg_version, settings, instance):
         "--repo1-retention-full=9999999",
         "--repo1-retention-archive=9999999",
         "--repo1-retention-diff=9999999",
+        "--log-level-console=info",
         "--start-fast",
         "backup",
     ]
@@ -48,5 +49,6 @@ def test_expire_command(pg_version, settings, instance):
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
         f"--stanza={pg_version}-test",
+        "--log-level-console=info",
         "expire",
     ]

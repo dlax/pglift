@@ -233,6 +233,7 @@ def backup_command(
         "--repo1-retention-full=9999999",
         "--repo1-retention-archive=9999999",
         "--repo1-retention-diff=9999999",
+        "--log-level-console=info",
         "backup",
     ]
     if start_fast:
@@ -263,7 +264,9 @@ def expire_command(instance: BaseInstance) -> List[str]:
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    return make_cmd(instance, instance.settings.pgbackrest, "expire")
+    return make_cmd(
+        instance, instance.settings.pgbackrest, "--log-level-console=info", "expire"
+    )
 
 
 @task
