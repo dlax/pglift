@@ -217,7 +217,10 @@ class BackupType(AutoStrEnum):
 
 
 def backup_command(
-    instance: BaseInstance, *, type: BackupType = BackupType.default()
+    instance: BaseInstance,
+    *,
+    type: BackupType = BackupType.default(),
+    start_fast: bool = True,
 ) -> List[str]:
     """Return the full pgbackrest command to perform a backup for ``instance``.
 
@@ -232,6 +235,8 @@ def backup_command(
         "--repo1-retention-diff=9999999",
         "backup",
     ]
+    if start_fast:
+        args.insert(-1, "--start-fast")
     return make_cmd(instance, instance.settings.pgbackrest, *args)
 
 

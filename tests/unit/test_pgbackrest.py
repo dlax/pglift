@@ -38,6 +38,7 @@ def test_backup_command(pg_version, settings, instance):
         "--repo1-retention-full=9999999",
         "--repo1-retention-archive=9999999",
         "--repo1-retention-diff=9999999",
+        "--start-fast",
         "backup",
     ]
 
