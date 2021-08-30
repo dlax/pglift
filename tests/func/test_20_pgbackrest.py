@@ -10,10 +10,11 @@ from pglift.conf import info as conf_info
 
 from . import reconfigure_instance
 
-
-@pytest.mark.skipif(
+pytestmark = pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
+
+
 def test(ctx, installed, instance, tmp_path, tmp_port_factory):
     instance_config = instance.config()
     assert instance_config
