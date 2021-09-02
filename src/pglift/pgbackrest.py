@@ -389,7 +389,3 @@ def restore(
         dirpath.mkdir(exist_ok=True)
 
     ctx.run(cmd, check=True)
-
-    # TODO:
-    # - handle pg_wal symlink
-    # - account for recovery_end_command
