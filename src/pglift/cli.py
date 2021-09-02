@@ -11,7 +11,7 @@ from typing_extensions import Literal
 
 from . import _install, databases, exceptions
 from . import instance as instance_mod
-from . import pgbackrest, pm, roles
+from . import pgbackrest, pm, prometheus, roles
 from .ctx import Context
 from .models import helpers, interface
 from .models.system import Instance
@@ -492,3 +492,26 @@ def database_drop(ctx: Context, instance: str, name: str) -> None:
             databases.drop(ctx, i, name)
     except exceptions.DatabaseNotFound as e:
         raise click.ClickException(e.show())
+
+
+@cli.group("postgres_exporter")
+def postgres_exporter() -> None:
+    """Handle Prometheus postgres_exporter"""
+
+
+@postgres_exporter.command("start")
+@instance_identifier
+@click.pass_obj
+def postgres_exporter_start(ctx: Context, instance: str) -> None:
+    """Start postgres_exporter."""
+    i = instance_lookup(ctx, instance)
+    prometheus.start(ctx, i)
+
+
+@postgres_exporter.command("stop")
+@instance_identifier
+@click.pass_obj
+def postgres_exporter_stop(ctx: Context, instance: str) -> None:
+    """Stop postgres_exporter."""
+    i = instance_lookup(ctx, instance)
+    prometheus.stop(ctx, i)

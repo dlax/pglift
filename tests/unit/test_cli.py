@@ -10,7 +10,7 @@ from pgtoolkit.ctl import Status
 
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
-from pglift import pgbackrest, roles
+from pglift import pgbackrest, prometheus, roles
 from pglift.cli import cli, instance_init
 from pglift.ctx import Context
 from pglift.models import interface
@@ -663,3 +663,15 @@ def test_database_drop(runner, ctx, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("action", ["start", "stop"])
+def test_postgres_exporter(runner, ctx, instance, action):
+    with patch.object(prometheus, action) as patched:
+        result = runner.invoke(
+            cli,
+            ["postgres_exporter", action, str(instance)],
+            obj=ctx,
+        )
+    patched.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0, result

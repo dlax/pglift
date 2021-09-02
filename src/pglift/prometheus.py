@@ -126,18 +126,27 @@ def instance_configure(
     setup(ctx, instance, config)
 
 
-@hookimpl  # type: ignore[misc]
-def instance_start(ctx: BaseContext, instance: Instance) -> None:
-    """Start postgres_exporter service."""
+def start(ctx: BaseContext, instance: Instance) -> None:
     if ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
 
 
 @hookimpl  # type: ignore[misc]
-def instance_stop(ctx: BaseContext, instance: Instance) -> None:
+def instance_start(ctx: BaseContext, instance: Instance) -> None:
+    """Start postgres_exporter service."""
+    start(ctx, instance)
+
+
+def stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(instance))
+
+
+@hookimpl  # type: ignore[misc]
+def instance_stop(ctx: BaseContext, instance: Instance) -> None:
+    """Stop postgres_exporter service."""
+    stop(ctx, instance)
 
 
 @hookimpl  # type: ignore[misc]
