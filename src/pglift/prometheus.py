@@ -1,9 +1,10 @@
+import shlex
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from pgtoolkit.conf import Configuration
 
-from . import hookimpl, systemd
+from . import cmd, hookimpl, systemd
 from .ctx import BaseContext
 from .models.system import BaseInstance, Instance, InstanceSpec
 from .settings import PrometheusSettings
@@ -16,6 +17,10 @@ def _configpath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
 
 def _queriespath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
     return Path(str(settings.queriespath).format(instance=instance))
+
+
+def _pidfile(instance: BaseInstance, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.pid_file).format(instance=instance))
 
 
 def systemd_unit(instance: BaseInstance) -> str:
@@ -129,6 +134,18 @@ def instance_configure(
 def start(ctx: BaseContext, instance: Instance) -> None:
     if ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
+    else:
+        settings = ctx.settings.prometheus
+        configpath = _configpath(instance, settings)
+        env: Dict[str, str] = {}
+        for line in configpath.read_text().splitlines():
+            key, value = line.split("=", 1)
+            env[key] = value
+        opts = shlex.split(env.pop("POSTGRES_EXPORTER_OPTS")[1:-1])
+        pidfile = _pidfile(instance, settings)
+        cmd.execute_program(
+            [str(settings.execpath)] + opts, pidfile, env=env, logger=ctx
+        )
 
 
 @hookimpl  # type: ignore[misc]
@@ -141,6 +158,9 @@ def stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(instance))
+    else:
+        pidfile = _pidfile(instance, ctx.settings.prometheus)
+        cmd.terminate_program(pidfile, logger=ctx)
 
 
 @hookimpl  # type: ignore[misc]

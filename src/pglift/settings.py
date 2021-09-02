@@ -275,6 +275,9 @@ class PrometheusSettings(BaseSettings):
     )
     """Path to the queries file."""
 
+    pid_file: RunPath = RunPath("prometheus/{instance.version}-{instance.name}.pid")
+    """Path to directory where postgres_exporter process PID file will be written."""
+
 
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in data directory."""

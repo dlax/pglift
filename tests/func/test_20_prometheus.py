@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict
 
+import pytest
 import requests
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
@@ -41,16 +42,24 @@ def test(ctx, installed, instance, tmp_port_factory):
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
-        with instance_mod.running(ctx, instance, run_hooks=True):
+
+    with instance_mod.running(ctx, instance, run_hooks=True):
+        if ctx.settings.service_manager == "systemd":
             assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
-            try:
-                r = request_metrics()
-            except requests.ConnectionError as e:
-                raise AssertionError(f"HTTP connection failed: {e}")
-            r.raise_for_status()
+        try:
+            r = request_metrics()
+        except requests.ConnectionError as e:
+            raise AssertionError(f"HTTP connection failed: {e}")
+        r.raise_for_status()
         assert r.ok
         output = r.text
         assert "pg_up 1" in output.splitlines()
+
+    with instance_mod.stopped(ctx, instance, run_hooks=True):
+        if ctx.settings.service_manager == "systemd":
+            assert not systemd.is_active(ctx, prometheus.systemd_unit(instance))
+        with pytest.raises(requests.ConnectionError):
+            request_metrics()
 
     new_port = next(tmp_port_factory)
     with reconfigure_instance(ctx, instance, port=new_port):
