@@ -68,12 +68,12 @@ def setup(
         f"DATA_SOURCE_NAME={' '.join(dsn)}",
     ]
     appname = f"postgres_exporter-{instance.version}-{instance.name}"
-    opts = " ".join(
-        [
-            "--log.level=info",
-            f"--log.format=logger:syslog?appname={appname}&local=0",
-        ]
-    )
+    log_options = ["--log.level=info"]
+    if ctx.settings.service_manager == "systemd":
+        # XXX Checking for systemd presence as a naive way to check for syslog
+        # availability; this is enough for Docker.
+        log_options.append(f"--log.format=logger:syslog?appname={appname}&local=0")
+    opts = " ".join(log_options)
     queriespath = _queriespath(instance, settings)
     config.extend(
         [
