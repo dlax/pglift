@@ -110,7 +110,7 @@ def test_auth(ctx, instance):
     assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
 
 
-def test_start_stop(ctx, instance, tmp_path):
+def test_start_stop_restart_running_stopped(ctx, instance, tmp_path):
     i = instance
     use_systemd = ctx.settings.service_manager == "systemd"
     if use_systemd:
@@ -140,6 +140,20 @@ def test_start_stop(ctx, instance, tmp_path):
         assert instance_mod.status(ctx, i) == Status.running
     finally:
         instance_mod.stop(ctx, i, mode="immediate")
+
+    assert instance_mod.status(ctx, i) == Status.not_running
+    with instance_mod.stopped(ctx, i):
+        assert instance_mod.status(ctx, i) == Status.not_running
+        with instance_mod.stopped(ctx, i):
+            assert instance_mod.status(ctx, i) == Status.not_running
+        with instance_mod.running(ctx, i):
+            assert instance_mod.status(ctx, i) == Status.running
+            with instance_mod.running(ctx, i):
+                assert instance_mod.status(ctx, i) == Status.running
+            with instance_mod.stopped(ctx, i):
+                assert instance_mod.status(ctx, i) == Status.not_running
+            assert instance_mod.status(ctx, i) == Status.running
+        assert instance_mod.status(ctx, i) == Status.not_running
     assert instance_mod.status(ctx, i) == Status.not_running
 
 

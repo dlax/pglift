@@ -333,6 +333,42 @@ def running(
         stop(ctx, instance, run_hooks=run_hooks)
 
 
+@contextlib.contextmanager
+def stopped(
+    ctx: BaseContext,
+    instance: Union[PostgreSQLInstance, Instance],
+    *,
+    timeout: int = 10,
+    run_hooks: bool = False,
+) -> Iterator[None]:
+    """Context manager to temporarily stop an instance.
+
+    :param timeout: delay to wait for instance stop.
+    :param run_hooks: whether or not to run hooks during instance start/stop.
+
+    :raises RuntimeError: when the instance did stop after specified `timeout`
+        (in seconds).
+    """
+    if status(ctx, instance) == Status.not_running:
+        yield
+        return
+
+    if run_hooks and not isinstance(instance, Instance):
+        raise TypeError("expecting a full instance")
+
+    stop(ctx, instance, run_hooks=run_hooks)
+    for __ in range(timeout):
+        time.sleep(1)
+        if status(ctx, instance) == Status.not_running:
+            break
+    else:
+        raise RuntimeError(f"{instance} not stopped after {timeout}s")
+    try:
+        yield
+    finally:
+        start(ctx, instance, run_hooks=run_hooks)
+
+
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Configure authentication for the PostgreSQL instance by setting
