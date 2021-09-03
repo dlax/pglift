@@ -127,7 +127,7 @@ def test_start_stop_restart_running_stopped(ctx, instance, tmp_path):
     if use_systemd:
         assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
 
-    instance_mod.start(ctx, i, logfile=tmp_path / "log")
+    instance_mod.start(ctx, i, logfile=tmp_path / "log", run_hooks=False)
     try:
         assert instance_mod.status(ctx, i) == Status.running
         if not use_systemd:
@@ -139,7 +139,7 @@ def test_start_stop_restart_running_stopped(ctx, instance, tmp_path):
         instance_mod.reload(ctx, i)
         assert instance_mod.status(ctx, i) == Status.running
     finally:
-        instance_mod.stop(ctx, i, mode="immediate")
+        instance_mod.stop(ctx, i, mode="immediate", run_hooks=False)
 
     assert instance_mod.status(ctx, i) == Status.not_running
     with instance_mod.stopped(ctx, i):
