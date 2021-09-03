@@ -189,10 +189,11 @@ def test_configure(ctx_nohook, instance):
 
 
 def test_shell(ctx, instance):
-    with patch("subprocess.call") as patched:
+    with patch("os.execvp") as patched:
         instance_mod.shell(ctx, instance, user="test", dbname="test")
+    psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
     cmd = [
-        str(ctx.pg_ctl(instance.version).bindir / "psql"),
+        psql,
         "--port",
         str(instance.port),
         "--host",
@@ -202,4 +203,4 @@ def test_shell(ctx, instance):
         "--dbname",
         "test",
     ]
-    patched.assert_called_once_with(cmd)
+    patched.assert_called_once_with(psql, cmd)

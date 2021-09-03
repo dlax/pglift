@@ -2,7 +2,6 @@ import builtins
 import contextlib
 import os
 import shutil
-import subprocess
 import tempfile
 import time
 from pathlib import Path
@@ -600,8 +599,9 @@ def shell(
         host = "localhost"
     if user is None:
         user = ctx.settings.postgresql.surole.name
-    cmd = [
-        str(ctx.pg_ctl(instance.version).bindir / "psql"),
+    psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
+    args = [
+        psql,
         "--port",
         str(instance.port),
         "--host",
@@ -610,5 +610,5 @@ def shell(
         user,
     ]
     if dbname is not None:
-        cmd.extend(["--dbname", dbname])
-    subprocess.call(cmd)  # nosec
+        args.extend(["--dbname", dbname])
+    os.execvp(psql, args)  # nosec
