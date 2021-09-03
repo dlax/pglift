@@ -173,13 +173,13 @@ def run(
 
     def process_stdout(out: str, prog: str = prog) -> None:
         if logger:
-            logger.debug("%s: %s", prog, out)
+            logger.debug("%s: %s", prog, out.rstrip())
         if redirect_output:
             sys.stdout.write(out)
 
     def process_stderr(err: str, prog: str = prog) -> None:
         if logger:
-            logger.error("%s: %s", prog, err)
+            logger.error("%s: %s", prog, err.rstrip())
         if redirect_output:
             sys.stderr.write(err)
 
