@@ -1,8 +1,7 @@
 import argparse
-import subprocess
-import sys
 from typing import Optional, Sequence
 
+from .cmd import execute_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
 from .models.system import PostgreSQLInstance
@@ -34,14 +33,11 @@ def main(
 
     bindir = ctx.settings.postgresql.versions[instance.version].bindir
     cmd = [str(bindir / "postgres"), "-D", str(instance.datadir)]
-    piddir = ctx.settings.postgresql.pid_directory
-    if not piddir.exists():
-        piddir.mkdir(parents=True)
-    pidfile = piddir / f"postgresql-{instance.version}-{instance.name}.pid"
-    if pidfile.exists():
-        sys.exit(f"PID file {pidfile} already exists")
-    pid = subprocess.Popen(cmd).pid  # nosec
-    pidfile.write_text(str(pid))
+    pidfile = (
+        ctx.settings.postgresql.pid_directory
+        / f"postgresql-{instance.version}-{instance.name}.pid"
+    )
+    execute_program(cmd, pidfile, logger=ctx)
 
 
 if __name__ == "__main__":  # pragma: nocover

@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from pglift import postgres
@@ -16,9 +18,14 @@ def test_main(monkeypatch, ctx, instance):
     calls = []
 
     class Popen:
-        def __init__(self, cmd):
+        def __init__(self, cmd, **kwargs):
             calls.append(cmd)
+            self.cmd = cmd
             self.pid = 123
+            self.returncode = 0
+
+        def communicate(self, **kwargs):
+            raise subprocess.TimeoutExpired(self.cmd, 12)
 
     with monkeypatch.context() as m:
         m.setattr("subprocess.Popen", Popen)
