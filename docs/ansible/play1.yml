@@ -12,6 +12,7 @@
           max_connections: 100
           shared_buffers: 1GB
           unix_socket_directories: /tmp
+        prometheus_port: 9186
 
     - name: a role in production instance
       dalibo.pglift.role:

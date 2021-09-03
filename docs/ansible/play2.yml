@@ -12,6 +12,7 @@
           max_connections: 100
           shared_buffers: 1GB
           unix_socket_directories: /tmp
+        prometheus_port: 9186
 
     - name: db, dropped
       dalibo.pglift.database:
