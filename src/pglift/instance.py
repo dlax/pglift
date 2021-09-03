@@ -403,7 +403,7 @@ def stop(
     *,
     mode: str = "fast",
     wait: bool = True,
-    run_hooks: bool = False,
+    run_hooks: bool = True,
 ) -> None:
     """Stop an instance.
 
