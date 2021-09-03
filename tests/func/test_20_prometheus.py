@@ -21,7 +21,7 @@ def config_dict(configpath: Path) -> Dict[str, str]:
     return config
 
 
-def test(ctx, installed, instance, tmp_port_factory):
+def test_configure(ctx, installed, instance, tmp_port_factory):
     prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
     assert configpath.exists()
@@ -35,6 +35,16 @@ def test(ctx, installed, instance, tmp_port_factory):
 
     queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
     assert queriespath.exists()
+
+    new_port = next(tmp_port_factory)
+    with reconfigure_instance(ctx, instance, port=new_port):
+        new_prometheus_config = config_dict(configpath)
+        dsn = new_prometheus_config["DATA_SOURCE_NAME"]
+        assert f"port={new_port}" in dsn
+
+
+def test_start_stop(ctx, installed, instance):
+    port = instance.prometheus.port
 
     @retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
     def request_metrics() -> requests.Response:
@@ -60,9 +70,3 @@ def test(ctx, installed, instance, tmp_port_factory):
             assert not systemd.is_active(ctx, prometheus.systemd_unit(instance))
         with pytest.raises(requests.ConnectionError):
             request_metrics()
-
-    new_port = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, port=new_port):
-        new_prometheus_config = config_dict(configpath)
-        dsn = new_prometheus_config["DATA_SOURCE_NAME"]
-        assert f"port={new_port}" in dsn
