@@ -1,9 +1,12 @@
 import asyncio
 import asyncio.subprocess
+import os
+import signal
 import subprocess
 import sys
+from pathlib import Path
 from subprocess import DEVNULL, PIPE, CalledProcessError
-from typing import Any, Callable, Optional, Sequence, Tuple
+from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from .types import CompletedProcess, Logger
 
@@ -217,3 +220,58 @@ def run_expect(
     if retcode not in codes:
         raise CalledProcessError(retcode, result.args, result.stdout, result.stderr)
     return result
+
+
+def execute_program(
+    cmd: Sequence[str],
+    pidfile: Path,
+    *,
+    timeout: float = 1,
+    env: Optional[Mapping[str, str]] = None,
+    capture_output: bool = True,
+    logger: Optional[Logger] = None,
+) -> None:
+    """Execute program described by 'cmd' and store its PID in 'pidfile'.
+
+    This is aimed at starting daemon programs.
+
+    :raises FileExistsError: if the `pidfile` already exists.
+    :raises CalledProcessError: in case program execution terminates after `timeout`.
+    """
+    if pidfile.exists():
+        raise FileExistsError(f"{pidfile} already exists")
+    if capture_output:
+        stderr = subprocess.PIPE
+    else:
+        stderr = subprocess.DEVNULL
+    stdout = subprocess.DEVNULL
+    prog = cmd[0]
+    proc = subprocess.Popen(  # nosec
+        cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
+    )
+    try:
+        __, errs = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        pidfile.parent.mkdir(parents=True, exist_ok=True)
+        pidfile.write_text(str(proc.pid))
+        return None
+    else:
+        if logger:
+            for errline in errs.splitlines():
+                logger.error("%s: %s", prog, errline)
+        raise subprocess.CalledProcessError(proc.returncode, cmd, stderr=errs)
+
+
+def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None:
+    """Terminate program matching PID in 'pidfile'.
+
+    Upon successful termination, the 'pidfile' is removed.
+
+    :raises FileNotFoundError: if pidfile path does not exist.
+    :raises ProcessLookupError: if no process matching PID exists on system.
+    """
+    pid = int(pidfile.read_text())
+    if logger:
+        logger.info("terminating process %d", pid)
+    os.kill(pid, signal.SIGTERM)
+    pidfile.unlink()
