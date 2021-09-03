@@ -206,22 +206,29 @@ def test_describe(ctx, instance, log_directory):
 
 
 def test_list(ctx, instance):
-    (ctx.settings.postgresql.root / "12/notAnInstanceDir").mkdir(parents=True)
-    (i,) = list(instance_mod.list(ctx))
-    assert i.name == instance.name
-    assert i.version == instance.version
-    assert i.status == Status.not_running.name
+    not_instance_dir = ctx.settings.postgresql.root / "12" / "notAnInstanceDir"
+    not_instance_dir.mkdir(parents=True)
+    try:
+        instances = list(instance_mod.list(ctx))
 
-    with pytest.raises(ValueError, match="unknown version '7'"):
-        next(instance_mod.list(ctx, version="7"))
+        for i in instances:
+            assert i.status == Status.not_running.name
+            # this also ensure instance name is not notAnInstanceDir
+            assert i.name == "test"
 
-    iv = next(instance_mod.list(ctx, version=instance.version))
-    assert iv == i
+        for i in instances:
+            if (i.version, i.name) == (instance.version, instance.name):
+                break
+        else:
+            assert False, f"Instance {instance.version}/{instance.name} not found"
 
-    other_version = next(
-        v for v in ctx.settings.postgresql.versions if v != instance.version
-    )
-    assert list(instance_mod.list(ctx, version=other_version)) == []
+        with pytest.raises(ValueError, match="unknown version '7'"):
+            next(instance_mod.list(ctx, version="7"))
+
+        iv = next(instance_mod.list(ctx, version=instance.version))
+        assert iv == i
+    finally:
+        not_instance_dir.rmdir()
 
 
 @pytest.mark.parametrize("slot", ["standby", None], ids=["with-slot", "no-slot"])
