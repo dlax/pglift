@@ -258,7 +258,7 @@ def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
 def instance_shell(
     ctx: Context, name: str, version: Optional[str], user: str, dbname: Optional[str]
 ) -> None:
-    """Open a PostgreSQL interactive shell on instance."""
+    """Open a PostgreSQL interactive shell on a running instance."""
     instance = get_instance(ctx, name, version)
     if instance_mod.status(ctx, instance) != instance_mod.Status.running:
         raise click.ClickException("instance is not running, start it first")
