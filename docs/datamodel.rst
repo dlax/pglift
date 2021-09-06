@@ -39,3 +39,5 @@ Interface model
     :members:
 .. autoclass:: Tablespace
     :members:
+.. autoclass:: Privilege
+    :members:

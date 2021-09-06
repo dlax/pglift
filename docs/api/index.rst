@@ -8,6 +8,7 @@ API
     instance
     roles
     databases
+    privileges
     conf
     pgbackrest
     ctx

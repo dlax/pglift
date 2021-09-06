@@ -2,6 +2,7 @@
   "create_replication_slot": "SELECT true FROM pg_create_physical_replication_slot(%(slot)s);",
   "database_alter_owner": "ALTER DATABASE {database} {options};",
   "database_create": "CREATE DATABASE {database} {options};",
+  "database_default_acl": "WITH default_acls AS (\n    SELECT\n        pg_namespace.nspname AS schema,\n        pg_default_acl.defaclobjtype AS objtype,\n        aclexplode(pg_default_acl.defaclacl) AS acl\n    FROM\n        pg_default_acl\n        JOIN pg_namespace ON pg_namespace.oid = pg_default_acl.defaclnamespace\n)\nSELECT\n    current_database() AS database,\n    default_acls.schema,\n    pg_roles.rolname AS role,\n    CASE default_acls.objtype\n    WHEN 'f' THEN\n        'FUNCTION'\n    WHEN 'r' THEN\n        'TABLE'\n    WHEN 'S' THEN\n        'SEQUENCE'\n    WHEN 'T' THEN\n        'TYPE'\n    WHEN 'n' THEN\n        'SCHEMA'\n    ELSE\n        'UNKNOWN'\n    END AS object_type,\n    array_agg(DISTINCT (default_acls.acl).privilege_type) AS privileges\nFROM\n    default_acls\n    JOIN pg_roles ON ((acl).grantee = pg_roles.oid)\n{where_clause}\nGROUP BY\n    schema,\n    role,\n    object_type\nORDER BY\n    schema,\n    role,\n    object_type;",
   "database_drop": "DROP DATABASE {database};",
   "database_exists": "SELECT true FROM pg_database WHERE datname = %(database)s;",
   "database_inspect": "SELECT\n    r.rolname AS owner\nFROM\n    pg_database db\n    JOIN pg_authid r ON db.datdba = r.oid\nWHERE\n    db.datname = %(datname)s;",
@@ -15,5 +16,6 @@
   "role_grant": "GRANT {rolname} TO {rolspec};",
   "role_has_password": "SELECT\n    rolpassword IS NOT NULL FROM pg_authid\nWHERE\n    rolname = %(username)s;",
   "role_inspect": "SELECT\n    CASE WHEN r.rolpassword IS NOT NULL THEN\n        '<set>'\n    ELSE\n        NULL\n    END AS password,\n    r.rolinherit AS inherit,\n    r.rolcanlogin AS login,\n    CASE WHEN r.rolconnlimit <> - 1 THEN\n        r.rolconnlimit\n    ELSE\n        NULL\n    END AS connection_limit,\n    r.rolvaliduntil AS validity,\n    CASE WHEN COUNT(gi) <> 0 THEN\n        ARRAY_AGG(gi.rolname)\n    ELSE\n        ARRAY[]::text[]\n    END AS in_roles\nFROM\n    pg_authid r\n    LEFT OUTER JOIN pg_auth_members g ON g.member = r.oid\n    LEFT OUTER JOIN pg_authid gi ON g.roleid = gi.oid\nWHERE\n    r.rolname = %(username)s\nGROUP BY\n    r.rolpassword, r.rolinherit, r.rolcanlogin, r.rolconnlimit, r.rolvaliduntil;",
+  "role_list_names": "SELECT rolname from pg_roles ORDER BY rolname;",
   "role_revoke": "REVOKE {rolname} FROM {rolspec};"
 }

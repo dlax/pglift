@@ -310,3 +310,13 @@ class DetailedDatabase(Manifest):
             except KeyError as exc:
                 raise TypeError(f"missing {exc} argument when 'tablespace' is a string")
         super().__init__(**kwargs)
+
+
+class Privilege(Manifest):
+    """Access privilege"""
+
+    database: str
+    schema_: str = Field(alias="schema")
+    role: str
+    object_type: str
+    privileges: List[str]

@@ -51,6 +51,9 @@ GRANT {rolname} TO {rolspec};
 -- name: role_revoke
 REVOKE {rolname} FROM {rolspec};
 
+-- name: role_list_names
+SELECT rolname from pg_roles ORDER BY rolname;
+
 -- name: role_drop
 DROP ROLE {username};
 
@@ -91,6 +94,49 @@ ORDER BY 1;
 
 -- name: database_drop
 DROP DATABASE {database};
+
+-- name: database_default_acl
+WITH default_acls AS (
+    SELECT
+        pg_namespace.nspname AS schema,
+        pg_default_acl.defaclobjtype AS objtype,
+        aclexplode(pg_default_acl.defaclacl) AS acl
+    FROM
+        pg_default_acl
+        JOIN pg_namespace ON pg_namespace.oid = pg_default_acl.defaclnamespace
+)
+SELECT
+    current_database() AS database,
+    default_acls.schema,
+    pg_roles.rolname AS role,
+    CASE default_acls.objtype
+    WHEN 'f' THEN
+        'FUNCTION'
+    WHEN 'r' THEN
+        'TABLE'
+    WHEN 'S' THEN
+        'SEQUENCE'
+    WHEN 'T' THEN
+        'TYPE'
+    WHEN 'n' THEN
+        'SCHEMA'
+    ELSE
+        'UNKNOWN'
+    END AS object_type,
+    array_agg(DISTINCT (default_acls.acl).privilege_type) AS privileges
+FROM
+    default_acls
+    JOIN pg_roles ON ((acl).grantee = pg_roles.oid)
+{where_clause}
+GROUP BY
+    schema,
+    role,
+    object_type
+ORDER BY
+    schema,
+    role,
+    object_type;
+
 
 -- name: drop_replication_slot
 SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_slots WHERE slot_name = %(slot)s));
