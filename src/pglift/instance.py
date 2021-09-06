@@ -418,6 +418,7 @@ def start(
     if run_hooks and not isinstance(instance, Instance):
         raise TypeError("expecting a full instance")
 
+    ctx.info("starting instance %s", instance)
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).start(instance.datadir, wait=wait, logfile=logfile)
     elif ctx.settings.service_manager == "systemd":
@@ -448,6 +449,7 @@ def stop(
     if run_hooks and not isinstance(instance, Instance):
         raise TypeError("expecting a full instance")
 
+    ctx.info("stopping instance %s", instance)
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
@@ -465,6 +467,7 @@ def restart(
     wait: bool = True,
 ) -> None:
     """Restart an instance."""
+    ctx.info("restarting instance %s", instance)
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).restart(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
@@ -477,6 +480,7 @@ def reload(
     instance: Instance,
 ) -> None:
     """Reload an instance."""
+    ctx.info("reloading instance %s", instance)
     if ctx.settings.service_manager is None:
         ctx.pg_ctl(instance.version).reload(instance.datadir)
     elif ctx.settings.service_manager == "systemd":
