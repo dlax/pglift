@@ -40,7 +40,9 @@ class AnsibleContext(BaseContext):
 
     exception = error
 
-    def run(self, args: Sequence[str], **kwargs: Any) -> CompletedProcess:
+    def run(
+        self, args: Sequence[str], log_command: bool = True, **kwargs: Any
+    ) -> CompletedProcess:
         """Run a command through the Ansible module."""
         try:
             kwargs["check_rc"] = kwargs.pop("check")

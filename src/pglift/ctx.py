@@ -8,6 +8,7 @@ from pluggy import PluginManager
 
 from . import __name__ as pkgname
 from . import cmd, util
+from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
 
@@ -64,6 +65,7 @@ class BaseContext(ABC):
         self,
         args: Sequence[str],
         *,
+        log_command: bool = True,
         check: bool = False,
         **kwargs: Any,
     ) -> CompletedProcess:
@@ -91,6 +93,10 @@ class Context(BaseContext):
     def exception(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         return self._logger.exception(msg, *args, **kwargs)
 
-    def run(self, args: Sequence[str], **kwargs: Any) -> CompletedProcess:
+    def run(
+        self, args: Sequence[str], log_command: bool = True, **kwargs: Any
+    ) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
+        if log_command:
+            self.info("%s", shlex_join(args))
         return cmd.run(args, logger=self, **kwargs)
