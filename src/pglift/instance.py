@@ -631,7 +631,7 @@ def list(
 def shell(
     ctx: BaseContext, instance: Instance, *, user: Optional[str], dbname: Optional[str]
 ) -> None:
-    """Start a PostgreSQL shell (psql)."""
+    """Start a PostgreSQL shell (psql) and replace the current process."""
     config = instance.config()
     try:
         host = config.unix_socket_directories.split(",")[0]  # type: ignore[union-attr]
