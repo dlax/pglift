@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import IO, Any, Optional, Union
+from typing import IO, Any, Iterable, Optional, TypeVar, Union
 
 import click
 import pydantic.json
@@ -35,6 +35,24 @@ def instance_lookup(ctx: Context, instance_id: str) -> Instance:
     except ValueError:
         name = instance_id
     return get_instance(ctx, name, version)
+
+
+_M = TypeVar("_M", bound=pydantic.BaseModel)
+
+
+def print_table_for(items: Iterable[_M]) -> None:
+    values = []
+    for item in items:
+        d = item.dict()
+        for k, v in list(d.items()):
+            if isinstance(v, dict):
+                for sk, sv in v.items():
+                    mk = f"{k} {sk}"
+                    assert mk not in d, mk
+                    d[mk] = sv
+                del d[k]
+        values.append(d)
+    click.echo(tabulate(values, headers="keys"), nl=False)
 
 
 @click.group()
@@ -158,11 +176,7 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
         print(json.dumps(list(instances), default=pydantic.json.pydantic_encoder))
         return
 
-    props = interface.InstanceListItem.__fields__
-    content = [[getattr(item, p) for p in props] for item in instances]
-    if content:
-        headers = [p.capitalize() for p in props]
-        print(tabulate(content, headers))
+    print_table_for(instances)
 
 
 @instance.command("drop")
@@ -311,9 +325,8 @@ def instance_restore(
     """Restore a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     if list_only:
-        backups = [b.dict() for b in pgbackrest.iter_backups(ctx, instance)]
-        if backups:
-            click.echo(tabulate(backups, headers="keys"))
+        backups = pgbackrest.iter_backups(ctx, instance)
+        print_table_for(backups)
     else:
         if instance_mod.status(ctx, instance) == instance_mod.Status.running:
             raise click.ClickException("instance is running")

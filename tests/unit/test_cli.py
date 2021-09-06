@@ -156,7 +156,7 @@ def test_instance_list(runner, instance, ctx):
     port = instance.config().port
     path = instance.path
     expected = [
-        "Name Version Port Path Status",
+        "name version port path status",
         "-----------------------------",
         f"{name} {version} {port} {path} not_running",
     ]
@@ -305,7 +305,7 @@ def test_instance_restore_list(runner, instance, ctx):
     assert result.stdout == (
         "label      size    repo_size  datetime             type    databases\n"
         "-------  ------  -----------  -------------------  ------  --------------\n"
-        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod\n"
+        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod"
     )
 
 
