@@ -241,10 +241,22 @@ def test_instance_operations(runner, instance, ctx, action):
     assert kwargs == {}
 
 
-def test_instance_shell(runner, instance, ctx, running):
-    with patch.object(instance_mod, "shell") as patched:
+def test_instance_shell(runner, instance, ctx):
+    with patch.object(
+        instance_mod, "status", return_value=instance_mod.Status.not_running
+    ) as status, patch.object(instance_mod, "shell") as shell:
+        r = runner.invoke(cli, ["instance", "shell", instance.name], obj=ctx)
+    status.assert_called_once_with(ctx, instance)
+    assert not shell.called
+    assert r.exit_code == 1
+    assert "instance is not running" in r.stdout
+
+    with patch.object(
+        instance_mod, "status", return_value=instance_mod.Status.running
+    ) as status, patch.object(instance_mod, "shell") as shell:
         runner.invoke(cli, ["instance", "shell", instance.name, "-U", "bob"], obj=ctx)
-    patched.assert_called_once_with(ctx, instance, user="bob", dbname=None)
+    status.assert_called_once_with(ctx, instance)
+    shell.assert_called_once_with(ctx, instance, user="bob", dbname=None)
 
 
 def test_instance_backup(runner, instance, ctx):

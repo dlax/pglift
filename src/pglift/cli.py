@@ -260,8 +260,9 @@ def instance_shell(
 ) -> None:
     """Open a PostgreSQL interactive shell on instance."""
     instance = get_instance(ctx, name, version)
-    with instance_mod.running(ctx, instance):
-        instance_mod.shell(ctx, instance, user=user, dbname=dbname)
+    if instance_mod.status(ctx, instance) != instance_mod.Status.running:
+        raise click.ClickException("instance is not running, start it first")
+    instance_mod.shell(ctx, instance, user=user, dbname=dbname)
 
 
 @instance.command("backup")
