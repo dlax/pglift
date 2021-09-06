@@ -179,7 +179,7 @@ def run(
 
     def process_stderr(err: str, prog: str = prog) -> None:
         if logger:
-            logger.error("%s: %s", prog, err.rstrip())
+            logger.debug("%s: %s", prog, err.rstrip())
         if redirect_output:
             sys.stderr.write(err)
 
