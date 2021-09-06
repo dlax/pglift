@@ -33,3 +33,9 @@ Interface model
     :members:
 .. autoclass:: Role
     :members:
+.. autoclass:: Database
+    :members:
+.. autoclass:: DetailedDatabase
+    :members:
+.. autoclass:: Tablespace
+    :members:

@@ -72,6 +72,23 @@ FROM
 WHERE
     db.datname = %(datname)s;
 
+-- name: database_list
+SELECT d.datname as "name",
+    pg_catalog.pg_get_userbyid(d.datdba) as "owner",
+    pg_catalog.pg_encoding_to_char(d.encoding) as "encoding",
+    d.datcollate as "collation",
+    d.datctype as "ctype",
+    d.datacl AS "acls",
+    pg_catalog.pg_database_size(d.datname) as "size",
+    t.spcname as "tablespace",
+    pg_catalog.pg_tablespace_location(t.oid) as "tablespace_location",
+    pg_catalog.pg_tablespace_size(t.oid) as "tablespace_size",
+    pg_catalog.shobj_description(d.oid, 'pg_database') as "description"
+FROM pg_catalog.pg_database d
+JOIN pg_catalog.pg_tablespace t on d.dattablespace = t.oid
+WHERE datallowconn
+ORDER BY 1;
+
 -- name: database_drop
 DROP DATABASE {database};
 

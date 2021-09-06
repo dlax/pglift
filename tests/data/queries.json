@@ -5,6 +5,7 @@
   "database_drop": "DROP DATABASE {database};",
   "database_exists": "SELECT true FROM pg_database WHERE datname = %(database)s;",
   "database_inspect": "SELECT\n    r.rolname AS owner\nFROM\n    pg_database db\n    JOIN pg_authid r ON db.datdba = r.oid\nWHERE\n    db.datname = %(datname)s;",
+  "database_list": "SELECT d.datname as \"name\",\n    pg_catalog.pg_get_userbyid(d.datdba) as \"owner\",\n    pg_catalog.pg_encoding_to_char(d.encoding) as \"encoding\",\n    d.datcollate as \"collation\",\n    d.datctype as \"ctype\",\n    d.datacl AS \"acls\",\n    pg_catalog.pg_database_size(d.datname) as \"size\",\n    t.spcname as \"tablespace\",\n    pg_catalog.pg_tablespace_location(t.oid) as \"tablespace_location\",\n    pg_catalog.pg_tablespace_size(t.oid) as \"tablespace_size\",\n    pg_catalog.shobj_description(d.oid, 'pg_database') as \"description\"\nFROM pg_catalog.pg_database d\nJOIN pg_catalog.pg_tablespace t on d.dattablespace = t.oid\nWHERE datallowconn\nORDER BY 1;",
   "drop_replication_slot": "SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_slots WHERE slot_name = %(slot)s));",
   "role_alter": "ALTER ROLE {username} {options};",
   "role_alter_password": "ALTER ROLE {username} PASSWORD %(password)s;",

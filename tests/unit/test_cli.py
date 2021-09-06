@@ -650,6 +650,50 @@ def test_database_describe(runner, ctx, instance, running):
     assert described == {"name": "present", "owner": "dba"}
 
 
+def test_database_list(runner, ctx, instance, running):
+    with patch.object(
+        databases,
+        "list",
+        return_value=[
+            interface.DetailedDatabase(
+                name="template1",
+                owner="postgres",
+                encoding="UTF8",
+                collation="C",
+                ctype="C",
+                acls=["=c/postgres", "postgres=CTc/postgres"],
+                size=8167939,
+                description="default template for new databases",
+                tablespace=interface.Tablespace(
+                    name="pg_default", location="", size=41011771
+                ),
+            )
+        ],
+    ) as list_:
+        result = runner.invoke(
+            cli,
+            ["database", "list", instance.name, "--json"],
+            obj=ctx,
+        )
+    list_.assert_called_once_with(ctx, instance)
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0, result.stdout
+    dbs = json.loads(result.stdout)
+    assert dbs == [
+        {
+            "acls": ["=c/postgres", "postgres=CTc/postgres"],
+            "collation": "C",
+            "ctype": "C",
+            "description": "default template for new databases",
+            "encoding": "UTF8",
+            "name": "template1",
+            "owner": "postgres",
+            "size": 8167939,
+            "tablespace": {"location": "", "name": "pg_default", "size": 41011771},
+        }
+    ]
+
+
 def test_database_drop(runner, ctx, instance, running):
     with patch.object(
         databases, "drop", side_effect=exceptions.DatabaseNotFound("bar")

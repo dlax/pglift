@@ -7,6 +7,7 @@ Databases operations
 .. autofunction:: alter
 .. autofunction:: apply
 .. autofunction:: exists
+.. autofunction:: list
 .. autofunction:: describe
 .. autofunction:: drop
 

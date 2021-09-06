@@ -273,3 +273,40 @@ class Database(Manifest):
         description="the role name of the user who will own the new database"
     )
     state: State = Field(default=State.present, cli={"hide": True})
+
+
+class Tablespace(BaseModel):
+    name: str
+    location: str
+    size: int
+
+
+class DetailedDatabase(Manifest):
+    """PostgreSQL database (with details)"""
+
+    name: str
+    owner: str
+    encoding: str
+    collation: str
+    ctype: str
+    acls: Optional[List[str]]
+    size: int
+    description: Optional[str]
+    tablespace: Tablespace
+
+    def __init__(
+        self,
+        **kwargs: Any,
+    ) -> None:
+        tablespace = kwargs["tablespace"]
+        if not isinstance(tablespace, Tablespace):
+            assert isinstance(tablespace, str)
+            try:
+                kwargs["tablespace"] = Tablespace(
+                    name=tablespace,
+                    location=kwargs.pop("tablespace_location"),
+                    size=kwargs.pop("tablespace_size"),
+                )
+            except KeyError as exc:
+                raise TypeError(f"missing {exc} argument when 'tablespace' is a string")
+        super().__init__(**kwargs)

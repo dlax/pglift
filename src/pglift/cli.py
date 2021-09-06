@@ -497,6 +497,21 @@ def database_describe(ctx: Context, instance: str, name: str) -> None:
     print(described.yaml(exclude={"state"}), end="")
 
 
+@database.command("list")
+@instance_identifier
+@as_json_option
+@click.pass_obj
+def database_list(ctx: Context, instance: str, as_json: bool) -> None:
+    """List databases"""
+    i = instance_lookup(ctx, instance)
+    with instance_mod.running(ctx, i):
+        dbs = databases.list(ctx, i)
+    if as_json:
+        click.echo(json.dumps(dbs, default=pydantic.json.pydantic_encoder))
+    else:
+        print_table_for(dbs)
+
+
 @database.command("drop")
 @instance_identifier
 @click.argument("name")

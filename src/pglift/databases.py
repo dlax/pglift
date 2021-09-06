@@ -1,5 +1,7 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
+import psycopg2
+import psycopg2.extensions
 from psycopg2 import sql
 
 from . import db, exceptions
@@ -38,6 +40,20 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
             cur.execute(db.query("database_inspect"), {"datname": name})
             values = dict(cur.fetchone())
     return interface.Database(name=name, **values)
+
+
+def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabase]:
+    """List all databases in instance."""
+
+    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        psycopg2.extensions.register_type(
+            # select typarray from pg_type where typname = 'aclitem'; -> 1034
+            psycopg2.extensions.new_array_type((1034,), "ACLITEM[]", psycopg2.STRING)
+        )
+        with cnx.cursor() as cur:
+            cur.execute(db.query("database_list"))
+            values = cur.fetchall()
+    return [interface.DetailedDatabase(**v) for v in values]
 
 
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:

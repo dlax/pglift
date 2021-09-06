@@ -73,6 +73,24 @@ def test_describe(ctx, instance, database_factory):
     assert database.name == "describeme"
 
 
+def test_list(ctx, instance, database_factory):
+    database_factory("db1")
+    dbs = databases.list(ctx, instance)
+    db1 = next(d for d in dbs if d.name == "db1").dict()
+    db1.pop("size")
+    db1["tablespace"].pop("size")
+    assert db1 == {
+        "acls": None,
+        "collation": "C",
+        "ctype": "C",
+        "description": None,
+        "encoding": "UTF8",
+        "name": "db1",
+        "owner": "postgres",
+        "tablespace": {"location": "", "name": "pg_default"},
+    }
+
+
 def test_alter(ctx, instance, database_factory, role_factory):
     database = interface.Database(name="alterme")
     with pytest.raises(exceptions.DatabaseNotFound, match="alter"):
