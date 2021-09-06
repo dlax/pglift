@@ -336,6 +336,49 @@ def test_instance_restore(runner, instance, ctx):
     assert restore.called_once_with(ctx, instance, label="xyz")
 
 
+def test_instance_privileges(ctx, instance, runner, running):
+    with patch(
+        "pglift.privileges.get",
+        return_value=[
+            interface.Privilege(
+                database="db2",
+                schema="public",
+                role="rol2",
+                object_type="FUNCTION",
+                privileges=["EXECUTE"],
+            ),
+        ],
+    ) as privileges_get:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "privileges",
+                instance.name,
+                instance.version,
+                "--json",
+                "-d",
+                "db2",
+                "-r",
+                "rol2",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result.stdout
+    privileges_get.assert_called_once_with(
+        ctx, instance, databases=("db2",), roles=("rol2",)
+    )
+    assert json.loads(result.stdout) == [
+        {
+            "database": "db2",
+            "schema_": "public",
+            "role": "rol2",
+            "object_type": "FUNCTION",
+            "privileges": ["EXECUTE"],
+        }
+    ]
+
+
 def test_role_create(ctx, instance, runner, running):
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"

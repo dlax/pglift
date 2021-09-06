@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import IO, Any, Callable, Iterable, Optional, TypeVar, Union
+from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
 
 import click
 import pydantic.json
@@ -11,7 +11,7 @@ from typing_extensions import Literal
 
 from . import _install, databases, exceptions
 from . import instance as instance_mod
-from . import pgbackrest, pm, prometheus, roles
+from . import pgbackrest, pm, privileges, prometheus, roles
 from .ctx import Context
 from .models import helpers, interface
 from .models.system import Instance
@@ -358,6 +358,36 @@ def instance_restore(
                 "--label and --date arguments are mutually exclusive"
             )
         pgbackrest.restore(ctx, instance, label=label, date=date)
+
+
+@instance.command("privileges")
+@name_argument
+@version_argument
+@click.option(
+    "-d", "--database", "databases", multiple=True, help="Database to inspect"
+)
+@click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
+@as_json_option
+@click.pass_obj
+def instance_privileges(
+    ctx: Context,
+    name: str,
+    version: Optional[str],
+    databases: Sequence[str],
+    roles: Sequence[str],
+    as_json: bool,
+) -> None:
+    """List default privileges on instance."""
+    instance = get_instance(ctx, name, version)
+    with instance_mod.running(ctx, instance):
+        try:
+            prvlgs = privileges.get(ctx, instance, databases=databases, roles=roles)
+        except ValueError as e:
+            raise click.ClickException(str(e))
+    if as_json:
+        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+    else:
+        print_table_for(prvlgs)
 
 
 instance_identifier = click.argument("instance", metavar="<version>/<instance>")
