@@ -55,6 +55,9 @@ def print_table_for(items: Iterable[_M]) -> None:
     click.echo(tabulate(values, headers="keys"), nl=False)
 
 
+as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as JSON")
+
+
 @click.group()
 @click.option(
     "--log-level",
@@ -166,7 +169,7 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     type=click.Choice(list(SETTINGS.postgresql.versions)),
     help="Only list instances of specified version.",
 )
-@click.option("--json", "as_json", is_flag=True, help="Print as JSON")
+@as_json_option
 @click.pass_obj
 def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
     """List the available instances"""
