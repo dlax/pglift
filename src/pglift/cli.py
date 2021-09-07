@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import IO, Any, Iterable, Optional, TypeVar, Union
+from typing import IO, Any, Callable, Iterable, Optional, TypeVar, Union
 
 import click
 import pydantic.json
@@ -40,19 +40,39 @@ def instance_lookup(ctx: Context, instance_id: str) -> Instance:
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
-def print_table_for(items: Iterable[_M]) -> None:
+def print_table_for(
+    items: Iterable[_M],
+    display: Callable[[str], None] = lambda s: click.echo(s, nl=False),
+) -> None:
+    """Render a list of items as a table.
+
+    >>> class Address(pydantic.BaseModel):
+    ...     street: str
+    ...     zipcode: int
+    ...     city: str
+    >>> class Person(pydantic.BaseModel):
+    ...     name: str
+    ...     address: Address
+    >>> items = [Person(name="bob",
+    ...                 address=Address(street="main street", zipcode=31234, city="luz"))]
+    >>> print_table_for(items, display=print)
+    name    address        address  address
+            street         zipcode  city
+    ------  -----------  ---------  ---------
+    bob     main street      31234  luz
+    """
     values = []
     for item in items:
         d = item.dict()
         for k, v in list(d.items()):
             if isinstance(v, dict):
                 for sk, sv in v.items():
-                    mk = f"{k} {sk}"
+                    mk = f"{k}\n{sk}"
                     assert mk not in d, mk
                     d[mk] = sv
                 del d[k]
         values.append(d)
-    click.echo(tabulate(values, headers="keys"), nl=False)
+    display(tabulate(values, headers="keys"))
 
 
 as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as JSON")
