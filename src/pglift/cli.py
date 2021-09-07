@@ -40,9 +40,12 @@ def instance_lookup(ctx: Context, instance_id: str) -> Instance:
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
+def click_display(s: str) -> None:
+    click.echo(s, nl=False)
+
+
 def print_table_for(
-    items: Iterable[_M],
-    display: Callable[[str], None] = lambda s: click.echo(s, nl=False),
+    items: Iterable[_M], display: Callable[[str], None] = click_display
 ) -> None:
     """Render a list of items as a table.
 
@@ -73,6 +76,26 @@ def print_table_for(
                 del d[k]
         values.append(d)
     display(tabulate(values, headers="keys"))
+
+
+def print_json_for(
+    items: Iterable[_M], display: Callable[[str], None] = click_display
+) -> None:
+    """Render a list of items as JSON.
+
+    >>> class Foo(pydantic.BaseModel):
+    ...     bar_: str = pydantic.Field(alias="bar")
+    ...     baz: int
+    >>> items = [Foo(bar="x", baz=1), Foo(bar="y", baz=3)]
+    >>> print_json_for(items, display=print)
+    [{"bar": "x", "baz": 1}, {"bar": "y", "baz": 3}]
+    """
+    display(
+        json.dumps(
+            [i.dict(by_alias=True) for i in items],
+            default=pydantic.json.pydantic_encoder,
+        ),
+    )
 
 
 as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as JSON")
@@ -196,10 +219,9 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
 
     instances = instance_mod.list(ctx, version=version)
     if as_json:
-        print(json.dumps(list(instances), default=pydantic.json.pydantic_encoder))
-        return
-
-    print_table_for(instances)
+        print_json_for(instances)
+    else:
+        print_table_for(instances)
 
 
 @instance.command("drop")
@@ -385,7 +407,7 @@ def instance_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+        print_json_for(prvlgs)
     else:
         print_table_for(prvlgs)
 
@@ -504,7 +526,7 @@ def role_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+        print_json_for(prvlgs)
     else:
         print_table_for(prvlgs)
 
@@ -589,7 +611,7 @@ def database_list(ctx: Context, instance: str, as_json: bool) -> None:
     with instance_mod.running(ctx, i):
         dbs = databases.list(ctx, i)
     if as_json:
-        click.echo(json.dumps(dbs, default=pydantic.json.pydantic_encoder))
+        print_json_for(dbs)
     else:
         print_table_for(dbs)
 
@@ -633,7 +655,7 @@ def database_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+        print_json_for(prvlgs)
     else:
         print_table_for(prvlgs)
 

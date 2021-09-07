@@ -371,7 +371,7 @@ def test_instance_privileges(ctx, instance, runner, running):
     assert json.loads(result.stdout) == [
         {
             "database": "db2",
-            "schema_": "public",
+            "schema": "public",
             "role": "rol2",
             "object_type": "FUNCTION",
             "privileges": ["EXECUTE"],
@@ -605,7 +605,7 @@ def test_role_privileges(ctx, instance, runner, running):
     assert json.loads(result.stdout) == [
         {
             "database": "db2",
-            "schema_": "public",
+            "schema": "public",
             "role": "rol2",
             "object_type": "FUNCTION",
             "privileges": ["EXECUTE"],
@@ -840,7 +840,7 @@ def test_database_privileges(ctx, instance, runner, running):
     assert json.loads(result.stdout) == [
         {
             "database": "db2",
-            "schema_": "public",
+            "schema": "public",
             "role": "rol2",
             "object_type": "FUNCTION",
             "privileges": ["EXECUTE"],
