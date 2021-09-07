@@ -608,6 +608,36 @@ def database_drop(ctx: Context, instance: str, name: str) -> None:
         raise click.ClickException(e.show())
 
 
+@database.command("privileges")
+@instance_identifier
+@click.argument("name")
+@click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
+@as_json_option
+@click.pass_obj
+def database_privileges(
+    ctx: Context,
+    instance: str,
+    name: str,
+    roles: Sequence[str],
+    as_json: bool,
+) -> None:
+    """List default privileges on a database."""
+    i = instance_lookup(ctx, instance)
+    with instance_mod.running(ctx, i):
+        try:
+            databases.describe(ctx, i, name)
+        except exceptions.DatabaseNotFound as e:
+            raise click.ClickException(e.show())
+        try:
+            prvlgs = privileges.get(ctx, i, databases=(name,), roles=roles)
+        except ValueError as e:
+            raise click.ClickException(str(e))
+    if as_json:
+        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+    else:
+        print_table_for(prvlgs)
+
+
 @cli.group("postgres_exporter")
 def postgres_exporter() -> None:
     """Handle Prometheus postgres_exporter"""

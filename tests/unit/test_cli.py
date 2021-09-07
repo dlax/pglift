@@ -806,6 +806,48 @@ def test_database_drop(runner, ctx, instance, running):
     assert result.exit_code == 0
 
 
+def test_database_privileges(ctx, instance, runner, running):
+    with patch(
+        "pglift.privileges.get",
+        return_value=[
+            interface.Privilege(
+                database="db2",
+                schema="public",
+                role="rol2",
+                object_type="FUNCTION",
+                privileges=["EXECUTE"],
+            ),
+        ],
+    ) as privileges_get, patch.object(databases, "describe") as databases_describe:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "privileges",
+                str(instance),
+                "db2",
+                "--json",
+                "-r",
+                "rol2",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result.stdout
+    privileges_get.assert_called_once_with(
+        ctx, instance, databases=("db2",), roles=("rol2",)
+    )
+    databases_describe.assert_called_once_with(ctx, instance, "db2")
+    assert json.loads(result.stdout) == [
+        {
+            "database": "db2",
+            "schema_": "public",
+            "role": "rol2",
+            "object_type": "FUNCTION",
+            "privileges": ["EXECUTE"],
+        }
+    ]
+
+
 @pytest.mark.parametrize("action", ["start", "stop"])
 def test_postgres_exporter(runner, ctx, instance, action):
     with patch.object(prometheus, action) as patched:
