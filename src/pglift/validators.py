@@ -1,5 +1,5 @@
 from attr.validators import in_
 
-from .settings import SETTINGS
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 
-known_postgresql_version = in_(list(SETTINGS.postgresql.versions))
+known_postgresql_version = in_(POSTGRESQL_SUPPORTED_VERSIONS)

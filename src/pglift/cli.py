@@ -15,7 +15,7 @@ from . import pgbackrest, pm, privileges, prometheus, roles
 from .ctx import Context
 from .models import helpers, interface
 from .models.system import Instance
-from .settings import SETTINGS
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import runner
 
 
@@ -115,7 +115,7 @@ def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
         logging.basicConfig(level=log_level)
 
     if not ctx.obj:
-        ctx.obj = Context(plugin_manager=pm.PluginManager.get(), settings=SETTINGS)
+        ctx.obj = Context(plugin_manager=pm.PluginManager.get())
 
 
 @cli.command(
@@ -209,7 +209,7 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
 @instance.command("list")
 @click.option(
     "--version",
-    type=click.Choice(list(SETTINGS.postgresql.versions)),
+    type=click.Choice(POSTGRESQL_SUPPORTED_VERSIONS),
     help="Only list instances of specified version.",
 )
 @as_json_option

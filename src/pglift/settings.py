@@ -362,9 +362,6 @@ class Settings(BaseSettings):
             )
 
 
-SETTINGS = Settings()
-
-
 if __name__ == "__main__":
-
-    print(SETTINGS.json(indent=2))
+    s = Settings()
+    print(s.json(indent=2))

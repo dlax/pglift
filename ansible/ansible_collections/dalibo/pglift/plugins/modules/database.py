@@ -56,12 +56,10 @@ from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
 from pglift.pm import PluginManager
-from pglift.settings import SETTINGS
 from pglift.task import runner
 
 
 def run_module() -> None:
-    settings = SETTINGS
     model_type = interface.Database
     argspec = helpers.argspec_from_model(model_type)
     argspec["instance"] = helpers.ArgSpec(required=True, type="str")
@@ -78,7 +76,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module, plugin_manager=PluginManager.get(), settings=settings)
+    ctx = AnsibleContext(module, plugin_manager=PluginManager.get())
 
     result: Dict[str, str] = {}
 

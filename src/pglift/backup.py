@@ -44,7 +44,6 @@ if __name__ == "__main__":  # pragma: nocover
     import argparse
 
     from .pm import PluginManager
-    from .settings import SETTINGS
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -64,7 +63,7 @@ if __name__ == "__main__":  # pragma: nocover
     )
 
     args = parser.parse_args()
-    ctx = Context(plugin_manager=PluginManager.get(), settings=SETTINGS)
+    ctx = Context(plugin_manager=PluginManager.get())
     try:
         instance = PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:
