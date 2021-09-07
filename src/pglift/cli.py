@@ -48,22 +48,22 @@ def print_table_for(
 
     >>> class Address(pydantic.BaseModel):
     ...     street: str
-    ...     zipcode: int
+    ...     zipcode: int = pydantic.Field(alias="zip")
     ...     city: str
     >>> class Person(pydantic.BaseModel):
     ...     name: str
     ...     address: Address
     >>> items = [Person(name="bob",
-    ...                 address=Address(street="main street", zipcode=31234, city="luz"))]
+    ...                 address=Address(street="main street", zip=31234, city="luz"))]
     >>> print_table_for(items, display=print)
     name    address        address  address
-            street         zipcode  city
+            street             zip  city
     ------  -----------  ---------  ---------
     bob     main street      31234  luz
     """
     values = []
     for item in items:
-        d = item.dict()
+        d = item.dict(by_alias=True)
         for k, v in list(d.items()):
             if isinstance(v, dict):
                 for sk, sv in v.items():
