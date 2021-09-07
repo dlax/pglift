@@ -71,7 +71,7 @@ Listing instances:
 ::
 
     $ pglift instance list
-    Name       Version    Port  Path                                          Status
+    name       version    port  path                                          status
     -------  ---------  ------  --------------------------------------------  -----------
     local           13    7892  .../.local/share/pglift/srv/pgsql/13/local    running
     standby         13    7893  .../.local/share/pglift/srv/pgsql/13/standby  not_running
@@ -134,4 +134,11 @@ Adding and manipulating instance objects:
     $ pglift database describe 13/main myapp
     name: myapp
     owner: dba
+    $ pglift database list 13/main
+    name       owner     encoding    collation    ctype    acls                                         size  description                                 tablespace    tablespace      tablespace
+                                                                                                                                                          name          location              size
+    ---------  --------  ----------  -----------  -------  ----------------------------------------  -------  ------------------------------------------  ------------  ------------  ------------
+    myapp      postgres  UTF8        C            C                                                  8167939                                              pg_default                      41011771
+    postgres   postgres  UTF8        C            C                                                  8319535  default administrative connection database  pg_default                      41011771
+    template1  postgres  UTF8        C            C        ['=c/postgres', 'postgres=CTc/postgres']  8167939  default template for new databases          pg_default                      41011771
     $ pglift database drop 13/main myapp
