@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 import yaml
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.env_settings import SettingsSourceCallable
+from pydantic.fields import ModelField
 from typing_extensions import Literal, TypedDict
 
 from . import __name__ as pkgname
@@ -308,12 +309,6 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     return json.loads(env_settings)  # type: ignore[no-any-return]
 
 
-def maybe_systemd() -> Optional[Literal["systemd"]]:
-    if shutil.which("systemctl") is not None:
-        return "systemd"
-    return None
-
-
 @frozen
 class Settings(BaseSettings):
 
@@ -321,8 +316,8 @@ class Settings(BaseSettings):
     pgbackrest: PgBackRestSettings = PgBackRestSettings()
     prometheus: PrometheusSettings = PrometheusSettings()
 
-    service_manager: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
-    scheduler: Optional[Literal["systemd"]] = Field(default_factory=maybe_systemd)
+    service_manager: Optional[Literal["systemd"]] = None
+    scheduler: Optional[Literal["systemd"]] = None
 
     prefix: Path = default_prefix(os.getuid())
     """Path prefix for configuration and data files."""
@@ -345,6 +340,16 @@ class Settings(BaseSettings):
                 child_values.update(update)
                 values[key] = child.__class__(**child_values)
         return values
+
+    @validator("service_manager", "scheduler", always=True)
+    def __validate_systemd_(
+        cls, v: Optional[Literal["systemd"]], field: ModelField
+    ) -> Optional[str]:
+        if v == "systemd" and shutil.which("systemctl") is None:
+            raise ValueError(
+                f"systemctl command not found, cannot use systemd for '{field.alias}' setting"
+            )
+        return v
 
     class Config:
         @classmethod

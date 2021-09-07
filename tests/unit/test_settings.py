@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
@@ -121,3 +122,10 @@ def test_postgresql_surole(monkeypatch, tmp_path):
         s4 = Settings(postgresql={"surole": {"_secrets_dir": tmp_path}})
     assert s4.postgresql.surole.name == "adm"
     assert s4.postgresql.surole.password is None
+
+
+def test_systemd(monkeypatch):
+    with patch("shutil.which", return_value=None) as which:
+        with pytest.raises(ValidationError, match="systemctl command not found"):
+            Settings(service_manager="systemd")
+    which.assert_called_once_with("systemctl")

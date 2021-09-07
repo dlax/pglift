@@ -7,6 +7,7 @@ from typing import Iterator, Set, Tuple
 
 import pgtoolkit.conf
 import port_for
+import pydantic
 import pytest
 from pgtoolkit.ctl import Status
 
@@ -35,9 +36,9 @@ def journalctl():
 
 settings_by_id = {
     "defaults": {},
-    "no_service_manager_no_scheduler": {
-        "service_manager": None,
-        "scheduler": None,
+    "systemd": {
+        "service_manager": "systemd",
+        "scheduler": "systemd",
     },
     "postgresql_password_auth__surole_use_pgpass": {
         "postgresql": {
@@ -85,7 +86,15 @@ def settings(request, tmp_path_factory):
     pgauth_obj = pg_obj.setdefault("auth", {})
     assert "passfile" not in pgauth_obj
     pgauth_obj["passfile"] = str(passfile)
-    return Settings.parse_obj(obj)
+    try:
+        return Settings.parse_obj(obj)
+    except pydantic.ValidationError as exc:
+        pytest.skip(
+            "; ".join(
+                f"unsupported setting(s) {' '.join(e['loc'])}: {e['msg']}"
+                for e in exc.errors()
+            )
+        )
 
 
 @pytest.fixture(
