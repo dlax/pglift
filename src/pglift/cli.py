@@ -477,6 +477,38 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
         raise click.ClickException(e.show())
 
 
+@role.command("privileges")
+@instance_identifier
+@click.argument("name")
+@click.option(
+    "-d", "--database", "databases", multiple=True, help="Database to inspect"
+)
+@as_json_option
+@click.pass_obj
+def role_privileges(
+    ctx: Context,
+    instance: str,
+    name: str,
+    databases: Sequence[str],
+    as_json: bool,
+) -> None:
+    """List default privileges of a role."""
+    i = instance_lookup(ctx, instance)
+    with instance_mod.running(ctx, i):
+        try:
+            roles.describe(ctx, i, name)
+        except exceptions.RoleNotFound as e:
+            raise click.ClickException(e.show())
+        try:
+            prvlgs = privileges.get(ctx, i, databases=databases, roles=(name,))
+        except ValueError as e:
+            raise click.ClickException(str(e))
+    if as_json:
+        click.echo(json.dumps(prvlgs, default=pydantic.json.pydantic_encoder), nl=False)
+    else:
+        print_table_for(prvlgs)
+
+
 @cli.group("database")
 def database() -> None:
     """Manipulate databases"""

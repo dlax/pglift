@@ -571,6 +571,48 @@ def test_role_drop(runner, ctx, instance, running):
     assert result.exit_code == 0
 
 
+def test_role_privileges(ctx, instance, runner, running):
+    with patch(
+        "pglift.privileges.get",
+        return_value=[
+            interface.Privilege(
+                database="db2",
+                schema="public",
+                role="rol2",
+                object_type="FUNCTION",
+                privileges=["EXECUTE"],
+            ),
+        ],
+    ) as privileges_get, patch.object(roles, "describe") as role_describe:
+        result = runner.invoke(
+            cli,
+            [
+                "role",
+                "privileges",
+                str(instance),
+                "rol2",
+                "--json",
+                "-d",
+                "db2",
+            ],
+            obj=ctx,
+        )
+    assert result.exit_code == 0, result.stdout
+    privileges_get.assert_called_once_with(
+        ctx, instance, databases=("db2",), roles=("rol2",)
+    )
+    role_describe.assert_called_once_with(ctx, instance, "rol2")
+    assert json.loads(result.stdout) == [
+        {
+            "database": "db2",
+            "schema_": "public",
+            "role": "rol2",
+            "object_type": "FUNCTION",
+            "privileges": ["EXECUTE"],
+        }
+    ]
+
+
 def test_database_create(ctx, instance, runner, running):
     with patch.object(databases, "exists", return_value=False) as exists, patch.object(
         databases, "apply"
