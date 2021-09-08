@@ -6,19 +6,14 @@ from typing import Callable
 from . import template as _template
 from .ctx import BaseContext
 from .types import Logger
-from .util import xdg_data_home
 
 
 def template(name: str) -> str:
     return _template("systemd", name)
 
 
-def unit_path(name: str) -> Path:
-    return xdg_data_home() / "systemd" / "user" / name
-
-
-def install(name: str, content: str, *, logger: Logger) -> None:
-    path = unit_path(name)
+def install(name: str, content: str, unit_path: Path, *, logger: Logger) -> None:
+    path = unit_path / name
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or path.read_text() != content:
         if path.exists():
@@ -27,8 +22,8 @@ def install(name: str, content: str, *, logger: Logger) -> None:
         logger.info("installed %s systemd unit at %s", name, path)
 
 
-def uninstall(name: str, *, logger: Logger) -> None:
-    path = unit_path(name)
+def uninstall(name: str, unit_path: Path, *, logger: Logger) -> None:
+    path = unit_path / name
     if path.exists():
         path.unlink()
         logger.info("removed %s systemd unit (%s)", name, path)

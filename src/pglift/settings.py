@@ -280,6 +280,13 @@ class PrometheusSettings(BaseSettings):
     """Path to directory where postgres_exporter process PID file will be written."""
 
 
+@frozen
+class SystemdSettings(BaseSettings):
+
+    unit_path: Path = xdg_data_home() / "systemd" / "user"
+    """Base path where systemd units will be installed."""
+
+
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in data directory."""
     fpath = datapath / "settings.yaml"
@@ -315,6 +322,7 @@ class Settings(BaseSettings):
     postgresql: PostgreSQLSettings = PostgreSQLSettings()
     pgbackrest: PgBackRestSettings = PgBackRestSettings()
     prometheus: PrometheusSettings = PrometheusSettings()
+    systemd: SystemdSettings = SystemdSettings()
 
     service_manager: Optional[Literal["systemd"]] = None
     scheduler: Optional[Literal["systemd"]] = None

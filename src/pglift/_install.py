@@ -19,14 +19,19 @@ def postgresql_systemd_unit_template(
         environment=environment,
         pid_directory=settings.pid_directory,
     )
-    systemd.install("postgresql@.service", content, logger=ctx)
+    systemd.install(
+        "postgresql@.service",
+        content,
+        ctx.settings.systemd.unit_path,
+        logger=ctx,
+    )
 
 
 @postgresql_systemd_unit_template.revert
 def revert_postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None
 ) -> None:
-    systemd.uninstall("postgresql@.service", logger=ctx)
+    systemd.uninstall("postgresql@.service", ctx.settings.systemd.unit_path, logger=ctx)
 
 
 @task
@@ -39,12 +44,19 @@ def postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
         configpath=configpath,
         execpath=settings.execpath,
     )
-    systemd.install("postgres_exporter@.service", content, logger=ctx)
+    systemd.install(
+        "postgres_exporter@.service",
+        content,
+        ctx.settings.systemd.unit_path,
+        logger=ctx,
+    )
 
 
 @postgres_exporter_systemd_unit_template.revert
 def revert_postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
-    systemd.uninstall("postgres_exporter@.service", logger=ctx)
+    systemd.uninstall(
+        "postgres_exporter@.service", ctx.settings.systemd.unit_path, logger=ctx
+    )
 
 
 @task
@@ -58,20 +70,34 @@ def postgresql_backup_systemd_templates(
         environment=environment,
         python=sys.executable,
     )
-    systemd.install("postgresql-backup@.service", service_content, logger=ctx)
+    systemd.install(
+        "postgresql-backup@.service",
+        service_content,
+        ctx.settings.systemd.unit_path,
+        logger=ctx,
+    )
     timer_content = systemd.template("postgresql-backup.timer").format(
         # TODO: use a setting for that value
         calendar="daily",
     )
-    systemd.install("postgresql-backup@.timer", timer_content, logger=ctx)
+    systemd.install(
+        "postgresql-backup@.timer",
+        timer_content,
+        ctx.settings.systemd.unit_path,
+        logger=ctx,
+    )
 
 
 @postgresql_backup_systemd_templates.revert
 def revert_postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None
 ) -> None:
-    systemd.uninstall("postgresql-backup@.service", logger=ctx)
-    systemd.uninstall("postgresql-backup@.timer", logger=ctx)
+    systemd.uninstall(
+        "postgresql-backup@.service", ctx.settings.systemd.unit_path, logger=ctx
+    )
+    systemd.uninstall(
+        "postgresql-backup@.timer", ctx.settings.systemd.unit_path, logger=ctx
+    )
 
 
 def do(ctx: BaseContext, env: Optional[str] = None) -> None:

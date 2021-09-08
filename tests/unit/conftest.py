@@ -31,6 +31,7 @@ def settings(tmp_path: Path) -> Settings:
         {
             "prefix": str(tmp_path),
             "postgresql": {"auth": {"passfile": str(passfile)}},
+            "systemd": {"unit_path": str(tmp_path / "systemd")},
         }
     )
 
