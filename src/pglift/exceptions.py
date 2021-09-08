@@ -1,17 +1,27 @@
 import abc
 
 
-class NotFound(LookupError, metaclass=abc.ABCMeta):
-    """Base class for object 'not found' errors."""
+class Error(Exception, metaclass=abc.ABCMeta):
+    """Base class for operational error."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class NotFound(Error, metaclass=abc.ABCMeta):
+    """Base class for errors when an object with `name` is not found."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(name)
 
     @abc.abstractproperty
     def object_type(self) -> str:
         """Type of object that's not found."""
         raise NotImplementedError
 
-    def show(self) -> str:
-        """Return a human-readable error message."""
-        return f"{self.object_type} '{self}' not found"
+    def __str__(self) -> str:
+        return f"{self.object_type} '{self.name}' not found"
 
 
 class InstanceNotFound(NotFound):

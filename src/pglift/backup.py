@@ -69,5 +69,5 @@ if __name__ == "__main__":  # pragma: nocover
     except ValueError as e:
         parser.error(str(e))
     except exceptions.InstanceNotFound as e:
-        parser.exit(2, e.show())
+        parser.exit(2, str(e))
     args.func(ctx, instance, args)

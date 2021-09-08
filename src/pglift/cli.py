@@ -22,8 +22,6 @@ from .task import runner
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
     try:
         return Instance.system_lookup(ctx, (name, version))
-    except exceptions.InstanceNotFound as e:
-        raise click.ClickException(e.show())
     except Exception as e:
         raise click.ClickException(str(e))
 
@@ -179,7 +177,7 @@ def instance_alter(
     try:
         values = instance_mod.describe(ctx, name, version).dict()
     except exceptions.InstanceNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
     with runner(ctx):
@@ -205,7 +203,7 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     try:
         described = instance_mod.describe(ctx, name, version)
     except exceptions.InstanceNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
     print(described.yaml(), end="")
 
 
@@ -449,7 +447,7 @@ def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
         try:
             values = roles.describe(ctx, i, name).dict()
         except exceptions.RoleNotFound as e:
-            raise click.ClickException(e.show())
+            raise click.ClickException(str(e))
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
         with runner(ctx):
@@ -484,7 +482,7 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
         with instance_mod.running(ctx, i):
             described = roles.describe(ctx, i, name)
     except exceptions.RoleNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
     print(described.yaml(exclude={"state"}), end="")
 
 
@@ -499,7 +497,7 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
         with instance_mod.running(ctx, i):
             roles.drop(ctx, i, name)
     except exceptions.RoleNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
 
 
 @role.command("privileges")
@@ -523,7 +521,7 @@ def role_privileges(
         try:
             roles.describe(ctx, i, name)
         except exceptions.RoleNotFound as e:
-            raise click.ClickException(e.show())
+            raise click.ClickException(str(e))
         try:
             prvlgs = privileges.get(ctx, i, databases=databases, roles=(name,))
         except ValueError as e:
@@ -565,7 +563,7 @@ def database_alter(ctx: Context, instance: str, name: str, **changes: Any) -> No
         try:
             values = databases.describe(ctx, i, name).dict()
         except exceptions.DatabaseNotFound as e:
-            raise click.ClickException(e.show())
+            raise click.ClickException(str(e))
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
         with runner(ctx):
@@ -600,7 +598,7 @@ def database_describe(ctx: Context, instance: str, name: str) -> None:
         with instance_mod.running(ctx, i):
             described = databases.describe(ctx, i, name)
     except exceptions.DatabaseNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
     print(described.yaml(exclude={"state"}), end="")
 
 
@@ -630,7 +628,7 @@ def database_drop(ctx: Context, instance: str, name: str) -> None:
         with instance_mod.running(ctx, i):
             databases.drop(ctx, i, name)
     except exceptions.DatabaseNotFound as e:
-        raise click.ClickException(e.show())
+        raise click.ClickException(str(e))
 
 
 @database.command("privileges")
@@ -652,7 +650,7 @@ def database_privileges(
         try:
             databases.describe(ctx, i, name)
         except exceptions.DatabaseNotFound as e:
-            raise click.ClickException(e.show())
+            raise click.ClickException(str(e))
         try:
             prvlgs = privileges.get(ctx, i, databases=(name,), roles=roles)
         except ValueError as e:
