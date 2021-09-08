@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import tempfile
 from datetime import datetime
 from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
 
@@ -18,6 +20,39 @@ from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import runner
+
+log_formatter = logging.Formatter(
+    fmt="%(levelname)s:%(asctime)s - %(name)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+
+class Command(click.Command):
+    def invoke(self, ctx: click.Context) -> Any:
+        logfile = tempfile.NamedTemporaryFile(
+            prefix=f"{pkgname}-", suffix=".log", delete=False
+        ).name
+        logger = logging.getLogger(pkgname)
+        handler = logging.FileHandler(logfile)
+        handler.setFormatter(log_formatter)
+        logger.addHandler(handler)
+        try:
+            return super().invoke(ctx)
+        except exceptions.Error as e:
+            raise click.ClickException(str(e))
+        except (click.ClickException, click.Abort, click.exceptions.Exit):
+            raise
+        except Exception:
+            raise click.ClickException(
+                "an unexpected error occurred, this is probably a bug; "
+                f"details can be found at {logfile}"
+            )
+        os.unlink(logfile)
+
+
+class Group(click.Group):
+    command_class = Command
+    group_class = type
 
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
@@ -100,7 +135,7 @@ def print_json_for(
 as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as JSON")
 
 
-@click.group()
+@click.group(cls=Group)
 @click.option(
     "--log-level",
     type=click.Choice(
@@ -113,12 +148,7 @@ def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
     logger = logging.getLogger(pkgname)
     if log_level is not None:
         handler = logging.StreamHandler()
-        handler.setFormatter(
-            logging.Formatter(
-                fmt="%(levelname)s:%(asctime)s - %(name)s - %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
+        handler.setFormatter(log_formatter)
         logger.addHandler(handler)
         logger.setLevel(log_level)
 
