@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from pglift import systemd
@@ -15,12 +17,13 @@ def test_unit_path(xdg_data_home):
 
 
 def test_install_uninstall(xdg_data_home):
-    systemd.install("foo", "ahah")
+    logger = logging.getLogger(__name__)
+    systemd.install("foo", "ahah", logger=logger)
     unit_path = xdg_data_home / "systemd" / "user" / "foo"
     mtime = unit_path.stat().st_mtime
     assert unit_path.read_text() == "ahah"
-    systemd.install("foo", "ahah")
+    systemd.install("foo", "ahah", logger=logger)
     assert unit_path.stat().st_mtime == mtime
-    systemd.uninstall("foo")
+    systemd.uninstall("foo", logger=logger)
     assert not unit_path.exists()
-    systemd.uninstall("foo")  # no-op
+    systemd.uninstall("foo", logger=logger)  # no-op
