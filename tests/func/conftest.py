@@ -1,8 +1,10 @@
 import copy
 import logging
 import pathlib
+import platform
 import shutil
 import subprocess
+from datetime import datetime
 from typing import Iterator, Set, Tuple
 
 import pgtoolkit.conf
@@ -131,7 +133,11 @@ def installed(ctx, tmp_path_factory):
 
     custom_settings = tmp_path / "settings.json"
     custom_settings.write_text(settings.json())
-    _install.do(ctx, env=f"SETTINGS=@{custom_settings}")
+    _install.do(
+        ctx,
+        env=f"SETTINGS=@{custom_settings}",
+        header=f"# ** Test run on {platform.node()} at {datetime.now().isoformat()} **",
+    )
     yield
     _install.undo(ctx)
 

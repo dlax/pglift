@@ -4,10 +4,13 @@ from pglift import _install
 
 
 def test_postgresql_systemd_unit_template(ctx):
-    _install.postgresql_systemd_unit_template(ctx, env="SETTINGS=@settings.json")
+    _install.postgresql_systemd_unit_template(
+        ctx, env="SETTINGS=@settings.json", header="# Postgres managed by pglift"
+    )
     unit = ctx.settings.systemd.unit_path / "postgresql@.service"
     assert unit.exists()
     lines = unit.read_text().splitlines()
+    assert lines[0] == "# Postgres managed by pglift"
     assert "Environment=SETTINGS=@settings.json" in lines
     assert f"PIDFile={ctx.settings.prefix}/run/postgresql/postgresql-%i.pid" in lines
     for line in lines:

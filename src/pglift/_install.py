@@ -6,9 +6,23 @@ from .ctx import BaseContext
 from .task import runner, task
 
 
+def with_header(content: str, header: str) -> str:
+    """Possibly insert `header` on top of `content`.
+
+    >>> print(with_header("blah", "% head"))
+    % head
+    blah
+    >>> with_header("content", "")
+    'content'
+    """
+    if header:
+        content = "\n".join([header, content])
+    return content
+
+
 @task
 def postgresql_systemd_unit_template(
-    ctx: BaseContext, *, env: Optional[str] = None
+    ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
     settings = ctx.settings.postgresql
     environment = ""
@@ -21,7 +35,7 @@ def postgresql_systemd_unit_template(
     )
     systemd.install(
         "postgresql@.service",
-        content,
+        with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
     )
@@ -29,13 +43,15 @@ def postgresql_systemd_unit_template(
 
 @postgresql_systemd_unit_template.revert
 def revert_postgresql_systemd_unit_template(
-    ctx: BaseContext, *, env: Optional[str] = None
+    ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
     systemd.uninstall("postgresql@.service", ctx.settings.systemd.unit_path, logger=ctx)
 
 
 @task
-def postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
+def postgres_exporter_systemd_unit_template(
+    ctx: BaseContext, *, header: str = ""
+) -> None:
     settings = ctx.settings.prometheus
     configpath = str(settings.configpath).replace(
         "{instance.version}-{instance.name}", "%i"
@@ -46,14 +62,16 @@ def postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
     )
     systemd.install(
         "postgres_exporter@.service",
-        content,
+        with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
     )
 
 
 @postgres_exporter_systemd_unit_template.revert
-def revert_postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
+def revert_postgres_exporter_systemd_unit_template(
+    ctx: BaseContext, *, header: str = ""
+) -> None:
     systemd.uninstall(
         "postgres_exporter@.service", ctx.settings.systemd.unit_path, logger=ctx
     )
@@ -61,7 +79,7 @@ def revert_postgres_exporter_systemd_unit_template(ctx: BaseContext) -> None:
 
 @task
 def postgresql_backup_systemd_templates(
-    ctx: BaseContext, *, env: Optional[str] = None
+    ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
     environment = ""
     if env:
@@ -72,7 +90,7 @@ def postgresql_backup_systemd_templates(
     )
     systemd.install(
         "postgresql-backup@.service",
-        service_content,
+        with_header(service_content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
     )
@@ -82,7 +100,7 @@ def postgresql_backup_systemd_templates(
     )
     systemd.install(
         "postgresql-backup@.timer",
-        timer_content,
+        with_header(timer_content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
     )
@@ -90,7 +108,7 @@ def postgresql_backup_systemd_templates(
 
 @postgresql_backup_systemd_templates.revert
 def revert_postgresql_backup_systemd_templates(
-    ctx: BaseContext, *, env: Optional[str] = None
+    ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
     systemd.uninstall(
         "postgresql-backup@.service", ctx.settings.systemd.unit_path, logger=ctx
@@ -100,14 +118,14 @@ def revert_postgresql_backup_systemd_templates(
     )
 
 
-def do(ctx: BaseContext, env: Optional[str] = None) -> None:
+def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
     if ctx.settings.service_manager != "systemd":
         ctx.warning("not using systemd as 'service_manager', skipping installation")
         return
     with runner(ctx):
-        postgresql_systemd_unit_template(ctx, env=env)
-        postgres_exporter_systemd_unit_template(ctx)
-        postgresql_backup_systemd_templates(ctx, env=env)
+        postgresql_systemd_unit_template(ctx, env=env, header=header)
+        postgres_exporter_systemd_unit_template(ctx, header=header)
+        postgresql_backup_systemd_templates(ctx, env=env, header=header)
         systemd.daemon_reload(ctx)
 
 
