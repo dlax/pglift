@@ -24,6 +24,8 @@ def test_install_uninstall(xdg_data_home):
     assert unit_path.read_text() == "ahah"
     systemd.install("foo", "ahah", logger=logger)
     assert unit_path.stat().st_mtime == mtime
+    with pytest.raises(FileExistsError, match="not overwriting"):
+        systemd.install("foo", "ahahah", logger=logger)
     systemd.uninstall("foo", logger=logger)
     assert not unit_path.exists()
     systemd.uninstall("foo", logger=logger)  # no-op

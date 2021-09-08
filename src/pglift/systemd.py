@@ -21,6 +21,8 @@ def install(name: str, content: str, *, logger: Logger) -> None:
     path = unit_path(name)
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or path.read_text() != content:
+        if path.exists():
+            raise FileExistsError(f"{path} exists, not overwriting")
         path.write_text(content)
         logger.info("installed %s systemd unit at %s", name, path)
 

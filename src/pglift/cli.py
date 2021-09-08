@@ -135,7 +135,10 @@ def site_configure(
 ) -> None:
     if action == "install":
         env = f"SETTINGS=@{settings}" if settings else None
-        _install.do(ctx, env=env)
+        try:
+            _install.do(ctx, env=env)
+        except FileExistsError as e:
+            raise click.ClickException(str(e))
     elif action == "uninstall":
         _install.undo(ctx)
 
