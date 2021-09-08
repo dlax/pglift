@@ -79,6 +79,7 @@ class Context(BaseContext):
     """Default execution context."""
 
     _logger = logging.getLogger(pkgname)
+    _logger.addHandler(logging.NullHandler())
 
     def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         return self._logger.debug(msg, *args, **kwargs)
