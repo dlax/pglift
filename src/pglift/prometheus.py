@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from pgtoolkit.conf import Configuration
 
-from . import cmd, hookimpl, systemd
+from . import cmd, exceptions, hookimpl, systemd
 from .ctx import BaseContext
 from .models.system import BaseInstance, Instance, InstanceSpec
 from .settings import PrometheusSettings
@@ -31,9 +31,13 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
     """Return postgres_exporter port read from configuration file.
 
     :raises LookupError: if port could not be read from configuration file.
-    :raises FileNotFoundError: if configuration file is not found.
+    :raises ~exceptions.FileNotFoundError: if configuration file is not found.
     """
     configpath = _configpath(instance, ctx.settings.prometheus)
+    if not configpath.exists():
+        raise exceptions.FileNotFoundError(
+            "postgres_exporter configuration file {configpath} not found"
+        )
     varname = "PG_EXPORTER_WEB_LISTEN_ADDRESS"
     with configpath.open() as f:
         for line in f:

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple, cast
 from pgtoolkit import conf as pgconf
 
 from . import __name__ as pkgname
+from . import exceptions
 
 if TYPE_CHECKING:
     from .models.system import BaseInstance
@@ -39,14 +40,24 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     If ``managed_only`` is ``True``, only the managed configuration is
     returned, otherwise the fully parsed configuration is returned.
 
-    :raises FileNotFoundError: if expected configuration file is missing
+    :raises ~exceptions.FileNotFoundError: if expected configuration file is missing.
     """
+
+    def conffile_notfound(path: Path) -> exceptions.FileNotFoundError:
+        return exceptions.FileNotFoundError(
+            f"PostgreSQL configuration file {path} not found"
+        )
+
     if managed_only:
         confd = info(configdir)[0]
         conffile = confd / "user.conf"
+        if not conffile.exists():
+            raise conffile_notfound(conffile)
         return pgconf.parse(conffile)
 
     postgresql_conf = configdir / "postgresql.conf"
+    if not postgresql_conf.exists():
+        raise conffile_notfound(postgresql_conf)
     config = pgconf.parse(postgresql_conf)
 
     for extra_conf in ("postgresql.auto.conf", "recovery.conf"):

@@ -66,6 +66,10 @@ class FileExistsError(SystemError, builtins.FileExistsError):
     pass
 
 
+class FileNotFoundError(SystemError, builtins.FileNotFoundError):
+    pass
+
+
 class InvalidVersion(Error, ValueError):
     """Invalid PostgreSQL version."""
 

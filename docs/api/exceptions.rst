@@ -23,6 +23,7 @@ Exception hierarchy
   * :class:`SystemError`
 
     * :class:`FileExistsError`
+    * :class:`FileNotFoundError`
 
 Exception classes
 -----------------
@@ -38,3 +39,4 @@ Exception classes
 .. autoexception:: CommandError
 .. autoexception:: SystemError
 .. autoexception:: FileExistsError
+.. autoexception:: FileNotFoundError

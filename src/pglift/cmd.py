@@ -272,10 +272,13 @@ def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None
 
     Upon successful termination, the 'pidfile' is removed.
 
-    :raises FileNotFoundError: if pidfile path does not exist.
+    :raises ~exceptions.FileNotFoundError: if pidfile path does not exist.
     :raises ProcessLookupError: if no process matching PID exists on system.
     """
-    pid = int(pidfile.read_text())
+    try:
+        pid = int(pidfile.read_text())
+    except FileNotFoundError as e:
+        raise exceptions.FileNotFoundError(str(e)) from e
     if logger:
         logger.info("terminating process %d", pid)
     os.kill(pid, signal.SIGTERM)
