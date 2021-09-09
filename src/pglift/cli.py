@@ -220,10 +220,7 @@ def instance_alter(
 ) -> None:
     """Alter a PostgreSQL instance"""
     changes = helpers.unnest(interface.Instance, changes)
-    try:
-        values = instance_mod.describe(ctx, name, version).dict()
-    except exceptions.InstanceNotFound as e:
-        raise click.ClickException(str(e))
+    values = instance_mod.describe(ctx, name, version).dict()
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
     with runner(ctx):
@@ -246,10 +243,7 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 @click.pass_obj
 def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
-    try:
-        described = instance_mod.describe(ctx, name, version)
-    except exceptions.InstanceNotFound as e:
-        raise click.ClickException(str(e))
+    described = instance_mod.describe(ctx, name, version)
     print(described.yaml(), end="")
 
 
@@ -489,10 +483,7 @@ def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
     i = instance_lookup(ctx, instance)
     changes = helpers.unnest(interface.Role, changes)
     with instance_mod.running(ctx, i):
-        try:
-            values = roles.describe(ctx, i, name).dict()
-        except exceptions.RoleNotFound as e:
-            raise click.ClickException(str(e))
+        values = roles.describe(ctx, i, name).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
         with runner(ctx):
@@ -523,11 +514,8 @@ def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
 def role_describe(ctx: Context, instance: str, name: str) -> None:
     """Describe a role"""
     i = instance_lookup(ctx, instance)
-    try:
-        with instance_mod.running(ctx, i):
-            described = roles.describe(ctx, i, name)
-    except exceptions.RoleNotFound as e:
-        raise click.ClickException(str(e))
+    with instance_mod.running(ctx, i):
+        described = roles.describe(ctx, i, name)
     print(described.yaml(exclude={"state"}), end="")
 
 
@@ -538,11 +526,8 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
 def role_drop(ctx: Context, instance: str, name: str) -> None:
     """Drop a role"""
     i = instance_lookup(ctx, instance)
-    try:
-        with instance_mod.running(ctx, i):
-            roles.drop(ctx, i, name)
-    except exceptions.RoleNotFound as e:
-        raise click.ClickException(str(e))
+    with instance_mod.running(ctx, i):
+        roles.drop(ctx, i, name)
 
 
 @role.command("privileges")
@@ -563,10 +548,7 @@ def role_privileges(
     """List default privileges of a role."""
     i = instance_lookup(ctx, instance)
     with instance_mod.running(ctx, i):
-        try:
-            roles.describe(ctx, i, name)
-        except exceptions.RoleNotFound as e:
-            raise click.ClickException(str(e))
+        roles.describe(ctx, i, name)  # check existence
         try:
             prvlgs = privileges.get(ctx, i, databases=databases, roles=(name,))
         except ValueError as e:
@@ -605,10 +587,7 @@ def database_alter(ctx: Context, instance: str, name: str, **changes: Any) -> No
     i = instance_lookup(ctx, instance)
     changes = helpers.unnest(interface.Database, changes)
     with instance_mod.running(ctx, i):
-        try:
-            values = databases.describe(ctx, i, name).dict()
-        except exceptions.DatabaseNotFound as e:
-            raise click.ClickException(str(e))
+        values = databases.describe(ctx, i, name).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
         with runner(ctx):
@@ -639,11 +618,8 @@ def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
 def database_describe(ctx: Context, instance: str, name: str) -> None:
     """Describe a database"""
     i = instance_lookup(ctx, instance)
-    try:
-        with instance_mod.running(ctx, i):
-            described = databases.describe(ctx, i, name)
-    except exceptions.DatabaseNotFound as e:
-        raise click.ClickException(str(e))
+    with instance_mod.running(ctx, i):
+        described = databases.describe(ctx, i, name)
     print(described.yaml(exclude={"state"}), end="")
 
 
@@ -669,11 +645,8 @@ def database_list(ctx: Context, instance: str, as_json: bool) -> None:
 def database_drop(ctx: Context, instance: str, name: str) -> None:
     """Drop a database"""
     i = instance_lookup(ctx, instance)
-    try:
-        with instance_mod.running(ctx, i):
-            databases.drop(ctx, i, name)
-    except exceptions.DatabaseNotFound as e:
-        raise click.ClickException(str(e))
+    with instance_mod.running(ctx, i):
+        databases.drop(ctx, i, name)
 
 
 @database.command("privileges")
@@ -692,10 +665,7 @@ def database_privileges(
     """List default privileges on a database."""
     i = instance_lookup(ctx, instance)
     with instance_mod.running(ctx, i):
-        try:
-            databases.describe(ctx, i, name)
-        except exceptions.DatabaseNotFound as e:
-            raise click.ClickException(str(e))
+        databases.describe(ctx, i, name)  # check existence
         try:
             prvlgs = privileges.get(ctx, i, databases=(name,), roles=roles)
         except ValueError as e:
