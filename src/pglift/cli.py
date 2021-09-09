@@ -208,8 +208,9 @@ def instance_init(ctx: Context, instance: interface.Instance) -> None:
 @click.pass_obj
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
+    instance = interface.Instance.parse_yaml(file)
     with runner(ctx):
-        instance_mod.apply(ctx, interface.Instance.parse_yaml(file))
+        instance_mod.apply(ctx, instance)
 
 
 @instance.command("alter")
@@ -503,8 +504,9 @@ def role_schema() -> None:
 def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a role"""
     i = instance_lookup(ctx, instance)
+    role = interface.Role.parse_yaml(file)
     with runner(ctx), instance_mod.running(ctx, i):
-        roles.apply(ctx, i, interface.Role.parse_yaml(file))
+        roles.apply(ctx, i, role)
 
 
 @role.command("describe")
@@ -607,8 +609,9 @@ def database_schema() -> None:
 def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
     """Apply manifest as a database"""
     i = instance_lookup(ctx, instance)
+    database = interface.Database.parse_yaml(file)
     with runner(ctx), instance_mod.running(ctx, i):
-        databases.apply(ctx, i, interface.Database.parse_yaml(file))
+        databases.apply(ctx, i, database)
 
 
 @database.command("describe")
