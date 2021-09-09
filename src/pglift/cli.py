@@ -9,6 +9,7 @@ from pydantic.utils import deep_update
 from tabulate import tabulate
 from typing_extensions import Literal
 
+from . import __name__ as pkgname
 from . import _install, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest, pm, privileges, prometheus, roles
@@ -109,8 +110,17 @@ as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as 
 @click.pass_context
 def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
     """Deploy production-ready instances of PostgreSQL"""
+    logger = logging.getLogger(pkgname)
     if log_level is not None:
-        logging.basicConfig(level=log_level)
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter(
+                fmt="%(levelname)s:%(asctime)s - %(name)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+        logger.addHandler(handler)
+        logger.setLevel(log_level)
 
     if not ctx.obj:
         ctx.obj = Context(plugin_manager=pm.PluginManager.get())
