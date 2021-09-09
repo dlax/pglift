@@ -249,7 +249,7 @@ def test_instance_shell(runner, instance, ctx):
     status.assert_called_once_with(ctx, instance)
     assert not shell.called
     assert r.exit_code == 1
-    assert "instance is not running" in r.stdout
+    assert "instance is not_running" in r.stdout
 
     with patch.object(
         instance_mod, "status", return_value=instance_mod.Status.running

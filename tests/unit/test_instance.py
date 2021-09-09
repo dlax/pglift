@@ -7,7 +7,7 @@ from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
 from pglift import task
-from pglift.exceptions import CommandError
+from pglift.exceptions import CommandError, InstanceStateError
 from pglift.models.system import InstanceSpec, PrometheusService
 
 
@@ -186,6 +186,12 @@ def test_configure(ctx_nohook, instance):
     instance_mod.revert_configure(ctx, instance, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
+
+
+def test_check_status(ctx, instance):
+    with pytest.raises(InstanceStateError, match="instance is not_running"):
+        instance_mod.check_status(ctx, instance, instance_mod.Status.running)
+    instance_mod.check_status(ctx, instance, instance_mod.Status.not_running)
 
 
 def test_shell(ctx, instance):

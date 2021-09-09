@@ -431,6 +431,16 @@ def status(ctx: BaseContext, instance: BaseInstance) -> Status:
     return ctx.pg_ctl(instance.version).status(instance.datadir)
 
 
+def check_status(ctx: BaseContext, instance: BaseInstance, expected: Status) -> None:
+    """Check actual instance status with respected to `expected` one.
+
+    :raises ~exceptions.InstanceStateError: in case the actual status is not expected.
+    """
+    st = status(ctx, instance)
+    if st != expected:
+        raise exceptions.InstanceStateError(f"instance is {st.name}")
+
+
 @task
 def stop(
     ctx: BaseContext,

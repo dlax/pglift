@@ -16,6 +16,7 @@ from . import _install, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest, pm, privileges, prometheus, roles
 from .ctx import Context
+from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
@@ -303,6 +304,7 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
 def instance_start(ctx: Context, name: str, version: Optional[str]) -> None:
     """Start a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
+    instance_mod.check_status(ctx, instance, Status.not_running)
     with runner(ctx):
         instance_mod.start(ctx, instance)
 
@@ -363,8 +365,7 @@ def instance_shell(
 ) -> None:
     """Open a PostgreSQL interactive shell on a running instance."""
     instance = get_instance(ctx, name, version)
-    if instance_mod.status(ctx, instance) != instance_mod.Status.running:
-        raise click.ClickException("instance is not running, start it first")
+    instance_mod.check_status(ctx, instance, Status.running)
     instance_mod.shell(ctx, instance, user=user, dbname=dbname)
 
 
@@ -417,8 +418,7 @@ def instance_restore(
         backups = pgbackrest.iter_backups(ctx, instance)
         print_table_for(backups)
     else:
-        if instance_mod.status(ctx, instance) == instance_mod.Status.running:
-            raise click.ClickException("instance is running")
+        instance_mod.check_status(ctx, instance, Status.not_running)
         if label is not None and date is not None:
             raise click.BadArgumentUsage(
                 "--label and --date arguments are mutually exclusive"
