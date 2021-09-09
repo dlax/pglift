@@ -91,11 +91,9 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
     settings = ctx.settings.postgresql
     initdb_settings = settings.initdb
     surole = settings.surole
-    try:
-        if instance.exists():
-            return None
-    except LookupError as exc:
-        raise Exception(f"instance lookup failed: {exc}")
+
+    if instance.exists():
+        return None
 
     # Would raise EnvironmentError if requested postgresql binaries are not
     # available or if versions mismatch.
@@ -596,12 +594,12 @@ def list(
 
     :param version: filter instances matching a given version.
 
-    :raises ValueError: if specified version is unknown.
+    :raises ~exceptions.InvalidVersion: if specified version is unknown.
     """
     versions = builtins.list(ctx.settings.postgresql.versions)
     if version:
         if version not in versions:
-            raise ValueError(f"unknown version '{version}'")
+            raise exceptions.InvalidVersion(f"unknown version '{version}'")
         versions = [version]
 
     pgroot = ctx.settings.postgresql.root

@@ -64,7 +64,8 @@ class BaseInstance:
     def exists(self) -> bool:
         """Return True if the instance exists based on system lookup.
 
-        :raises LookupError: if PG_VERSION content does not match declared version
+        :raises ~exceptions.InvalidVersion: if PG_VERSION content does not
+            match declared version
         """
         if not self.datadir.exists():
             return False
@@ -73,7 +74,9 @@ class BaseInstance:
         except FileNotFoundError:
             return False
         if real_version != self.version:
-            raise LookupError(f"version mismatch ({real_version} != {self.version})")
+            raise exceptions.InvalidVersion(
+                f"version mismatch ({real_version} != {self.version})"
+            )
         return True
 
 

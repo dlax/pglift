@@ -55,3 +55,7 @@ class CommandError(subprocess.CalledProcessError, Error):
         stderr: Optional[str] = None,
     ) -> None:
         super().__init__(returncode, cmd, stdout, stderr)
+
+
+class InvalidVersion(Error, ValueError):
+    """Invalid PostgreSQL version."""
