@@ -59,3 +59,7 @@ class CommandError(subprocess.CalledProcessError, Error):
 
 class InvalidVersion(Error, ValueError):
     """Invalid PostgreSQL version."""
+
+
+class InstanceStateError(Error, RuntimeError):
+    """Unexpected instance state."""

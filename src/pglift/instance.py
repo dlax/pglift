@@ -308,8 +308,8 @@ def running(
     :param timeout: delay to wait for instance startup.
     :param run_hooks: whether or not to run hooks during instance start/stop.
 
-    :raises RuntimeError: when the instance did not get through running state
-        after specified `timeout` (in seconds).
+    :raises ~exceptions.InstanceStateError: when the instance did not
+        get through running state after specified `timeout` (in seconds).
     """
     if status(ctx, instance) == Status.running:
         yield
@@ -324,7 +324,7 @@ def running(
         if status(ctx, instance) == Status.running:
             break
     else:
-        raise RuntimeError(f"{instance} not started after {timeout}s")
+        raise exceptions.InstanceStateError(f"{instance} not started after {timeout}s")
     try:
         yield
     finally:
@@ -344,8 +344,8 @@ def stopped(
     :param timeout: delay to wait for instance stop.
     :param run_hooks: whether or not to run hooks during instance start/stop.
 
-    :raises RuntimeError: when the instance did stop after specified `timeout`
-        (in seconds).
+    :raises ~exceptions.InstanceStateError: when the instance did stop after
+        specified `timeout` (in seconds).
     """
     if status(ctx, instance) == Status.not_running:
         yield
@@ -360,7 +360,7 @@ def stopped(
         if status(ctx, instance) == Status.not_running:
             break
     else:
-        raise RuntimeError(f"{instance} not stopped after {timeout}s")
+        raise exceptions.InstanceStateError(f"{instance} not stopped after {timeout}s")
     try:
         yield
     finally:

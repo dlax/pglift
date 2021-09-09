@@ -16,6 +16,8 @@ Exception hierarchy
 
   * :class:`InvalidVersion`
 
+  * :class:`InstanceStateError`
+
   * :class:`CommandError`
 
 Exception classes
@@ -29,3 +31,4 @@ Exception classes
 .. autoexception:: DatabaseNotFound
 .. autoexception:: CommandError
 .. autoexception:: InvalidVersion
+.. autoexception:: InstanceStateError
