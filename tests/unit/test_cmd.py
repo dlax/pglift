@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from pglift import cmd
+from pglift.exceptions import CommandError
 
 
 def test_execute_program_terminate_program(caplog, tmp_path):
@@ -23,9 +24,7 @@ def test_execute_program_terminate_program(caplog, tmp_path):
     assert r.returncode == 1
 
     pidfile = tmp_path / "invalid.pid"
-    with pytest.raises(subprocess.CalledProcessError), caplog.at_level(
-        logging.ERROR, logger=__name__
-    ):
+    with pytest.raises(CommandError), caplog.at_level(logging.ERROR, logger=__name__):
         cmd.execute_program(
             ["sleep", "well"], pidfile, logger=logging.getLogger(__name__)
         )

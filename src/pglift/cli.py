@@ -39,7 +39,10 @@ class Command(click.Command):
         try:
             return super().invoke(ctx)
         except exceptions.Error as e:
-            raise click.ClickException(str(e))
+            msg = str(e)
+            if isinstance(e, exceptions.CommandError) and e.stderr:
+                msg += f"\n{e.stderr}"
+            raise click.ClickException(msg)
         except (click.ClickException, click.Abort, click.exceptions.Exit):
             raise
         except Exception:

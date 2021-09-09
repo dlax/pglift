@@ -1,6 +1,5 @@
 import pathlib
 import re
-import subprocess
 from unittest.mock import patch
 
 import pytest
@@ -8,6 +7,7 @@ from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
 from pglift import task
+from pglift.exceptions import CommandError
 from pglift.models.system import InstanceSpec, PrometheusService
 
 
@@ -46,7 +46,7 @@ def test_init_dirty(pg_version, settings, ctx, monkeypatch):
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(CommandError):
         with task.runner(ctx):
             with monkeypatch.context() as m:
                 m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))

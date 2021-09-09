@@ -14,6 +14,8 @@ Exception hierarchy
     * :class:`RoleNotFound`
     * :class:`DatabaseNotFound`
 
+  * :class:`CommandError`
+
 Exception classes
 -----------------
 
@@ -23,3 +25,4 @@ Exception classes
 .. autoexception:: InstanceNotFound
 .. autoexception:: RoleNotFound
 .. autoexception:: DatabaseNotFound
+.. autoexception:: CommandError

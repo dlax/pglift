@@ -1,4 +1,6 @@
 import abc
+import subprocess
+from typing import Optional, Sequence
 
 
 class Error(Exception, metaclass=abc.ABCMeta):
@@ -40,3 +42,16 @@ class DatabaseNotFound(NotFound):
     """PostgreSQL database not found."""
 
     object_type = "database"
+
+
+class CommandError(subprocess.CalledProcessError, Error):
+    """Execution of a command, in a subprocess, failed."""
+
+    def __init__(
+        self,
+        returncode: int,
+        cmd: Sequence[str],
+        stdout: Optional[str] = None,
+        stderr: Optional[str] = None,
+    ) -> None:
+        super().__init__(returncode, cmd, stdout, stderr)

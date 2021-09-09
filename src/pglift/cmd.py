@@ -5,9 +5,10 @@ import signal
 import subprocess
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, CalledProcessError
+from subprocess import DEVNULL, PIPE
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
+from . import exceptions
 from .types import CompletedProcess, Logger
 
 
@@ -143,13 +144,13 @@ def run(
     >>> print(r.stderr, end="")
     cat: doesnotexist: No such file or directory
 
-    With ``check=True``, :class:`subprocess.CalledProcessError` is raised in
-    case of non-zero return code:
+    With ``check=True``, :class:`~pglift.exceptions.CommandError` is raised
+    in case of non-zero return code:
 
     >>> run(["cat", "doesnotexist"], check=True)
     Traceback (most recent call last):
         ...
-    subprocess.CalledProcessError: Command '['cat', 'doesnotexist']' returned non-zero exit status 1.
+    pglift.exceptions.CommandError: Command '['cat', 'doesnotexist']' returned non-zero exit status 1.
     """
     stdin = DEVNULL if input is None else PIPE
 
@@ -192,11 +193,11 @@ def run(
     loop = asyncio.get_event_loop()
     proc, out, err = loop.run_until_complete(run())
 
+    if check and proc.returncode:
+        raise exceptions.CommandError(proc.returncode, args, out, err)
+
     assert proc.returncode is not None
-    result = CompletedProcess(args, proc.returncode, out, err)
-    if check:
-        result.check_returncode()
-    return result
+    return CompletedProcess(args, proc.returncode, out, err)
 
 
 def run_expect(
@@ -205,20 +206,23 @@ def run_expect(
     **kwargs: Any,
 ) -> CompletedProcess:
     """Check that return code command execution with :func:`run` matches
-    expected ``codes`` and raises :class:`subprocess.CalledProcessError`
-    otherwise.
+    expected ``codes``.
+
+    :raises ~exceptions.CommandError: if return code does not match.
 
     >>> run_expect(["false"], codes=(0, 1))
     CompletedProcess(args=['false'], returncode=1, stdout='', stderr='')
     >>> run_expect(["false"])
     Traceback (most recent call last):
       ...
-    subprocess.CalledProcessError: Command '['false']' returned non-zero exit status 1.
+    pglift.exceptions.CommandError: Command '['false']' returned non-zero exit status 1.
     """
     result = run(*args, **kwargs)
     retcode = result.returncode
     if retcode not in codes:
-        raise CalledProcessError(retcode, result.args, result.stdout, result.stderr)
+        raise exceptions.CommandError(
+            retcode, result.args, result.stdout, result.stderr
+        )
     return result
 
 
@@ -236,7 +240,8 @@ def execute_program(
     This is aimed at starting daemon programs.
 
     :raises FileExistsError: if the `pidfile` already exists.
-    :raises CalledProcessError: in case program execution terminates after `timeout`.
+    :raises ~exceptions.CommandError: in case program execution terminates
+        after `timeout`.
     """
     if pidfile.exists():
         raise FileExistsError(f"{pidfile} already exists")
@@ -259,7 +264,7 @@ def execute_program(
         if logger:
             for errline in errs.splitlines():
                 logger.error("%s: %s", prog, errline)
-        raise subprocess.CalledProcessError(proc.returncode, cmd, stderr=errs)
+        raise exceptions.CommandError(proc.returncode, cmd, stderr=errs)
 
 
 def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None:
