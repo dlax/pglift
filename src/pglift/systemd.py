@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
+from . import exceptions
 from . import template as _template
 from .ctx import BaseContext
 from .types import Logger
@@ -17,7 +18,7 @@ def install(name: str, content: str, unit_path: Path, *, logger: Logger) -> None
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or path.read_text() != content:
         if path.exists():
-            raise FileExistsError(f"{path} exists, not overwriting")
+            raise exceptions.FileExistsError(f"{path} exists, not overwriting")
         path.write_text(content)
         logger.info("installed %s systemd unit at %s", name, path)
 

@@ -239,12 +239,12 @@ def execute_program(
 
     This is aimed at starting daemon programs.
 
-    :raises FileExistsError: if the `pidfile` already exists.
+    :raises ~exceptions.FileExistsError: if the `pidfile` already exists.
     :raises ~exceptions.CommandError: in case program execution terminates
         after `timeout`.
     """
     if pidfile.exists():
-        raise FileExistsError(f"{pidfile} already exists")
+        raise exceptions.FileExistsError(f"PID file '{pidfile}' already exists")
     if capture_output:
         stderr = subprocess.PIPE
     else:

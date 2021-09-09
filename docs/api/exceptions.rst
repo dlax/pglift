@@ -20,6 +20,10 @@ Exception hierarchy
 
   * :class:`CommandError`
 
+  * :class:`SystemError`
+
+    * :class:`FileExistsError`
+
 Exception classes
 -----------------
 
@@ -29,6 +33,8 @@ Exception classes
 .. autoexception:: InstanceNotFound
 .. autoexception:: RoleNotFound
 .. autoexception:: DatabaseNotFound
-.. autoexception:: CommandError
 .. autoexception:: InvalidVersion
 .. autoexception:: InstanceStateError
+.. autoexception:: CommandError
+.. autoexception:: SystemError
+.. autoexception:: FileExistsError

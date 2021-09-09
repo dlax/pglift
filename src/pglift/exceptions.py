@@ -1,4 +1,5 @@
 import abc
+import builtins
 import subprocess
 from typing import Optional, Sequence
 
@@ -55,6 +56,14 @@ class CommandError(subprocess.CalledProcessError, Error):
         stderr: Optional[str] = None,
     ) -> None:
         super().__init__(returncode, cmd, stdout, stderr)
+
+
+class SystemError(Error, OSError):
+    """Error (unexpected state) on target system."""
+
+
+class FileExistsError(SystemError, builtins.FileExistsError):
+    pass
 
 
 class InvalidVersion(Error, ValueError):
