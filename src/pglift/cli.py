@@ -46,6 +46,8 @@ class Command(click.Command):
             raise click.ClickException(msg)
         except (click.ClickException, click.Abort, click.exceptions.Exit):
             raise
+        except pydantic.ValidationError as e:
+            raise click.ClickException(str(e))
         except Exception:
             raise click.ClickException(
                 "an unexpected error occurred, this is probably a bug; "
