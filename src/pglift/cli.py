@@ -50,6 +50,7 @@ class Command(click.Command):
         except pydantic.ValidationError as e:
             raise click.ClickException(str(e))
         except Exception:
+            logger.exception("an unexpected error occurred")
             raise click.ClickException(
                 "an unexpected error occurred, this is probably a bug; "
                 f"details can be found at {logfile}"
