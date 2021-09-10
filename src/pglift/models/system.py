@@ -201,8 +201,8 @@ class PostgreSQLInstance(BaseInstance):
             raise exceptions.InstanceNotFound(str(self))
         try:
             self.config()
-        except FileNotFoundError:
-            raise exceptions.InstanceNotFound(str(self))
+        except FileNotFoundError as e:
+            raise exceptions.InstanceNotFound(str(self)) from e
         return True
 
     def config(self, managed_only: bool = False) -> Configuration:
