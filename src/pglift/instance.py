@@ -95,7 +95,7 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
     if instance.exists():
         return None
 
-    # Would raise EnvironmentError if requested postgresql binaries are not
+    # Would raise SystemError if requested postgresql binaries are not
     # available or if versions mismatch.
     pg_ctl = ctx.pg_ctl(instance.version)
 

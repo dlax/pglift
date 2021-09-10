@@ -7,7 +7,7 @@ from pgtoolkit import ctl
 from pluggy import PluginManager
 
 from . import __name__ as pkgname
-from . import cmd, util
+from . import cmd, exceptions, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
@@ -33,12 +33,16 @@ class BaseContext(ABC):
         version = version or self.settings.postgresql.default_version
         if version is not None:
             pg_bindir = self.settings.postgresql.versions[version].bindir
-        pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
+        try:
+            pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
+        except EnvironmentError as e:
+            raise exceptions.SystemError(str(e)) from e
         if version is not None:
             installed_version = util.short_version(pg_ctl.version)
             if installed_version != version:
-                raise EnvironmentError(
-                    f"version mismatch: {installed_version} != {version}"
+                raise exceptions.SystemError(
+                    f"PostgreSQL version from {pg_bindir} mismatches with declared value: "
+                    f"{installed_version} != {version}"
                 )
         return pg_ctl
 
