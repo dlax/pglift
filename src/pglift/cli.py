@@ -225,7 +225,7 @@ def instance_alter(
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    print(interface.Instance.schema_json(indent=2))
+    click.echo(interface.Instance.schema_json(indent=2))
 
 
 name_argument = click.argument("name", type=click.STRING)
@@ -239,7 +239,7 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
     described = instance_mod.describe(ctx, name, version)
-    print(described.yaml(), end="")
+    click.echo(described.yaml(), nl=False)
 
 
 @instance.command("list")
@@ -488,7 +488,7 @@ def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
-    print(interface.Role.schema_json(indent=2))
+    click.echo(interface.Role.schema_json(indent=2))
 
 
 @role.command("apply")
@@ -512,7 +512,7 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
     i = instance_lookup(ctx, instance)
     with instance_mod.running(ctx, i):
         described = roles.describe(ctx, i, name)
-    print(described.yaml(exclude={"state"}), end="")
+    click.echo(described.yaml(exclude={"state"}), nl=False)
 
 
 @role.command("drop")
@@ -593,7 +593,7 @@ def database_alter(ctx: Context, instance: str, name: str, **changes: Any) -> No
 @database.command("schema")
 def database_schema() -> None:
     """Print the JSON schema of database model"""
-    print(interface.Database.schema_json(indent=2))
+    click.echo(interface.Database.schema_json(indent=2), nl=False)
 
 
 @database.command("apply")
@@ -617,7 +617,7 @@ def database_describe(ctx: Context, instance: str, name: str) -> None:
     i = instance_lookup(ctx, instance)
     with instance_mod.running(ctx, i):
         described = databases.describe(ctx, i, name)
-    print(described.yaml(exclude={"state"}), end="")
+    click.echo(described.yaml(exclude={"state"}), nl=False)
 
 
 @database.command("list")
