@@ -1,0 +1,18 @@
+FROM centos:8
+RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+RUN dnf -qy module disable postgresql
+RUN dnf install -y postgresql10-server postgresql13-server pgbackrest
+WORKDIR /tmp
+RUN curl -s -O -L \
+	https://github.com/prometheus-community/postgres_exporter/releases/download/v0.8.0/postgres_exporter_v0.8.0_linux-amd64.tar.gz
+RUN tar xvf postgres_exporter_v0.8.0_linux-amd64.tar.gz
+RUN mv postgres_exporter_v0.8.0_linux-amd64/postgres_exporter \
+	/usr/bin/prometheus-postgres-exporter
+RUN dnf install -y gcc git openssl postgresql13-devel python3-devel python3-pip
+
+RUN pip3 install tox
+RUN useradd --create-home runner
+
+USER runner
+WORKDIR /home/runner
+ENV PATH=/usr/pgsql-13/bin:$PATH

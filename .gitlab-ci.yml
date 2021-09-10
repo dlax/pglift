@@ -1,7 +1,8 @@
 ---
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  TESTING_CI_IMAGE: "$CI_REGISTRY_IMAGE:testing"
+  DEBIAN_CI_IMAGE: "$CI_REGISTRY_IMAGE:debian"
+  CENTOS8_CI_IMAGE: "$CI_REGISTRY_IMAGE:centos8"
   DEBBUILD_CI_IMAGE: "$CI_REGISTRY_IMAGE:debbuild"
 
 cache:
@@ -10,37 +11,40 @@ cache:
 
 lint:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $DEBIAN_CI_IMAGE
   script:
     - tox -e lint
 
 typing:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $DEBIAN_CI_IMAGE
   script:
     - tox -e typing
 
 bandit:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $DEBIAN_CI_IMAGE
   script:
     - tox -e bandit
 
 tests:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $CI_REGISTRY_IMAGE:$dist
   script:
     - tox -e tests
+  parallel:
+    matrix:
+      - dist: [debian, centos8]
 
 tests_ansible:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $DEBIAN_CI_IMAGE
   script:
     - ANSIBLE_VERBOSITY=3 tox -e tests_ansible
 
 docs:
   stage: test
-  image: $TESTING_CI_IMAGE
+  image: $DEBIAN_CI_IMAGE
   script:
     - tox -e docs
   artifacts:
@@ -57,14 +61,22 @@ docs:
   script:
     - cd ci/$WORKSUBDIR
     - docker pull $IMAGE_TAG || true
-    - docker build --pull --cache-from $IMAGE_TAG --tag $IMAGE_TAG .
+    - docker build --pull --cache-from $IMAGE_TAG --tag $IMAGE_TAG -f $DOCKERFILE .
     - docker push $IMAGE_TAG
 
-testing_ci_image:
+debian_ci_image:
   extends: .ci_image
   variables:
-    IMAGE_TAG: "$CI_REGISTRY_IMAGE:testing"
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE:debian"
     WORKSUBDIR: "testing"
+    DOCKERFILE: "Dockerfile.debian"
+
+centos8_ci_image:
+  extends: .ci_image
+  variables:
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE:centos8"
+    WORKSUBDIR: "testing"
+    DOCKERFILE: "Dockerfile.centos8"
 
 debbuild_ci_image:
   when: manual
@@ -72,6 +84,7 @@ debbuild_ci_image:
   variables:
     IMAGE_TAG: "$CI_REGISTRY_IMAGE:debbuild"
     WORKSUBDIR: "debian"
+    DOCKERFILE: "Dockerfile"
 
 debian:
   when: manual
