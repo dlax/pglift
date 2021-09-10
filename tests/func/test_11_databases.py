@@ -145,3 +145,12 @@ def test_run_analyze(ctx, instance, database_factory):
     time.sleep(0.5)
     databases.run(ctx, instance, "ANALYZE", exclude_dbnames=["test"])
     assert last_analyze() == now
+
+
+def test_run_output_notices(ctx, instance, capsys):
+    databases.run(
+        ctx, instance, "DO $$ BEGIN RAISE NOTICE 'foo'; END $$", dbnames=["postgres"]
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "NOTICE:  foo\n"

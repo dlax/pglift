@@ -4,7 +4,7 @@ import psycopg2
 import psycopg2.extensions
 from psycopg2 import sql
 
-from . import db, exceptions
+from . import db, exceptions, types
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance
@@ -143,7 +143,8 @@ def run(
     sql_command: str,
     *,
     dbnames: Sequence[str] = (),
-    exclude_dbnames: Sequence[str] = ()
+    exclude_dbnames: Sequence[str] = (),
+    notice_handler: types.NoticeHandler = db.default_notice_handler,
 ) -> None:
     for database in list(ctx, instance):
         if (
@@ -156,6 +157,7 @@ def run(
             dbname=database.name,
             autocommit=True,
         ) as cnx:
+            cnx.notices = notice_handler
             with cnx.cursor() as cur:
                 ctx.info("run %s on database %s of %s", sql_command, database, instance)
                 cur.execute(sql_command)

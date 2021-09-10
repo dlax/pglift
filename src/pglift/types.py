@@ -49,6 +49,11 @@ class Logger(Protocol):
         ...
 
 
+class NoticeHandler(Protocol):
+    def append(self, notice: str) -> None:
+        ...
+
+
 class StrEnum(str, enum.Enum):
     pass
 

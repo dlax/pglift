@@ -1,5 +1,6 @@
 import pathlib
 import re
+import sys
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, ContextManager, Iterator, Tuple
 
@@ -79,3 +80,12 @@ def connect(
     """Connect to specified database of `instance` with `role`."""
     conninfo = dsn(instance, role, dbname=dbname)
     return connect_dsn(conninfo, autocommit=autocommit)
+
+
+class NoticeHandlerStderr:
+    @staticmethod
+    def append(notice: str) -> None:
+        sys.stderr.write(notice)
+
+
+default_notice_handler = NoticeHandlerStderr()
