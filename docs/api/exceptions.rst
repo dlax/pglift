@@ -17,9 +17,9 @@ Exception hierarchy
 Exception classes
 -----------------
 
-.. autoclass:: Error
-.. autoclass:: NotFound
+.. autoexception:: Error
+.. autoexception:: NotFound
    :members: object_type
-.. autoclass:: InstanceNotFound
-.. autoclass:: RoleNotFound
-.. autoclass:: DatabaseNotFound
+.. autoexception:: InstanceNotFound
+.. autoexception:: RoleNotFound
+.. autoexception:: DatabaseNotFound
