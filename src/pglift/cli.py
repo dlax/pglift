@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime
+from functools import partial
 from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
 
 import click
@@ -80,12 +81,8 @@ def instance_lookup(ctx: Context, instance_id: str) -> Instance:
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
-def click_display(s: str) -> None:
-    click.echo(s, nl=False)
-
-
 def print_table_for(
-    items: Iterable[_M], display: Callable[[str], None] = click_display
+    items: Iterable[_M], display: Callable[[str], None] = click.echo
 ) -> None:
     """Render a list of items as a table.
 
@@ -119,7 +116,7 @@ def print_table_for(
 
 
 def print_json_for(
-    items: Iterable[_M], display: Callable[[str], None] = click_display
+    items: Iterable[_M], display: Callable[[str], None] = partial(click.echo, nl=False)
 ) -> None:
     """Render a list of items as JSON.
 

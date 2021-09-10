@@ -197,7 +197,7 @@ def test_instance_list(runner, instance, ctx):
         cli, ["instance", "list", f"--version={other_version}"], obj=ctx
     )
     assert result.exit_code == 0
-    assert not result.output
+    assert not result.output.strip()
 
 
 def test_instance_drop(runner, ctx, instance):
@@ -305,7 +305,7 @@ def test_instance_restore_list(runner, instance, ctx):
     assert result.stdout == (
         "label      size    repo_size  datetime             type    databases\n"
         "-------  ------  -----------  -------------------  ------  --------------\n"
-        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod"
+        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod\n"
     )
 
 
