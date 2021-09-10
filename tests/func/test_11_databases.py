@@ -1,8 +1,13 @@
+import datetime
+import time
+
 import pytest
 
 from pglift import databases, exceptions
 from pglift import instance as instance_mod
 from pglift.models import interface
+
+from . import execute
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -116,3 +121,27 @@ def test_drop(ctx, instance, database_factory):
     database_factory("dropme")
     databases.drop(ctx, instance, "dropme")
     assert not databases.exists(ctx, instance, "dropme")
+
+
+def test_run_analyze(ctx, instance, database_factory):
+    database_factory("test")
+
+    def last_analyze() -> datetime.datetime:
+        result = execute(
+            ctx,
+            instance,
+            "SELECT MIN(last_analyze) FROM pg_stat_all_tables WHERE last_analyze IS NOT NULL",
+            dbname="test",
+        )[0][0]
+        assert isinstance(result, datetime.datetime), result
+        return result
+
+    databases.run(ctx, instance, "ANALYZE")
+    previous = last_analyze()
+    time.sleep(0.5)
+    databases.run(ctx, instance, "ANALYZE")
+    now = last_analyze()
+    assert now > previous
+    time.sleep(0.5)
+    databases.run(ctx, instance, "ANALYZE", exclude_dbnames=["test"])
+    assert last_analyze() == now

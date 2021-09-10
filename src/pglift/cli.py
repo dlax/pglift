@@ -701,6 +701,35 @@ def database_privileges(
         print_table_for(prvlgs)
 
 
+@database.command("run")
+@instance_identifier
+@click.argument("sql_command")
+@click.option(
+    "-d", "--database", "dbnames", multiple=True, help="Database to run command on"
+)
+@click.option(
+    "-x",
+    "--exclude-database",
+    "exclude_dbnames",
+    multiple=True,
+    help="Database to not run command on",
+)
+@click.pass_obj
+def database_run(
+    ctx: Context,
+    instance: str,
+    sql_command: str,
+    dbnames: Sequence[str],
+    exclude_dbnames: Sequence[str],
+) -> None:
+    """Run given command on databases of a PostgreSQL instance"""
+    i = instance_lookup(ctx, instance)
+    with instance_mod.running(ctx, i):
+        databases.run(
+            ctx, i, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
+        )
+
+
 @cli.group("postgres_exporter")
 def postgres_exporter() -> None:
     """Handle Prometheus postgres_exporter"""

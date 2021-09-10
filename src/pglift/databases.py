@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import psycopg2
 import psycopg2.extensions
@@ -135,3 +135,27 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
                 ),
             )
         cnx.commit()
+
+
+def run(
+    ctx: BaseContext,
+    instance: Instance,
+    sql_command: str,
+    *,
+    dbnames: Sequence[str] = (),
+    exclude_dbnames: Sequence[str] = ()
+) -> None:
+    for database in list(ctx, instance):
+        if (
+            dbnames and database.name not in dbnames
+        ) or database.name in exclude_dbnames:
+            continue
+        with db.connect(
+            instance,
+            ctx.settings.postgresql.surole,
+            dbname=database.name,
+            autocommit=True,
+        ) as cnx:
+            with cnx.cursor() as cur:
+                ctx.info("run %s on database %s of %s", sql_command, database, instance)
+                cur.execute(sql_command)
