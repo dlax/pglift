@@ -40,7 +40,18 @@ def settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture(scope="session")
 def pg_version() -> str:
-    return short_version(PGCtl().version)
+    s = Settings().postgresql
+    pg_bindir_template = s.bindir
+    versions = s.versions
+    for version in versions:
+        bindir = Path(pg_bindir_template.format(version=version))
+        if bindir.exists():
+            return short_version(PGCtl(bindir).version)
+    else:
+        pytest.skip(
+            "no PostgreSQL installation found in version(s): "
+            f"{', '.join(str(v) for v in versions)}"
+        )
 
 
 @pytest.fixture
