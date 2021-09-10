@@ -87,6 +87,13 @@ def test_postgresql_versions(monkeypatch, tmp_path):
         with pytest.raises(ValidationError, match="unsupported default version: 7"):
             Settings()
 
+    config["postgresql"]["default_version"] = "13"
+    config_path.write_text(json.dumps(config))
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", f"@{config_path}")
+        s = Settings()
+    assert s.postgresql.default_version == "13"
+
 
 def test_postgresql_surole(monkeypatch, tmp_path):
     # Username and password from init.

@@ -189,9 +189,10 @@ class PostgreSQLSettings(BaseSettings):
     """Default PostgreSQL version to use, if unspecified."""
 
     @validator("default_version")
-    def default_version_in_supported_versions(cls, v: Optional[str]) -> None:
+    def default_version_in_supported_versions(cls, v: Optional[str]) -> Optional[str]:
         if v and v not in POSTGRESQL_SUPPORTED_VERSIONS:
             raise ValueError(f"unsupported default version: {v}")
+        return v
 
     root: DataPath = DataPath("pgsql")
     """Root directory for all managed instances."""
