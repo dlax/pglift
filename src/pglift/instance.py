@@ -25,7 +25,13 @@ from . import (
 )
 from .ctx import BaseContext
 from .models import interface
-from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
+from .models.system import (
+    BaseInstance,
+    Instance,
+    InstanceSpec,
+    PostgreSQLInstance,
+    default_postgresql_version,
+)
 from .task import task
 from .types import ConfigChanges
 
@@ -534,6 +540,59 @@ def promote(ctx: BaseContext, instance: Instance) -> None:
         [str(pg_ctl.pg_ctl), "promote", "-D", str(instance.datadir)],
         check=True,
     )
+
+
+def upgrade(
+    ctx: BaseContext,
+    instance: Instance,
+    *,
+    version: Optional[str] = None,
+    name: Optional[str] = None,
+    port: Optional[int] = None,
+    jobs: Optional[int] = None,
+) -> Instance:
+    """Upgrade an instance using pg_upgrade"""
+    if version is None:
+        version = default_postgresql_version(ctx)
+    new = interface.Instance(
+        name=name or instance.name,
+        version=version,
+        port=port or instance.port,
+        state=interface.InstanceState.stopped,
+        prometheus={"port": instance.prometheus.port},
+    )
+    spec = new.spec(ctx)
+    result = apply(ctx, new)
+    assert result is not None, new
+    (newinstance, _) = result
+    bindir = ctx.pg_ctl(version).bindir
+    pg_upgrade = str(bindir / "pg_upgrade")
+    cmd = [
+        pg_upgrade,
+        f"--old-bindir={ctx.pg_ctl(instance.version).bindir}",
+        f"--new-bindir={bindir}",
+        f"--old-datadir={instance.datadir}",
+        f"--new-datadir={spec.datadir}",
+        f"--username={ctx.settings.postgresql.surole.name}",
+    ]
+    if jobs is not None:
+        cmd.extend(["--jobs", str(jobs)])
+    surole = ctx.settings.postgresql.surole
+    kwargs: Dict[str, Any] = {}
+    if surole.password and "PGPASSWORD" not in os.environ:
+        # pg_upgrade need an access to old and new clusters so when pg_hba is
+        # not peer or trust we need to set PGPASSWORD allowing to connect to
+        # old and new cluster. Note pg_upgrade start clusters using a random
+        # port and unix_socket_directory is set to current working directory.
+        env = os.environ.copy()
+        env["PGPASSWORD"] = surole.password.get_secret_value()
+        kwargs["env"] = env
+    try:
+        ctx.run(cmd, check=True, **kwargs)
+    except exceptions.CommandError:
+        drop(ctx, newinstance)
+        raise
+    return newinstance
 
 
 def apply(

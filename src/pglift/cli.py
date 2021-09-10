@@ -512,6 +512,38 @@ def instance_privileges(
         print_table_for(prvlgs)
 
 
+@instance.command("upgrade")
+@name_argument
+@version_argument
+@click.argument("newversion", required=False, type=click.STRING)
+@click.argument("newname", required=False, type=click.STRING)
+@click.option("--port", required=False, type=click.INT)
+@click.option(
+    "--jobs",
+    required=False,
+    type=click.INT,
+    help="number of simultaneous processes or threads to use (from pg_upgrade)",
+)
+@click.pass_obj
+def instance_upgrade(
+    ctx: Context,
+    name: str,
+    version: Optional[str],
+    newversion: Optional[str],
+    newname: Optional[str],
+    port: Optional[int],
+    jobs: Optional[int],
+) -> None:
+    """Upgrade an instance using pg_upgrade"""
+    instance = get_instance(ctx, name, version)
+    instance_mod.check_status(ctx, instance, Status.not_running)
+    with runner(ctx):
+        new_instance = instance_mod.upgrade(
+            ctx, instance, version=newversion, name=newname, port=port, jobs=jobs
+        )
+    instance_mod.start(ctx, new_instance)
+
+
 instance_identifier = click.argument(
     "instance", metavar="<version>/<instance>", callback=instance_lookup
 )

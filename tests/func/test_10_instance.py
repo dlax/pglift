@@ -11,7 +11,7 @@ from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import exceptions
+from pglift import databases, exceptions
 from pglift import instance as instance_mod
 from pglift import systemd
 from pglift.models import interface, system
@@ -336,3 +336,24 @@ def test_standby(
                 )
             assert not pg_replication_slots()
             instance_mod.drop(ctx, standby_instance)
+
+
+def test_instance_upgrade(ctx, instance, tmp_port_factory, database_factory):
+    database_factory("present")
+    port = next(tmp_port_factory)
+    newinstance = instance_mod.upgrade(
+        ctx,
+        instance,
+        name="test_upgrade",
+        version=instance.version,
+        port=port,
+    )
+    try:
+        assert newinstance.name == "test_upgrade"
+        assert newinstance.version == instance.version
+        assert newinstance.port == port
+        assert instance_mod.status(ctx, newinstance) == Status.not_running
+        with instance_mod.running(ctx, newinstance):
+            assert databases.exists(ctx, newinstance, "present")
+    finally:
+        instance_mod.drop(ctx, newinstance)
