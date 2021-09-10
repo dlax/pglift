@@ -2,11 +2,13 @@ import logging
 from pathlib import Path
 
 import pytest
+from pgtoolkit.ctl import PGCtl
 
 from pglift import pm, prometheus
 from pglift.ctx import Context
 from pglift.models.system import Instance, PrometheusService
 from pglift.settings import Settings
+from pglift.util import short_version
 
 
 def pytest_addoption(parser, pluginmanager):
@@ -34,6 +36,11 @@ def settings(tmp_path: Path) -> Settings:
             "systemd": {"unit_path": str(tmp_path / "systemd")},
         }
     )
+
+
+@pytest.fixture(scope="session")
+def pg_version() -> str:
+    return short_version(PGCtl().version)
 
 
 @pytest.fixture
