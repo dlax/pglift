@@ -4,7 +4,7 @@ from pathlib import Path
 
 import humanize
 
-from . import cmd
+from . import cmd, exceptions
 from .types import CommandRunner
 
 
@@ -104,14 +104,19 @@ def parse_filesize(value: str) -> float:
 
 
 def total_memory(path: Path = Path("/proc/meminfo")) -> float:
-    """Read 'MemTotal' field from /proc/meminfo."""
+    """Read 'MemTotal' field from /proc/meminfo.
+
+    :raise ~exceptions.SystemError: if reading the value failed.
+    """
     with path.open() as meminfo:
         for line in meminfo:
             if not line.startswith("MemTotal:"):
                 continue
             return parse_filesize(line.split(":", 1)[-1].strip())
         else:
-            raise Exception(f"could not retrieve memory information from {path}")
+            raise exceptions.SystemError(
+                f"could not retrieve memory information from {path}"
+            )
 
 
 def percent_memory(value: str, total: float) -> str:
