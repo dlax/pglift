@@ -239,18 +239,31 @@ def execute_program(
 
     This is aimed at starting daemon programs.
 
-    :raises ~exceptions.FileExistsError: if the `pidfile` already exists.
+    :raises ~exceptions.SystemError: if the program is already running.
     :raises ~exceptions.CommandError: in case program execution terminates
         after `timeout`.
     """
+    prog = cmd[0]
     if pidfile.exists():
-        raise exceptions.FileExistsError(f"PID file '{pidfile}' already exists")
+        pid = pidfile.read_text()
+        if (Path("/proc") / pid).exists():
+            raise exceptions.SystemError(
+                f"program {prog} seems to be running already with PID {pid}"
+            )
+        else:
+            if logger:
+                logger.warning(
+                    "program %s is supposed to be running with PID %s but "
+                    "it's apparently not; starting anyway",
+                    prog,
+                    pid,
+                )
+            pidfile.unlink()
     if capture_output:
         stderr = subprocess.PIPE
     else:
         stderr = subprocess.DEVNULL
     stdout = subprocess.DEVNULL
-    prog = cmd[0]
     proc = subprocess.Popen(  # nosec
         cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
     )
@@ -273,7 +286,6 @@ def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None
     Upon successful termination, the 'pidfile' is removed.
 
     :raises ~exceptions.FileNotFoundError: if pidfile path does not exist.
-    :raises ProcessLookupError: if no process matching PID exists on system.
     """
     try:
         pid = int(pidfile.read_text())
@@ -281,5 +293,9 @@ def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None
         raise exceptions.FileNotFoundError(str(e)) from e
     if logger:
         logger.info("terminating process %d", pid)
-    os.kill(pid, signal.SIGTERM)
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError as e:
+        if logger:
+            logger.warning("failed to kill process %d: %s", pid, e)
     pidfile.unlink()
