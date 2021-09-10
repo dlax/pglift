@@ -25,6 +25,8 @@ Exception hierarchy
     * :class:`FileExistsError`
     * :class:`FileNotFoundError`
 
+  * :class:`ConfigurationError`
+
 Exception classes
 -----------------
 
@@ -40,3 +42,5 @@ Exception classes
 .. autoexception:: SystemError
 .. autoexception:: FileExistsError
 .. autoexception:: FileNotFoundError
+.. autoexception:: ConfigurationError
+   :members: path

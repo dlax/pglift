@@ -30,7 +30,8 @@ def systemd_unit(instance: BaseInstance) -> str:
 def port(ctx: BaseContext, instance: BaseInstance) -> int:
     """Return postgres_exporter port read from configuration file.
 
-    :raises LookupError: if port could not be read from configuration file.
+    :raises ~exceptions.ConfigurationError: if port could not be read from
+        configuration file.
     :raises ~exceptions.FileNotFoundError: if configuration file is not found.
     """
     configpath = _configpath(instance, ctx.settings.prometheus)
@@ -44,11 +45,13 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
             if line.startswith(varname):
                 break
         else:
-            raise LookupError(f"{varname} not found in {configpath}")
+            raise exceptions.ConfigurationError(configpath, f"{varname} not found")
     try:
         value = line.split("=", 1)[1].split(":", 1)[1]
     except (IndexError, ValueError):
-        raise LookupError(f"malformatted {varname} parameter in {configpath}")
+        raise exceptions.ConfigurationError(
+            configpath, f"malformatted {varname} parameter"
+        )
     return int(value.strip())
 
 

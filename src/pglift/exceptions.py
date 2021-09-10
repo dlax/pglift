@@ -1,6 +1,7 @@
 import abc
 import builtins
 import subprocess
+from pathlib import Path
 from typing import Optional, Sequence
 
 
@@ -76,3 +77,14 @@ class InvalidVersion(Error, ValueError):
 
 class InstanceStateError(Error, RuntimeError):
     """Unexpected instance state."""
+
+
+class ConfigurationError(Error, LookupError):
+    """A configuration entry is missing or invalid."""
+
+    def __init__(self, path: Path, message: str) -> None:
+        self.path = path  #: configuration file path
+        super().__init__(message)
+
+    def __str__(self) -> str:
+        return f"{super().__str__()} (path: {self.path})"
