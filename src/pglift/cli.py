@@ -225,7 +225,7 @@ def instance_alter(
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    click.echo(interface.Instance.schema_json(indent=2))
+    click.echo(interface.Instance.schema_json(indent=2), nl=False)
 
 
 name_argument = click.argument("name", type=click.STRING)
@@ -488,7 +488,7 @@ def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
-    click.echo(interface.Role.schema_json(indent=2))
+    click.echo(interface.Role.schema_json(indent=2), nl=False)
 
 
 @role.command("apply")
