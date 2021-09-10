@@ -94,6 +94,8 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     logpath.mkdir(exist_ok=True, parents=True)
     spoolpath = Path(str(settings.spoolpath).format(instance=instance))
     spoolpath.mkdir(exist_ok=True, parents=True)
+    lockpath = Path(str(settings.lockpath).format(instance=instance))
+    lockpath.mkdir(exist_ok=True, parents=True)
 
     instance_config = instance.config()
     stanza = _stanza(instance)
@@ -108,6 +110,7 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
             "repo1-retention-archive": "9999999",
             "repo1-retention-diff": "9999999",
             "repo1-retention-full": "9999999",
+            "lock-path": str(lockpath),
             "log-path": str(logpath),
             "spool-path": str(spoolpath),
         },

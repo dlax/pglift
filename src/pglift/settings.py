@@ -258,6 +258,9 @@ class PgBackRestSettings(BaseSettings):
     )
     """Spool path."""
 
+    lockpath: RunPath = RunPath("pgbackrest/{instance.version}-{instance.name}/lock")
+    """Path where lock files are stored."""
+
 
 @frozen
 class PrometheusSettings(BaseSettings):
