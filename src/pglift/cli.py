@@ -23,11 +23,6 @@ from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import runner
 
-log_formatter = logging.Formatter(
-    fmt="%(levelname)s:%(asctime)s - %(name)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 
 class Command(click.Command):
     def invoke(self, ctx: click.Context) -> Any:
@@ -36,7 +31,11 @@ class Command(click.Command):
         ).name
         logger = logging.getLogger(pkgname)
         handler = logging.FileHandler(logfile)
-        handler.setFormatter(log_formatter)
+        formatter = logging.Formatter(
+            fmt="%(levelname)-8s - %(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        handler.setFormatter(formatter)
         logger.addHandler(handler)
         try:
             return super().invoke(ctx)
@@ -145,16 +144,18 @@ as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as 
     type=click.Choice(
         ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
     ),
+    default="info",
 )
 @click.pass_context
-def cli(ctx: click.core.Context, log_level: Optional[str]) -> None:
+def cli(ctx: click.core.Context, log_level: str) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
-    if log_level is not None:
-        handler = logging.StreamHandler()
-        handler.setFormatter(log_formatter)
-        logger.addHandler(handler)
-        logger.setLevel(log_level)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(fmt="[%(levelname)s] %(message)s")
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    handler.setLevel(log_level)
+    logger.addHandler(handler)
 
     if not ctx.obj:
         ctx.obj = Context(plugin_manager=pm.PluginManager.get())
