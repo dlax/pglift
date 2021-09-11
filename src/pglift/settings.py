@@ -74,6 +74,10 @@ class DataPath(PrefixedPath):
     basedir = Path("srv")
 
 
+class LogPath(PrefixedPath):
+    basedir = Path("log")
+
+
 POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10"]
 
 
@@ -334,23 +338,26 @@ class Settings(BaseSettings):
     prefix: Path = default_prefix(os.getuid())
     """Path prefix for configuration and data files."""
 
+    logpath: LogPath = LogPath()
+
     @root_validator
     def __prefix_paths(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Prefix child settings fields with the global 'prefix'."""
         prefix = values["prefix"]
         for key, child in values.items():
-            if not isinstance(child, BaseSettings):
-                continue
-            update = {
-                fn: getattr(child, fn).prefix(prefix)
-                for fn, mf in child.__fields__.items()
-                # mf.types_ may be a typing.* class, which is not a type.
-                if isinstance(mf.type_, type) and issubclass(mf.type_, PrefixedPath)
-            }
-            if update:
-                child_values = child.dict()
-                child_values.update(update)
-                values[key] = child.__class__(**child_values)
+            if isinstance(child, PrefixedPath):
+                values[key] = child.prefix(prefix)
+            elif isinstance(child, BaseSettings):
+                update = {
+                    fn: getattr(child, fn).prefix(prefix)
+                    for fn, mf in child.__fields__.items()
+                    # mf.types_ may be a typing.* class, which is not a type.
+                    if isinstance(mf.type_, type) and issubclass(mf.type_, PrefixedPath)
+                }
+                if update:
+                    child_values = child.dict()
+                    child_values.update(update)
+                    values[key] = child.__class__(**child_values)
         return values
 
     @validator("service_manager", "scheduler", always=True)

@@ -44,6 +44,7 @@ def test_settings(tmp_path):
     assert hasattr(s, "postgresql")
     assert hasattr(s.postgresql, "root")
     assert s.postgresql.root == Path("/srv/pgsql")
+    assert s.logpath == Path("/log")
 
     with pytest.raises(Exception) as e:
         s.postgresql.root = DataPath("/tmp/new_root")
