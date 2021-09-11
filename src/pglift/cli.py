@@ -37,24 +37,29 @@ class Command(click.Command):
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+        keep_logfile = False
         try:
-            return super().invoke(ctx)
-        except exceptions.Error as e:
-            msg = str(e)
-            if isinstance(e, exceptions.CommandError) and e.stderr:
-                msg += f"\n{e.stderr}"
-            raise click.ClickException(msg)
-        except (click.ClickException, click.Abort, click.exceptions.Exit):
-            raise
-        except pydantic.ValidationError as e:
-            raise click.ClickException(str(e))
-        except Exception:
-            logger.exception("an unexpected error occurred")
-            raise click.ClickException(
-                "an unexpected error occurred, this is probably a bug; "
-                f"details can be found at {logfile}"
-            )
-        os.unlink(logfile)
+            try:
+                return super().invoke(ctx)
+            except exceptions.Error as e:
+                msg = str(e)
+                if isinstance(e, exceptions.CommandError) and e.stderr:
+                    msg += f"\n{e.stderr}"
+                raise click.ClickException(msg)
+            except (click.ClickException, click.Abort, click.exceptions.Exit):
+                raise
+            except pydantic.ValidationError as e:
+                raise click.ClickException(str(e))
+            except Exception:
+                keep_logfile = True
+                logger.exception("an unexpected error occurred")
+                raise click.ClickException(
+                    "an unexpected error occurred, this is probably a bug; "
+                    f"details can be found at {logfile}"
+                )
+        finally:
+            if not keep_logfile:
+                os.unlink(logfile)
 
 
 class Group(click.Group):
