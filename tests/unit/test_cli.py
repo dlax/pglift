@@ -3,6 +3,7 @@ import json
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
+import click
 import pytest
 import yaml
 from click.testing import CliRunner
@@ -11,7 +12,7 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, prometheus, roles
-from pglift.cli import cli, instance_init
+from pglift.cli import Command, cli, instance_init
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -27,6 +28,48 @@ def running(ctx: Context, instance: Instance) -> Iterator[MagicMock]:
     with patch("pglift.instance.running") as m:
         yield m
     m.assert_called_once_with(ctx, instance)
+
+
+@click.command(cls=Command)
+@click.argument("error")
+@click.pass_context
+def cmd(ctx, error):
+    if error == "error":
+        raise exceptions.CommandError(1, ["bad", "cmd"], "output", "errs")
+    if error == "runtimeerror":
+        raise RuntimeError("oups")
+    if error == "exit":
+        ctx.exit(1)
+
+
+def test_command_error(runner, ctx):
+    result = runner.invoke(cmd, ["error"], obj=ctx)
+    assert result.exit_code == 1
+    assert (
+        result.stderr
+        == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\n"
+    )
+    logpath = ctx.settings.logpath
+    assert not list(logpath.glob("*.log"))
+
+
+def test_command_exit(runner, ctx):
+    result = runner.invoke(cmd, ["exit"], obj=ctx)
+    assert result.exit_code == 1
+    assert not result.stdout
+    logpath = ctx.settings.logpath
+    assert not list(logpath.glob("*.log"))
+
+
+def test_command_internal_error(runner, ctx):
+    result = runner.invoke(cmd, ["runtimeerror"], obj=ctx)
+    assert result.exit_code == 1
+    logpath = ctx.settings.logpath
+    logfile = next(logpath.glob("*.log"))
+    logcontent = logfile.read_text()
+    assert "an unexpected error occurred" in logcontent
+    assert "Traceback (most recent call last):" in logcontent
+    assert "RuntimeError: oups" in logcontent
 
 
 def test_cli(runner, ctx):
