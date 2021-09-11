@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-import tempfile
+import time
 from datetime import datetime
 from functools import partial
 from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
@@ -26,9 +26,8 @@ from .task import runner
 
 class Command(click.Command):
     def invoke(self, ctx: click.Context) -> Any:
-        logfile = tempfile.NamedTemporaryFile(
-            prefix=f"{pkgname}-", suffix=".log", delete=False
-        ).name
+        logfile = ctx.obj.settings.logpath / f"{time.time()}.log"
+        logfile.parent.mkdir(parents=True, exist_ok=True)
         logger = logging.getLogger(pkgname)
         handler = logging.FileHandler(logfile)
         formatter = logging.Formatter(
