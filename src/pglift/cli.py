@@ -7,6 +7,7 @@ from functools import partial
 from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
 
 import click
+import colorlog
 import pydantic.json
 from pydantic.utils import deep_update
 from tabulate import tabulate
@@ -155,7 +156,7 @@ def cli(ctx: click.core.Context, log_level: str) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(fmt="[%(levelname)s] %(message)s")
+    formatter = colorlog.ColoredFormatter("%(log_color)s%(message)s")
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
     handler.setLevel(log_level)

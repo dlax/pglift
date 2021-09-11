@@ -46,6 +46,7 @@ setup(
     install_requires=[
         "attrs",
         "click",
+        "colorlog",
         "humanize",
         "pgtoolkit >= 0.17.0",
         "pluggy",
