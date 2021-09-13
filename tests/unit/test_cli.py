@@ -248,11 +248,10 @@ def test_instance_drop(runner, ctx, instance):
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.stderr
 
-    with patch.object(instance_mod, "drop") as mock_method:
+    with patch.object(instance_mod, "drop") as patched:
         result = runner.invoke(cli, ["instance", "drop", "test"], obj=ctx)
     assert result.exit_code == 0, (result, result.output)
-    mock_method.assert_called_once()
-    assert isinstance(mock_method.call_args[0][0], Context)
+    patched.assert_called_once_with(ctx, instance)
 
 
 def test_instance_status(runner, instance, ctx):
@@ -262,10 +261,7 @@ def test_instance_status(runner, instance, ctx):
         result = runner.invoke(cli, ["instance", "status", instance.name], obj=ctx)
     assert result.exit_code == 3, (result, result.output)
     assert result.stdout == "not running\n"
-    assert patched.call_count == 1
-    args, kwargs = patched.call_args
-    assert args[1].name == instance.name
-    assert kwargs == {}
+    patched.assert_called_once_with(ctx, instance)
 
 
 @pytest.mark.parametrize(
