@@ -6,6 +6,12 @@ here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
+extras_cli = [
+    "click",
+    "colorlog",
+    "tabulate",
+]
+extras_runtime_all = extras_cli
 extras_typing = [
     "mypy >= 0.901",
     "types-PyYAML",
@@ -45,19 +51,17 @@ setup(
     setup_requires=["setuptools_scm"],
     install_requires=[
         "attrs",
-        "click",
-        "colorlog",
         "humanize",
         "pgtoolkit >= 0.17.0",
         "pluggy",
         "psycopg2",
         "pydantic",
         "python-dateutil",
-        "tabulate",
         "typing-extensions",
         "PyYAML",
     ],
     extras_require={
+        "cli": extras_cli,
         "dev": [
             "black >= 21.8b0",
             "check-manifest",
@@ -65,6 +69,7 @@ setup(
             "isort",
             "pre-commit",
         ]
+        + extras_runtime_all
         + extras_typing,
         "test": [
             "port-for",
@@ -72,7 +77,8 @@ setup(
             "pytest-cov",
             "requests",
             "tenacity >= 8.0.0",
-        ],
+        ]
+        + extras_runtime_all,
         "typing": extras_typing,
         "docs": [
             "sphinx",

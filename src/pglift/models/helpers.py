@@ -15,7 +15,6 @@ from typing import (
     Union,
 )
 
-import click
 import pydantic
 from pydantic.utils import lenient_issubclass
 from typing_extensions import TypedDict
@@ -66,6 +65,7 @@ def _decorators_from_model(
     a pydantic model type along with respective callback argument name and
     model name.
     """
+    import click
 
     def default(ctx: click.Context, param: click.Argument, value: Any) -> Any:
         if (param.multiple and value == ()) or (value == param.default):
@@ -139,6 +139,8 @@ def parameters_from_model(
 
     >>> class Obj(pydantic.BaseModel):
     ...     message: str
+
+    >>> import click
 
     >>> @click.command("echo")
     ... @parameters_from_model(Obj)
