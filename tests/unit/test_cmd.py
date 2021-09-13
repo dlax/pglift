@@ -33,10 +33,12 @@ def test_execute_program_terminate_program(caplog, tmp_path):
     pidfile = tmp_path / "invalid.pid"
     pidfile.write_text("innnnvaaaaaaaaaaliiiiiiiiiiid")
     with pytest.raises(CommandError), caplog.at_level(logging.WARNING, logger=__name__):
-        cmd.execute_program(["sleep", "well"], pidfile, logger=logger)
+        cmd.execute_program(
+            ["sleep", "well"], pidfile, logger=logger, env={"LANG": "C", "LC_ALL": "C"}
+        )
     assert not pidfile.exists()
     assert "sleep is supposed to be running" in caplog.records[0].message
-    assert "sleep: invalid time interval ‘well’" in caplog.records[1].message
+    assert "sleep: invalid time interval 'well'" in caplog.records[1].message
 
     pidfile = tmp_path / "notfound"
     with pytest.raises(FileNotFoundError):
