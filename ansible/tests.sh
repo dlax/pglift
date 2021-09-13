@@ -9,7 +9,6 @@ cleanup () (
     set +e
     ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
     unset -v SETTINGS
-    pglift site-configure uninstall
     rm -rf "$tmpdir"
 )
 trap cleanup EXIT INT
@@ -36,7 +35,6 @@ cat > "$settings_path" << EOF
 }
 EOF
 export SETTINGS="@$settings_path"
-pglift site-configure install --settings="$settings_path"
 
 postgresql_surole_password=s3kret
 export postgresql_surole_password
