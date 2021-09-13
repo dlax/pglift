@@ -226,7 +226,7 @@ def run_expect(
     return result
 
 
-def execute_program(
+def start_program(
     cmd: Sequence[str],
     pidfile: Path,
     *,
@@ -235,7 +235,7 @@ def execute_program(
     capture_output: bool = True,
     logger: Optional[Logger] = None,
 ) -> None:
-    """Execute program described by 'cmd' and store its PID in 'pidfile'.
+    """Start program described by 'cmd' and store its PID in 'pidfile'.
 
     This is aimed at starting daemon programs.
 

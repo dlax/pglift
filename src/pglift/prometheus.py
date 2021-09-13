@@ -150,9 +150,7 @@ def start(ctx: BaseContext, instance: Instance) -> None:
             env[key] = value
         opts = shlex.split(env.pop("POSTGRES_EXPORTER_OPTS")[1:-1])
         pidfile = _pidfile(instance, settings)
-        cmd.execute_program(
-            [str(settings.execpath)] + opts, pidfile, env=env, logger=ctx
-        )
+        cmd.start_program([str(settings.execpath)] + opts, pidfile, env=env, logger=ctx)
 
 
 @hookimpl  # type: ignore[misc]

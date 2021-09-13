@@ -1,7 +1,7 @@
 import argparse
 from typing import Optional, Sequence
 
-from .cmd import execute_program
+from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
 from .models.system import PostgreSQLInstance
@@ -36,7 +36,7 @@ def main(
         ctx.settings.postgresql.pid_directory
         / f"postgresql-{instance.version}-{instance.name}.pid"
     )
-    execute_program(cmd, pidfile, logger=ctx)
+    start_program(cmd, pidfile, logger=ctx)
 
 
 if __name__ == "__main__":  # pragma: nocover

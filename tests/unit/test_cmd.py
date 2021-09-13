@@ -8,11 +8,11 @@ from pglift import cmd
 from pglift.exceptions import CommandError, FileNotFoundError, SystemError
 
 
-def test_execute_program_terminate_program(caplog, tmp_path):
+def test_start_program_terminate_program(caplog, tmp_path):
     logger = logging.getLogger(__name__)
 
     pidfile = tmp_path / "sleep" / "pid"
-    cmd.execute_program(
+    cmd.start_program(
         ["sleep", "10"], pidfile, timeout=0.01, env={"X_DEBUG": "1"}, logger=logger
     )
     with pidfile.open() as f:
@@ -24,7 +24,7 @@ def test_execute_program_terminate_program(caplog, tmp_path):
     assert "X_DEBUG" in (proc / "environ").read_text()
 
     with pytest.raises(SystemError, match="running already"):
-        cmd.execute_program(["sleep", "10"], pidfile, logger=logger)
+        cmd.start_program(["sleep", "10"], pidfile, logger=logger)
 
     cmd.terminate_program(pidfile, logger=logger)
     r = subprocess.run(["pgrep", pid], check=False)
@@ -33,7 +33,7 @@ def test_execute_program_terminate_program(caplog, tmp_path):
     pidfile = tmp_path / "invalid.pid"
     pidfile.write_text("innnnvaaaaaaaaaaliiiiiiiiiiid")
     with pytest.raises(CommandError), caplog.at_level(logging.WARNING, logger=__name__):
-        cmd.execute_program(
+        cmd.start_program(
             ["sleep", "well"], pidfile, logger=logger, env={"LANG": "C", "LC_ALL": "C"}
         )
     assert not pidfile.exists()

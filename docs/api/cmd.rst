@@ -5,5 +5,5 @@ Command execution
 
 .. autofunction:: run
 .. autofunction:: run_expect
-.. autofunction:: execute_program
+.. autofunction:: start_program
 .. autofunction:: terminate_program
