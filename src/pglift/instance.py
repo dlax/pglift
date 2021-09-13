@@ -613,7 +613,7 @@ def list(
         versions = [version]
 
     pgroot = ctx.settings.postgresql.root
-    assert pgroot.is_dir(), f"{pgroot} isn't a directory"
+
     # Search for directories looking like <version>/<name> in pgroot
     for ver in versions:
         version_path = pgroot / ver

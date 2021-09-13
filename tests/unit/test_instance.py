@@ -73,6 +73,11 @@ def test_init_version_not_available(ctx):
         instance_mod.init(ctx, i)
 
 
+def test_list_no_pgroot(ctx):
+    assert not ctx.settings.postgresql.root.exists()
+    assert list(instance_mod.list(ctx)) == []
+
+
 @pytest.fixture
 def ctx_nohook(ctx):
     ctx.pm.unregister_all()
