@@ -269,19 +269,16 @@ def test_instance_status(runner, instance, ctx):
 
 
 @pytest.mark.parametrize(
-    "action",
-    ["start", "stop", "reload", "restart"],
+    ["action", "kwargs"],
+    [("start", {"foreground": False}), ("stop", {}), ("reload", {}), ("restart", {})],
 )
-def test_instance_operations(runner, instance, ctx, action):
+def test_instance_operations(runner, instance, ctx, action, kwargs):
     with patch.object(instance_mod, action) as patched:
         result = runner.invoke(
             cli, ["instance", action, instance.name, instance.version], obj=ctx
         )
     assert result.exit_code == 0, result
-    assert patched.call_count == 1
-    args, kwargs = patched.call_args
-    assert args[1] == instance
-    assert kwargs == {}
+    patched.assert_called_once_with(ctx, instance, **kwargs)
 
 
 def test_instance_shell(runner, instance, ctx):

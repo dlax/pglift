@@ -199,6 +199,15 @@ def test_check_status(ctx, instance):
     instance_mod.check_status(ctx, instance, instance_mod.Status.not_running)
 
 
+def test_start_foreground(ctx, instance):
+    with patch("os.execv") as execv:
+        instance_mod.start(ctx, instance, foreground=True)
+    postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
+    execv.assert_called_once_with(
+        str(postgres), f"{postgres} -D {instance.datadir}".split()
+    )
+
+
 def test_shell(ctx, instance):
     with patch("os.execv") as patched:
         instance_mod.shell(ctx, instance, user="test", dbname="test")

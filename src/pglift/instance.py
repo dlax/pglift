@@ -419,17 +419,35 @@ def start(
     wait: bool = True,
     logfile: Optional[Path] = None,
     run_hooks: bool = True,
+    foreground: bool = False,
 ) -> None:
     """Start an instance.
 
     :param run_hooks: controls whether start-up hook will be triggered or not.
+    :param foreground: start postgres in the foreground, replacing the current
+        process.
+
+    .. note:: When starting in "foreground", hooks will not be triggered and
+        `wait` and `logfile` parameters have no effect.
     """
     if run_hooks and not isinstance(instance, Instance):
         raise TypeError("expecting a full instance")
 
     ctx.info("starting instance %s", instance)
+    if foreground and run_hooks:
+        ctx.debug("not running hooks for a foreground start")
+        run_hooks = False
+
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl(instance.version).start(instance.datadir, wait=wait, logfile=logfile)
+        if foreground:
+            postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
+            cmd.execute_program(
+                [str(postgres), "-D", str(instance.datadir)], logger=ctx
+            )
+        else:
+            ctx.pg_ctl(instance.version).start(
+                instance.datadir, wait=wait, logfile=logfile
+            )
     elif ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
     if run_hooks and wait:

@@ -314,13 +314,16 @@ def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) 
 @instance.command("start")
 @name_argument
 @version_argument
+@foreground_option
 @click.pass_obj
-def instance_start(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_start(
+    ctx: Context, name: str, version: Optional[str], foreground: bool
+) -> None:
     """Start a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.not_running)
     with runner(ctx):
-        instance_mod.start(ctx, instance)
+        instance_mod.start(ctx, instance, foreground=foreground)
 
 
 @instance.command("stop")
