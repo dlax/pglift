@@ -11,7 +11,18 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status as Status
 from typing_extensions import Literal
 
-from . import conf, datapath, db, exceptions, hookimpl, roles, systemd, template, util
+from . import (
+    cmd,
+    conf,
+    datapath,
+    db,
+    exceptions,
+    hookimpl,
+    roles,
+    systemd,
+    template,
+    util,
+)
 from .ctx import BaseContext
 from .models import interface
 from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
@@ -650,9 +661,8 @@ def shell(
         host = "localhost"
     if user is None:
         user = ctx.settings.postgresql.surole.name
-    psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
     args = [
-        psql,
+        str(ctx.pg_ctl(instance.version).bindir / "psql"),
         "--port",
         str(instance.port),
         "--host",
@@ -662,4 +672,4 @@ def shell(
     ]
     if dbname is not None:
         args.extend(["--dbname", dbname])
-    os.execvp(psql, args)  # nosec
+    cmd.execute_program(args, logger=ctx)

@@ -200,7 +200,7 @@ def test_check_status(ctx, instance):
 
 
 def test_shell(ctx, instance):
-    with patch("os.execvp") as patched:
+    with patch("os.execv") as patched:
         instance_mod.shell(ctx, instance, user="test", dbname="test")
     psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
     cmd = [
