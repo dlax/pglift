@@ -19,7 +19,7 @@ from pglift.models.system import Instance
 
 @pytest.fixture
 def runner():
-    return CliRunner()
+    return CliRunner(mix_stderr=False)
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ def test_instance_init(runner, ctx, instance):
         )
     assert not apply.call_count
     assert result.exit_code == 1
-    assert "instance already exists" in result.stdout
+    assert "instance already exists" in result.stderr
 
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
@@ -82,7 +82,7 @@ def test_instance_init(runner, ctx, instance):
 def test_instance_apply(tmp_path, runner, ctx):
     result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=ctx)
     assert result.exit_code == 2
-    assert "Missing option '-f'" in result.output
+    assert "Missing option '-f'" in result.stderr
 
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "test"})
@@ -100,7 +100,7 @@ def test_instance_alter(runner, ctx):
         cli, ["instance", "alter", "notfound", "--version=11"], obj=ctx
     )
     assert result.exit_code == 1
-    assert "Error: instance '11/notfound' not found" in result.output
+    assert "Error: instance '11/notfound' not found" in result.stderr
 
     actual = interface.Instance.parse_obj(
         {"name": "alterme", "prometheus": {"port": 1212}}
@@ -141,7 +141,7 @@ def test_instance_schema(runner, ctx):
 def test_instance_describe(runner, ctx, instance):
     result = runner.invoke(cli, ["instance", "describe"], obj=ctx)
     assert result.exit_code == 2
-    assert "Missing argument 'NAME'" in result.output
+    assert "Missing argument 'NAME'" in result.stderr
 
     instance = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=instance) as describe:
@@ -203,7 +203,7 @@ def test_instance_list(runner, instance, ctx):
 def test_instance_drop(runner, ctx, instance):
     result = runner.invoke(cli, ["instance", "drop"], obj=ctx)
     assert result.exit_code == 2
-    assert "Missing argument 'NAME'" in result.output
+    assert "Missing argument 'NAME'" in result.stderr
 
     with patch.object(instance_mod, "drop") as mock_method:
         result = runner.invoke(cli, ["instance", "drop", "test"], obj=ctx)
@@ -249,7 +249,7 @@ def test_instance_shell(runner, instance, ctx):
     status.assert_called_once_with(ctx, instance)
     assert not shell.called
     assert r.exit_code == 1
-    assert "instance is not_running" in r.stdout
+    assert "instance is not_running" in r.stderr
 
     with patch.object(
         instance_mod, "status", return_value=instance_mod.Status.running
@@ -317,7 +317,7 @@ def test_instance_restore(runner, instance, ctx):
             obj=ctx,
         )
     assert result.exit_code == 1, result
-    assert "instance is running" in result.stdout
+    assert "instance is running" in result.stderr
     status.assert_called_once_with(ctx, instance)
 
     with patch.object(pgbackrest, "restore") as restore:
@@ -426,7 +426,7 @@ def test_role_create(ctx, instance, runner, running):
             obj=ctx,
         )
     assert result.exit_code == 1
-    assert "role already exists" in result.stdout
+    assert "role already exists" in result.stderr
     exists.assert_called_once_with(ctx, instance, "bob")
     running.assert_called_once_with(ctx, instance)
 
@@ -504,7 +504,7 @@ def test_role_describe(runner, ctx, instance, running):
     describe.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1, (result, result.output)
-    assert result.stdout.strip() == "Error: role 'absent' not found"
+    assert result.stderr.strip() == "Error: role 'absent' not found"
 
     running.reset_mock()
 
@@ -556,7 +556,7 @@ def test_role_drop(runner, ctx, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
-    assert result.stdout.strip() == "Error: role 'bar' not found"
+    assert result.stderr.strip() == "Error: role 'bar' not found"
 
     running.reset_mock()
 
@@ -647,7 +647,7 @@ def test_database_create(ctx, instance, runner, running):
             obj=ctx,
         )
     assert result.exit_code == 1
-    assert "database already exists" in result.stdout
+    assert "database already exists" in result.stderr
     exists.assert_called_once_with(ctx, instance, "db_test2")
     running.assert_called_once_with(ctx, instance)
 
@@ -714,7 +714,7 @@ def test_database_describe(runner, ctx, instance, running):
     describe.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
-    assert result.stdout.strip() == "Error: database 'absent' not found"
+    assert result.stderr.strip() == "Error: database 'absent' not found"
 
     running.reset_mock()
 
@@ -791,7 +791,7 @@ def test_database_drop(runner, ctx, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
-    assert result.stdout.strip() == "Error: database 'bar' not found"
+    assert result.stderr.strip() == "Error: database 'bar' not found"
 
     running.reset_mock()
 
