@@ -1,11 +1,28 @@
 import logging
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from pglift import cmd
 from pglift.exceptions import CommandError, FileNotFoundError, SystemError
+
+
+def test_execute_program(caplog, tmp_path):
+    command = ["/c", "m", "d"]
+    with patch("os.execve") as execve, patch("os.execv") as execv:
+        cmd.execute_program(command, env={"X": "Y"})
+        execve.assert_called_once_with("/c", command, {"X": "Y"})
+        assert not execv.called
+    logger = logging.getLogger(__name__)
+    with patch("os.execve") as execve, patch("os.execv") as execv, caplog.at_level(
+        logging.DEBUG, logger=__name__
+    ):
+        cmd.execute_program(command, logger=logger)
+        execv.assert_called_once_with("/c", command)
+        assert not execve.called
+    assert "executing program /c m d" in caplog.records[0].message
 
 
 def test_start_program_terminate_program(caplog, tmp_path):

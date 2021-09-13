@@ -9,6 +9,7 @@ from subprocess import DEVNULL, PIPE
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from . import exceptions
+from ._compat import shlex_join
 from .types import CompletedProcess, Logger
 
 
@@ -224,6 +225,27 @@ def run_expect(
             retcode, result.args, result.stdout, result.stderr
         )
     return result
+
+
+def execute_program(
+    cmd: Sequence[str],
+    *,
+    env: Optional[Mapping[str, str]] = None,
+    logger: Optional[Logger] = None,
+) -> None:
+    """Execute program described by 'cmd', replacing the current process.
+
+    :raises ValueError: if program path is not absolute.
+    """
+    program = cmd[0]
+    if not Path(program).is_absolute():
+        raise ValueError(f"expecting an absolute program path {program}")
+    if logger:
+        logger.debug("executing program %s", shlex_join(cmd))
+    if env is not None:
+        os.execve(program, list(cmd), env)  # nosec
+    else:
+        os.execv(program, list(cmd))  # nosec
 
 
 def start_program(
