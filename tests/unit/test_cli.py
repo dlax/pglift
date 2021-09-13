@@ -891,13 +891,16 @@ def test_database_privileges(ctx, instance, runner, running):
     ]
 
 
-@pytest.mark.parametrize("action", ["start", "stop"])
-def test_postgres_exporter(runner, ctx, instance, action):
+@pytest.mark.parametrize(
+    ("action", "kwargs"),
+    [("start", {"foreground": False}), ("stop", {})],
+)
+def test_postgres_exporter(runner, ctx, instance, action, kwargs):
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
             cli,
             ["postgres_exporter", action, str(instance)],
             obj=ctx,
         )
-    patched.assert_called_once_with(ctx, instance)
+    patched.assert_called_once_with(ctx, instance, **kwargs)
     assert result.exit_code == 0, result

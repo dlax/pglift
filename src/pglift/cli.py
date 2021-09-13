@@ -143,6 +143,22 @@ def print_json_for(
 as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as JSON")
 
 
+def validate_foreground(
+    ctx: click.Context, param: click.Parameter, value: bool
+) -> bool:
+    if ctx.obj.settings.service_manager == "systemd" and value:
+        raise click.BadParameter("cannot be used with systemd")
+    return value
+
+
+foreground_option = click.option(
+    "--foreground",
+    is_flag=True,
+    help="Start the program in foreground.",
+    callback=validate_foreground,
+)
+
+
 @click.group(cls=Group)
 @click.option(
     "--log-level",
@@ -716,11 +732,12 @@ def postgres_exporter() -> None:
 
 @postgres_exporter.command("start")
 @instance_identifier
+@foreground_option
 @click.pass_obj
-def postgres_exporter_start(ctx: Context, instance: str) -> None:
+def postgres_exporter_start(ctx: Context, instance: str, foreground: bool) -> None:
     """Start postgres_exporter."""
     i = instance_lookup(ctx, instance)
-    prometheus.start(ctx, i)
+    prometheus.start(ctx, i, foreground=foreground)
 
 
 @postgres_exporter.command("stop")

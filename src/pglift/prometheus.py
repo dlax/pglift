@@ -138,8 +138,15 @@ def instance_configure(
     setup(ctx, instance, config)
 
 
-def start(ctx: BaseContext, instance: Instance) -> None:
+def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> None:
+    """Start postgres_exporter for `instance`.
+
+    :param foreground: start the program in foreground, replacing the current process.
+    :raises ValueError: if 'foreground' does not apply with site configuration.
+    """
     if ctx.settings.service_manager == "systemd":
+        if foreground:
+            raise ValueError("'foreground' parameter does not apply with systemd")
         systemd.start(ctx, systemd_unit(instance))
     else:
         settings = ctx.settings.prometheus
@@ -149,8 +156,12 @@ def start(ctx: BaseContext, instance: Instance) -> None:
             key, value = line.split("=", 1)
             env[key] = value
         opts = shlex.split(env.pop("POSTGRES_EXPORTER_OPTS")[1:-1])
-        pidfile = _pidfile(instance, settings)
-        cmd.start_program([str(settings.execpath)] + opts, pidfile, env=env, logger=ctx)
+        args = [str(settings.execpath)] + opts
+        if foreground:
+            cmd.execute_program(args, env=env, logger=ctx)
+        else:
+            pidfile = _pidfile(instance, settings)
+            cmd.start_program(args, pidfile, env=env, logger=ctx)
 
 
 @hookimpl  # type: ignore[misc]
