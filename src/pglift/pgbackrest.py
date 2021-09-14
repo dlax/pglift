@@ -148,8 +148,6 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
         pgconfig = pgconf.Configuration()
         pgconfig.archive_command = " ".join(base_cmd + ["archive-push", "%p"])
         pgconfig.archive_mode = "on"
-        pgconfig.listen_addresses = "*"
-        pgconfig.log_line_prefix = ""
         pgconfig.max_wal_senders = 3
         pgconfig.wal_level = "replica"
 
