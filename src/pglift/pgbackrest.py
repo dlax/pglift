@@ -107,9 +107,9 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     config = {
         "global": {
             "repo1-path": str(directory),
-            "repo1-retention-archive": "9999999",
-            "repo1-retention-diff": "9999999",
-            "repo1-retention-full": "9999999",
+            "repo1-retention-archive": "2",
+            "repo1-retention-diff": "3",
+            "repo1-retention-full": "2",
             "lock-path": str(lockpath),
             "log-path": str(logpath),
             "spool-path": str(spoolpath),
