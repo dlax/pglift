@@ -1,4 +1,5 @@
 FROM debian:buster
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && \
     apt-get -qq --no-install-recommends install devscripts equivs lintian python3-pip sudo
 # Install not packaged dependencies with Pip.

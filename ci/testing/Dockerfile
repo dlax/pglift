@@ -1,4 +1,5 @@
 FROM python:3.6
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && \
     apt-get -qq -y install curl ca-certificates gnupg lsb-release
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
