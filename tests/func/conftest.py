@@ -23,8 +23,6 @@ from pglift.util import xdg_runtime_dir
 
 from . import configure_instance, execute
 
-logging.basicConfig(level="DEBUG")
-
 
 @pytest.fixture(autouse=True)
 def journalctl():
@@ -120,6 +118,8 @@ def ctx(settings):
     p = pm.PluginManager.get()
     p.trace.root.setwriter(print)
     p.enable_tracing()
+    logger = logging.getLogger("pglift")
+    logger.setLevel(logging.DEBUG)
     return Context(plugin_manager=p, settings=settings)
 
 
