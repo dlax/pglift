@@ -19,11 +19,13 @@ from typing import (
 )
 
 import click
-import colorlog
 import pydantic.json
+import rich.console
+import rich.logging
 from click.exceptions import Exit
 from pydantic.utils import deep_update
 from rich.console import Console
+from rich.highlighter import NullHighlighter
 from rich.table import Table
 from typing_extensions import Literal
 
@@ -280,11 +282,19 @@ def cli(context: click.Context, log_level: str) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
     logger.setLevel(logging.DEBUG)
-    formatter = colorlog.ColoredFormatter("%(log_color)s%(message)s")
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    handler.setLevel(log_level)
+    handler = rich.logging.RichHandler(
+        level=log_level,
+        console=rich.console.Console(stderr=True),
+        show_time=True,
+        log_time_format="%X",
+        omit_repeated_times=False,
+        show_path=False,
+        highlighter=NullHighlighter(),
+    )
     logger.addHandler(handler)
+    # Remove rich handler on close since this would pollute all tests stderr
+    # otherwise.
+    context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
         context.obj = Obj(Context(plugin_manager=pm.PluginManager.get()))
