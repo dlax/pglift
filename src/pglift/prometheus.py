@@ -6,7 +6,7 @@ from pgtoolkit.conf import Configuration
 
 from . import cmd, exceptions, hookimpl, systemd
 from .ctx import BaseContext
-from .models.system import BaseInstance, Instance, InstanceSpec
+from .models.system import Instance, InstanceSpec
 from .settings import PrometheusSettings
 from .task import task
 
@@ -27,14 +27,16 @@ def systemd_unit(stanza: str) -> str:
     return f"postgres_exporter@{stanza}.service"
 
 
-def port(ctx: BaseContext, instance: BaseInstance) -> int:
+def port(ctx: BaseContext, name: str) -> int:
     """Return postgres_exporter port read from configuration file.
+
+    :param name: the name for the service.
 
     :raises ~exceptions.ConfigurationError: if port could not be read from
         configuration file.
     :raises ~exceptions.FileNotFoundError: if configuration file is not found.
     """
-    configpath = _configpath(instance.stanza, ctx.settings.prometheus)
+    configpath = _configpath(name, ctx.settings.prometheus)
     if not configpath.exists():
         raise exceptions.FileNotFoundError(
             f"postgres_exporter configuration file {configpath} not found"

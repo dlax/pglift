@@ -13,7 +13,7 @@ def test_systemd_unit(pg_version, instance):
 
 
 def test_port(ctx, instance):
-    port = prometheus.port(ctx, instance)
+    port = prometheus.port(ctx, instance.stanza)
     assert port == 9817
 
     configpath = pathlib.Path(
@@ -21,10 +21,10 @@ def test_port(ctx, instance):
     )
     configpath.write_text("\nempty\n")
     with pytest.raises(LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"):
-        prometheus.port(ctx, instance)
+        prometheus.port(ctx, instance.stanza)
 
     configpath.write_text("\nPG_EXPORTER_WEB_LISTEN_ADDRESS=42\n")
     with pytest.raises(
         LookupError, match="malformatted PG_EXPORTER_WEB_LISTEN_ADDRESS"
     ):
-        prometheus.port(ctx, instance)
+        prometheus.port(ctx, instance.stanza)

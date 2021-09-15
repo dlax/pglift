@@ -32,7 +32,7 @@ class PrometheusService:
     def system_lookup(cls: Type[T], ctx: BaseContext, instance: "BaseInstance") -> T:
         from .. import prometheus
 
-        return cls(port=prometheus.port(ctx, instance))
+        return cls(port=prometheus.port(ctx, instance.stanza))
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
