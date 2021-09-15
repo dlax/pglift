@@ -58,7 +58,7 @@ setup(
         "pydantic",
         "python-dateutil",
         "typing-extensions",
-        "PyYAML",
+        "PyYAML >= 5.1",
     ],
     extras_require={
         "cli": extras_cli,
