@@ -395,16 +395,11 @@ def instance_shell(
     default=pgbackrest.BackupType.default().name,
     help="Backup type",
 )
-@click.option("--purge", is_flag=True, default=False, help="Purge old backups")
 @click.pass_obj
-def instance_backup(
-    ctx: Context, name: str, version: Optional[str], type: str, purge: bool
-) -> None:
+def instance_backup(ctx: Context, name: str, version: Optional[str], type: str) -> None:
     """Back up a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
-    if purge:
-        pgbackrest.expire(ctx, instance)
 
 
 @instance.command("restore")
