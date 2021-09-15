@@ -81,7 +81,7 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
     try:
         return Instance.system_lookup(ctx, (name, version))
     except Exception as e:
-        raise click.ClickException(str(e))
+        raise click.BadParameter(str(e))
 
 
 def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
@@ -93,9 +93,9 @@ def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
     return name, version
 
 
-def instance_lookup(ctx: Context, instance_id: str) -> Instance:
-    name, version = nameversion_from_id(instance_id)
-    return get_instance(ctx, name, version)
+def instance_lookup(ctx: click.Context, param: click.Parameter, value: str) -> Instance:
+    name, version = nameversion_from_id(value)
+    return get_instance(ctx.obj, name, version)
 
 
 _M = TypeVar("_M", bound=pydantic.BaseModel)
@@ -487,7 +487,9 @@ def instance_privileges(
         print_table_for(prvlgs)
 
 
-instance_identifier = click.argument("instance", metavar="<version>/<instance>")
+instance_identifier = click.argument(
+    "instance", metavar="<version>/<instance>", callback=instance_lookup
+)
 
 
 @cli.group("role")
@@ -499,30 +501,28 @@ def role() -> None:
 @instance_identifier
 @helpers.parameters_from_model(interface.Role)
 @click.pass_obj
-def role_create(ctx: Context, instance: str, role: interface.Role) -> None:
+def role_create(ctx: Context, instance: Instance, role: interface.Role) -> None:
     """Create a role in a PostgreSQL instance"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        if roles.exists(ctx, i, role.name):
+    with instance_mod.running(ctx, instance):
+        if roles.exists(ctx, instance, role.name):
             raise click.ClickException("role already exists")
         with runner(ctx):
-            roles.apply(ctx, i, role)
+            roles.apply(ctx, instance, role)
 
 
 @role.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Role, False)
 @click.pass_obj
-def role_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
+def role_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
     """Alter a role in a PostgreSQL instance"""
-    i = instance_lookup(ctx, instance)
     changes = helpers.unnest(interface.Role, changes)
-    with instance_mod.running(ctx, i):
-        values = roles.describe(ctx, i, name).dict()
+    with instance_mod.running(ctx, instance):
+        values = roles.describe(ctx, instance, name).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
         with runner(ctx):
-            roles.apply(ctx, i, altered)
+            roles.apply(ctx, instance, altered)
 
 
 @role.command("schema")
@@ -535,23 +535,21 @@ def role_schema() -> None:
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @click.pass_obj
-def role_apply(ctx: Context, instance: str, file: IO[str]) -> None:
+def role_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
     """Apply manifest as a role"""
-    i = instance_lookup(ctx, instance)
     role = interface.Role.parse_yaml(file)
-    with runner(ctx), instance_mod.running(ctx, i):
-        roles.apply(ctx, i, role)
+    with runner(ctx), instance_mod.running(ctx, instance):
+        roles.apply(ctx, instance, role)
 
 
 @role.command("describe")
 @instance_identifier
 @click.argument("name")
 @click.pass_obj
-def role_describe(ctx: Context, instance: str, name: str) -> None:
+def role_describe(ctx: Context, instance: Instance, name: str) -> None:
     """Describe a role"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        described = roles.describe(ctx, i, name)
+    with instance_mod.running(ctx, instance):
+        described = roles.describe(ctx, instance, name)
     click.echo(described.yaml(exclude={"state"}), nl=False)
 
 
@@ -559,11 +557,10 @@ def role_describe(ctx: Context, instance: str, name: str) -> None:
 @instance_identifier
 @click.argument("name")
 @click.pass_obj
-def role_drop(ctx: Context, instance: str, name: str) -> None:
+def role_drop(ctx: Context, instance: Instance, name: str) -> None:
     """Drop a role"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        roles.drop(ctx, i, name)
+    with instance_mod.running(ctx, instance):
+        roles.drop(ctx, instance, name)
 
 
 @role.command("privileges")
@@ -575,18 +572,13 @@ def role_drop(ctx: Context, instance: str, name: str) -> None:
 @as_json_option
 @click.pass_obj
 def role_privileges(
-    ctx: Context,
-    instance: str,
-    name: str,
-    databases: Sequence[str],
-    as_json: bool,
+    ctx: Context, instance: Instance, name: str, databases: Sequence[str], as_json: bool
 ) -> None:
     """List default privileges of a role."""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        roles.describe(ctx, i, name)  # check existence
+    with instance_mod.running(ctx, instance):
+        roles.describe(ctx, instance, name)  # check existence
         try:
-            prvlgs = privileges.get(ctx, i, databases=databases, roles=(name,))
+            prvlgs = privileges.get(ctx, instance, databases=databases, roles=(name,))
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
@@ -604,30 +596,30 @@ def database() -> None:
 @instance_identifier
 @helpers.parameters_from_model(interface.Database)
 @click.pass_obj
-def database_create(ctx: Context, instance: str, database: interface.Database) -> None:
+def database_create(
+    ctx: Context, instance: Instance, database: interface.Database
+) -> None:
     """Create a database in a PostgreSQL instance"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        if databases.exists(ctx, i, database.name):
+    with instance_mod.running(ctx, instance):
+        if databases.exists(ctx, instance, database.name):
             raise click.ClickException("database already exists")
         with runner(ctx):
-            databases.apply(ctx, i, database)
+            databases.apply(ctx, instance, database)
 
 
 @database.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Database, False)
 @click.pass_obj
-def database_alter(ctx: Context, instance: str, name: str, **changes: Any) -> None:
+def database_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
     """Alter a database in a PostgreSQL instance"""
-    i = instance_lookup(ctx, instance)
     changes = helpers.unnest(interface.Database, changes)
-    with instance_mod.running(ctx, i):
-        values = databases.describe(ctx, i, name).dict()
+    with instance_mod.running(ctx, instance):
+        values = databases.describe(ctx, instance, name).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
         with runner(ctx):
-            databases.apply(ctx, i, altered)
+            databases.apply(ctx, instance, altered)
 
 
 @database.command("schema")
@@ -640,23 +632,21 @@ def database_schema() -> None:
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @click.pass_obj
-def database_apply(ctx: Context, instance: str, file: IO[str]) -> None:
+def database_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
     """Apply manifest as a database"""
-    i = instance_lookup(ctx, instance)
     database = interface.Database.parse_yaml(file)
-    with runner(ctx), instance_mod.running(ctx, i):
-        databases.apply(ctx, i, database)
+    with runner(ctx), instance_mod.running(ctx, instance):
+        databases.apply(ctx, instance, database)
 
 
 @database.command("describe")
 @instance_identifier
 @click.argument("name")
 @click.pass_obj
-def database_describe(ctx: Context, instance: str, name: str) -> None:
+def database_describe(ctx: Context, instance: Instance, name: str) -> None:
     """Describe a database"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        described = databases.describe(ctx, i, name)
+    with instance_mod.running(ctx, instance):
+        described = databases.describe(ctx, instance, name)
     click.echo(described.yaml(exclude={"state"}), nl=False)
 
 
@@ -664,11 +654,10 @@ def database_describe(ctx: Context, instance: str, name: str) -> None:
 @instance_identifier
 @as_json_option
 @click.pass_obj
-def database_list(ctx: Context, instance: str, as_json: bool) -> None:
+def database_list(ctx: Context, instance: Instance, as_json: bool) -> None:
     """List databases"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        dbs = databases.list(ctx, i)
+    with instance_mod.running(ctx, instance):
+        dbs = databases.list(ctx, instance)
     if as_json:
         print_json_for(dbs)
     else:
@@ -679,11 +668,10 @@ def database_list(ctx: Context, instance: str, as_json: bool) -> None:
 @instance_identifier
 @click.argument("name")
 @click.pass_obj
-def database_drop(ctx: Context, instance: str, name: str) -> None:
+def database_drop(ctx: Context, instance: Instance, name: str) -> None:
     """Drop a database"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        databases.drop(ctx, i, name)
+    with instance_mod.running(ctx, instance):
+        databases.drop(ctx, instance, name)
 
 
 @database.command("privileges")
@@ -693,18 +681,13 @@ def database_drop(ctx: Context, instance: str, name: str) -> None:
 @as_json_option
 @click.pass_obj
 def database_privileges(
-    ctx: Context,
-    instance: str,
-    name: str,
-    roles: Sequence[str],
-    as_json: bool,
+    ctx: Context, instance: Instance, name: str, roles: Sequence[str], as_json: bool
 ) -> None:
     """List default privileges on a database."""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
-        databases.describe(ctx, i, name)  # check existence
+    with instance_mod.running(ctx, instance):
+        databases.describe(ctx, instance, name)  # check existence
         try:
-            prvlgs = privileges.get(ctx, i, databases=(name,), roles=roles)
+            prvlgs = privileges.get(ctx, instance, databases=(name,), roles=roles)
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
@@ -729,16 +712,15 @@ def database_privileges(
 @click.pass_obj
 def database_run(
     ctx: Context,
-    instance: str,
+    instance: Instance,
     sql_command: str,
     dbnames: Sequence[str],
     exclude_dbnames: Sequence[str],
 ) -> None:
     """Run given command on databases of a PostgreSQL instance"""
-    i = instance_lookup(ctx, instance)
-    with instance_mod.running(ctx, i):
+    with instance_mod.running(ctx, instance):
         databases.run(
-            ctx, i, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
+            ctx, instance, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
         )
 
 
