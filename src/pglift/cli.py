@@ -4,7 +4,17 @@ import os
 import time
 from datetime import datetime
 from functools import partial
-from typing import IO, Any, Callable, Iterable, Optional, Sequence, TypeVar, Union
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import click
 import colorlog
@@ -74,12 +84,17 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
         raise click.ClickException(str(e))
 
 
-def instance_lookup(ctx: Context, instance_id: str) -> Instance:
+def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
     version = None
     try:
         version, name = instance_id.split("/", 1)
     except ValueError:
         name = instance_id
+    return name, version
+
+
+def instance_lookup(ctx: Context, instance_id: str) -> Instance:
+    name, version = nameversion_from_id(instance_id)
     return get_instance(ctx, name, version)
 
 
@@ -733,19 +748,27 @@ def postgres_exporter() -> None:
 
 
 @postgres_exporter.command("start")
-@instance_identifier
+@click.argument("name")
 @foreground_option
 @click.pass_obj
-def postgres_exporter_start(ctx: Context, instance: str, foreground: bool) -> None:
-    """Start postgres_exporter."""
-    i = instance_lookup(ctx, instance)
-    prometheus.start(ctx, i, foreground=foreground)
+def postgres_exporter_start(ctx: Context, name: str, foreground: bool) -> None:
+    """Start postgres_exporter service NAME.
+
+    The NAME argument is a local identifier for the postgres_exporter
+    service. If the service is bound to a local instance, it should be
+    <version>-<name>.
+    """
+    prometheus.start(ctx, name, foreground=foreground)
 
 
 @postgres_exporter.command("stop")
-@instance_identifier
+@click.argument("name")
 @click.pass_obj
-def postgres_exporter_stop(ctx: Context, instance: str) -> None:
-    """Stop postgres_exporter."""
-    i = instance_lookup(ctx, instance)
-    prometheus.stop(ctx, i)
+def postgres_exporter_stop(ctx: Context, name: str) -> None:
+    """Stop postgres_exporter service NAME.
+
+    The NAME argument is a local identifier for the postgres_exporter
+    service. If the service is bound to a local instance, it should be
+    <version>-<name>.
+    """
+    prometheus.stop(ctx, name)

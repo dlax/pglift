@@ -151,19 +151,20 @@ def instance_configure(
     setup_local(ctx, instance, config)
 
 
-def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> None:
+def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
     """Start postgres_exporter for `instance`.
 
+    :param name: the name for the service.
     :param foreground: start the program in foreground, replacing the current process.
     :raises ValueError: if 'foreground' does not apply with site configuration.
     """
     if ctx.settings.service_manager == "systemd":
         if foreground:
             raise ValueError("'foreground' parameter does not apply with systemd")
-        systemd.start(ctx, systemd_unit(instance.stanza))
+        systemd.start(ctx, systemd_unit(name))
     else:
         settings = ctx.settings.prometheus
-        configpath = _configpath(instance.stanza, settings)
+        configpath = _configpath(name, settings)
         env: Dict[str, str] = {}
         for line in configpath.read_text().splitlines():
             key, value = line.split("=", 1)
@@ -173,29 +174,29 @@ def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> 
         if foreground:
             cmd.execute_program(args, env=env, logger=ctx)
         else:
-            pidfile = _pidfile(instance.stanza, settings)
+            pidfile = _pidfile(name, settings)
             cmd.start_program(args, pidfile, env=env, logger=ctx)
 
 
 @hookimpl  # type: ignore[misc]
 def instance_start(ctx: BaseContext, instance: Instance) -> None:
     """Start postgres_exporter service."""
-    start(ctx, instance)
+    start(ctx, instance.stanza)
 
 
-def stop(ctx: BaseContext, instance: Instance) -> None:
+def stop(ctx: BaseContext, name: str) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
-        systemd.stop(ctx, systemd_unit(instance.stanza))
+        systemd.stop(ctx, systemd_unit(name))
     else:
-        pidfile = _pidfile(instance.stanza, ctx.settings.prometheus)
+        pidfile = _pidfile(name, ctx.settings.prometheus)
         cmd.terminate_program(pidfile, logger=ctx)
 
 
 @hookimpl  # type: ignore[misc]
 def instance_stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
-    stop(ctx, instance)
+    stop(ctx, instance.stanza)
 
 
 @hookimpl  # type: ignore[misc]

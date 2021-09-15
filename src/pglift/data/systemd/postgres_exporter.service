@@ -1,8 +1,6 @@
 [Unit]
-Description=Prometheus exporter for PostgreSQL %i database server metrics
+Description=Prometheus exporter %i database server metrics
 Documentation=https://github.com/wrouesnel/postgres_exporter
-Requires=postgresql@%i.service
-After=postgresql@%i.service
 StartLimitIntervalSec=60
 
 [Service]
