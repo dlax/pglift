@@ -1,5 +1,7 @@
 import io
 
+import pydantic
+import pytest
 import yaml
 
 from pglift import util
@@ -34,3 +36,10 @@ def test_instance_spec(ctx):
     i = interface.Instance(name="test").spec(ctx)
     assert str(i) == f"{util.short_version(ctx.pg_ctl(None).version)}/test"
     assert i.prometheus.port == 9187
+
+
+def test_postgresexporter():
+    m = interface.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
+    assert m.dsn.get_secret_value() == "dbname=postgres"
+    with pytest.raises(pydantic.ValidationError):
+        interface.PostgresExporter(dsn="x=y", port=9876)

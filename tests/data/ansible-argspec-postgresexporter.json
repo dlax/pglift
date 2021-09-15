@@ -1,0 +1,35 @@
+{
+  "dsn": {
+    "description": [
+      "connection string of target instance"
+    ],
+    "no_log": true,
+    "required": true,
+    "type": "str"
+  },
+  "name": {
+    "description": [
+      "locally unique identifier of the service"
+    ],
+    "required": true,
+    "type": "str"
+  },
+  "port": {
+    "description": [
+      "TCP port for the web interface and telemetry"
+    ],
+    "required": true,
+    "type": "int"
+  },
+  "state": {
+    "choices": [
+      "started",
+      "stopped",
+      "absent"
+    ],
+    "default": "started",
+    "description": [
+      "runtime state"
+    ]
+  }
+}

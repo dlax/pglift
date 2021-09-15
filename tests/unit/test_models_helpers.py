@@ -334,7 +334,13 @@ def test_argspec_from_model_keep_default():
 
 
 @pytest.mark.parametrize(
-    "manifest_type", [interface.Instance, interface.Role, interface.Database]
+    "manifest_type",
+    [
+        interface.Instance,
+        interface.PostgresExporter,
+        interface.Role,
+        interface.Database,
+    ],
 )
 def test_argspec_from_model_manifest(datadir, regen_test_data, manifest_type):
     actual = helpers.argspec_from_model(manifest_type)

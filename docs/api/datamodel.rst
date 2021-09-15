@@ -31,6 +31,8 @@ Interface model
     :members:
 .. autoclass:: InstanceListItem
     :members:
+.. autoclass:: PostgresExporter
+    :members:
 .. autoclass:: Role
     :members:
 .. autoclass:: Database
