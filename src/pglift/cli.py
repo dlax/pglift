@@ -391,15 +391,19 @@ def instance_shell(
 @version_argument
 @click.option(
     "--type",
+    "backup_type",
     type=click.Choice([t.name for t in pgbackrest.BackupType]),
     default=pgbackrest.BackupType.default().name,
     help="Backup type",
+    callback=lambda ctx, param, value: pgbackrest.BackupType(value),
 )
 @click.pass_obj
-def instance_backup(ctx: Context, name: str, version: Optional[str], type: str) -> None:
+def instance_backup(
+    ctx: Context, name: str, version: Optional[str], backup_type: pgbackrest.BackupType
+) -> None:
     """Back up a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    pgbackrest.backup(ctx, instance, type=pgbackrest.BackupType(type))
+    pgbackrest.backup(ctx, instance, type=backup_type)
 
 
 @instance.command("restore")
