@@ -57,7 +57,7 @@ def instance(pg_version: str, settings: Settings) -> Instance:
         "\n".join(["port = 999", "unix_socket_directories = /socks"])
     )
 
-    prometheus_config = prometheus._configpath(instance, settings.prometheus)
+    prometheus_config = prometheus._configpath(instance.stanza, settings.prometheus)
     prometheus_config.parent.mkdir(parents=True)
     prometheus_config.write_text(f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus_port}")
 

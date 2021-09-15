@@ -11,20 +11,20 @@ from .settings import PrometheusSettings
 from .task import task
 
 
-def _configpath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.configpath).format(stanza=instance.stanza))
+def _configpath(stanza: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.configpath).format(stanza=stanza))
 
 
-def _queriespath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.queriespath).format(stanza=instance.stanza))
+def _queriespath(stanza: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.queriespath).format(stanza=stanza))
 
 
-def _pidfile(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.pid_file).format(stanza=instance.stanza))
+def _pidfile(stanza: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.pid_file).format(stanza=stanza))
 
 
-def systemd_unit(instance: BaseInstance) -> str:
-    return f"postgres_exporter@{instance.version}-{instance.name}.service"
+def systemd_unit(stanza: str) -> str:
+    return f"postgres_exporter@{stanza}.service"
 
 
 def port(ctx: BaseContext, instance: BaseInstance) -> int:
@@ -34,7 +34,7 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
         configuration file.
     :raises ~exceptions.FileNotFoundError: if configuration file is not found.
     """
-    configpath = _configpath(instance, ctx.settings.prometheus)
+    configpath = _configpath(instance.stanza, ctx.settings.prometheus)
     if not configpath.exists():
         raise exceptions.FileNotFoundError(
             "postgres_exporter configuration file {configpath} not found"
@@ -56,46 +56,34 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
 
 
 @task
-def setup(
-    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
-) -> None:
-    """Setup postgres_exporter for Prometheus"""
-    settings = ctx.settings.prometheus
-    configpath = _configpath(instance, settings)
-    role = ctx.settings.postgresql.surole
-    configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
+def setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
+    """Set up a Prometheus postgres_exporter service for an instance.
 
-    dsn = []
-    if "port" in instance_config:
-        dsn.append(f"port={instance_config.port}")
-    host = instance_config.get("unix_socket_directories")
-    if host:
-        dsn.append(f"host={host}")
-    dsn.append(f"user={role.name}")
-    if role.password:
-        dsn.append(f"password={role.password.get_secret_value()}")
-    if not instance_config.ssl:
-        dsn.append("sslmode=disable")
-    config = [
-        f"DATA_SOURCE_NAME={' '.join(dsn)}",
-    ]
-    appname = f"postgres_exporter-{instance.version}-{instance.name}"
+    :param name: a (locally unique) name for the service.
+    :param dsn: connection info string to target instance.
+    :param port: TCP port for the web interface and telemetry of postgres_exporter.
+    """
+    settings = ctx.settings.prometheus
+    config = [f"DATA_SOURCE_NAME={dsn}"]
+    appname = f"postgres_exporter-{name}"
     log_options = ["--log.level=info"]
     if ctx.settings.service_manager == "systemd":
         # XXX Checking for systemd presence as a naive way to check for syslog
         # availability; this is enough for Docker.
         log_options.append(f"--log.format=logger:syslog?appname={appname}&local=0")
     opts = " ".join(log_options)
-    queriespath = _queriespath(instance, settings)
+    queriespath = _queriespath(name, settings)
     config.extend(
         [
-            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{instance.prometheus.port}",
+            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{port}",
             "PG_EXPORTER_AUTO_DISCOVER_DATABASES=true",
             f"PG_EXPORTER_EXTEND_QUERY_PATH={queriespath}",
             f"POSTGRES_EXPORTER_OPTS='{opts}'",
         ]
     )
 
+    configpath = _configpath(name, settings)
+    configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     actual_config = []
     if configpath.exists():
         actual_config = configpath.read_text().splitlines()
@@ -107,27 +95,52 @@ def setup(
         queriespath.touch()
 
     if ctx.settings.service_manager == "systemd":
-        systemd.enable(ctx, systemd_unit(instance))
+        systemd.enable(ctx, systemd_unit(name))
 
 
 @setup.revert
-def revert_setup(
-    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
-) -> None:
-    """Un-setup postgres_exporter for Prometheus"""
+def revert_setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
     if ctx.settings.service_manager == "systemd":
-        unit = systemd_unit(instance)
+        unit = systemd_unit(name)
         systemd.disable(ctx, unit, now=True)
 
     settings = ctx.settings.prometheus
-    configpath = _configpath(instance, settings)
+    configpath = _configpath(name, settings)
 
     if configpath.exists():
         configpath.unlink()
 
-    queriespath = _queriespath(instance, settings)
+    queriespath = _queriespath(name, settings)
     if queriespath.exists():
         queriespath.unlink()
+
+
+@task
+def setup_local(
+    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
+) -> None:
+    """Setup Prometheus postgres_exporter for a local instance."""
+    role = ctx.settings.postgresql.surole
+    dsn = []
+    if "port" in instance_config:
+        dsn.append(f"port={instance_config.port}")
+    host = instance_config.get("unix_socket_directories")
+    if host:
+        dsn.append(f"host={host}")
+    dsn.append(f"user={role.name}")
+    if role.password:
+        dsn.append(f"password={role.password.get_secret_value()}")
+    if not instance_config.ssl:
+        dsn.append("sslmode=disable")
+    setup(ctx, instance.stanza, " ".join(dsn), instance.prometheus.port)
+
+
+@setup_local.revert
+def revert_setup_local(
+    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
+) -> None:
+    """Un-setup Prometheus postgres_exporter for a local instance."""
+    revert_setup(ctx, instance.stanza, "", instance.prometheus.port)
 
 
 @hookimpl  # type: ignore[misc]
@@ -135,7 +148,7 @@ def instance_configure(
     ctx: BaseContext, instance: InstanceSpec, config: Configuration, **kwargs: Any
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
-    setup(ctx, instance, config)
+    setup_local(ctx, instance, config)
 
 
 def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> None:
@@ -147,10 +160,10 @@ def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> 
     if ctx.settings.service_manager == "systemd":
         if foreground:
             raise ValueError("'foreground' parameter does not apply with systemd")
-        systemd.start(ctx, systemd_unit(instance))
+        systemd.start(ctx, systemd_unit(instance.stanza))
     else:
         settings = ctx.settings.prometheus
-        configpath = _configpath(instance, settings)
+        configpath = _configpath(instance.stanza, settings)
         env: Dict[str, str] = {}
         for line in configpath.read_text().splitlines():
             key, value = line.split("=", 1)
@@ -160,7 +173,7 @@ def start(ctx: BaseContext, instance: Instance, *, foreground: bool = False) -> 
         if foreground:
             cmd.execute_program(args, env=env, logger=ctx)
         else:
-            pidfile = _pidfile(instance, settings)
+            pidfile = _pidfile(instance.stanza, settings)
             cmd.start_program(args, pidfile, env=env, logger=ctx)
 
 
@@ -173,9 +186,9 @@ def instance_start(ctx: BaseContext, instance: Instance) -> None:
 def stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
-        systemd.stop(ctx, systemd_unit(instance))
+        systemd.stop(ctx, systemd_unit(instance.stanza))
     else:
-        pidfile = _pidfile(instance, ctx.settings.prometheus)
+        pidfile = _pidfile(instance.stanza, ctx.settings.prometheus)
         cmd.terminate_program(pidfile, logger=ctx)
 
 
@@ -188,4 +201,4 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     """Uninstall postgres_exporter from an instance being dropped."""
-    revert_setup(ctx, instance.as_spec(), instance.config())
+    revert_setup_local(ctx, instance.as_spec(), instance.config())

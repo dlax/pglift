@@ -44,6 +44,26 @@ def test_configure(ctx, installed, instance, tmp_port_factory):
         assert f"port={new_port}" in dsn
 
 
+def test_setup(ctx, installed, tmp_port_factory):
+    port = next(tmp_port_factory)
+    name = "123-fo-o"
+    prometheus.setup(ctx, name, "dbname=postgres port=5444", port)
+    prometheus_settings = ctx.settings.prometheus
+    configpath = Path(str(prometheus_settings.configpath).format(stanza=name))
+    assert configpath.exists()
+
+    prometheus_config = config_dict(configpath)
+    assert prometheus_config["DATA_SOURCE_NAME"] == "dbname=postgres port=5444"
+    assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
+
+    queriespath = Path(str(prometheus_settings.queriespath).format(stanza=name))
+    assert queriespath.exists()
+
+    prometheus.revert_setup(ctx, name, "dbname=postgres port=5444", port)
+    assert not configpath.exists()
+    assert not queriespath.exists()
+
+
 def test_start_stop(ctx, installed, instance):
     port = instance.prometheus.port
 
