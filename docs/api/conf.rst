@@ -1,7 +1,7 @@
 .. currentmodule:: pglift.conf
 
-PostgreSQL configuration
-========================
+PostgreSQL configuration management
+===================================
 
 .. autofunction:: make
 .. autofunction:: info

@@ -7,10 +7,9 @@ Welcome to pglift's documentation!
 
     install
     tutorials/index
-    postgresql_configuration
+    setup/index
+    ops/index
     api/index
-    datamodel
-    settings
     dev
 
 
