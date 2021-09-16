@@ -729,6 +729,31 @@ def postgres_exporter() -> None:
     """Handle Prometheus postgres_exporter"""
 
 
+@postgres_exporter.command("schema")
+def postgres_exporter_schema() -> None:
+    """Print the JSON schema of database model"""
+    click.echo(interface.PostgresExporter.schema_json(indent=2), nl=False)
+
+
+@postgres_exporter.command("apply")
+@click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@click.pass_obj
+def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
+    """Apply manifest as a Prometheus postgres_exporter."""
+    exporter = interface.PostgresExporter.parse_yaml(file)
+    prometheus.apply(ctx, exporter)
+
+
+@postgres_exporter.command("install")
+@helpers.parameters_from_model(interface.PostgresExporter)
+@click.pass_obj
+def postgres_exporter_install(
+    ctx: Context, postgresexporter: interface.PostgresExporter
+) -> None:
+    """Install the service for a (non-local) instance."""
+    prometheus.apply(ctx, postgresexporter)
+
+
 @postgres_exporter.command("start")
 @click.argument("name")
 @foreground_option

@@ -875,7 +875,7 @@ def test_database_privileges(ctx, instance, runner, running):
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
 )
-def test_postgres_exporter(runner, ctx, instance, action, kwargs):
+def test_postgres_exporter_start_stop(runner, ctx, instance, action, kwargs):
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
             cli,
@@ -884,3 +884,41 @@ def test_postgres_exporter(runner, ctx, instance, action, kwargs):
         )
     patched.assert_called_once_with(ctx, instance.stanza, **kwargs)
     assert result.exit_code == 0, result
+
+
+def test_postgres_exporter_schema(runner):
+    result = runner.invoke(cli, ["postgres_exporter", "schema"])
+    schema = json.loads(result.output)
+    assert schema["title"] == "PostgresExporter"
+    assert schema["description"] == "Prometheus postgres_exporter service."
+
+
+def test_postgres_exporter_apply(runner, tmp_path, ctx):
+    manifest = tmp_path / "manifest.yml"
+    content = yaml.dump({"name": "123-exp", "dsn": "dbname=monitoring", "port": 123})
+    manifest.write_text(content)
+    with patch.object(prometheus, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["postgres_exporter", "apply", "-f", str(manifest)],
+            obj=ctx,
+        )
+    assert result.exit_code == 0
+    apply.assert_called_once_with(
+        ctx,
+        interface.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+    )
+
+
+def test_postgres_exporter_install(runner, ctx):
+    with patch.object(prometheus, "apply") as apply:
+        result = runner.invoke(
+            cli,
+            ["postgres_exporter", "install", "123-exp", "dbname=monitoring", "123"],
+            obj=ctx,
+        )
+    assert result.exit_code == 0
+    apply.assert_called_once_with(
+        ctx,
+        interface.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+    )
