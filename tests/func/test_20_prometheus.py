@@ -9,6 +9,7 @@ from tenacity.wait import wait_fixed
 
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
+from pglift.models import interface
 
 from . import reconfigure_instance
 
@@ -135,3 +136,29 @@ def test_start_stop_nonlocal(ctx, instance, postgres_exporter):
             assert not systemd.is_active(ctx, prometheus.systemd_unit(name))
         with pytest.raises(requests.ConnectionError):
             request_metrics(port)
+
+
+def test_apply(ctx, tmp_port_factory):
+    port = next(tmp_port_factory)
+    m = interface.PostgresExporter(name="test", dsn="dbname=test", port=port)
+    prometheus.apply(ctx, m)
+
+    prometheus_settings = ctx.settings.prometheus
+    configpath = Path(str(prometheus_settings.configpath).format(stanza="test"))
+    assert configpath.exists()
+    queriespath = Path(str(prometheus_settings.queriespath).format(stanza="test"))
+    assert queriespath.exists()
+
+    prometheus_config = config_dict(configpath)
+    assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
+
+    port1 = next(tmp_port_factory)
+    prometheus.apply(ctx, m.copy(update={"port": port1}))
+    prometheus_config = config_dict(configpath)
+    assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port1}"
+
+    prometheus.apply(
+        ctx, interface.PostgresExporter(name="test", dsn="", port=port, state="absent")
+    )
+    assert not configpath.exists()
+    assert not queriespath.exists()

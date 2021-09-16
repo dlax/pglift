@@ -2,7 +2,8 @@ import pathlib
 
 import pytest
 
-from pglift import prometheus
+from pglift import exceptions, prometheus
+from pglift.models import interface
 
 
 def test_systemd_unit(pg_version, instance):
@@ -28,3 +29,9 @@ def test_port(ctx, instance):
         LookupError, match="malformatted PG_EXPORTER_WEB_LISTEN_ADDRESS"
     ):
         prometheus.port(ctx, instance.stanza)
+
+
+def test_apply(ctx, instance):
+    m = interface.PostgresExporter(name=instance.stanza, dsn="", port=123)
+    with pytest.raises(exceptions.InstanceStateError, match="exists locally"):
+        prometheus.apply(ctx, m)

@@ -6,7 +6,8 @@ from pgtoolkit.conf import Configuration
 
 from . import cmd, exceptions, hookimpl, systemd
 from .ctx import BaseContext
-from .models.system import Instance, InstanceSpec
+from .models import interface
+from .models.system import Instance, InstanceSpec, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
 
@@ -117,6 +118,34 @@ def revert_setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
         queriespath.unlink()
 
 
+def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
+    """Apply state described by specified manifest as a postgres_exporter
+    service for a non-local instance.
+
+    :raises exceptions.InstanceStateError: if the target instance exists on system.
+    """
+    try:
+        PostgreSQLInstance.from_stanza(ctx, manifest.name)
+    except (ValueError, exceptions.InstanceNotFound):
+        pass
+    else:
+        raise exceptions.InstanceStateError(
+            f"an instance matching {manifest.name} stanza exists locally"
+        )
+
+    if manifest.state == interface.PostgresExporter.State.absent:
+        stop(ctx, manifest.name)
+        revert_setup(ctx, manifest.name, manifest.dsn.get_secret_value(), manifest.port)
+    else:
+        # TODO: detect if setup() actually need to be called by comparing
+        # manifest with system state.
+        setup(ctx, manifest.name, manifest.dsn.get_secret_value(), manifest.port)
+        if manifest.state == interface.PostgresExporter.State.started:
+            start(ctx, manifest.name)
+        elif manifest.state == interface.PostgresExporter.State.stopped:
+            stop(ctx, manifest.name)
+
+
 @task
 def setup_local(
     ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
@@ -177,6 +206,9 @@ def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
             cmd.execute_program(args, env=env, logger=ctx)
         else:
             pidfile = _pidfile(name, settings)
+            if cmd.status_program(pidfile) == cmd.Status.running:
+                ctx.debug("postgres_exporter '%s' is already running", name)
+                return
             cmd.start_program(args, pidfile, env=env, logger=ctx)
 
 
@@ -192,6 +224,9 @@ def stop(ctx: BaseContext, name: str) -> None:
         systemd.stop(ctx, systemd_unit(name))
     else:
         pidfile = _pidfile(name, ctx.settings.prometheus)
+        if cmd.status_program(pidfile) == cmd.Status.not_running:
+            ctx.debug("postgres_exporter '%s' is already stopped", name)
+            return
         cmd.terminate_program(pidfile, logger=ctx)
 
 

@@ -19,6 +19,7 @@ Module :mod:`pglift.prometheus` exposes the following API functions for
 monitoring management using `Prometheus postgres_exporter`_:
 
 .. autofunction:: setup
+.. autofunction:: apply
 .. autofunction:: port
 .. autofunction:: start
 .. autofunction:: stop
