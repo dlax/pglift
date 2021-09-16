@@ -37,7 +37,7 @@ def port(ctx: BaseContext, instance: BaseInstance) -> int:
     configpath = _configpath(instance.stanza, ctx.settings.prometheus)
     if not configpath.exists():
         raise exceptions.FileNotFoundError(
-            "postgres_exporter configuration file {configpath} not found"
+            f"postgres_exporter configuration file {configpath} not found"
         )
     varname = "PG_EXPORTER_WEB_LISTEN_ADDRESS"
     with configpath.open() as f:
