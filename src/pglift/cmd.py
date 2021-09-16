@@ -1,5 +1,6 @@
 import asyncio
 import asyncio.subprocess
+import enum
 import os
 import signal
 import subprocess
@@ -10,7 +11,7 @@ from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from . import exceptions
 from ._compat import shlex_join
-from .types import CompletedProcess, Logger
+from .types import AutoStrEnum, CompletedProcess, Logger
 
 
 async def process_stream_with(
@@ -248,6 +249,28 @@ def execute_program(
         os.execv(program, list(cmd))  # nosec
 
 
+class Status(AutoStrEnum):
+    running = enum.auto()
+    not_running = enum.auto()
+    dangling = enum.auto()
+
+
+def status_program(pidfile: Path) -> Status:
+    """Return the status of a program which PID is in 'pidfile'.
+
+    :raises ~exceptions.SystemError: if the program is already running.
+    :raises ~exceptions.CommandError: in case program execution terminates
+        after `timeout`.
+    """
+    if pidfile.exists():
+        pid = pidfile.read_text()
+        if (Path("/proc") / pid).exists():
+            return Status.running
+        else:
+            return Status.dangling
+    return Status.not_running
+
+
 def start_program(
     cmd: Sequence[str],
     pidfile: Path,
@@ -266,13 +289,14 @@ def start_program(
         after `timeout`.
     """
     prog = cmd[0]
-    if pidfile.exists():
+    status = status_program(pidfile)
+    if status in (Status.running, Status.dangling):
         pid = pidfile.read_text()
-        if (Path("/proc") / pid).exists():
+        if status == Status.running:
             raise exceptions.SystemError(
                 f"program {prog} seems to be running already with PID {pid}"
             )
-        else:
+        elif status == Status.dangling:
             if logger:
                 logger.warning(
                     "program %s is supposed to be running with PID %s but "

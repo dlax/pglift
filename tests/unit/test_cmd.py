@@ -25,7 +25,7 @@ def test_execute_program(caplog, tmp_path):
     assert "executing program /c m d" in caplog.records[0].message
 
 
-def test_start_program_terminate_program(caplog, tmp_path):
+def test_start_program_terminate_program_status_program(caplog, tmp_path):
     logger = logging.getLogger(__name__)
 
     pidfile = tmp_path / "sleep" / "pid"
@@ -40,6 +40,8 @@ def test_start_program_terminate_program(caplog, tmp_path):
     assert (proc / "cmdline").read_text() == "sleep\x0010\x00"
     assert "X_DEBUG" in (proc / "environ").read_text()
 
+    assert cmd.status_program(pidfile) == cmd.Status.running
+
     with pytest.raises(SystemError, match="running already"):
         cmd.start_program(["sleep", "10"], pidfile, logger=logger)
 
@@ -47,8 +49,11 @@ def test_start_program_terminate_program(caplog, tmp_path):
     r = subprocess.run(["pgrep", pid], check=False)
     assert r.returncode == 1
 
+    assert cmd.status_program(pidfile) == cmd.Status.not_running
+
     pidfile = tmp_path / "invalid.pid"
     pidfile.write_text("innnnvaaaaaaaaaaliiiiiiiiiiid")
+    assert cmd.status_program(pidfile) == cmd.Status.dangling
     with pytest.raises(CommandError), caplog.at_level(logging.WARNING, logger=__name__):
         cmd.start_program(
             ["sleep", "well"], pidfile, logger=logger, env={"LANG": "C", "LC_ALL": "C"}
