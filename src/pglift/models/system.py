@@ -46,6 +46,11 @@ class BaseInstance:
         return f"{self.version}/{self.name}"
 
     @property
+    def stanza(self) -> str:
+        """Instance identifier, e.g. 13-main."""
+        return f"{self.version}-{self.name}"
+
+    @property
     def path(self) -> Path:
         """Base directory path for this instance."""
         pg_settings = self.settings.postgresql
