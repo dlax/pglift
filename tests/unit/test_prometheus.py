@@ -17,7 +17,7 @@ def test_port(ctx, instance):
     assert port == 9817
 
     configpath = pathlib.Path(
-        str(ctx.settings.prometheus.configpath).format(instance=instance)
+        str(ctx.settings.prometheus.configpath).format(stanza=instance.stanza)
     )
     configpath.write_text("\nempty\n")
     with pytest.raises(LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"):

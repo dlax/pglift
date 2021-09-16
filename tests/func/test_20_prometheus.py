@@ -23,7 +23,8 @@ def config_dict(configpath: Path) -> Dict[str, str]:
 
 def test_configure(ctx, installed, instance, tmp_port_factory):
     prometheus_settings = ctx.settings.prometheus
-    configpath = Path(str(prometheus_settings.configpath).format(instance=instance))
+    stanza = instance.stanza
+    configpath = Path(str(prometheus_settings.configpath).format(stanza=stanza))
     assert configpath.exists()
 
     prometheus_config = config_dict(configpath)
@@ -33,7 +34,7 @@ def test_configure(ctx, installed, instance, tmp_port_factory):
     port = instance.prometheus.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
-    queriespath = Path(str(prometheus_settings.queriespath).format(instance=instance))
+    queriespath = Path(str(prometheus_settings.queriespath).format(stanza=stanza))
     assert queriespath.exists()
 
     new_port = next(tmp_port_factory)

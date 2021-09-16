@@ -12,15 +12,15 @@ from .task import task
 
 
 def _configpath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.configpath).format(instance=instance))
+    return Path(str(settings.configpath).format(stanza=instance.stanza))
 
 
 def _queriespath(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.queriespath).format(instance=instance))
+    return Path(str(settings.queriespath).format(stanza=instance.stanza))
 
 
 def _pidfile(instance: BaseInstance, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.pid_file).format(instance=instance))
+    return Path(str(settings.pid_file).format(stanza=instance.stanza))
 
 
 def systemd_unit(instance: BaseInstance) -> str:
