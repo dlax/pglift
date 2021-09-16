@@ -8,6 +8,7 @@ set -e
 cleanup () (
     set +e
     ansible-playbook --module-path=ansible/modules/  docs/ansible/play3.yml
+    ansible-playbook --module-path=ansible/modules/ "$tmpdir/play-exporter-dropped.yml"
     unset -v SETTINGS
     rm -rf "$tmpdir"
 )
@@ -39,6 +40,28 @@ export SETTINGS="@$settings_path"
 postgresql_surole_password=s3kret
 export postgresql_surole_password
 export PGPASSFILE=$passfile
+
+cat > "$tmpdir/play-exporter.yml" << EOF
+- name: unbound postgres_exporter
+  hosts: localhost
+  tasks:
+    - name: second postgres_exporter for prod
+      dalibo.pglift.postgres_exporter:
+        name: prod2
+        dsn: "port=5433 host=/tmp user=postgres password=$postgresql_surole_password"
+        port: 9191
+EOF
+cat > "$tmpdir/play-exporter-dropped.yml" << EOF
+- name: unbound postgres_exporter (dropped)
+  hosts: localhost
+  tasks:
+    - name: second postgres_exporter for prod (dropped)
+      dalibo.pglift.postgres_exporter:
+        name: prod2
+        dsn: "port=5433 host=/tmp user=postgres password=$postgresql_surole_password"
+        port: 9191
+        state: absent
+EOF
 
 export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
 
@@ -92,6 +115,9 @@ set -e
 psql -w -t -e -c "$query" "host=/tmp user=postgres dbname=postgres port=5455"  # dev
 check_postgres_exporter 9189
 list_timers
+
+ansible-playbook "$tmpdir/play-exporter.yml"
+check_postgres_exporter 9191
 
 ansible-playbook docs/ansible/play3.yml
 if test -f "$passfile";
