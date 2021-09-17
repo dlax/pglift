@@ -622,6 +622,8 @@ def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.I
 
 def drop(ctx: BaseContext, instance: Instance) -> None:
     """Drop an instance."""
+    stop(ctx, instance, run_hooks=True)
+
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
     spec = instance.as_spec()
