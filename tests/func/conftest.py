@@ -30,7 +30,7 @@ def journalctl():
     if journalctl is None:
         yield
         return
-    proc = subprocess.Popen([journalctl, "--user", "-f"])
+    proc = subprocess.Popen([journalctl, "--user", "-f", "-n0"])
     yield
     proc.kill()
 
