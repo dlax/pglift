@@ -24,7 +24,7 @@ from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
-from .task import Runner as runner
+from .task import Runner
 
 
 class Obj:
@@ -32,6 +32,7 @@ class Obj:
 
     def __init__(self, context: Context) -> None:
         self.ctx = context
+        self.runner = Runner(context)
 
 
 def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -43,6 +44,19 @@ def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
         ctx = context.obj.ctx
         assert isinstance(ctx, Context), ctx
         return context.invoke(f, ctx, *args, **kwargs)
+
+    return wrapper
+
+
+def pass_runner(f: Callable[..., Any]) -> Callable[..., Any]:
+    """Command decorator passing 'Runner' bound to click.Context's object."""
+
+    @wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        context = click.get_current_context()
+        runner = context.obj.runner
+        assert isinstance(runner, Runner), runner
+        return context.invoke(f, runner, *args, **kwargs)
 
     return wrapper
 
@@ -262,13 +276,15 @@ def cli(context: click.Context, log_level: str) -> None:
     "action", type=click.Choice(["install", "uninstall"]), default="install"
 )
 @click.option("--settings", type=click.Path(exists=True), help="custom settings file")
+@pass_runner
 @pass_ctx
 def site_configure(
     ctx: Context,
+    runner: Runner,
     action: Literal["install", "uninstall"],
     settings: Optional[str],
 ) -> None:
-    with runner(ctx):
+    with runner:
         if action == "install":
             env = f"SETTINGS=@{settings}" if settings else None
             _install.do(ctx, env=env)
@@ -283,37 +299,44 @@ def instance() -> None:
 
 @instance.command("init")
 @helpers.parameters_from_model(interface.Instance)
+@pass_runner
 @pass_ctx
-def instance_init(ctx: Context, instance: interface.Instance) -> None:
+def instance_init(ctx: Context, runner: Runner, instance: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
     if instance.spec(ctx).exists():
         raise click.ClickException("instance already exists")
-    with runner(ctx):
+    with runner:
         instance_mod.apply(ctx, instance)
 
 
 @instance.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_runner
 @pass_ctx
-def instance_apply(ctx: Context, file: IO[str]) -> None:
+def instance_apply(ctx: Context, runner: Runner, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     instance = interface.Instance.parse_yaml(file)
-    with runner(ctx):
+    with runner:
         instance_mod.apply(ctx, instance)
 
 
 @instance.command("alter")
 @helpers.parameters_from_model(interface.Instance, False)
+@pass_runner
 @pass_ctx
 def instance_alter(
-    ctx: Context, name: str, version: Optional[str] = None, **changes: Any
+    ctx: Context,
+    runner: Runner,
+    name: str,
+    version: Optional[str] = None,
+    **changes: Any,
 ) -> None:
     """Alter a PostgreSQL instance"""
     changes = helpers.unnest(interface.Instance, changes)
     values = instance_mod.describe(ctx, name, version).dict()
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
-    with runner(ctx):
+    with runner:
         instance_mod.apply(ctx, altered)
 
 
@@ -358,19 +381,25 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
 @instance.command("drop")
 @name_argument
 @version_argument
+@pass_runner
 @pass_ctx
-def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_drop(
+    ctx: Context, runner: Runner, name: str, version: Optional[str]
+) -> None:
     """Drop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    with runner(ctx):
+    with runner:
         instance_mod.drop(ctx, instance)
 
 
 @instance.command("status")
 @name_argument
 @version_argument
+@pass_runner
 @click.pass_context
-def instance_status(context: click.Context, name: str, version: Optional[str]) -> None:
+def instance_status(
+    context: click.Context, runner: Runner, name: str, version: Optional[str]
+) -> None:
     """Check the status of a PostgreSQL instance.
 
     Output the status string value ('running', 'not running', 'unspecified
@@ -378,7 +407,7 @@ def instance_status(context: click.Context, name: str, version: Optional[str]) -
     """
     ctx = context.obj.ctx
     instance = get_instance(ctx, name, version)
-    with runner(ctx):
+    with runner:
         status = instance_mod.status(ctx, instance)
     click.echo(status.name.replace("_", " "))
     context.exit(status.value)
@@ -388,47 +417,57 @@ def instance_status(context: click.Context, name: str, version: Optional[str]) -
 @name_argument
 @version_argument
 @foreground_option
+@pass_runner
 @pass_ctx
 def instance_start(
-    ctx: Context, name: str, version: Optional[str], foreground: bool
+    ctx: Context, runner: Runner, name: str, version: Optional[str], foreground: bool
 ) -> None:
     """Start a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.not_running)
-    with runner(ctx):
+    with runner:
         instance_mod.start(ctx, instance, foreground=foreground)
 
 
 @instance.command("stop")
 @name_argument
 @version_argument
+@pass_runner
 @pass_ctx
-def instance_stop(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_stop(
+    ctx: Context, runner: Runner, name: str, version: Optional[str]
+) -> None:
     """Stop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    with runner(ctx):
+    with runner:
         instance_mod.stop(ctx, instance)
 
 
 @instance.command("reload")
 @name_argument
 @version_argument
+@pass_runner
 @pass_ctx
-def instance_reload(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_reload(
+    ctx: Context, runner: Runner, name: str, version: Optional[str]
+) -> None:
     """Reload a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    with runner(ctx):
+    with runner:
         instance_mod.reload(ctx, instance)
 
 
 @instance.command("restart")
 @name_argument
 @version_argument
+@pass_runner
 @pass_ctx
-def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_restart(
+    ctx: Context, runner: Runner, name: str, version: Optional[str]
+) -> None:
     """Restart a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
-    with runner(ctx):
+    with runner:
         instance_mod.restart(ctx, instance)
 
 
@@ -559,9 +598,11 @@ def instance_privileges(
     type=click.INT,
     help="number of simultaneous processes or threads to use (from pg_upgrade)",
 )
+@pass_runner
 @pass_ctx
 def instance_upgrade(
     ctx: Context,
+    runner: Runner,
     name: str,
     version: Optional[str],
     newversion: Optional[str],
@@ -572,7 +613,7 @@ def instance_upgrade(
     """Upgrade an instance using pg_upgrade"""
     instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.not_running)
-    with runner(ctx):
+    with runner:
         new_instance = instance_mod.upgrade(
             ctx, instance, version=newversion, name=newname, port=port, jobs=jobs
         )
@@ -592,28 +633,34 @@ def role() -> None:
 @role.command("create")
 @instance_identifier
 @helpers.parameters_from_model(interface.Role)
+@pass_runner
 @pass_ctx
-def role_create(ctx: Context, instance: Instance, role: interface.Role) -> None:
+def role_create(
+    ctx: Context, runner: Runner, instance: Instance, role: interface.Role
+) -> None:
     """Create a role in a PostgreSQL instance"""
     with instance_mod.running(ctx, instance):
         if roles.exists(ctx, instance, role.name):
             raise click.ClickException("role already exists")
-        with runner(ctx):
+        with runner:
             roles.apply(ctx, instance, role)
 
 
 @role.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Role, False)
+@pass_runner
 @pass_ctx
-def role_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
+def role_alter(
+    ctx: Context, runner: Runner, instance: Instance, name: str, **changes: Any
+) -> None:
     """Alter a role in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Role, changes)
     with instance_mod.running(ctx, instance):
         values = roles.describe(ctx, instance, name).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
-        with runner(ctx):
+        with runner:
             roles.apply(ctx, instance, altered)
 
 
@@ -626,11 +673,12 @@ def role_schema() -> None:
 @role.command("apply")
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_runner
 @pass_ctx
-def role_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
+def role_apply(ctx: Context, runner: Runner, instance: Instance, file: IO[str]) -> None:
     """Apply manifest as a role"""
     role = interface.Role.parse_yaml(file)
-    with runner(ctx), instance_mod.running(ctx, instance):
+    with runner, instance_mod.running(ctx, instance):
         roles.apply(ctx, instance, role)
 
 
@@ -687,30 +735,34 @@ def database() -> None:
 @database.command("create")
 @instance_identifier
 @helpers.parameters_from_model(interface.Database)
+@pass_runner
 @pass_ctx
 def database_create(
-    ctx: Context, instance: Instance, database: interface.Database
+    ctx: Context, runner: Runner, instance: Instance, database: interface.Database
 ) -> None:
     """Create a database in a PostgreSQL instance"""
     with instance_mod.running(ctx, instance):
         if databases.exists(ctx, instance, database.name):
             raise click.ClickException("database already exists")
-        with runner(ctx):
+        with runner:
             databases.apply(ctx, instance, database)
 
 
 @database.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Database, False)
+@pass_runner
 @pass_ctx
-def database_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
+def database_alter(
+    ctx: Context, runner: Runner, instance: Instance, name: str, **changes: Any
+) -> None:
     """Alter a database in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Database, changes)
     with instance_mod.running(ctx, instance):
         values = databases.describe(ctx, instance, name).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
-        with runner(ctx):
+        with runner:
             databases.apply(ctx, instance, altered)
 
 
@@ -723,11 +775,14 @@ def database_schema() -> None:
 @database.command("apply")
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_runner
 @pass_ctx
-def database_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
+def database_apply(
+    ctx: Context, runner: Runner, instance: Instance, file: IO[str]
+) -> None:
     """Apply manifest as a database"""
     database = interface.Database.parse_yaml(file)
-    with runner(ctx), instance_mod.running(ctx, instance):
+    with runner, instance_mod.running(ctx, instance):
         databases.apply(ctx, instance, database)
 
 
