@@ -32,7 +32,7 @@ class PrometheusService:
     def system_lookup(cls: Type[T], ctx: BaseContext, instance: "BaseInstance") -> T:
         from .. import prometheus
 
-        return cls(port=prometheus.port(ctx, instance.stanza))
+        return cls(port=prometheus.port(ctx, instance.qualname))
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -46,8 +46,8 @@ class BaseInstance:
         return f"{self.version}/{self.name}"
 
     @property
-    def stanza(self) -> str:
-        """Instance identifier, e.g. 13-main."""
+    def qualname(self) -> str:
+        """Version qualified name, e.g. 13-main."""
         return f"{self.version}-{self.name}"
 
     @property

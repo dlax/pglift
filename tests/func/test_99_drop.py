@@ -49,15 +49,15 @@ def test_prometheus_teardown(ctx, instance_dropped):
     instance, __ = instance_dropped
     prometheus_settings = ctx.settings.prometheus
     configpath = pathlib.Path(
-        str(prometheus_settings.configpath).format(stanza=instance.stanza)
+        str(prometheus_settings.configpath).format(name=instance.qualname)
     )
     queriespath = pathlib.Path(
-        str(prometheus_settings.queriespath).format(stanza=instance.stanza)
+        str(prometheus_settings.queriespath).format(name=instance.qualname)
     )
     assert not configpath.exists()
     assert not queriespath.exists()
     if ctx.settings.service_manager == "systemd":
-        assert not systemd.is_enabled(ctx, prometheus.systemd_unit(instance.stanza))
+        assert not systemd.is_enabled(ctx, prometheus.systemd_unit(instance.qualname))
         with pytest.raises(requests.ConnectionError):
             requests.get("http://0.0.0.0:9187/metrics")
 

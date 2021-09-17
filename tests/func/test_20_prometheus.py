@@ -24,8 +24,8 @@ def config_dict(configpath: Path) -> Dict[str, str]:
 
 def test_configure(ctx, installed, instance, tmp_port_factory):
     prometheus_settings = ctx.settings.prometheus
-    stanza = instance.stanza
-    configpath = Path(str(prometheus_settings.configpath).format(stanza=stanza))
+    name = instance.qualname
+    configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
 
     prometheus_config = config_dict(configpath)
@@ -35,7 +35,7 @@ def test_configure(ctx, installed, instance, tmp_port_factory):
     port = instance.prometheus.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
-    queriespath = Path(str(prometheus_settings.queriespath).format(stanza=stanza))
+    queriespath = Path(str(prometheus_settings.queriespath).format(name=name))
     assert queriespath.exists()
 
     new_port = next(tmp_port_factory)
@@ -59,9 +59,9 @@ def postgres_exporter(ctx, instance, installed, tmp_port_factory):
         dsn += f" password={role.password.get_secret_value()}"
     prometheus.setup(ctx, name, dsn, port)
     prometheus_settings = ctx.settings.prometheus
-    configpath = Path(str(prometheus_settings.configpath).format(stanza=name))
+    configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
-    queriespath = Path(str(prometheus_settings.queriespath).format(stanza=name))
+    queriespath = Path(str(prometheus_settings.queriespath).format(name=name))
     assert queriespath.exists()
 
     yield name, dsn, port
@@ -73,7 +73,7 @@ def postgres_exporter(ctx, instance, installed, tmp_port_factory):
 
 def test_setup(ctx, instance, postgres_exporter):
     name, dsn, port = postgres_exporter
-    configpath = Path(str(ctx.settings.prometheus.configpath).format(stanza=name))
+    configpath = Path(str(ctx.settings.prometheus.configpath).format(name=name))
 
     prometheus_config = config_dict(configpath)
     assert f"port={instance.port}" in prometheus_config["DATA_SOURCE_NAME"]
@@ -144,9 +144,9 @@ def test_apply(ctx, tmp_port_factory):
     prometheus.apply(ctx, m)
 
     prometheus_settings = ctx.settings.prometheus
-    configpath = Path(str(prometheus_settings.configpath).format(stanza="test"))
+    configpath = Path(str(prometheus_settings.configpath).format(name="test"))
     assert configpath.exists()
-    queriespath = Path(str(prometheus_settings.queriespath).format(stanza="test"))
+    queriespath = Path(str(prometheus_settings.queriespath).format(name="test"))
     assert queriespath.exists()
 
     prometheus_config = config_dict(configpath)

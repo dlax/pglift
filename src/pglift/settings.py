@@ -274,15 +274,15 @@ class PrometheusSettings(BaseSettings):
     execpath: Path = Path("/usr/bin/prometheus-postgres-exporter")
     """Path to the postgres_exporter executable."""
 
-    configpath: ConfigPath = ConfigPath("prometheus/postgres_exporter-{stanza}.conf")
+    configpath: ConfigPath = ConfigPath("prometheus/postgres_exporter-{name}.conf")
     """Path to the config file."""
 
     queriespath: ConfigPath = ConfigPath(
-        "prometheus/postgres_exporter_queries-{stanza}.yaml"
+        "prometheus/postgres_exporter_queries-{name}.yaml"
     )
     """Path to the queries file."""
 
-    pid_file: RunPath = RunPath("prometheus/{stanza}.pid")
+    pid_file: RunPath = RunPath("prometheus/{name}.pid")
     """Path to directory where postgres_exporter process PID file will be written."""
 
 

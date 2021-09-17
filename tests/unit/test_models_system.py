@@ -33,8 +33,8 @@ def test_baseinstance_str(pg_version, instance):
     assert str(instance) == f"{pg_version}/test"
 
 
-def test_baseinstance_stanza(pg_version, instance):
-    assert instance.stanza == f"{pg_version}-test"
+def test_baseinstance_qualname(pg_version, instance):
+    assert instance.qualname == f"{pg_version}-test"
 
 
 @pytest.mark.parametrize(

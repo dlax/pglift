@@ -879,10 +879,10 @@ def test_postgres_exporter_start_stop(runner, ctx, instance, action, kwargs):
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
             cli,
-            ["postgres_exporter", action, instance.stanza],
+            ["postgres_exporter", action, instance.qualname],
             obj=ctx,
         )
-    patched.assert_called_once_with(ctx, instance.stanza, **kwargs)
+    patched.assert_called_once_with(ctx, instance.qualname, **kwargs)
     assert result.exit_code == 0, result
 
 

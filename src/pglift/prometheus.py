@@ -12,20 +12,20 @@ from .settings import PrometheusSettings
 from .task import task
 
 
-def _configpath(stanza: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.configpath).format(stanza=stanza))
+def _configpath(name: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.configpath).format(name=name))
 
 
-def _queriespath(stanza: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.queriespath).format(stanza=stanza))
+def _queriespath(name: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.queriespath).format(name=name))
 
 
-def _pidfile(stanza: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.pid_file).format(stanza=stanza))
+def _pidfile(name: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.pid_file).format(name=name))
 
 
-def systemd_unit(stanza: str) -> str:
-    return f"postgres_exporter@{stanza}.service"
+def systemd_unit(name: str) -> str:
+    return f"postgres_exporter@{name}.service"
 
 
 def port(ctx: BaseContext, name: str) -> int:
@@ -130,7 +130,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
         pass
     else:
         raise exceptions.InstanceStateError(
-            f"an instance matching {manifest.name} stanza exists locally"
+            f"instance '{manifest.name}' exists locally"
         )
 
     if manifest.state == interface.PostgresExporter.State.absent:
@@ -163,7 +163,7 @@ def setup_local(
         dsn.append(f"password={role.password.get_secret_value()}")
     if not instance_config.ssl:
         dsn.append("sslmode=disable")
-    setup(ctx, instance.stanza, " ".join(dsn), instance.prometheus.port)
+    setup(ctx, instance.qualname, " ".join(dsn), instance.prometheus.port)
 
 
 @setup_local.revert
@@ -171,7 +171,7 @@ def revert_setup_local(
     ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
 ) -> None:
     """Un-setup Prometheus postgres_exporter for a local instance."""
-    revert_setup(ctx, instance.stanza, "", instance.prometheus.port)
+    revert_setup(ctx, instance.qualname, "", instance.prometheus.port)
 
 
 @hookimpl  # type: ignore[misc]
@@ -215,7 +215,7 @@ def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_start(ctx: BaseContext, instance: Instance) -> None:
     """Start postgres_exporter service."""
-    start(ctx, instance.stanza)
+    start(ctx, instance.qualname)
 
 
 def stop(ctx: BaseContext, name: str) -> None:
@@ -233,7 +233,7 @@ def stop(ctx: BaseContext, name: str) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
-    stop(ctx, instance.stanza)
+    stop(ctx, instance.qualname)
 
 
 @hookimpl  # type: ignore[misc]

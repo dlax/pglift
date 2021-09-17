@@ -53,7 +53,7 @@ def postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
 ) -> None:
     settings = ctx.settings.prometheus
-    configpath = str(settings.configpath).replace("{stanza}", "%i")
+    configpath = str(settings.configpath).replace("{name}", "%i")
     content = systemd.template("postgres_exporter.service").format(
         configpath=configpath,
         execpath=settings.execpath,
