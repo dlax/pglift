@@ -27,7 +27,7 @@ def runner():
 
 @pytest.fixture
 def obj(ctx):
-    return Obj(ctx)
+    return Obj(ctx, None)
 
 
 @pytest.fixture

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from functools import partial, wraps
 from types import ModuleType
@@ -10,6 +11,7 @@ from typing import (
     Any,
     Callable,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -22,10 +24,13 @@ import click
 import pydantic.json
 import rich.console
 import rich.logging
+import rich.text
+import rich.tree
 from click.exceptions import Exit
 from pydantic.utils import deep_update
 from rich.console import Console
 from rich.highlighter import NullHighlighter
+from rich.live import Live
 from rich.table import Table
 from typing_extensions import Literal
 
@@ -38,15 +43,15 @@ from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
-from .task import Runner
+from .task import Displayer, Runner
 
 
 class Obj:
     """Object bound to click.Context"""
 
-    def __init__(self, context: Context) -> None:
+    def __init__(self, context: Context, displayer: Optional[Displayer]) -> None:
         self.ctx = context
-        self.runner = Runner(context)
+        self.runner = Runner(context, displayer)
 
 
 def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -162,6 +167,54 @@ def instance_lookup(
     return get_instance(ctx, name, version)
 
 
+class LiveDisplayer(Live):
+    """Render nested operations as a grid and live update their status.
+
+    >>> from contextlib import suppress
+    >>> with LiveDisplayer(width=50) as d, suppress(ZeroDivisionError):
+    ...     with d.handle("compute something"):
+    ...         x = 1 + 1
+    ...         with d.handle("use the result in another computation"):
+    ...             y = x + 1
+    ...         with d.handle("now, something harder"):
+    ...             z = y / 0
+    ...     with d.handle("should not run"):
+    ...         assert False
+    compute something...........................[FAIL]
+     use the result in another computation......[ OK ]
+     now, something harder......................[FAIL]
+    """
+
+    ok = rich.text.Text("[ OK ]")
+    ok.stylize("green", 1, 5)
+    fail = rich.text.Text("[FAIL]")
+    fail.stylize("red", 1, 5)
+
+    def __init__(self, width: Optional[int] = None) -> None:
+        self.grid = Table.grid()
+        super().__init__(self.grid)
+        self._level = 0
+        self._width = width or self.console.size.width
+
+    @contextmanager
+    def handle(self, msg: str) -> Iterator[None]:
+        """Register 'msg' as the current (running) operation."""
+        text = rich.text.Text(" " * self._level + msg)
+        text.align("left", self._width - 6, ".")
+        self._level += 1
+        self.grid.add_row(text)
+        try:
+            yield None
+        except Exception:
+            tail = self.fail
+            raise
+        else:
+            tail = self.ok
+        finally:
+            text.append_text(tail)
+            self._level -= 1
+
+
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
@@ -267,7 +320,7 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     type=click.Choice(
         ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
     ),
-    default="info",
+    default="warning",
 )
 @click.option(
     "--version",
@@ -297,7 +350,9 @@ def cli(context: click.Context, log_level: str) -> None:
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
-        context.obj = Obj(Context(plugin_manager=pm.PluginManager.get()))
+        context.obj = Obj(
+            Context(plugin_manager=pm.PluginManager.get()), LiveDisplayer()
+        )
     else:
         assert isinstance(context.obj, Obj), context.obj
 

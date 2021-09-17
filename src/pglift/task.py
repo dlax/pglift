@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import functools
 from types import TracebackType
 from typing import (
@@ -8,6 +9,7 @@ from typing import (
     Deque,
     Dict,
     Generic,
+    Iterator,
     Optional,
     Tuple,
     Type,
@@ -15,6 +17,9 @@ from typing import (
     cast,
 )
 
+from typing_extensions import Protocol
+
+from ._compat import nullcontext
 from .types import Logger
 
 A = TypeVar("A", bound=Callable[..., Any])
@@ -22,12 +27,31 @@ A = TypeVar("A", bound=Callable[..., Any])
 Call = Tuple["Task", Tuple[Any, ...], Dict[str, Any]]
 
 
+class Displayer(Protocol):
+    def __enter__(self) -> Any:
+        ...
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        ...
+
+    @contextlib.contextmanager
+    def handle(self, msg: str) -> Iterator[None]:
+        ...
+
+
 class Task(Generic[A]):
 
     _calls: ClassVar[Optional[Deque[Call]]] = None
+    displayer: ClassVar[Optional[Displayer]] = None
 
     def __init__(self, title: str, action: A) -> None:
-        self.title = title
+        assert title, "expecting a non-empty title"
+        self.title = title[0].upper() + title[1:]
         self.action = action
         self.revert_action: Optional[A] = None
         functools.update_wrapper(self, action)
@@ -38,9 +62,20 @@ class Task(Generic[A]):
     def _call(self, *args: Any, **kwargs: Any) -> Any:
         if self._calls is not None:
             self._calls.append((self, args, kwargs))
-        return self.action(*args, **kwargs)
+        with self.display(self.title):
+            return self.action(*args, **kwargs)
 
     __call__ = cast(A, _call)
+
+    @contextlib.contextmanager
+    def display(self, title: str) -> Iterator[None]:
+        if self.displayer is None:
+            cm = nullcontext()
+        else:
+            cm = self.displayer.handle(title)
+
+        with cm:
+            yield None
 
     def revert(self, title: str) -> Callable[[A], A]:
         """Decorator to register a 'revert' callback function.
@@ -48,10 +83,17 @@ class Task(Generic[A]):
         The revert function must accept the same arguments than its respective
         action.
         """
+        title = title[0].upper() + title[1:]
 
         def decorator(revertfn: A) -> A:
-            self.revert_action = revertfn
-            return revertfn
+            @functools.wraps(revertfn)
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                with self.display(title):
+                    return revertfn(*args, **kwargs)
+
+            w = cast(A, wrapper)
+            self.revert_action = w
+            return w
 
         return decorator
 
@@ -66,13 +108,18 @@ def task(title: str) -> Callable[[A], Task[A]]:
 class Runner:
     """Context manager handling possible revert of a chain to task calls."""
 
-    def __init__(self, logger: Logger):
+    def __init__(self, logger: Logger, displayer: Optional[Displayer] = None):
         self.logger = logger
+        self.displayer = displayer
 
     def __enter__(self) -> None:
         if Task._calls is not None:
             raise RuntimeError("inconsistent task state")
         Task._calls = collections.deque()
+
+        Task.displayer = self.displayer
+        if self.displayer is not None:
+            self.displayer.__enter__()
 
     def __exit__(
         self,
@@ -91,3 +138,7 @@ class Runner:
                 if t.revert_action:
                     t.revert_action(*args, **kwargs)
         Task._calls = None
+        Task.displayer = None
+
+        if self.displayer is not None:
+            self.displayer.__exit__(exc_type, exc_value, traceback)

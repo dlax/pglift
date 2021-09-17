@@ -1,3 +1,4 @@
+import contextlib
 import shlex
 from typing import Iterable
 
@@ -13,5 +14,13 @@ try:
     from importlib.metadata import version
 except ImportError:
     from importlib_metadata import version  # type: ignore[no-redef]
+
+try:
+    nullcontext = contextlib.nullcontext  # type: ignore[attr-define]
+except AttributeError:
+    import contextlib2
+
+    nullcontext = contextlib2.nullcontext
+
 
 __all__ = ["version"]
