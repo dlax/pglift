@@ -5,14 +5,26 @@ import time
 from datetime import datetime
 from functools import partial, wraps
 from types import ModuleType
-from typing import IO, Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, cast
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 import click
 import colorlog
 import pydantic.json
 from click.exceptions import Exit
 from pydantic.utils import deep_update
-from tabulate import tabulate
+from rich.console import Console
+from rich.table import Table
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
@@ -151,9 +163,7 @@ def instance_lookup(
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
-def print_table_for(
-    items: Iterable[_M], display: Callable[[str], None] = click.echo
-) -> None:
+def print_table_for(items: Iterable[_M], title: Optional[str] = None) -> None:
     """Render a list of items as a table.
 
     >>> class Address(pydantic.BaseModel):
@@ -165,26 +175,41 @@ def print_table_for(
     ...     address: Address
     >>> items = [Person(name="bob",
     ...                 address=Address(street="main street", zip=31234, city="luz"))]
-    >>> print_table_for(items, display=print)
-    name    address        address  address
-            street             zip  city
-    ------  -----------  ---------  ---------
-    bob     main street      31234  luz
+    >>> print_table_for(items, title="address book")  # doctest: +NORMALIZE_WHITESPACE
+                   address book
+    ┏━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+    ┃ name ┃ address     ┃ address ┃ address ┃
+    ┃      ┃ street      ┃ zip     ┃ city    ┃
+    ┡━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+    │ bob  │ main street │ 31234   │ luz     │
+    └──────┴─────────────┴─────────┴─────────┘
     """
-    values = []
+    table = None
+    headers: List[str] = []
+    rows = []
     for item in items:
         d = item.dict(by_alias=True)
+        row = []
+        hdr = []
         for k, v in list(d.items()):
             if isinstance(v, dict):
                 for sk, sv in v.items():
                     mk = f"{k}\n{sk}"
-                    assert mk not in d, mk
-                    d[mk] = sv
-                del d[k]
-        values.append(d)
-    content = tabulate(values, headers="keys")
-    if content:
-        display(content)
+                    hdr.append(mk)
+                    row.append(sv)
+            else:
+                hdr.append(k)
+                row.append(v)
+        if not headers:
+            headers = hdr[:]
+        rows.append([str(v) for v in row])
+    if not rows:
+        return
+    table = Table(*headers, title=title)
+    for row in rows:
+        table.add_row(*row)
+    console = Console()
+    console.print(table)
 
 
 def print_json_for(
@@ -546,7 +571,7 @@ def instance_restore(
     instance = get_instance(ctx, name, version)
     if list_only:
         backups = pgbackrest.iter_backups(ctx, instance)
-        print_table_for(backups)
+        print_table_for(backups, title=f"Available backups for instance {instance}")
     else:
         instance_mod.check_status(ctx, instance, Status.not_running)
         if label is not None and date is not None:
@@ -583,7 +608,7 @@ def instance_privileges(
     if as_json:
         print_json_for(prvlgs)
     else:
-        print_table_for(prvlgs)
+        print_table_for(prvlgs, title=f"Default privileges on instance {instance}")
 
 
 @instance.command("upgrade")

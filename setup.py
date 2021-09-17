@@ -9,7 +9,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 extras_cli = [
     "click",
     "colorlog",
-    "tabulate",
+    "rich",
 ]
 extras_runtime_all = extras_cli
 extras_typing = [

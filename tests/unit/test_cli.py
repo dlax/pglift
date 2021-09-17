@@ -230,17 +230,6 @@ def test_instance_list(runner, instance, ctx, obj):
     name, version = instance.name, instance.version
     port = instance.config().port
     path = instance.path
-    expected = [
-        "name version port path status",
-        "-----------------------------",
-        f"{name} {version} {port} {path} not_running",
-    ]
-    result = runner.invoke(cli, ["instance", "list"], obj=obj)
-    assert result.exit_code == 0
-    lines = result.output.splitlines()
-    assert lines[0].split() == expected[0].split()
-    assert lines[2].split() == expected[2].split()
-
     expected_list_as_json = [
         {
             "name": name,
@@ -357,11 +346,16 @@ def test_instance_restore_list(runner, instance, obj):
     assert result.exit_code == 0, result
     assert iter_backups.call_count == 1
 
-    assert result.stdout == (
-        "label      size    repo_size  datetime             type    databases\n"
-        "-------  ------  -----------  -------------------  ------  --------------\n"
-        "foo          12           13  2012-01-01 00:00:00  incr    postgres, prod\n"
-    )
+    assert [
+        v.strip() for v in result.stdout.splitlines()[-2].split("│") if v.strip()
+    ] == [
+        "foo",
+        "12.0",
+        "13.0",
+        "2012-01-01 00:00:00",
+        "incr",
+        "postgres, prod",
+    ]
 
 
 def test_instance_restore(runner, instance, ctx, obj):
