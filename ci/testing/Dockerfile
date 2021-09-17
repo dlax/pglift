@@ -23,6 +23,8 @@ RUN apt-get -qq update && \
 	postgresql-13 \
 	pgbackrest \
 	prometheus-postgres-exporter \
+	&& pg_dropcluster 10 main \
+	&& pg_dropcluster 13 main \
 	&& rm -rf /var/lib/apt/lists/*
 RUN pip3 install tox
 RUN useradd --create-home runner
