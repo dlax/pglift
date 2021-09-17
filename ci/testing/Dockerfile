@@ -6,7 +6,7 @@ RUN apt-get -qq update && \
 	ca-certificates \
 	gnupg \
 	lsb-release \
-	;
+	&& rm -rf /var/lib/apt/lists/*
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN apt-get -qq update && \
@@ -23,7 +23,7 @@ RUN apt-get -qq update && \
 	postgresql-13 \
 	pgbackrest \
 	prometheus-postgres-exporter \
-	;
+	&& rm -rf /var/lib/apt/lists/*
 RUN pip3 install tox
 RUN useradd --create-home runner
 
