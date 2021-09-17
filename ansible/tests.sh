@@ -50,10 +50,7 @@ list_timers() {
     fi
 }
 check_postgres_exporter() {
-    if type systemctl > /dev/null;
-    then
-        curl -f -I "http://localhost:$1/metrics"
-    fi
+    nc -w1 -z localhost "$1"
 }
 
 set -x
