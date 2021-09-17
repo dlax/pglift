@@ -6,11 +6,11 @@ from pglift import task
 
 
 def test_task():
-    @task.task
+    @task.task("negate")
     def neg(x: int) -> int:
         return -x
 
-    assert re.match(r"<task 'neg' at 0x(\d+)>" "", repr(neg))
+    assert re.match(r"<Task 'neg' at 0x(\d+)>" "", repr(neg))
 
     assert neg(1) == -1
     assert neg.revert_action is None
@@ -31,15 +31,15 @@ def test_runner_state(logger):
 
     with pytest.raises(ValueError, match="expected"):
         with task.runner(logger):
-            assert task.task._calls is not None
+            assert task.Task._calls is not None
             raise ValueError("expected")
-    assert task.task._calls is None
+    assert task.Task._calls is None
 
 
 def test_runner(logger):
     values = set()
 
-    @task.task
+    @task.task("add numbers")
     def add(x: int, fail: bool = False) -> None:
         values.add(x)
         if fail:

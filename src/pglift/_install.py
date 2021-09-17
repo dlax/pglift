@@ -20,7 +20,7 @@ def with_header(content: str, header: str) -> str:
     return content
 
 
-@task
+@task("install systemd template unit for PostgreSQL")
 def postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
@@ -48,7 +48,7 @@ def revert_postgresql_systemd_unit_template(
     systemd.uninstall("postgresql@.service", ctx.settings.systemd.unit_path, logger=ctx)
 
 
-@task
+@task("install systemd template unit for Prometheus postgres_exporter")
 def postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
 ) -> None:
@@ -75,7 +75,7 @@ def revert_postgres_exporter_systemd_unit_template(
     )
 
 
-@task
+@task("install systemd template unit and timer for PostgreSQL backups")
 def postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:

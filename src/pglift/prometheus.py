@@ -64,7 +64,7 @@ def port(ctx: BaseContext, name: str) -> int:
     return int(value.strip())
 
 
-@task
+@task("setup Prometheus postgres_exporter service")
 def setup(
     ctx: BaseContext,
     name: str,
@@ -141,7 +141,7 @@ def revert_setup(
         queriespath.unlink()
 
 
-@task
+@task("check existence of postgres_exporter service locally")
 def exists(ctx: BaseContext, name: str) -> bool:
     """Return True if a postgres_exporter with `name` exists locally."""
     try:
@@ -183,7 +183,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
             stop(ctx, manifest.name)
 
 
-@task
+@task("drop postgres_exporter service")
 def drop(ctx: BaseContext, name: str) -> None:
     """Remove a postgres_exporter service."""
     if not exists(ctx, name):
@@ -194,7 +194,7 @@ def drop(ctx: BaseContext, name: str) -> None:
     revert_setup(ctx, name)
 
 
-@task
+@task("set up postgres_exporter for a local PostgreSQL instance")
 def setup_local(
     ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
 ) -> None:

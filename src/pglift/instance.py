@@ -102,7 +102,7 @@ def init_replication(
         shutil.rmtree(instance.datadir / "conf.pglift.d", ignore_errors=True)
 
 
-@task
+@task("initialize PostgreSQL instance")
 def init(ctx: BaseContext, instance: InstanceSpec) -> None:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
@@ -162,7 +162,7 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
             pgroot.rmdir()
 
 
-@task
+@task("configure PostgreSQL instance")
 def configure(
     ctx: BaseContext,
     instance: InstanceSpec,
@@ -417,7 +417,7 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
     ident_path.write_text(ident)
 
 
-@task
+@task("start PostgreSQL instance")
 def start(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -460,7 +460,7 @@ def start(
         ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
 
-@task
+@task("get PostgreSQL instance status")
 def status(ctx: BaseContext, instance: BaseInstance) -> Status:
     """Return the status of an instance."""
     return ctx.pg_ctl(instance.version).status(instance.datadir)
@@ -476,7 +476,7 @@ def check_status(ctx: BaseContext, instance: BaseInstance, expected: Status) -> 
         raise exceptions.InstanceStateError(f"instance is {st.name}")
 
 
-@task
+@task("stop PostgreSQL instance")
 def stop(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -504,7 +504,7 @@ def stop(
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 
 
-@task
+@task("restart PostgreSQL instance")
 def restart(
     ctx: BaseContext,
     instance: Instance,
@@ -520,7 +520,7 @@ def restart(
         systemd.restart(ctx, systemd_unit(instance))
 
 
-@task
+@task("reload PostgreSQL instance")
 def reload(
     ctx: BaseContext,
     instance: Instance,

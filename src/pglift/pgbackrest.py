@@ -87,7 +87,7 @@ def backup_info(
     return json.loads(r.stdout)  # type: ignore[no-any-return]
 
 
-@task
+@task("setup pgBackRest")
 def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     """Setup pgBackRest"""
     settings = ctx.settings.pgbackrest
@@ -181,7 +181,7 @@ def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
         pgconfigfile.unlink()
 
 
-@task
+@task("initialize pgBackRest repository")
 def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     settings = ctx.settings.pgbackrest
     info_json = backup_info(ctx, instance)
@@ -254,7 +254,7 @@ def backup_command(
     return make_cmd(instance, instance.settings.pgbackrest, *args)
 
 
-@task
+@task("backup instance with pgBackRest")
 def backup(
     ctx: BaseContext,
     instance: BaseInstance,
@@ -282,7 +282,7 @@ def expire_command(instance: BaseInstance) -> List[str]:
     )
 
 
-@task
+@task("expire pgBackRest backups")
 def expire(ctx: BaseContext, instance: BaseInstance) -> None:
     """Expire a backup of ``instance``.
 
