@@ -330,13 +330,20 @@ def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None
     """Terminate program matching PID in 'pidfile'.
 
     Upon successful termination, the 'pidfile' is removed.
-
-    :raises ~exceptions.FileNotFoundError: if pidfile path does not exist.
+    No-op if no process matching PID from 'pidfile' is running.
     """
-    try:
-        pid = int(pidfile.read_text())
-    except FileNotFoundError as e:
-        raise exceptions.FileNotFoundError(str(e)) from e
+    status = status_program(pidfile)
+    if status == Status.not_running:
+        if logger is not None:
+            logger.warning("program from %s not running", pidfile)
+        return
+    elif status == Status.dangling:
+        if logger:
+            logger.debug("removing dangling PID file %s", pidfile)
+        pidfile.unlink()
+        return
+
+    pid = int(pidfile.read_text())
     if logger:
         logger.info("terminating process %d", pid)
     try:

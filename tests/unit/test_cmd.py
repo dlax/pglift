@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pglift import cmd
-from pglift.exceptions import CommandError, FileNotFoundError, SystemError
+from pglift.exceptions import CommandError, SystemError
 
 
 def test_execute_program(caplog, tmp_path):
@@ -54,6 +54,7 @@ def test_start_program_terminate_program_status_program(caplog, tmp_path):
     pidfile = tmp_path / "invalid.pid"
     pidfile.write_text("innnnvaaaaaaaaaaliiiiiiiiiiid")
     assert cmd.status_program(pidfile) == cmd.Status.dangling
+    caplog.clear()
     with pytest.raises(CommandError), caplog.at_level(logging.WARNING, logger=__name__):
         cmd.start_program(
             ["sleep", "well"], pidfile, logger=logger, env={"LANG": "C", "LC_ALL": "C"}
@@ -63,5 +64,7 @@ def test_start_program_terminate_program_status_program(caplog, tmp_path):
     assert "sleep: invalid time interval 'well'" in caplog.records[1].message
 
     pidfile = tmp_path / "notfound"
-    with pytest.raises(FileNotFoundError):
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger=__name__):
         cmd.terminate_program(pidfile, logger=logger)
+    assert f"program from {pidfile} not running" in caplog.records[0].message
