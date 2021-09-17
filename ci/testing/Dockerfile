@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.6-slim
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && \
 	apt-get -qq -y install --no-install-recommends \
@@ -14,6 +14,7 @@ RUN apt-get -qq update && \
 	build-essential \
 	git \
 	libpq-dev \
+	procps \
 	python3-dev \
 	python3-pip \
 	python3-venv \
