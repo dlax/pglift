@@ -25,12 +25,12 @@ def test_task():
 
 def test_runner_state(logger):
     with pytest.raises(RuntimeError, match="inconsistent task state"):
-        with task.runner(logger):
-            with task.runner(logger):
+        with task.Runner(logger):
+            with task.Runner(logger):
                 pass
 
     with pytest.raises(ValueError, match="expected"):
-        with task.runner(logger):
+        with task.Runner(logger):
             assert task.Task._calls is not None
             raise ValueError("expected")
     assert task.Task._calls is None
@@ -49,7 +49,7 @@ def test_runner(logger):
     assert values == {1}
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.runner(logger):
+        with task.Runner(logger):
             add(2, fail=True)
     # no revert action
     assert values == {1, 2}
@@ -62,7 +62,7 @@ def test_runner(logger):
             pass
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.runner(logger):
+        with task.Runner(logger):
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2}
@@ -73,7 +73,7 @@ def test_runner(logger):
             raise ValueError("failed to fail")
 
     with pytest.raises(ValueError, match="failed to fail"):
-        with task.runner(logger):
+        with task.Runner(logger):
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2, 3, 4}

@@ -57,7 +57,7 @@ from pglift import prometheus
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface
 from pglift.pm import PluginManager
-from pglift.task import runner
+from pglift.task import Runner
 
 
 def run_module() -> None:
@@ -78,7 +78,7 @@ def run_module() -> None:
         module.exit_json(**result)
 
     try:
-        with runner(ctx):
+        with Runner(ctx):
             prometheus.apply(ctx, exporter)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

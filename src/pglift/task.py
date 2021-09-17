@@ -1,6 +1,6 @@
 import collections
-import contextlib
 import functools
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -8,9 +8,9 @@ from typing import (
     Deque,
     Dict,
     Generic,
-    Iterator,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     cast,
 )
@@ -63,24 +63,31 @@ def task(title: str) -> Callable[[A], Task[A]]:
     return mktask
 
 
-@contextlib.contextmanager
-def runner(logger: Logger) -> Iterator[None]:
+class Runner:
     """Context manager handling possible revert of a chain to task calls."""
-    if Task._calls is not None:
-        raise RuntimeError("inconsistent task state")
-    Task._calls = collections.deque()
 
-    try:
-        yield None
-    except Exception as exc:
-        logger.exception(str(exc))
-        while True:
-            try:
-                t, args, kwargs = Task._calls.pop()
-            except IndexError:
-                break
-            if t.revert_action:
-                t.revert_action(*args, **kwargs)
-        raise exc from None
-    finally:
+    def __init__(self, logger: Logger):
+        self.logger = logger
+
+    def __enter__(self) -> None:
+        if Task._calls is not None:
+            raise RuntimeError("inconsistent task state")
+        Task._calls = collections.deque()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        if exc_value is not None:
+            self.logger.exception(str(exc_value))
+            assert Task._calls is not None
+            while True:
+                try:
+                    t, args, kwargs = Task._calls.pop()
+                except IndexError:
+                    break
+                if t.revert_action:
+                    t.revert_action(*args, **kwargs)
         Task._calls = None

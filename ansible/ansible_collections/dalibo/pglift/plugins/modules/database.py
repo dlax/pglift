@@ -56,7 +56,7 @@ from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
 from pglift.pm import PluginManager
-from pglift.task import runner
+from pglift.task import Runner
 
 
 def run_module() -> None:
@@ -85,7 +85,7 @@ def run_module() -> None:
 
     try:
         instance = system.Instance.system_lookup(ctx, (i_name, i_version))
-        with runner(ctx), instance_mod.running(ctx, instance):
+        with Runner(ctx), instance_mod.running(ctx, instance):
             databases.apply(ctx, instance, database)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

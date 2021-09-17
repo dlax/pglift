@@ -24,7 +24,7 @@ from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
-from .task import runner
+from .task import Runner as runner
 
 
 class Obj:
