@@ -50,7 +50,7 @@ list_timers() {
     fi
 }
 check_postgres_exporter() {
-    nc -w1 -z localhost "$1"
+    nc -v -w1 -z localhost "$1"
 }
 
 set -x
