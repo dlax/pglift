@@ -486,11 +486,14 @@ def stop(
     if run_hooks and not isinstance(instance, Instance):
         raise TypeError("expecting a full instance")
 
-    ctx.info("stopping instance %s", instance)
-    if ctx.settings.service_manager is None:
-        ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
-    elif ctx.settings.service_manager == "systemd":
-        systemd.stop(ctx, systemd_unit(instance))
+    if status(ctx, instance) == Status.not_running:
+        ctx.warning("instance %s is already stopped", instance)
+    else:
+        ctx.info("stopping instance %s", instance)
+        if ctx.settings.service_manager is None:
+            ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
+        elif ctx.settings.service_manager == "systemd":
+            systemd.stop(ctx, systemd_unit(instance))
     if run_hooks and wait:
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 

@@ -1,4 +1,5 @@
 import contextlib
+import logging
 from pathlib import Path
 from typing import List
 
@@ -110,7 +111,7 @@ def test_auth(ctx, instance):
     assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
 
 
-def test_start_stop_restart_running_stopped(ctx, instance, tmp_path):
+def test_start_stop_restart_running_stopped(ctx, instance, tmp_path, caplog):
     i = instance
     use_systemd = ctx.settings.service_manager == "systemd"
     if use_systemd:
@@ -123,6 +124,13 @@ def test_start_stop_restart_running_stopped(ctx, instance, tmp_path):
             assert systemd.is_active(ctx, instance_mod.systemd_unit(i))
     finally:
         instance_mod.stop(ctx, i)
+
+        # Stopping a non-running instance is a no-op.
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger="pglift"):
+            instance_mod.stop(ctx, i)
+        assert f"instance {instance} is already stopped" in caplog.records[0].message
+
     assert instance_mod.status(ctx, i) == Status.not_running
     if use_systemd:
         assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
