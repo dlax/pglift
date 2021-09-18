@@ -754,6 +754,14 @@ def postgres_exporter_install(
     prometheus.apply(ctx, postgresexporter)
 
 
+@postgres_exporter.command("uninstall")
+@click.argument("name")
+@click.pass_obj
+def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
+    """Uninstall the service."""
+    prometheus.drop(ctx, name)
+
+
 @postgres_exporter.command("start")
 @click.argument("name")
 @foreground_option

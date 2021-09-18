@@ -922,3 +922,14 @@ def test_postgres_exporter_install(runner, ctx):
         ctx,
         interface.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
     )
+
+
+def test_postgres_exporter_uninstall(runner, ctx):
+    with patch.object(prometheus, "drop") as drop:
+        result = runner.invoke(
+            cli,
+            ["postgres_exporter", "uninstall", "123-exp"],
+            obj=ctx,
+        )
+    assert result.exit_code == 0
+    drop.assert_called_once_with(ctx, "123-exp")
