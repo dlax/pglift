@@ -40,6 +40,6 @@ def test_instance_spec(ctx):
 
 def test_postgresexporter():
     m = interface.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
-    assert m.dsn.get_secret_value() == "dbname=postgres"
+    assert m.dsn == "dbname=postgres"
     with pytest.raises(pydantic.ValidationError):
         interface.PostgresExporter(dsn="x=y", port=9876)

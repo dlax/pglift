@@ -242,7 +242,8 @@ class PostgresExporter(Manifest):
         absent = enum.auto()
 
     name: str = Field(description="locally unique identifier of the service")
-    dsn: SecretStr = Field(description="connection string of target instance")
+    dsn: str = Field(description="connection string of target instance")
+    password: Optional[SecretStr] = Field(description="connection password")
     port: int = Field(description="TCP port for the web interface and telemetry")
     state: State = Field(
         default=State.started,
@@ -270,10 +271,9 @@ class PostgresExporter(Manifest):
         return v
 
     @validator("dsn")
-    def __validate_dsn_(cls, value: SecretStr) -> SecretStr:
-        v = value.get_secret_value()
+    def __validate_dsn_(cls, value: str) -> str:
         try:
-            parse_dsn(v)
+            parse_dsn(value)
         except psycopg2.ProgrammingError as e:
             raise ValueError(str(e)) from e
         return value

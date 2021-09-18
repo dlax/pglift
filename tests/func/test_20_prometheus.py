@@ -57,9 +57,10 @@ def postgres_exporter(ctx, instance, installed, tmp_port_factory):
     host = instance.config().get("unix_socket_directories")
     if host:
         dsn += f" host={host}"
+    password = None
     if role.password:
-        dsn += f" password={role.password.get_secret_value()}"
-    prometheus.setup(ctx, name, dsn, port)
+        password = role.password.get_secret_value()
+    prometheus.setup(ctx, name, dsn=dsn, password=password, port=port)
     prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()

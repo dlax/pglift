@@ -13,7 +13,9 @@ installation commands to setup a postgres_exporter service on a remote host:
 
 .. code-block:: console
 
-    $ pglift postgres_exporter install dbserver "host=dbserver.example.com user=monitoring password=s3kret" 9188 --state=stopped
+    $ pglift postgres_exporter install dbserver "host=dbserver.example.com user=monitoring" 9188 --state=stopped --password
+    Password:
+    Repeat for confirmation:
     $ pglift postgres_exporter start --foreground dbserver
     INFO[0000] Established new database connection to "dbserver.example.com:5432".  source="postgres_exporter.go:878"
     ...
@@ -34,7 +36,8 @@ Example task:
     tasks:
       - dalibo.pglift.postgres_exporter:
           name: 13-main  # usually a reference to target instance
-          dsn: "port=5455 host=dbserver.example.com role=monitoring password=m0n1tor"
+          dsn: "port=5455 host=dbserver.example.com role=monitoring"
+          password: "m0n 1tor"
           port: 9871
 
 Python API

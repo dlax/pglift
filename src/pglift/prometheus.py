@@ -1,6 +1,6 @@
 import shlex
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pgtoolkit.conf import Configuration
 
@@ -61,15 +61,24 @@ def port(ctx: BaseContext, name: str) -> int:
 
 
 @task
-def setup(ctx: BaseContext, name: str, dsn: str = "", port: int = default_port) -> None:
+def setup(
+    ctx: BaseContext,
+    name: str,
+    dsn: str = "",
+    password: Optional[str] = None,
+    port: int = default_port,
+) -> None:
     """Set up a Prometheus postgres_exporter service for an instance.
 
     :param name: a (locally unique) name for the service.
     :param dsn: connection info string to target instance.
+    :param password: connection password.
     :param port: TCP port for the web interface and telemetry of postgres_exporter.
     """
     settings = ctx.settings.prometheus
-    config = [f"DATA_SOURCE_NAME={dsn}"]
+    if password is not None:
+        dsn += f" password={password}"
+    config = [f"DATA_SOURCE_NAME={dsn.strip()}"]
     appname = f"postgres_exporter-{name}"
     log_options = ["--log.level=info"]
     if ctx.settings.service_manager == "systemd":
@@ -105,7 +114,11 @@ def setup(ctx: BaseContext, name: str, dsn: str = "", port: int = default_port) 
 
 @setup.revert
 def revert_setup(
-    ctx: BaseContext, name: str, dsn: str = "", port: int = default_port
+    ctx: BaseContext,
+    name: str,
+    dsn: str = "",
+    password: Optional[str] = None,
+    port: int = default_port,
 ) -> None:
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(name)
@@ -152,7 +165,10 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
     else:
         # TODO: detect if setup() actually need to be called by comparing
         # manifest with system state.
-        setup(ctx, manifest.name, manifest.dsn.get_secret_value(), manifest.port)
+        password = None
+        if manifest.password:
+            password = manifest.password.get_secret_value()
+        setup(ctx, manifest.name, manifest.dsn, password, manifest.port)
         if manifest.state == interface.PostgresExporter.State.started:
             start(ctx, manifest.name)
         elif manifest.state == interface.PostgresExporter.State.stopped:
@@ -183,11 +199,12 @@ def setup_local(
     if host:
         dsn.append(f"host={host}")
     dsn.append(f"user={role.name}")
-    if role.password:
-        dsn.append(f"password={role.password.get_secret_value()}")
     if not instance_config.ssl:
         dsn.append("sslmode=disable")
-    setup(ctx, instance.qualname, " ".join(dsn), instance.prometheus.port)
+    password = None
+    if role.password:
+        password = role.password.get_secret_value()
+    setup(ctx, instance.qualname, " ".join(dsn), password, instance.prometheus.port)
 
 
 @setup_local.revert

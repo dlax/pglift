@@ -3,7 +3,6 @@
     "description": [
       "connection string of target instance"
     ],
-    "no_log": true,
     "required": true,
     "type": "str"
   },
@@ -12,6 +11,13 @@
       "locally unique identifier of the service"
     ],
     "required": true,
+    "type": "str"
+  },
+  "password": {
+    "description": [
+      "connection password"
+    ],
+    "no_log": true,
     "type": "str"
   },
   "port": {
