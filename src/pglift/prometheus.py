@@ -138,8 +138,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
         )
 
     if manifest.state == interface.PostgresExporter.State.absent:
-        stop(ctx, manifest.name)
-        revert_setup(ctx, manifest.name)
+        drop(ctx, manifest.name)
     else:
         # TODO: detect if setup() actually need to be called by comparing
         # manifest with system state.
@@ -148,6 +147,13 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
             start(ctx, manifest.name)
         elif manifest.state == interface.PostgresExporter.State.stopped:
             stop(ctx, manifest.name)
+
+
+@task
+def drop(ctx: BaseContext, name: str) -> None:
+    """Remove a postgres_exporter service."""
+    stop(ctx, name)
+    revert_setup(ctx, name)
 
 
 @task

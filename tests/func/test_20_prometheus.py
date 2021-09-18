@@ -7,6 +7,7 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
 from pglift.models import interface
@@ -162,3 +163,12 @@ def test_apply(ctx, tmp_port_factory):
     )
     assert not configpath.exists()
     assert not queriespath.exists()
+
+
+def test_drop(ctx, tmp_port_factory):
+    port = next(tmp_port_factory)
+    prometheus.setup(ctx, "dropme", port=port)
+    assert prometheus.port(ctx, "dropme") == port
+    prometheus.drop(ctx, "dropme")
+    with pytest.raises(exceptions.FileNotFoundError, match="postgres_exporter config"):
+        prometheus.port(ctx, "dropme")
