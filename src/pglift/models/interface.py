@@ -244,7 +244,11 @@ class PostgresExporter(Manifest):
     name: str = Field(description="locally unique identifier of the service")
     dsn: SecretStr = Field(description="connection string of target instance")
     port: int = Field(description="TCP port for the web interface and telemetry")
-    state: State = Field(default=State.started, description="runtime state")
+    state: State = Field(
+        default=State.started,
+        description="runtime state",
+        cli={"choices": [State.started.value, State.stopped.value]},
+    )
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:
