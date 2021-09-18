@@ -66,7 +66,7 @@ def postgres_exporter(ctx, instance, installed, tmp_port_factory):
 
     yield name, dsn, port
 
-    prometheus.revert_setup(ctx, name, "whatever", port)
+    prometheus.revert_setup(ctx, name)
     assert not configpath.exists()
     assert not queriespath.exists()
 

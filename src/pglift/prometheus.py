@@ -4,7 +4,9 @@ from typing import Any, Dict
 
 from pgtoolkit.conf import Configuration
 
-from . import cmd, exceptions, hookimpl, systemd
+from . import cmd, exceptions, hookimpl
+from . import prometheus_default_port as default_port
+from . import systemd
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance, InstanceSpec, PostgreSQLInstance
@@ -59,7 +61,7 @@ def port(ctx: BaseContext, name: str) -> int:
 
 
 @task
-def setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
+def setup(ctx: BaseContext, name: str, dsn: str = "", port: int = default_port) -> None:
     """Set up a Prometheus postgres_exporter service for an instance.
 
     :param name: a (locally unique) name for the service.
@@ -102,7 +104,9 @@ def setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
 
 
 @setup.revert
-def revert_setup(ctx: BaseContext, name: str, dsn: str, port: int) -> None:
+def revert_setup(
+    ctx: BaseContext, name: str, dsn: str = "", port: int = default_port
+) -> None:
     if ctx.settings.service_manager == "systemd":
         unit = systemd_unit(name)
         systemd.disable(ctx, unit, now=True)
@@ -135,7 +139,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
 
     if manifest.state == interface.PostgresExporter.State.absent:
         stop(ctx, manifest.name)
-        revert_setup(ctx, manifest.name, manifest.dsn.get_secret_value(), manifest.port)
+        revert_setup(ctx, manifest.name)
     else:
         # TODO: detect if setup() actually need to be called by comparing
         # manifest with system state.
@@ -171,7 +175,7 @@ def revert_setup_local(
     ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
 ) -> None:
     """Un-setup Prometheus postgres_exporter for a local instance."""
-    revert_setup(ctx, instance.qualname, "", instance.prometheus.port)
+    revert_setup(ctx, instance.qualname)
 
 
 @hookimpl  # type: ignore[misc]
