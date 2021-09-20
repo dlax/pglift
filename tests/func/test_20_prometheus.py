@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Dict
 
@@ -165,10 +166,16 @@ def test_apply(ctx, tmp_port_factory):
     assert not queriespath.exists()
 
 
-def test_drop(ctx, tmp_port_factory):
+def test_drop_exists(ctx, tmp_port_factory, caplog):
     port = next(tmp_port_factory)
     prometheus.setup(ctx, "dropme", port=port)
     assert prometheus.port(ctx, "dropme") == port
+    assert prometheus.exists(ctx, "dropme")
     prometheus.drop(ctx, "dropme")
+    assert not prometheus.exists(ctx, "dropme")
     with pytest.raises(exceptions.FileNotFoundError, match="postgres_exporter config"):
         prometheus.port(ctx, "dropme")
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="pglift"):
+        prometheus.drop(ctx, "dropme")
+    assert caplog.records[0].message == "no postgres_exporter service 'dropme' found"

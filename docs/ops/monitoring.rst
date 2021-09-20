@@ -38,6 +38,7 @@ monitoring management using `Prometheus postgres_exporter`_:
 .. autofunction:: setup
 .. autofunction:: drop
 .. autofunction:: apply
+.. autofunction:: exists
 .. autofunction:: port
 .. autofunction:: start
 .. autofunction:: stop

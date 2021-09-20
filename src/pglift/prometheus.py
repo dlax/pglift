@@ -122,6 +122,16 @@ def revert_setup(
         queriespath.unlink()
 
 
+@task
+def exists(ctx: BaseContext, name: str) -> bool:
+    """Return True if a postgres_exporter with `name` exists locally."""
+    try:
+        port(ctx, name)
+    except exceptions.FileNotFoundError:
+        return False
+    return True
+
+
 def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
     """Apply state described by specified manifest as a postgres_exporter
     service for a non-local instance.
@@ -152,6 +162,10 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
 @task
 def drop(ctx: BaseContext, name: str) -> None:
     """Remove a postgres_exporter service."""
+    if not exists(ctx, name):
+        ctx.warning("no postgres_exporter service '%s' found", name)
+        return
+
     stop(ctx, name)
     revert_setup(ctx, name)
 
