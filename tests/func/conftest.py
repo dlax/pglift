@@ -19,7 +19,6 @@ from pglift import pm
 from pglift.ctx import Context
 from pglift.models import system
 from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
-from pglift.util import xdg_runtime_dir
 
 from . import configure_instance, execute
 
@@ -87,9 +86,6 @@ def settings(request, tmp_path_factory):
     pgauth_obj = pg_obj.setdefault("auth", {})
     assert "passfile" not in pgauth_obj
     pgauth_obj["passfile"] = str(passfile)
-    obj.setdefault("systemd", {}).setdefault(
-        "unit_path", str(xdg_runtime_dir() / "systemd" / "user.control")
-    )
     try:
         return Settings.parse_obj(obj)
     except pydantic.ValidationError as exc:

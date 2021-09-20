@@ -12,10 +12,6 @@ def xdg_data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 
-def xdg_runtime_dir() -> Path:
-    return Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
-
-
 def generate_certificate(
     configdir: Path, *, run_command: CommandRunner = cmd.run
 ) -> None:
