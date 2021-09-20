@@ -64,6 +64,7 @@ def port(ctx: BaseContext, name: str) -> int:
 def setup(
     ctx: BaseContext,
     name: str,
+    *,
     dsn: str = "",
     password: Optional[str] = None,
     port: int = default_port,
@@ -116,6 +117,7 @@ def setup(
 def revert_setup(
     ctx: BaseContext,
     name: str,
+    *,
     dsn: str = "",
     password: Optional[str] = None,
     port: int = default_port,
@@ -168,7 +170,9 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
         password = None
         if manifest.password:
             password = manifest.password.get_secret_value()
-        setup(ctx, manifest.name, manifest.dsn, password, manifest.port)
+        setup(
+            ctx, manifest.name, dsn=manifest.dsn, password=password, port=manifest.port
+        )
         if manifest.state == interface.PostgresExporter.State.started:
             start(ctx, manifest.name)
         elif manifest.state == interface.PostgresExporter.State.stopped:
@@ -204,7 +208,13 @@ def setup_local(
     password = None
     if role.password:
         password = role.password.get_secret_value()
-    setup(ctx, instance.qualname, " ".join(dsn), password, instance.prometheus.port)
+    setup(
+        ctx,
+        instance.qualname,
+        dsn=" ".join(dsn),
+        password=password,
+        port=instance.prometheus.port,
+    )
 
 
 @setup_local.revert
