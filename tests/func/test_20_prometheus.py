@@ -97,7 +97,7 @@ def test_start_stop(ctx, installed, instance):
         try:
             r = request_metrics(port)
         except requests.ConnectionError as e:
-            raise AssertionError(f"HTTP connection failed: {e}")
+            raise AssertionError(f"HTTP connection failed: {e}") from None
         r.raise_for_status()
         assert r.ok
         output = r.text
@@ -124,7 +124,7 @@ def test_start_stop_nonlocal(ctx, instance, postgres_exporter):
             try:
                 r = request_metrics(port)
             except requests.ConnectionError as e:
-                raise AssertionError(f"HTTP connection failed: {e}")
+                raise AssertionError(f"HTTP connection failed: {e}") from None
             r.raise_for_status()
             assert r.ok
             output = r.text
