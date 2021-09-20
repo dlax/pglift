@@ -5,7 +5,7 @@ import attr
 from attr.validators import instance_of
 from pgtoolkit.conf import Configuration
 
-from .. import conf, exceptions
+from .. import conf, exceptions, prometheus_default_port
 from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
@@ -23,7 +23,7 @@ def default_postgresql_version(ctx: BaseContext) -> str:
 class PrometheusService:
     """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
 
-    port: int = 9187
+    port: int = prometheus_default_port
     """TCP port for the web interface and telemetry."""
 
     T = TypeVar("T", bound="PrometheusService")

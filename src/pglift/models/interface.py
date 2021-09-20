@@ -18,7 +18,7 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-from .. import settings
+from .. import prometheus_default_port, settings
 from ..ctx import BaseContext
 from ..types import AutoStrEnum
 from . import system as system_model
@@ -112,7 +112,7 @@ class Instance(Manifest):
 
     class Prometheus(BaseModel):
         port: int = Field(
-            default=9187,
+            default=prometheus_default_port,
             description="TCP port for the web interface and telemetry of Prometheus",
         )
 
