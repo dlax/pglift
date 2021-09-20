@@ -7,7 +7,8 @@ RUN apt-get -qq update && \
 	gnupg \
 	lsb-release \
 	&& rm -rf /var/lib/apt/lists/*
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" \
+	| tee /etc/apt/sources.list.d/pgdg.list
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends \
