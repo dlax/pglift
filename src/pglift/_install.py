@@ -41,7 +41,9 @@ def postgresql_systemd_unit_template(
     )
 
 
-@postgresql_systemd_unit_template.revert
+@postgresql_systemd_unit_template.revert(
+    "uninstall systemd template unit for PostgreSQL"
+)
 def revert_postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
@@ -66,7 +68,9 @@ def postgres_exporter_systemd_unit_template(
     )
 
 
-@postgres_exporter_systemd_unit_template.revert
+@postgres_exporter_systemd_unit_template.revert(
+    "uninstall systemd template unit for Prometheus postgres_exporter"
+)
 def revert_postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
 ) -> None:
@@ -104,7 +108,9 @@ def postgresql_backup_systemd_templates(
     )
 
 
-@postgresql_backup_systemd_templates.revert
+@postgresql_backup_systemd_templates.revert(
+    "uninstall systemd template unit and timer for PostgreSQL backups"
+)
 def revert_postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:

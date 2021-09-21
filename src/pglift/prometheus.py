@@ -117,7 +117,7 @@ def setup(
         systemd.enable(ctx, systemd_unit(name))
 
 
-@setup.revert
+@setup.revert("deconfigure postgres_exporter service")
 def revert_setup(
     ctx: BaseContext,
     name: str,

@@ -42,14 +42,18 @@ class Task(Generic[A]):
 
     __call__ = cast(A, _call)
 
-    def revert(self, revertfn: A) -> A:
+    def revert(self, title: str) -> Callable[[A], A]:
         """Decorator to register a 'revert' callback function.
 
         The revert function must accept the same arguments than its respective
         action.
         """
-        self.revert_action = revertfn
-        return revertfn
+
+        def decorator(revertfn: A) -> A:
+            self.revert_action = revertfn
+            return revertfn
+
+        return decorator
 
 
 def task(title: str) -> Callable[[A], Task[A]]:

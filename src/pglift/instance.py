@@ -144,7 +144,7 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
     return None
 
 
-@init.revert
+@init.revert("delete PostgreSQL instance")
 def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
     """Un-initialize a PostgreSQL instance."""
     if ctx.settings.service_manager == "systemd":
@@ -267,7 +267,7 @@ def configure(
     return changes
 
 
-@configure.revert
+@configure.revert("remove managed configuration from PostgreSQL instance")
 def revert_configure(
     ctx: BaseContext,
     instance: InstanceSpec,

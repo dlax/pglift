@@ -15,7 +15,7 @@ def test_task():
     assert neg(1) == -1
     assert neg.revert_action is None
 
-    @neg.revert
+    @neg.revert("negate again")
     def revert_neg(x: int) -> int:
         return -x
 
@@ -54,7 +54,7 @@ def test_runner(logger):
     # no revert action
     assert values == {1, 2}
 
-    @add.revert
+    @add.revert("remove numbers")
     def remove(x: int, fail: bool = False) -> None:
         try:
             values.remove(x)
@@ -67,7 +67,7 @@ def test_runner(logger):
             add(4, fail=True)
     assert values == {1, 2}
 
-    @add.revert
+    @add.revert("remove numbers, failed")
     def remove_fail(x: int, fail: bool = False) -> None:
         if fail:
             raise ValueError("failed to fail")

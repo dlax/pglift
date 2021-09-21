@@ -159,7 +159,7 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
             pgconfig.save(f)
 
 
-@setup.revert
+@setup.revert("deconfigure pgBackRest")
 def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     """Un-setup pgBackRest"""
     settings = ctx.settings.pgbackrest
