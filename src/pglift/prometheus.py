@@ -194,7 +194,6 @@ def drop(ctx: BaseContext, name: str) -> None:
     revert_setup(ctx, name)
 
 
-@task("set up postgres_exporter for a local PostgreSQL instance")
 def setup_local(
     ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
 ) -> None:
@@ -219,14 +218,6 @@ def setup_local(
         password=password,
         port=instance.prometheus.port,
     )
-
-
-@setup_local.revert
-def revert_setup_local(
-    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
-) -> None:
-    """Un-setup Prometheus postgres_exporter for a local instance."""
-    revert_setup(ctx, instance.qualname)
 
 
 @hookimpl  # type: ignore[misc]
@@ -305,4 +296,4 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: BaseContext, instance: Instance) -> None:
     """Uninstall postgres_exporter from an instance being dropped."""
-    revert_setup_local(ctx, instance.as_spec(), instance.config())
+    revert_setup(ctx, instance.qualname)
