@@ -242,6 +242,7 @@ def instance_configure(
     setup_local(ctx, instance, config)
 
 
+@task("start postgres_exporter service")
 def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
     """Start postgres_exporter for `instance`.
 
@@ -280,6 +281,7 @@ def instance_start(ctx: BaseContext, instance: Instance) -> None:
     start(ctx, instance.qualname)
 
 
+@task("stop postgres_exporter service")
 def stop(ctx: BaseContext, name: str) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
