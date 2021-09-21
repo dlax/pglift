@@ -59,7 +59,7 @@ def test_init_dirty(pg_version, settings, ctx, monkeypatch):
 
 def test_init_version_not_available(ctx):
     settings = ctx.settings
-    version = "10"
+    version = "11"
     if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
         pytest.skip(f"PostgreSQL {version} seems available")
     i = InstanceSpec(
