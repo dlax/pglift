@@ -417,7 +417,6 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
     ident_path.write_text(ident)
 
 
-@task("start PostgreSQL instance")
 def start(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -444,6 +443,21 @@ def start(
         ctx.debug("not running hooks for a foreground start")
         run_hooks = False
 
+    start_postgresql(ctx, instance, wait=wait, logfile=logfile, foreground=foreground)
+
+    if run_hooks and wait:
+        ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
+
+
+@task("start PostgreSQL instance")
+def start_postgresql(
+    ctx: BaseContext,
+    instance: Union[PostgreSQLInstance, Instance],
+    *,
+    wait: bool = True,
+    logfile: Optional[Path] = None,
+    foreground: bool = False,
+) -> None:
     if ctx.settings.service_manager is None:
         if foreground:
             postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
@@ -456,8 +470,6 @@ def start(
             )
     elif ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
-    if run_hooks and wait:
-        ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
 
 @task("get PostgreSQL instance status")
@@ -476,7 +488,6 @@ def check_status(ctx: BaseContext, instance: BaseInstance, expected: Status) -> 
         raise exceptions.InstanceStateError(f"instance is {st.name}")
 
 
-@task("stop PostgreSQL instance")
 def stop(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -495,13 +506,23 @@ def stop(
     if status(ctx, instance) == Status.not_running:
         ctx.warning("instance %s is already stopped", instance)
     else:
-        ctx.info("stopping instance %s", instance)
-        if ctx.settings.service_manager is None:
-            ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
-        elif ctx.settings.service_manager == "systemd":
-            systemd.stop(ctx, systemd_unit(instance))
+        stop_postgresql(ctx, instance, mode=mode, wait=wait)
     if run_hooks and wait:
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
+
+
+@task("stop PostgreSQL instance")
+def stop_postgresql(
+    ctx: BaseContext,
+    instance: Union[PostgreSQLInstance, Instance],
+    mode: str = "fast",
+    wait: bool = True,
+) -> None:
+    ctx.info("stopping instance %s", instance)
+    if ctx.settings.service_manager is None:
+        ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
+    elif ctx.settings.service_manager == "systemd":
+        systemd.stop(ctx, systemd_unit(instance))
 
 
 @task("restart PostgreSQL instance")
