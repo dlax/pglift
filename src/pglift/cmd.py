@@ -284,6 +284,8 @@ def start_program(
     else:
         stderr = subprocess.DEVNULL
     stdout = subprocess.DEVNULL
+    if logger:
+        logger.info("%s", shlex_join(cmd))
     proc = subprocess.Popen(  # nosec
         cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
     )
