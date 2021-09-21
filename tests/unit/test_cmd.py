@@ -37,7 +37,7 @@ def test_start_program_terminate_program_status_program(caplog, tmp_path):
 
     proc = Path("/proc") / pid
     assert proc.exists()
-    assert (proc / "cmdline").read_text() == "sleep\x0010\x00"
+    assert "sleep\x0010\x00" in (proc / "cmdline").read_text()
     assert "X_DEBUG" in (proc / "environ").read_text()
 
     assert cmd.status_program(pidfile) == cmd.Status.running
