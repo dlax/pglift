@@ -39,6 +39,20 @@ def journalctl():
     proc.kill()
 
 
+@pytest.fixture(scope="session")
+def systemd_available():
+    try:
+        subprocess.run(
+            ["systemctl", "--user", "status"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+    return True
+
+
 settings_by_id = {
     "defaults": {},
     "systemd": {
@@ -75,7 +89,7 @@ ids = tuple(f"settings:{i}" for i in ids)
 
 
 @pytest.fixture(scope="session", params=params, ids=ids)
-def settings(request, tmp_path_factory):
+def settings(request, tmp_path_factory, systemd_available):
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
     passfile.touch(mode=0o600)
     passfile.write_text("#hostname:port:database:username:password\n")
@@ -91,6 +105,8 @@ def settings(request, tmp_path_factory):
     pgauth_obj = pg_obj.setdefault("auth", {})
     assert "passfile" not in pgauth_obj
     pgauth_obj["passfile"] = str(passfile)
+    if obj.get("service_manager") == "systemd" and not systemd_available:
+        pytest.skip("systemd not functional")
     try:
         return Settings.parse_obj(obj)
     except pydantic.ValidationError as exc:
