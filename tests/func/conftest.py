@@ -23,6 +23,11 @@ from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from . import configure_instance, execute
 
 
+@pytest.fixture(scope="session")
+def redhat():
+    return pathlib.Path("/etc/redhat-release").exists()
+
+
 @pytest.fixture(autouse=True)
 def journalctl():
     journalctl = shutil.which("journalctl")

@@ -46,7 +46,9 @@ def test_init(ctx, instance_initialized, monkeypatch):
         instance_mod.init(ctx, i)
 
 
-def test_log_directory(ctx, instance, log_directory):
+def test_log_directory(ctx, instance, log_directory, redhat):
+    if redhat:
+        pytest.xfail("postgresql.conf on redhat contains 'log_directory' uncommented")
     config = instance.config()
     instance_log_dir = Path(config.log_directory)
     assert instance_log_dir == log_directory
@@ -215,14 +217,16 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx, instance, log_directory):
+def test_describe(ctx, instance, log_directory, redhat):
     im = instance_mod.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
     config = im.configuration
     assert im.port == instance.port
     if "log_directory" in config:
-        assert config.pop("log_directory") == str(log_directory)
+        logdir = config.pop("log_directory")
+        if not redhat:
+            assert logdir == str(log_directory)
     assert config == {}
     assert im.state.name == "stopped"
 
