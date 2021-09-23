@@ -3,7 +3,8 @@ import logging
 import os
 import time
 from datetime import datetime
-from functools import partial
+from functools import partial, wraps
+from types import ModuleType
 from typing import (
     IO,
     Any,
@@ -14,11 +15,13 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
 import colorlog
 import pydantic.json
+from click.exceptions import Exit
 from pydantic.utils import deep_update
 from tabulate import tabulate
 from typing_extensions import Literal
@@ -75,6 +78,26 @@ class Command(click.Command):
 class Group(click.Group):
     command_class = Command
     group_class = type
+
+
+C = TypeVar("C", bound=Callable[..., Any])
+
+
+def require_component(mod: ModuleType, name: str, fn: C) -> C:
+    @wraps(fn)
+    def wrapper(ctx: Context, *args: Any, **kwargs: Any) -> None:
+        if not getattr(mod, "enabled")(ctx):
+            click.echo(f"{name} not available", err=True)
+            raise Exit(1)
+        fn(ctx, *args, **kwargs)
+
+    return cast(C, wrapper)
+
+
+require_pgbackrest = partial(require_component, pgbackrest, "pgbackrest")
+require_prometheus = partial(
+    require_component, prometheus, "Prometheus postgres_exporter"
+)
 
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
@@ -413,6 +436,7 @@ def instance_shell(
     callback=lambda ctx, param, value: pgbackrest.BackupType(value),
 )
 @click.pass_obj
+@require_pgbackrest
 def instance_backup(
     ctx: Context, name: str, version: Optional[str], backup_type: pgbackrest.BackupType
 ) -> None:
@@ -435,6 +459,7 @@ def instance_backup(
 @click.option("--label", help="Label of backup to restore")
 @click.option("--date", type=click.DateTime(), help="Date of backup to restore")
 @click.pass_obj
+@require_pgbackrest
 def instance_restore(
     ctx: Context,
     name: str,
@@ -725,7 +750,9 @@ def database_run(
 
 
 @cli.group("postgres_exporter")
-def postgres_exporter() -> None:
+@click.pass_obj
+@require_prometheus
+def postgres_exporter(ctx: Context) -> None:
     """Handle Prometheus postgres_exporter"""
 
 

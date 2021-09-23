@@ -1,4 +1,5 @@
 import datetime
+import functools
 import json
 from typing import Iterator
 from unittest.mock import MagicMock, patch
@@ -12,7 +13,7 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, prometheus, roles
-from pglift.cli import Command, cli, instance_init
+from pglift.cli import Command, cli, instance_init, require_component
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -70,6 +71,26 @@ def test_command_internal_error(runner, ctx):
     assert "an unexpected error occurred" in logcontent
     assert "Traceback (most recent call last):" in logcontent
     assert "RuntimeError: oups" in logcontent
+
+
+def test_require_component(runner, ctx):
+    mod = MagicMock()
+
+    @click.command("command")
+    @click.pass_obj
+    @functools.partial(require_component, mod, "mymod")
+    def command(ctx, *args):
+        click.echo(f"ctx is {type(ctx)}")
+
+    mod.enabled.return_value = False
+    r = runner.invoke(command, obj=ctx)
+    assert r.exit_code == 1
+    assert r.stderr == "mymod not available\n"
+
+    mod.enabled.return_value = True
+    r = runner.invoke(command, obj=ctx)
+    assert r.exit_code == 0
+    assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
 
 
 def test_cli(runner, ctx):
