@@ -1,4 +1,4 @@
-FROM python:3.6-slim
+FROM debian:bullseye-slim
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && \
 	apt-get -qq -y install --no-install-recommends \
@@ -24,10 +24,11 @@ RUN apt-get -qq update && \
 	postgresql-13 \
 	pgbackrest \
 	prometheus-postgres-exporter \
+	tox \
 	&& pg_dropcluster 10 main \
 	&& pg_dropcluster 13 main \
 	&& rm -rf /var/lib/apt/lists/*
-RUN pip3 install tox
+
 RUN useradd --create-home runner
 
 USER runner
