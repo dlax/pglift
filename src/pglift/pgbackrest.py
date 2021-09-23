@@ -22,6 +22,10 @@ from .task import task
 from .types import AutoStrEnum
 
 
+def enabled(ctx: BaseContext) -> bool:
+    return ctx.settings.pgbackrest.execpath.exists()
+
+
 def make_cmd(
     instance: BaseInstance, settings: PgBackRestSettings, *args: str
 ) -> List[str]:
@@ -195,6 +199,9 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
+    if not enabled(ctx):
+        ctx.warning("pgbackrest not available, skipping backup configuration")
+        return
     if instance.standby:
         return
     i = PostgreSQLInstance.system_lookup(ctx, instance)

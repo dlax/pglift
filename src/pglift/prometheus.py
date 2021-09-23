@@ -14,6 +14,10 @@ from .settings import PrometheusSettings
 from .task import task
 
 
+def enabled(ctx: BaseContext) -> bool:
+    return ctx.settings.prometheus.execpath.exists()
+
+
 def _configpath(name: str, settings: PrometheusSettings) -> Path:
     return Path(str(settings.configpath).format(name=name))
 
@@ -230,6 +234,11 @@ def instance_configure(
     ctx: BaseContext, instance: InstanceSpec, config: Configuration, **kwargs: Any
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
+    if not enabled(ctx):
+        ctx.warning(
+            "Prometheus postgres_exporter not available, skipping monitoring configuration"
+        )
+        return
     setup_local(ctx, instance, config)
 
 
@@ -266,6 +275,8 @@ def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_start(ctx: BaseContext, instance: Instance) -> None:
     """Start postgres_exporter service."""
+    if not enabled(ctx):
+        return
     start(ctx, instance.qualname)
 
 
@@ -284,6 +295,8 @@ def stop(ctx: BaseContext, name: str) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_stop(ctx: BaseContext, instance: Instance) -> None:
     """Stop postgres_exporter service."""
+    if not enabled(ctx):
+        return
     stop(ctx, instance.qualname)
 
 
