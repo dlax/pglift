@@ -92,7 +92,7 @@ Release workflow
 
   .. code-block:: bash
 
-    $ git push --tags
+    $ git push --follow-tags
 
 * Finally get your PyPI API token and run:
 
