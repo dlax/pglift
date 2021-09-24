@@ -1,6 +1,8 @@
 import argparse
+import logging
 from typing import Optional, Sequence
 
+from . import __name__ as pkgname
 from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
@@ -36,7 +38,10 @@ def main(
         ctx.settings.postgresql.pid_directory
         / f"postgresql-{instance.version}-{instance.name}.pid"
     )
-    start_program(cmd, pidfile, logger=ctx)
+    logger = logging.getLogger(pkgname)
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    start_program(cmd, pidfile, logger=logger)
 
 
 if __name__ == "__main__":  # pragma: nocover
