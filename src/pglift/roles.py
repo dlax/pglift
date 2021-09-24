@@ -7,6 +7,7 @@ from . import db, exceptions, hookimpl
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance, InstanceSpec, PostgreSQLInstance
+from .task import task
 from .types import ConfigChanges, Role
 
 
@@ -233,6 +234,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         cnx.commit()
 
 
+@task("set PostgreSQL role password")
 def set_password_for(
     ctx: BaseContext, instance: PostgreSQLInstance, role: Role
 ) -> None:
