@@ -3,7 +3,7 @@ RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x
 RUN dnf -qy module disable postgresql
 RUN dnf install -y postgresql10-server pgbackrest
 WORKDIR /tmp
-RUN curl -s -O -L \
+RUN curl -O -L \
 	https://github.com/prometheus-community/postgres_exporter/releases/download/v0.8.0/postgres_exporter_v0.8.0_linux-amd64.tar.gz
 RUN tar xvf postgres_exporter_v0.8.0_linux-amd64.tar.gz
 RUN mv postgres_exporter_v0.8.0_linux-amd64/postgres_exporter \
