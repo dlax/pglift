@@ -92,11 +92,11 @@ def test_start_stop(ctx, installed, instance):
     port = instance.prometheus.port
 
     if ctx.settings.service_manager == "systemd":
-        assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance))
+        assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance.qualname))
 
     with instance_mod.running(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
-            assert systemd.is_active(ctx, prometheus.systemd_unit(instance))
+            assert systemd.is_active(ctx, prometheus.systemd_unit(instance.qualname))
         try:
             r = request_metrics(port)
         except requests.ConnectionError as e:
@@ -108,7 +108,9 @@ def test_start_stop(ctx, installed, instance):
 
     with instance_mod.stopped(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
-            assert not systemd.is_active(ctx, prometheus.systemd_unit(instance))
+            assert not systemd.is_active(
+                ctx, prometheus.systemd_unit(instance.qualname)
+            )
         with pytest.raises(requests.ConnectionError):
             request_metrics(port)
 
