@@ -75,11 +75,8 @@ def log_status(fn: F) -> F:
     return wrapper
 
 
-def status(ctx: BaseContext, unit: str, *, full: bool = True) -> str:
-    opts = []
-    if full:
-        opts.append("--full")
-    return ctx.run(["systemctl", "--user"] + opts + ["status", unit], check=True).stdout
+def status(ctx: BaseContext, unit: str) -> str:
+    return ctx.run(["systemctl", "--user", "--full", "status", unit], check=True).stdout
 
 
 @log_status
