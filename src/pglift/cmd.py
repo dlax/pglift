@@ -202,32 +202,6 @@ def run(
     return CompletedProcess(args, proc.returncode, out, err)
 
 
-def run_expect(
-    *args: Sequence[str],
-    codes: Tuple[int, ...] = (0,),
-    **kwargs: Any,
-) -> CompletedProcess:
-    """Check that return code command execution with :func:`run` matches
-    expected ``codes``.
-
-    :raises ~exceptions.CommandError: if return code does not match.
-
-    >>> run_expect(["false"], codes=(0, 1))
-    CompletedProcess(args=['false'], returncode=1, stdout='', stderr='')
-    >>> run_expect(["false"])
-    Traceback (most recent call last):
-      ...
-    pglift.exceptions.CommandError: Command '['false']' returned non-zero exit status 1.
-    """
-    result = run(*args, **kwargs)
-    retcode = result.returncode
-    if retcode not in codes:
-        raise exceptions.CommandError(
-            retcode, result.args, result.stdout, result.stderr
-        )
-    return result
-
-
 def execute_program(
     cmd: Sequence[str],
     *,
