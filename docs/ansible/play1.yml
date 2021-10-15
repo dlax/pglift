@@ -1,6 +1,8 @@
 ---
 - name: my postgresql instances
   hosts: localhost
+  environment:
+    postgresql_surole_password: "{{ postgresql_surole_password }}"
   tasks:
     - name: production instance
       dalibo.pglift.instance:
@@ -18,7 +20,7 @@
       dalibo.pglift.role:
         instance: prod
         name: bob
-        password: s3kret
+        password: "{{ prod_bob_password }}"
         pgpass: false
         login: true
         connection_limit: 10

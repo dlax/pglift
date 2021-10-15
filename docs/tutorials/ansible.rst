@@ -40,8 +40,25 @@ PostgreSQL instances, data and configuration files:
     }
     EOF
     $ export SETTINGS="@$settings"
-    $ export postgresql_surole_password=supers3kret
     $ export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
+
+
+The passwords for `postgres` and `bob` users can be encrypted using ansible
+vault, `ansible-vault encrypt` will ask for a passphrase used to encrypt
+variables:
+
+::
+
+    $ cat << EOF | ansible-vault encrypt > $tmpdir/vars
+    postgresql_surole_password: $(openssl rand -base64 9)
+    prod_bob_password: $(openssl rand -base64 9)
+    EOF
+
+To view actual passwords:
+
+::
+
+    ansible-vault view $tmpdir/vars
 
 Then, proceed with post-installation step (preparing systemd templates, in
 particular):
@@ -54,7 +71,7 @@ Finally, run:
 
 ::
 
-    (.venv) $ ansible-playbook docs/ansible/play1.yml
+    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars docs/ansible/play1.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -138,7 +155,7 @@ configuration:
 
 ::
 
-    (.venv) $ ansible-playbook docs/ansible/play2.yml
+    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars docs/ansible/play2.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
