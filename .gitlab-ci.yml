@@ -36,12 +36,6 @@ tests:
     matrix:
       - dist: [debian, centos8]
 
-tests_ansible:
-  stage: test
-  image: $DEBIAN_CI_IMAGE
-  script:
-    - ANSIBLE_VERBOSITY=3 tox -e tests_ansible
-
 docs:
   stage: test
   image: $DEBIAN_CI_IMAGE

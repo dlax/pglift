@@ -15,7 +15,6 @@ RUN apt-get -qq update && \
 	build-essential \
 	git \
 	libpq-dev \
-	netcat-openbsd \
 	procps \
 	python3-dev \
 	python3-pip \

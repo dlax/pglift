@@ -77,6 +77,7 @@ setup(
             "pytest-cov",
             "requests",
             "tenacity >= 8.0.0",
+            "ansible",
         ]
         + extras_runtime_all,
         "typing": extras_typing,
