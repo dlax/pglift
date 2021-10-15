@@ -261,7 +261,7 @@ def test_instance_list(runner, instance, ctx):
         cli, ["instance", "list", f"--version={other_version}"], obj=ctx
     )
     assert result.exit_code == 0
-    assert not result.output.strip()
+    assert not result.output
 
 
 def test_instance_drop(runner, ctx, instance):

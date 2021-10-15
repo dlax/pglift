@@ -155,7 +155,9 @@ def print_table_for(
                     d[mk] = sv
                 del d[k]
         values.append(d)
-    display(tabulate(values, headers="keys"))
+    content = tabulate(values, headers="keys")
+    if content:
+        display(content)
 
 
 def print_json_for(
