@@ -32,13 +32,12 @@ def call_playbook(tmpdir):
     with (tmpdir / "config.json").open("w") as f:
         json.dump(settings, f)
     env["SETTINGS"] = f"@{tmpdir / 'config.json'}"
-    env["PGPASSFILE"] = str(tmpdir / "pgpass")
     env["postgresql_surole_password"] = "s3kret"
 
     def call(playfile: pathlib.Path) -> None:
         subprocess.check_call(["ansible-playbook", str(playfile)], env=env)
 
-    os.environ["PGPASSFILE"] = env["PGPASSFILE"]
+    os.environ["PGPASSFILE"] = str(tmpdir / "pgpass")
     yield call
     del os.environ["PGPASSFILE"]
     call(PLAYDIR / "play3.yml")
