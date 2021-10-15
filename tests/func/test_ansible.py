@@ -91,6 +91,10 @@ def test_ansible(tmpdir, call_playbook):
 
     socket.create_connection(("localhost", 9186), 1)
 
+    # test connection with bob to the db database
+    with db.connect_dsn("host=/tmp user=bob password=s3kret dbname=db port=5433"):
+        pass
+
     # check preprod cluster & postgres_exporter
     preprod_dsn = "host=/tmp user=postgres dbname=postgres port=5434"
     assert cluster_name(preprod_dsn) == "preprod"
@@ -109,6 +113,17 @@ def test_ansible(tmpdir, call_playbook):
 
     # prod running
     assert cluster_name(prod_dsn) == "prod"
+    # bob user and db database no longer exists
+    with pytest.raises(psycopg2.OperationalError) as excinfo:
+        with db.connect_dsn(
+            "host=/tmp user=bob password=s3kret dbname=template1 port=5433"
+        ):
+            pass
+    assert 'password authentication failed for user "bob"' in str(excinfo.value)
+    with pytest.raises(psycopg2.OperationalError) as excinfo:
+        with db.connect_dsn("host=/tmp user=postgres dbname=db port=5433"):
+            pass
+    assert 'database "db" does not exist' in str(excinfo.value)
 
     # preprod stopped
     with pytest.raises(psycopg2.OperationalError):
