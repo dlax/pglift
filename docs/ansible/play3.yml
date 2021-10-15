@@ -7,6 +7,11 @@
         name: prod
         state: absent
 
+    - name: preproduction instance, dropped
+      dalibo.pglift.instance:
+        name: preprod
+        state: absent
+
     - name: dev instance, dropped
       dalibo.pglift.instance:
         name: dev
