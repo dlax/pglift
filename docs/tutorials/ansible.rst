@@ -31,6 +31,7 @@ PostgreSQL instances, data and configuration files:
     {
       "prefix": "$tmpdir",
       "postgresql": {
+        "auth": {"local": "md5", "host": "md5"},
         "root": "$tmpdir/postgres"
       },
       "pgbackrest": {
@@ -39,6 +40,7 @@ PostgreSQL instances, data and configuration files:
     }
     EOF
     $ export SETTINGS="@$settings"
+    $ export postgresql_surole_password=supers3kret
     $ export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
 
 Then, proceed with post-installation step (preparing systemd templates, in

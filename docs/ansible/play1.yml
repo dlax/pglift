@@ -19,7 +19,7 @@
         instance: prod
         name: bob
         password: s3kret
-        pgpass: true
+        pgpass: false
         login: true
         connection_limit: 10
         validity: '2025-01-01T00:00'
