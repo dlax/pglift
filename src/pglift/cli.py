@@ -5,18 +5,7 @@ import time
 from datetime import datetime
 from functools import partial, wraps
 from types import ModuleType
-from typing import (
-    IO,
-    Any,
-    Callable,
-    Iterable,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import IO, Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, cast
 
 import click
 import colorlog
@@ -234,7 +223,7 @@ def cli(ctx: click.core.Context, log_level: str) -> None:
 @click.pass_obj
 def site_configure(
     ctx: Context,
-    action: Union[Literal["install"], Literal["uninstall"]],
+    action: Literal["install", "uninstall"],
     settings: Optional[str],
 ) -> None:
     if action == "install":

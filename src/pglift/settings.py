@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 from pathlib import Path, PosixPath
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 import yaml
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
@@ -99,20 +99,20 @@ def _postgresql_bindir() -> str:
         raise EnvironmentError("no PostgreSQL installation found")
 
 
-AuthMethod = Union[
-    Literal["trust"],
-    Literal["reject"],
-    Literal["md5"],
-    Literal["password"],
-    Literal["scram-sha-256"],
-    Literal["gss"],
-    Literal["sspi"],
-    Literal["ident"],
-    Literal["peer"],
-    Literal["pam"],
-    Literal["ldap"],
-    Literal["radius"],
-    Literal["cert"],
+AuthMethod = Literal[
+    "trust",
+    "reject",
+    "md5",
+    "password",
+    "scram-sha-256",
+    "gss",
+    "sspi",
+    "ident",
+    "peer",
+    "pam",
+    "ldap",
+    "radius",
+    "cert",
 ]
 
 

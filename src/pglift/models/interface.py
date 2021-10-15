@@ -227,7 +227,7 @@ class InstanceBackup(Manifest):
     size: float
     repo_size: float
     datetime: datetime
-    type: Union[Literal["incr"], Literal["diff"], Literal["full"]]
+    type: Literal["incr", "diff", "full"]
     databases: str
 
 
