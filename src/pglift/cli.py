@@ -18,7 +18,7 @@ from typing_extensions import Literal
 from . import __name__ as pkgname
 from . import _install, databases, exceptions
 from . import instance as instance_mod
-from . import pgbackrest, pm, privileges, prometheus, roles
+from . import pgbackrest, pm, privileges, prometheus, roles, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
@@ -188,6 +188,13 @@ foreground_option = click.option(
 )
 
 
+def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo(f"pglift version {version()}")
+    ctx.exit()
+
+
 @click.group(cls=Group)
 @click.option(
     "--log-level",
@@ -195,6 +202,14 @@ foreground_option = click.option(
         ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
     ),
     default="info",
+)
+@click.option(
+    "--version",
+    is_flag=True,
+    callback=print_version,
+    expose_value=False,
+    is_eager=True,
+    help="Show program version.",
 )
 @click.pass_context
 def cli(ctx: click.core.Context, log_level: str) -> None:

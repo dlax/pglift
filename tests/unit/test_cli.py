@@ -1,6 +1,7 @@
 import datetime
 import functools
 import json
+import re
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
@@ -96,6 +97,11 @@ def test_require_component(runner, ctx):
 def test_cli(runner, ctx):
     result = runner.invoke(cli, obj=ctx)
     assert result.exit_code == 0
+
+
+def test_version(runner, ctx):
+    result = runner.invoke(cli, ["--version"], obj=ctx)
+    assert re.match(r"pglift version (\d\.).*", result.stdout)
 
 
 def test_site_configure(runner, ctx, tmp_path):

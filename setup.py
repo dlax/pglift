@@ -52,6 +52,7 @@ setup(
     install_requires=[
         "attrs",
         "humanize",
+        "importlib_metadata;python_version<'3.7'",
         "pgtoolkit >= 0.17.0",
         "pluggy",
         "psycopg2",
