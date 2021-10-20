@@ -1,5 +1,6 @@
 ---
 variables:
+  GIT_FETCH_EXTRA_FLAGS: --tags
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   DEBIAN_CI_IMAGE: "$CI_REGISTRY_IMAGE:debian"
   CENTOS8_CI_IMAGE: "$CI_REGISTRY_IMAGE:centos8"
