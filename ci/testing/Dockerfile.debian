@@ -19,11 +19,11 @@ RUN apt-get -qq update && \
 	python3-dev \
 	python3-pip \
 	python3-venv \
-	postgresql-13 \
+	postgresql-14 \
 	pgbackrest \
 	prometheus-postgres-exporter \
 	tox \
-	&& pg_dropcluster 13 main \
+	&& pg_dropcluster 14 main \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home runner

@@ -78,7 +78,7 @@ class LogPath(PrefixedPath):
     basedir = Path("log")
 
 
-POSTGRESQL_SUPPORTED_VERSIONS = ["13", "12", "11", "10"]
+POSTGRESQL_SUPPORTED_VERSIONS = ["14", "13", "12", "11", "10"]
 
 
 class PostgreSQLVersionSettings(BaseSettings):

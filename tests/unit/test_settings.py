@@ -77,7 +77,7 @@ def test_postgresql_versions(monkeypatch, tmp_path):
         m.setenv("SETTINGS", f"@{config_path}")
         s = Settings()
     pgversions = s.postgresql.versions
-    assert set(pgversions) == {"10", "11", "12", "13"}
+    assert set(pgversions) == {"10", "11", "12", "13", "14"}
     assert str(pgversions["10"].bindir) == "/opt/pgsql-10/bin"
     assert str(pgversions["12"].bindir) == "/usr/lib/pgsql/12/bin"
 
