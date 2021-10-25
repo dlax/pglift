@@ -886,53 +886,65 @@ def postgres_exporter_schema() -> None:
 
 @postgres_exporter.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_runner
 @pass_ctx
-def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
+def postgres_exporter_apply(ctx: Context, runner: Runner, file: IO[str]) -> None:
     """Apply manifest as a Prometheus postgres_exporter."""
     exporter = interface.PostgresExporter.parse_yaml(file)
-    prometheus.apply(ctx, exporter)
+    with runner:
+        prometheus.apply(ctx, exporter)
 
 
 @postgres_exporter.command("install")
 @helpers.parameters_from_model(interface.PostgresExporter)
+@pass_runner
 @pass_ctx
 def postgres_exporter_install(
-    ctx: Context, postgresexporter: interface.PostgresExporter
+    ctx: Context, runner: Runner, postgresexporter: interface.PostgresExporter
 ) -> None:
     """Install the service for a (non-local) instance."""
-    prometheus.apply(ctx, postgresexporter)
+    with runner:
+        prometheus.apply(ctx, postgresexporter)
 
 
 @postgres_exporter.command("uninstall")
 @click.argument("name")
+@pass_runner
 @pass_ctx
-def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
+def postgres_exporter_uninstall(ctx: Context, runner: Runner, name: str) -> None:
     """Uninstall the service."""
-    prometheus.drop(ctx, name)
+    with runner:
+        prometheus.drop(ctx, name)
 
 
 @postgres_exporter.command("start")
 @click.argument("name")
 @foreground_option
+@pass_runner
 @pass_ctx
-def postgres_exporter_start(ctx: Context, name: str, foreground: bool) -> None:
+def postgres_exporter_start(
+    ctx: Context, runner: Runner, name: str, foreground: bool
+) -> None:
     """Start postgres_exporter service NAME.
 
     The NAME argument is a local identifier for the postgres_exporter
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.start(ctx, name, foreground=foreground)
+    with runner:
+        prometheus.start(ctx, name, foreground=foreground)
 
 
 @postgres_exporter.command("stop")
 @click.argument("name")
+@pass_runner
 @pass_ctx
-def postgres_exporter_stop(ctx: Context, name: str) -> None:
+def postgres_exporter_stop(ctx: Context, runner: Runner, name: str) -> None:
     """Stop postgres_exporter service NAME.
 
     The NAME argument is a local identifier for the postgres_exporter
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.stop(ctx, name)
+    with runner:
+        prometheus.stop(ctx, name)
