@@ -32,7 +32,15 @@ class PrometheusService:
     def system_lookup(cls: Type[T], ctx: BaseContext, instance: "BaseInstance") -> T:
         from .. import prometheus
 
-        return cls(port=prometheus.port(ctx, instance.qualname))
+        try:
+            port = prometheus.port(ctx, instance.qualname)
+        except exceptions.FileNotFoundError as exc:
+            ctx.warning(
+                "failed to read postgres_exporter port for %s: %s", instance, exc
+            )
+            return cls()
+        else:
+            return cls(port)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
