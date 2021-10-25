@@ -403,7 +403,7 @@ def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) 
     if hba_path.read_text() == hba:
         return
 
-    if not instance.standby:
+    if not instance.standby and surole.password:
         # standby instances are read-only
         i = PostgreSQLInstance.system_lookup(ctx, instance)
         with running(ctx, i):
