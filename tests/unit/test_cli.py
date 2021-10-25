@@ -14,7 +14,7 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, prometheus, roles
-from pglift.cli import Command, cli, instance_init, require_component
+from pglift.cli import Command, Obj, cli, instance_init, require_component
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -23,6 +23,11 @@ from pglift.models.system import Instance
 @pytest.fixture
 def runner():
     return CliRunner(mix_stderr=False)
+
+
+@pytest.fixture
+def obj(ctx):
+    return Obj(ctx)
 
 
 @pytest.fixture
@@ -44,29 +49,29 @@ def cmd(ctx, error):
         ctx.exit(1)
 
 
-def test_command_error(runner, ctx):
-    result = runner.invoke(cmd, ["error"], obj=ctx)
+def test_command_error(runner, obj):
+    result = runner.invoke(cmd, ["error"], obj=obj)
     assert result.exit_code == 1
     assert (
         result.stderr
         == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\n"
     )
-    logpath = ctx.settings.logpath
+    logpath = obj.ctx.settings.logpath
     assert not list(logpath.glob("*.log"))
 
 
-def test_command_exit(runner, ctx):
-    result = runner.invoke(cmd, ["exit"], obj=ctx)
+def test_command_exit(runner, obj):
+    result = runner.invoke(cmd, ["exit"], obj=obj)
     assert result.exit_code == 1
     assert not result.stdout
-    logpath = ctx.settings.logpath
+    logpath = obj.ctx.settings.logpath
     assert not list(logpath.glob("*.log"))
 
 
-def test_command_internal_error(runner, ctx):
-    result = runner.invoke(cmd, ["runtimeerror"], obj=ctx)
+def test_command_internal_error(runner, obj):
+    result = runner.invoke(cmd, ["runtimeerror"], obj=obj)
     assert result.exit_code == 1
-    logpath = ctx.settings.logpath
+    logpath = obj.ctx.settings.logpath
     logfile = next(logpath.glob("*.log"))
     logcontent = logfile.read_text()
     assert "an unexpected error occurred" in logcontent
@@ -94,31 +99,31 @@ def test_require_component(runner, ctx):
     assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
 
 
-def test_cli(runner, ctx):
-    result = runner.invoke(cli, obj=ctx)
+def test_cli(runner, obj):
+    result = runner.invoke(cli, obj=obj)
     assert result.exit_code == 0
 
 
-def test_version(runner, ctx):
-    result = runner.invoke(cli, ["--version"], obj=ctx)
+def test_version(runner, obj):
+    result = runner.invoke(cli, ["--version"], obj=obj)
     assert re.match(r"pglift version (\d\.).*", result.stdout)
 
 
-def test_site_configure(runner, ctx, tmp_path):
+def test_site_configure(runner, ctx, obj, tmp_path):
     with patch.object(_install, "do") as do_install:
         result = runner.invoke(
-            cli, ["site-configure", "install", f"--settings={tmp_path}"], obj=ctx
+            cli, ["site-configure", "install", f"--settings={tmp_path}"], obj=obj
         )
     assert result.exit_code == 0, result
     do_install.assert_called_once_with(ctx, env=f"SETTINGS=@{tmp_path}")
 
     with patch.object(_install, "undo") as undo_install:
-        result = runner.invoke(cli, ["site-configure", "uninstall"], obj=ctx)
+        result = runner.invoke(cli, ["site-configure", "uninstall"], obj=obj)
     assert result.exit_code == 0, result
     undo_install.assert_called_once_with(ctx)
 
 
-def test_instance_init(runner, ctx, instance):
+def test_instance_init(runner, ctx, obj, instance):
     assert [p.name for p in instance_init.params] == [
         "name",
         "version",
@@ -133,7 +138,7 @@ def test_instance_init(runner, ctx, instance):
         result = runner.invoke(
             cli,
             ["instance", "init", instance.name, f"--version={instance.version}"],
-            obj=ctx,
+            obj=obj,
         )
     assert not apply.call_count
     assert result.exit_code == 1
@@ -143,14 +148,14 @@ def test_instance_init(runner, ctx, instance):
         result = runner.invoke(
             cli,
             ["instance", "init", "new", "--port=1234"],
-            obj=ctx,
+            obj=obj,
         )
     apply.assert_called_once_with(ctx, interface.Instance(name="new", port=1234))
     assert result.exit_code == 0, result
 
 
-def test_instance_apply(tmp_path, runner, ctx):
-    result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=ctx)
+def test_instance_apply(tmp_path, runner, ctx, obj):
+    result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=obj)
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.stderr
 
@@ -158,16 +163,16 @@ def test_instance_apply(tmp_path, runner, ctx):
     content = yaml.dump({"name": "test"})
     manifest.write_text(content)
     with patch.object(instance_mod, "apply") as mock_method:
-        result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=ctx)
+        result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     mock_method.assert_called_once()
     assert mock_method.call_args[0][0] == ctx
     assert isinstance(mock_method.call_args[0][1], interface.Instance)
 
 
-def test_instance_alter(runner, ctx):
+def test_instance_alter(runner, ctx, obj):
     result = runner.invoke(
-        cli, ["instance", "alter", "notfound", "--version=11"], obj=ctx
+        cli, ["instance", "alter", "notfound", "--version=11"], obj=obj
     )
     assert result.exit_code == 1
     assert "Error: instance '11/notfound' not found" in result.stderr
@@ -194,34 +199,34 @@ def test_instance_alter(runner, ctx):
                 "--state=stopped",
                 "--prometheus-port=2121",
             ],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, "alterme", None)
     apply.assert_called_once_with(ctx, altered)
     assert result.exit_code == 0, result.output
 
 
-def test_instance_schema(runner, ctx):
-    result = runner.invoke(cli, ["instance", "schema"], obj=ctx)
+def test_instance_schema(runner, obj):
+    result = runner.invoke(cli, ["instance", "schema"], obj=obj)
     schema = json.loads(result.output)
     assert schema["title"] == "Instance"
     assert schema["description"] == "PostgreSQL instance"
 
 
-def test_instance_describe(runner, ctx, instance):
-    result = runner.invoke(cli, ["instance", "describe"], obj=ctx)
+def test_instance_describe(runner, ctx, obj, instance):
+    result = runner.invoke(cli, ["instance", "describe"], obj=obj)
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.stderr
 
     instance = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=instance) as describe:
-        result = runner.invoke(cli, ["instance", "describe", "test"], obj=ctx)
+        result = runner.invoke(cli, ["instance", "describe", "test"], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     describe.assert_called_once_with(ctx, "test", None)
     assert "name: test" in result.output
 
 
-def test_instance_list(runner, instance, ctx):
+def test_instance_list(runner, instance, ctx, obj):
     name, version = instance.name, instance.version
     port = instance.config().port
     path = instance.path
@@ -230,7 +235,7 @@ def test_instance_list(runner, instance, ctx):
         "-----------------------------",
         f"{name} {version} {port} {path} not_running",
     ]
-    result = runner.invoke(cli, ["instance", "list"], obj=ctx)
+    result = runner.invoke(cli, ["instance", "list"], obj=obj)
     assert result.exit_code == 0
     lines = result.output.splitlines()
     assert lines[0].split() == expected[0].split()
@@ -245,12 +250,12 @@ def test_instance_list(runner, instance, ctx):
             "version": version,
         }
     ]
-    result = runner.invoke(cli, ["instance", "list", "--json"], obj=ctx)
+    result = runner.invoke(cli, ["instance", "list", "--json"], obj=obj)
     assert result.exit_code == 0
     assert json.loads(result.output) == expected_list_as_json
 
     result = runner.invoke(
-        cli, ["instance", "list", "--json", f"--version={instance.version}"], obj=ctx
+        cli, ["instance", "list", "--json", f"--version={instance.version}"], obj=obj
     )
     assert result.exit_code == 0
     assert json.loads(result.output) == expected_list_as_json
@@ -259,33 +264,33 @@ def test_instance_list(runner, instance, ctx):
         v for v in ctx.settings.postgresql.versions if v != instance.version
     )
     result = runner.invoke(
-        cli, ["instance", "list", "--json", f"--version={other_version}"], obj=ctx
+        cli, ["instance", "list", "--json", f"--version={other_version}"], obj=obj
     )
     assert result.exit_code == 0
     assert json.loads(result.output) == []
     result = runner.invoke(
-        cli, ["instance", "list", f"--version={other_version}"], obj=ctx
+        cli, ["instance", "list", f"--version={other_version}"], obj=obj
     )
     assert result.exit_code == 0
     assert not result.output
 
 
-def test_instance_drop(runner, ctx, instance):
-    result = runner.invoke(cli, ["instance", "drop"], obj=ctx)
+def test_instance_drop(runner, ctx, obj, instance):
+    result = runner.invoke(cli, ["instance", "drop"], obj=obj)
     assert result.exit_code == 2
     assert "Missing argument 'NAME'" in result.stderr
 
     with patch.object(instance_mod, "drop") as patched:
-        result = runner.invoke(cli, ["instance", "drop", "test"], obj=ctx)
+        result = runner.invoke(cli, ["instance", "drop", "test"], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     patched.assert_called_once_with(ctx, instance)
 
 
-def test_instance_status(runner, instance, ctx):
+def test_instance_status(runner, instance, ctx, obj):
     with patch.object(
         instance_mod, "status", return_value=Status.not_running
     ) as patched:
-        result = runner.invoke(cli, ["instance", "status", instance.name], obj=ctx)
+        result = runner.invoke(cli, ["instance", "status", instance.name], obj=obj)
     assert result.exit_code == 3, (result, result.output)
     assert result.stdout == "not running\n"
     patched.assert_called_once_with(ctx, instance)
@@ -295,20 +300,20 @@ def test_instance_status(runner, instance, ctx):
     ["action", "kwargs"],
     [("start", {"foreground": False}), ("stop", {}), ("reload", {}), ("restart", {})],
 )
-def test_instance_operations(runner, instance, ctx, action, kwargs):
+def test_instance_operations(runner, instance, ctx, obj, action, kwargs):
     with patch.object(instance_mod, action) as patched:
         result = runner.invoke(
-            cli, ["instance", action, instance.name, instance.version], obj=ctx
+            cli, ["instance", action, instance.name, instance.version], obj=obj
         )
     assert result.exit_code == 0, result
     patched.assert_called_once_with(ctx, instance, **kwargs)
 
 
-def test_instance_shell(runner, instance, ctx):
+def test_instance_shell(runner, instance, ctx, obj):
     with patch.object(
         instance_mod, "status", return_value=instance_mod.Status.not_running
     ) as status, patch.object(instance_mod, "shell") as shell:
-        r = runner.invoke(cli, ["instance", "shell", instance.name], obj=ctx)
+        r = runner.invoke(cli, ["instance", "shell", instance.name], obj=obj)
     status.assert_called_once_with(ctx, instance)
     assert not shell.called
     assert r.exit_code == 1
@@ -317,24 +322,24 @@ def test_instance_shell(runner, instance, ctx):
     with patch.object(
         instance_mod, "status", return_value=instance_mod.Status.running
     ) as status, patch.object(instance_mod, "shell") as shell:
-        runner.invoke(cli, ["instance", "shell", instance.name, "-U", "bob"], obj=ctx)
+        runner.invoke(cli, ["instance", "shell", instance.name, "-U", "bob"], obj=obj)
     status.assert_called_once_with(ctx, instance)
     shell.assert_called_once_with(ctx, instance, user="bob", dbname=None)
 
 
-def test_instance_backup(runner, instance, ctx):
+def test_instance_backup(runner, instance, obj):
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
             cli,
             ["instance", "backup", instance.name, instance.version, "--type=diff"],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result
     assert backup.call_count == 1
     assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
 
 
-def test_instance_restore_list(runner, instance, ctx):
+def test_instance_restore_list(runner, instance, obj):
     bck = interface.InstanceBackup(
         label="foo",
         size=12,
@@ -347,7 +352,7 @@ def test_instance_restore_list(runner, instance, ctx):
         result = runner.invoke(
             cli,
             ["instance", "restore", instance.name, instance.version, "--list"],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result
     assert iter_backups.call_count == 1
@@ -359,12 +364,12 @@ def test_instance_restore_list(runner, instance, ctx):
     )
 
 
-def test_instance_restore(runner, instance, ctx):
+def test_instance_restore(runner, instance, ctx, obj):
     with patch("pglift.instance.status", return_value=Status.running) as status:
         result = runner.invoke(
             cli,
             ["instance", "restore", instance.name, instance.version],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 1, result
     assert "instance is running" in result.stderr
@@ -380,13 +385,13 @@ def test_instance_restore(runner, instance, ctx):
                 instance.version,
                 "--label=xyz",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result
     assert restore.called_once_with(ctx, instance, label="xyz")
 
 
-def test_instance_privileges(ctx, instance, runner, running):
+def test_instance_privileges(ctx, obj, instance, runner, running):
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -412,7 +417,7 @@ def test_instance_privileges(ctx, instance, runner, running):
                 "-r",
                 "rol2",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
@@ -429,7 +434,7 @@ def test_instance_privileges(ctx, instance, runner, running):
     ]
 
 
-def test_role_create(ctx, instance, runner, running):
+def test_role_create(ctx, obj, instance, runner, running):
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"
     ) as apply:
@@ -446,7 +451,7 @@ def test_role_create(ctx, instance, runner, running):
                 "--in-role=monitoring",
                 "--in-role=backup",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result
     exists.assert_called_once_with(ctx, instance, "rob")
@@ -473,7 +478,7 @@ def test_role_create(ctx, instance, runner, running):
                 f"{instance.version}/{instance.name}",
                 "bob",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 1
     assert "role already exists" in result.stderr
@@ -481,7 +486,7 @@ def test_role_create(ctx, instance, runner, running):
     running.assert_called_once_with(ctx, instance)
 
 
-def test_role_alter(runner, ctx, instance, running):
+def test_role_alter(runner, ctx, obj, instance, running):
     actual = interface.Role(name="alterme", connection_limit=3)
     altered = interface.Role(
         name="alterme",
@@ -508,7 +513,7 @@ def test_role_alter(runner, ctx, instance, running):
                 "--login",
                 "--no-inherit",
             ],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "alterme")
     apply.assert_called_once_with(ctx, instance, altered)
@@ -522,7 +527,7 @@ def test_role_schema(runner):
     assert schema["description"] == "PostgreSQL role"
 
 
-def test_role_apply(runner, tmp_path, ctx, instance, running):
+def test_role_apply(runner, tmp_path, ctx, obj, instance, running):
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "roltest", "pgpass": True})
     manifest.write_text(content)
@@ -530,7 +535,7 @@ def test_role_apply(runner, tmp_path, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["role", "apply", str(instance), "-f", str(manifest)],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0
     apply.assert_called_once()
@@ -542,14 +547,14 @@ def test_role_apply(runner, tmp_path, ctx, instance, running):
     assert kwargs == {}
 
 
-def test_role_describe(runner, ctx, instance, running):
+def test_role_describe(runner, ctx, obj, instance, running):
     with patch.object(
         roles, "describe", side_effect=exceptions.RoleNotFound("absent")
     ) as describe:
         result = runner.invoke(
             cli,
             ["role", "describe", str(instance), "absent"],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
@@ -576,7 +581,7 @@ def test_role_describe(runner, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["role", "describe", instance.name, "present"],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
@@ -594,14 +599,14 @@ def test_role_describe(runner, ctx, instance, running):
     }
 
 
-def test_role_drop(runner, ctx, instance, running):
+def test_role_drop(runner, ctx, obj, instance, running):
     with patch.object(
         roles, "drop", side_effect=exceptions.RoleNotFound("bar")
     ) as drop:
         result = runner.invoke(
             cli,
             ["role", "drop", str(instance), "foo"],
-            obj=ctx,
+            obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
@@ -614,14 +619,14 @@ def test_role_drop(runner, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["role", "drop", str(instance), "foo"],
-            obj=ctx,
+            obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
 
 
-def test_role_privileges(ctx, instance, runner, running):
+def test_role_privileges(ctx, obj, instance, runner, running):
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -645,7 +650,7 @@ def test_role_privileges(ctx, instance, runner, running):
                 "-d",
                 "db2",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
@@ -663,7 +668,7 @@ def test_role_privileges(ctx, instance, runner, running):
     ]
 
 
-def test_database_create(ctx, instance, runner, running):
+def test_database_create(ctx, obj, instance, runner, running):
     with patch.object(databases, "exists", return_value=False) as exists, patch.object(
         databases, "apply"
     ) as apply:
@@ -675,7 +680,7 @@ def test_database_create(ctx, instance, runner, running):
                 f"{instance.version}/{instance.name}",
                 "db_test1",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result
     exists.assert_called_once_with(ctx, instance, "db_test1")
@@ -694,7 +699,7 @@ def test_database_create(ctx, instance, runner, running):
                 f"{instance.version}/{instance.name}",
                 "db_test2",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 1
     assert "database already exists" in result.stderr
@@ -702,7 +707,7 @@ def test_database_create(ctx, instance, runner, running):
     running.assert_called_once_with(ctx, instance)
 
 
-def test_database_alter(runner, ctx, instance, running):
+def test_database_alter(runner, ctx, obj, instance, running):
     actual = interface.Database(name="alterme")
     altered = interface.Database(name="alterme", owner="dba")
 
@@ -718,7 +723,7 @@ def test_database_alter(runner, ctx, instance, running):
                 "alterme",
                 "--owner=dba",
             ],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "alterme")
     apply.assert_called_once_with(ctx, instance, altered)
@@ -732,7 +737,7 @@ def test_database_schema(runner):
     assert schema["description"] == "PostgreSQL database"
 
 
-def test_database_apply(runner, tmp_path, ctx, instance, running):
+def test_database_apply(runner, tmp_path, ctx, obj, instance, running):
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "dbtest"})
     manifest.write_text(content)
@@ -740,7 +745,7 @@ def test_database_apply(runner, tmp_path, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["database", "apply", str(instance), "-f", str(manifest)],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0
     apply.assert_called_once()
@@ -752,14 +757,14 @@ def test_database_apply(runner, tmp_path, ctx, instance, running):
     assert kwargs == {}
 
 
-def test_database_describe(runner, ctx, instance, running):
+def test_database_describe(runner, ctx, obj, instance, running):
     with patch.object(
         databases, "describe", side_effect=exceptions.DatabaseNotFound("absent")
     ) as describe:
         result = runner.invoke(
             cli,
             ["database", "describe", str(instance), "absent"],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
@@ -776,7 +781,7 @@ def test_database_describe(runner, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["database", "describe", instance.name, "present"],
-            obj=ctx,
+            obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
@@ -785,7 +790,7 @@ def test_database_describe(runner, ctx, instance, running):
     assert described == {"name": "present", "owner": "dba"}
 
 
-def test_database_list(runner, ctx, instance, running):
+def test_database_list(runner, ctx, obj, instance, running):
     with patch.object(
         databases,
         "list",
@@ -808,7 +813,7 @@ def test_database_list(runner, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["database", "list", instance.name, "--json"],
-            obj=ctx,
+            obj=obj,
         )
     list_.assert_called_once_with(ctx, instance)
     running.assert_called_once_with(ctx, instance)
@@ -829,14 +834,14 @@ def test_database_list(runner, ctx, instance, running):
     ]
 
 
-def test_database_drop(runner, ctx, instance, running):
+def test_database_drop(runner, ctx, obj, instance, running):
     with patch.object(
         databases, "drop", side_effect=exceptions.DatabaseNotFound("bar")
     ) as drop:
         result = runner.invoke(
             cli,
             ["database", "drop", str(instance), "foo"],
-            obj=ctx,
+            obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
@@ -849,14 +854,14 @@ def test_database_drop(runner, ctx, instance, running):
         result = runner.invoke(
             cli,
             ["database", "drop", str(instance), "foo"],
-            obj=ctx,
+            obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
 
 
-def test_database_privileges(ctx, instance, runner, running):
+def test_database_privileges(ctx, obj, instance, runner, running):
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -880,7 +885,7 @@ def test_database_privileges(ctx, instance, runner, running):
                 "-r",
                 "rol2",
             ],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
@@ -902,12 +907,12 @@ def test_database_privileges(ctx, instance, runner, running):
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
 )
-def test_postgres_exporter_start_stop(runner, ctx, instance, action, kwargs):
+def test_postgres_exporter_start_stop(runner, ctx, obj, instance, action, kwargs):
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
             cli,
             ["postgres_exporter", action, instance.qualname],
-            obj=ctx,
+            obj=obj,
         )
     patched.assert_called_once_with(ctx, instance.qualname, **kwargs)
     assert result.exit_code == 0, result
@@ -920,7 +925,7 @@ def test_postgres_exporter_schema(runner):
     assert schema["description"] == "Prometheus postgres_exporter service."
 
 
-def test_postgres_exporter_apply(runner, tmp_path, ctx):
+def test_postgres_exporter_apply(runner, tmp_path, ctx, obj):
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "123-exp", "dsn": "dbname=monitoring", "port": 123})
     manifest.write_text(content)
@@ -928,7 +933,7 @@ def test_postgres_exporter_apply(runner, tmp_path, ctx):
         result = runner.invoke(
             cli,
             ["postgres_exporter", "apply", "-f", str(manifest)],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0
     apply.assert_called_once_with(
@@ -937,12 +942,12 @@ def test_postgres_exporter_apply(runner, tmp_path, ctx):
     )
 
 
-def test_postgres_exporter_install(runner, ctx):
+def test_postgres_exporter_install(runner, ctx, obj):
     with patch.object(prometheus, "apply") as apply:
         result = runner.invoke(
             cli,
             ["postgres_exporter", "install", "123-exp", "dbname=monitoring", "123"],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0
     apply.assert_called_once_with(
@@ -951,12 +956,12 @@ def test_postgres_exporter_install(runner, ctx):
     )
 
 
-def test_postgres_exporter_uninstall(runner, ctx):
+def test_postgres_exporter_uninstall(runner, ctx, obj):
     with patch.object(prometheus, "drop") as drop:
         result = runner.invoke(
             cli,
             ["postgres_exporter", "uninstall", "123-exp"],
-            obj=ctx,
+            obj=obj,
         )
     assert result.exit_code == 0
     drop.assert_called_once_with(ctx, "123-exp")

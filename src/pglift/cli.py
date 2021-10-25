@@ -27,9 +27,30 @@ from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import runner
 
 
+class Obj:
+    """Object bound to click.Context"""
+
+    def __init__(self, context: Context) -> None:
+        self.ctx = context
+
+
+def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
+    """Command decorator passing 'Context' bound to click.Context's object."""
+
+    @wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        context = click.get_current_context()
+        ctx = context.obj.ctx
+        assert isinstance(ctx, Context), ctx
+        return context.invoke(f, ctx, *args, **kwargs)
+
+    return wrapper
+
+
 class Command(click.Command):
-    def invoke(self, ctx: click.Context) -> Any:
-        logfile = ctx.obj.settings.logpath / f"{time.time()}.log"
+    def invoke(self, context: click.Context) -> Any:
+        ctx = context.obj.ctx
+        logfile = ctx.settings.logpath / f"{time.time()}.log"
         logfile.parent.mkdir(parents=True, exist_ok=True)
         logger = logging.getLogger(pkgname)
         handler = logging.FileHandler(logfile)
@@ -42,7 +63,7 @@ class Command(click.Command):
         keep_logfile = False
         try:
             try:
-                return super().invoke(ctx)
+                return super().invoke(context)
             except exceptions.Error as e:
                 msg = str(e)
                 if isinstance(e, exceptions.CommandError) and e.stderr:
@@ -105,9 +126,12 @@ def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
     return name, version
 
 
-def instance_lookup(ctx: click.Context, param: click.Parameter, value: str) -> Instance:
+def instance_lookup(
+    context: click.Context, param: click.Parameter, value: str
+) -> Instance:
     name, version = nameversion_from_id(value)
-    return get_instance(ctx.obj, name, version)
+    ctx = context.obj.ctx
+    return get_instance(ctx, name, version)
 
 
 _M = TypeVar("_M", bound=pydantic.BaseModel)
@@ -173,9 +197,10 @@ as_json_option = click.option("--json", "as_json", is_flag=True, help="Print as 
 
 
 def validate_foreground(
-    ctx: click.Context, param: click.Parameter, value: bool
+    context: click.Context, param: click.Parameter, value: bool
 ) -> bool:
-    if ctx.obj.settings.service_manager == "systemd" and value:
+    ctx = context.obj.ctx
+    if ctx.settings.service_manager == "systemd" and value:
         raise click.BadParameter("cannot be used with systemd")
     return value
 
@@ -188,11 +213,11 @@ foreground_option = click.option(
 )
 
 
-def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> None:
-    if not value or ctx.resilient_parsing:
+def print_version(context: click.Context, param: click.Parameter, value: bool) -> None:
+    if not value or context.resilient_parsing:
         return
     click.echo(f"pglift version {version()}")
-    ctx.exit()
+    context.exit()
 
 
 @click.group(cls=Group)
@@ -212,7 +237,7 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool) -> No
     help="Show program version.",
 )
 @click.pass_context
-def cli(ctx: click.core.Context, log_level: str) -> None:
+def cli(context: click.Context, log_level: str) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
     logger.setLevel(logging.DEBUG)
@@ -222,8 +247,10 @@ def cli(ctx: click.core.Context, log_level: str) -> None:
     handler.setLevel(log_level)
     logger.addHandler(handler)
 
-    if not ctx.obj:
-        ctx.obj = Context(plugin_manager=pm.PluginManager.get())
+    if not context.obj:
+        context.obj = Obj(Context(plugin_manager=pm.PluginManager.get()))
+    else:
+        assert isinstance(context.obj, Obj), context.obj
 
 
 @cli.command(
@@ -235,7 +262,7 @@ def cli(ctx: click.core.Context, log_level: str) -> None:
     "action", type=click.Choice(["install", "uninstall"]), default="install"
 )
 @click.option("--settings", type=click.Path(exists=True), help="custom settings file")
-@click.pass_obj
+@pass_ctx
 def site_configure(
     ctx: Context,
     action: Literal["install", "uninstall"],
@@ -255,7 +282,7 @@ def instance() -> None:
 
 @instance.command("init")
 @helpers.parameters_from_model(interface.Instance)
-@click.pass_obj
+@pass_ctx
 def instance_init(ctx: Context, instance: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
     if instance.spec(ctx).exists():
@@ -266,7 +293,7 @@ def instance_init(ctx: Context, instance: interface.Instance) -> None:
 
 @instance.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
-@click.pass_obj
+@pass_ctx
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     instance = interface.Instance.parse_yaml(file)
@@ -276,7 +303,7 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
 
 @instance.command("alter")
 @helpers.parameters_from_model(interface.Instance, False)
-@click.pass_obj
+@pass_ctx
 def instance_alter(
     ctx: Context, name: str, version: Optional[str] = None, **changes: Any
 ) -> None:
@@ -302,7 +329,7 @@ version_argument = click.argument("version", required=False, type=click.STRING)
 @instance.command("describe")
 @name_argument
 @version_argument
-@click.pass_obj
+@pass_ctx
 def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     """Describe a PostgreSQL instance"""
     described = instance_mod.describe(ctx, name, version)
@@ -316,7 +343,7 @@ def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
     help="Only list instances of specified version.",
 )
 @as_json_option
-@click.pass_obj
+@pass_ctx
 def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
     """List the available instances"""
 
@@ -330,7 +357,7 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
 @instance.command("drop")
 @name_argument
 @version_argument
-@click.pass_obj
+@pass_ctx
 def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
     """Drop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
@@ -342,24 +369,25 @@ def instance_drop(ctx: Context, name: str, version: Optional[str]) -> None:
 @name_argument
 @version_argument
 @click.pass_context
-def instance_status(ctx: click.core.Context, name: str, version: Optional[str]) -> None:
+def instance_status(context: click.Context, name: str, version: Optional[str]) -> None:
     """Check the status of a PostgreSQL instance.
 
     Output the status string value ('running', 'not running', 'unspecified
     datadir') and exit with respective status code (0, 3, 4).
     """
-    instance = get_instance(ctx.obj, name, version)
-    with runner(ctx.obj):
-        status = instance_mod.status(ctx.obj, instance)
+    ctx = context.obj.ctx
+    instance = get_instance(ctx, name, version)
+    with runner(ctx):
+        status = instance_mod.status(ctx, instance)
     click.echo(status.name.replace("_", " "))
-    ctx.exit(status.value)
+    context.exit(status.value)
 
 
 @instance.command("start")
 @name_argument
 @version_argument
 @foreground_option
-@click.pass_obj
+@pass_ctx
 def instance_start(
     ctx: Context, name: str, version: Optional[str], foreground: bool
 ) -> None:
@@ -373,7 +401,7 @@ def instance_start(
 @instance.command("stop")
 @name_argument
 @version_argument
-@click.pass_obj
+@pass_ctx
 def instance_stop(ctx: Context, name: str, version: Optional[str]) -> None:
     """Stop a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
@@ -384,7 +412,7 @@ def instance_stop(ctx: Context, name: str, version: Optional[str]) -> None:
 @instance.command("reload")
 @name_argument
 @version_argument
-@click.pass_obj
+@pass_ctx
 def instance_reload(ctx: Context, name: str, version: Optional[str]) -> None:
     """Reload a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
@@ -395,7 +423,7 @@ def instance_reload(ctx: Context, name: str, version: Optional[str]) -> None:
 @instance.command("restart")
 @name_argument
 @version_argument
-@click.pass_obj
+@pass_ctx
 def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
     """Restart a PostgreSQL instance"""
     instance = get_instance(ctx, name, version)
@@ -420,7 +448,7 @@ def instance_restart(ctx: Context, name: str, version: Optional[str]) -> None:
     envvar="PGUSER",
     help="database user name",
 )
-@click.pass_obj
+@pass_ctx
 def instance_shell(
     ctx: Context, name: str, version: Optional[str], user: str, dbname: Optional[str]
 ) -> None:
@@ -441,7 +469,7 @@ def instance_shell(
     help="Backup type",
     callback=lambda ctx, param, value: pgbackrest.BackupType(value),
 )
-@click.pass_obj
+@pass_ctx
 @require_pgbackrest
 def instance_backup(
     ctx: Context, name: str, version: Optional[str], backup_type: pgbackrest.BackupType
@@ -464,7 +492,7 @@ def instance_backup(
 )
 @click.option("--label", help="Label of backup to restore")
 @click.option("--date", type=click.DateTime(), help="Date of backup to restore")
-@click.pass_obj
+@pass_ctx
 @require_pgbackrest
 def instance_restore(
     ctx: Context,
@@ -496,7 +524,7 @@ def instance_restore(
 )
 @click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
 @as_json_option
-@click.pass_obj
+@pass_ctx
 def instance_privileges(
     ctx: Context,
     name: str,
@@ -530,7 +558,7 @@ def instance_privileges(
     type=click.INT,
     help="number of simultaneous processes or threads to use (from pg_upgrade)",
 )
-@click.pass_obj
+@pass_ctx
 def instance_upgrade(
     ctx: Context,
     name: str,
@@ -563,7 +591,7 @@ def role() -> None:
 @role.command("create")
 @instance_identifier
 @helpers.parameters_from_model(interface.Role)
-@click.pass_obj
+@pass_ctx
 def role_create(ctx: Context, instance: Instance, role: interface.Role) -> None:
     """Create a role in a PostgreSQL instance"""
     with instance_mod.running(ctx, instance):
@@ -576,7 +604,7 @@ def role_create(ctx: Context, instance: Instance, role: interface.Role) -> None:
 @role.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Role, False)
-@click.pass_obj
+@pass_ctx
 def role_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
     """Alter a role in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Role, changes)
@@ -597,7 +625,7 @@ def role_schema() -> None:
 @role.command("apply")
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
-@click.pass_obj
+@pass_ctx
 def role_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
     """Apply manifest as a role"""
     role = interface.Role.parse_yaml(file)
@@ -608,7 +636,7 @@ def role_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
 @role.command("describe")
 @instance_identifier
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def role_describe(ctx: Context, instance: Instance, name: str) -> None:
     """Describe a role"""
     with instance_mod.running(ctx, instance):
@@ -619,7 +647,7 @@ def role_describe(ctx: Context, instance: Instance, name: str) -> None:
 @role.command("drop")
 @instance_identifier
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def role_drop(ctx: Context, instance: Instance, name: str) -> None:
     """Drop a role"""
     with instance_mod.running(ctx, instance):
@@ -633,7 +661,7 @@ def role_drop(ctx: Context, instance: Instance, name: str) -> None:
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
 @as_json_option
-@click.pass_obj
+@pass_ctx
 def role_privileges(
     ctx: Context, instance: Instance, name: str, databases: Sequence[str], as_json: bool
 ) -> None:
@@ -658,7 +686,7 @@ def database() -> None:
 @database.command("create")
 @instance_identifier
 @helpers.parameters_from_model(interface.Database)
-@click.pass_obj
+@pass_ctx
 def database_create(
     ctx: Context, instance: Instance, database: interface.Database
 ) -> None:
@@ -673,7 +701,7 @@ def database_create(
 @database.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(interface.Database, False)
-@click.pass_obj
+@pass_ctx
 def database_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> None:
     """Alter a database in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Database, changes)
@@ -694,7 +722,7 @@ def database_schema() -> None:
 @database.command("apply")
 @instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
-@click.pass_obj
+@pass_ctx
 def database_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
     """Apply manifest as a database"""
     database = interface.Database.parse_yaml(file)
@@ -705,7 +733,7 @@ def database_apply(ctx: Context, instance: Instance, file: IO[str]) -> None:
 @database.command("describe")
 @instance_identifier
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def database_describe(ctx: Context, instance: Instance, name: str) -> None:
     """Describe a database"""
     with instance_mod.running(ctx, instance):
@@ -716,7 +744,7 @@ def database_describe(ctx: Context, instance: Instance, name: str) -> None:
 @database.command("list")
 @instance_identifier
 @as_json_option
-@click.pass_obj
+@pass_ctx
 def database_list(ctx: Context, instance: Instance, as_json: bool) -> None:
     """List databases"""
     with instance_mod.running(ctx, instance):
@@ -730,7 +758,7 @@ def database_list(ctx: Context, instance: Instance, as_json: bool) -> None:
 @database.command("drop")
 @instance_identifier
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def database_drop(ctx: Context, instance: Instance, name: str) -> None:
     """Drop a database"""
     with instance_mod.running(ctx, instance):
@@ -742,7 +770,7 @@ def database_drop(ctx: Context, instance: Instance, name: str) -> None:
 @click.argument("name")
 @click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
 @as_json_option
-@click.pass_obj
+@pass_ctx
 def database_privileges(
     ctx: Context, instance: Instance, name: str, roles: Sequence[str], as_json: bool
 ) -> None:
@@ -772,7 +800,7 @@ def database_privileges(
     multiple=True,
     help="Database to not run command on",
 )
-@click.pass_obj
+@pass_ctx
 def database_run(
     ctx: Context,
     instance: Instance,
@@ -788,7 +816,7 @@ def database_run(
 
 
 @cli.group("postgres_exporter")
-@click.pass_obj
+@pass_ctx
 @require_prometheus
 def postgres_exporter(ctx: Context) -> None:
     """Handle Prometheus postgres_exporter"""
@@ -802,7 +830,7 @@ def postgres_exporter_schema() -> None:
 
 @postgres_exporter.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
-@click.pass_obj
+@pass_ctx
 def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a Prometheus postgres_exporter."""
     exporter = interface.PostgresExporter.parse_yaml(file)
@@ -811,7 +839,7 @@ def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
 
 @postgres_exporter.command("install")
 @helpers.parameters_from_model(interface.PostgresExporter)
-@click.pass_obj
+@pass_ctx
 def postgres_exporter_install(
     ctx: Context, postgresexporter: interface.PostgresExporter
 ) -> None:
@@ -821,7 +849,7 @@ def postgres_exporter_install(
 
 @postgres_exporter.command("uninstall")
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
     """Uninstall the service."""
     prometheus.drop(ctx, name)
@@ -830,7 +858,7 @@ def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
 @postgres_exporter.command("start")
 @click.argument("name")
 @foreground_option
-@click.pass_obj
+@pass_ctx
 def postgres_exporter_start(ctx: Context, name: str, foreground: bool) -> None:
     """Start postgres_exporter service NAME.
 
@@ -843,7 +871,7 @@ def postgres_exporter_start(ctx: Context, name: str, foreground: bool) -> None:
 
 @postgres_exporter.command("stop")
 @click.argument("name")
-@click.pass_obj
+@pass_ctx
 def postgres_exporter_stop(ctx: Context, name: str) -> None:
     """Stop postgres_exporter service NAME.
 
