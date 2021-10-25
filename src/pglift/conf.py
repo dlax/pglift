@@ -88,4 +88,5 @@ def create_log_directory(instance: "BaseInstance", path: Path) -> None:
 
 @absolute_path
 def remove_log_directory(instance: "BaseInstance", path: Path) -> None:
-    shutil.rmtree(path)
+    if path.exists():
+        shutil.rmtree(path)

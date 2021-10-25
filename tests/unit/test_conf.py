@@ -44,3 +44,4 @@ def test_log_directory(instance, log_directory):
     conf.remove_log_directory(instance, log_dir)
     assert not abs_log_dir.exists()
     assert abs_log_dir.parent.exists()
+    conf.remove_log_directory(instance, log_dir)  # no-op
