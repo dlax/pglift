@@ -268,11 +268,12 @@ def site_configure(
     action: Literal["install", "uninstall"],
     settings: Optional[str],
 ) -> None:
-    if action == "install":
-        env = f"SETTINGS=@{settings}" if settings else None
-        _install.do(ctx, env=env)
-    elif action == "uninstall":
-        _install.undo(ctx)
+    with runner(ctx):
+        if action == "install":
+            env = f"SETTINGS=@{settings}" if settings else None
+            _install.do(ctx, env=env)
+        elif action == "uninstall":
+            _install.undo(ctx)
 
 
 @cli.group("instance")

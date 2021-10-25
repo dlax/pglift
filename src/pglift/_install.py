@@ -3,7 +3,7 @@ from typing import Optional
 
 from . import systemd
 from .ctx import BaseContext
-from .task import runner, task
+from .task import task
 
 
 def with_header(content: str, header: str) -> str:
@@ -126,18 +126,16 @@ def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
     if ctx.settings.service_manager != "systemd":
         ctx.warning("not using systemd as 'service_manager', skipping installation")
         return
-    with runner(ctx):
-        postgresql_systemd_unit_template(ctx, env=env, header=header)
-        postgres_exporter_systemd_unit_template(ctx, header=header)
-        postgresql_backup_systemd_templates(ctx, env=env, header=header)
-        systemd.daemon_reload(ctx)
+    postgresql_systemd_unit_template(ctx, env=env, header=header)
+    postgres_exporter_systemd_unit_template(ctx, header=header)
+    postgresql_backup_systemd_templates(ctx, env=env, header=header)
+    systemd.daemon_reload(ctx)
 
 
 def undo(ctx: BaseContext) -> None:
     if ctx.settings.service_manager != "systemd":
         return
-    with runner(ctx):
-        revert_postgresql_backup_systemd_templates(ctx)
-        revert_postgres_exporter_systemd_unit_template(ctx)
-        revert_postgresql_systemd_unit_template(ctx)
-        systemd.daemon_reload(ctx)
+    revert_postgresql_backup_systemd_templates(ctx)
+    revert_postgres_exporter_systemd_unit_template(ctx)
+    revert_postgresql_systemd_unit_template(ctx)
+    systemd.daemon_reload(ctx)
