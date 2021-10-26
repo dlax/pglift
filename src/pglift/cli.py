@@ -318,11 +318,13 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
 
 @click.group(cls=Group)
 @click.option(
+    "-L",
     "--log-level",
     type=click.Choice(
         ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
     ),
     default="warning",
+    help="Set log threshold",
 )
 @click.option(
     "-l",
