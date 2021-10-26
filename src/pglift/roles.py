@@ -99,6 +99,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
     return interface.Role(**values)
 
 
+@task("drop role '{name}' from instance {instance}")
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a role from instance.
 
@@ -177,6 +178,7 @@ def options_and_args(
     return sql.SQL(" ").join(opts), args
 
 
+@task("create role '{role.name}' on instance {instance}")
 def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     """Create 'role' in 'instance'.
 
@@ -258,6 +260,7 @@ def in_pgpass(ctx: BaseContext, instance: Instance, role: Role) -> bool:
     return any(entry.matches(username=role.name, port=port) for entry in passfile)
 
 
+@task("edit password file entry for '{role.name}' role")
 def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
     """Add, update or remove a password file entry for 'role' of 'instance'."""
 

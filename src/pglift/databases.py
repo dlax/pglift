@@ -8,6 +8,7 @@ from . import db, exceptions, types
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance
+from .task import task
 
 
 def apply(
@@ -56,6 +57,7 @@ def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabas
     return [interface.DetailedDatabase(**v) for v in values]
 
 
+@task("drop '{name}' database from instance {instance}")
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a database from instance.
 
@@ -94,6 +96,7 @@ def options_and_args(
     return sql.SQL(" ").join(opts), args
 
 
+@task("create '{database.name}' database on instance {instance}")
 def create(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Create 'database' in 'instance'.
 

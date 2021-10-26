@@ -808,10 +808,11 @@ def role_describe(ctx: Context, instance: Instance, name: str) -> None:
 @role.command("drop")
 @instance_identifier
 @click.argument("name")
+@pass_runner
 @pass_ctx
-def role_drop(ctx: Context, instance: Instance, name: str) -> None:
+def role_drop(ctx: Context, runner: Runner, instance: Instance, name: str) -> None:
     """Drop a role"""
-    with instance_mod.running(ctx, instance):
+    with instance_mod.running(ctx, instance), runner:
         roles.drop(ctx, instance, name)
 
 
@@ -926,10 +927,11 @@ def database_list(ctx: Context, instance: Instance, as_json: bool) -> None:
 @database.command("drop")
 @instance_identifier
 @click.argument("name")
+@pass_runner
 @pass_ctx
-def database_drop(ctx: Context, instance: Instance, name: str) -> None:
+def database_drop(ctx: Context, runner: Runner, instance: Instance, name: str) -> None:
     """Drop a database"""
-    with instance_mod.running(ctx, instance):
+    with instance_mod.running(ctx, instance), runner:
         databases.drop(ctx, instance, name)
 
 

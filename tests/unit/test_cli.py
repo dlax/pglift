@@ -612,7 +612,7 @@ def test_role_drop(runner, ctx, obj, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
-    assert result.stderr.strip() == "Error: role 'bar' not found"
+    assert result.stderr.splitlines()[-1] == "Error: role 'bar' not found"
 
     running.reset_mock()
 
@@ -847,7 +847,7 @@ def test_database_drop(runner, ctx, obj, instance, running):
     drop.assert_called_once_with(ctx, instance, "foo")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
-    assert result.stderr.strip() == "Error: database 'bar' not found"
+    assert result.stderr.splitlines()[-1] == "Error: database 'bar' not found"
 
     running.reset_mock()
 
