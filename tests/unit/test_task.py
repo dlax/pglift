@@ -1,8 +1,29 @@
+import contextlib
 import re
+from typing import Any, Iterator, List, Tuple
 
 import pytest
 
 from pglift import task
+
+
+class SimpleDisplayer:
+    def __enter__(self) -> "SimpleDisplayer":
+        self.records: List[Tuple[str, bool]] = []
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        pass
+
+    @contextlib.contextmanager
+    def handle(self, msg: str) -> Iterator[None]:
+        try:
+            yield None
+        except Exception:
+            self.records.append((msg, False))
+            raise
+        else:
+            self.records.append((msg, True))
 
 
 def test_task():
@@ -39,7 +60,7 @@ def test_runner_state(logger):
 def test_runner(logger):
     values = set()
 
-    @task.task("add numbers")
+    @task.task("add {x} to values")
     def add(x: int, fail: bool = False) -> None:
         values.add(x)
         if fail:
@@ -48,13 +69,15 @@ def test_runner(logger):
     add(1)
     assert values == {1}
 
+    displayer = SimpleDisplayer()
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(logger):
+        with task.Runner(logger, displayer):
             add(2, fail=True)
     # no revert action
     assert values == {1, 2}
+    assert displayer.records == [("Add 2 to values", False)]
 
-    @add.revert("remove numbers")
+    @add.revert("remove {x} from values (fail={fail})")
     def remove(x: int, fail: bool = False) -> None:
         try:
             values.remove(x)
@@ -62,10 +85,16 @@ def test_runner(logger):
             pass
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(logger):
+        with task.Runner(logger, displayer):
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2}
+    assert displayer.records == [
+        ("Add 3 to values", True),
+        ("Add 4 to values", False),
+        ("Remove 4 from values (fail=True)", True),
+        ("Remove 3 from values (fail=False)", True),
+    ]
 
     @add.revert("remove numbers, failed")
     def remove_fail(x: int, fail: bool = False) -> None:

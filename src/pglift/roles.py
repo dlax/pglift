@@ -234,7 +234,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         cnx.commit()
 
 
-@task("set PostgreSQL role password")
+@task("set password for '{role.name}' role")
 def set_password_for(
     ctx: BaseContext, instance: PostgreSQLInstance, role: Role
 ) -> None:

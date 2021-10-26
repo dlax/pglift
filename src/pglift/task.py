@@ -1,6 +1,7 @@
 import collections
 import contextlib
 import functools
+import inspect
 from types import TracebackType
 from typing import (
     Any,
@@ -62,7 +63,10 @@ class Task(Generic[A]):
     def _call(self, *args: Any, **kwargs: Any) -> Any:
         if self._calls is not None:
             self._calls.append((self, args, kwargs))
-        with self.display(self.title):
+        s = inspect.signature(self.action)
+        b = s.bind(*args, **kwargs)
+        b.apply_defaults()
+        with self.display(self.title.format(**b.arguments)):
             return self.action(*args, **kwargs)
 
     __call__ = cast(A, _call)
@@ -86,9 +90,13 @@ class Task(Generic[A]):
         title = title[0].upper() + title[1:]
 
         def decorator(revertfn: A) -> A:
+            s = inspect.signature(revertfn)
+
             @functools.wraps(revertfn)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
-                with self.display(title):
+                b = s.bind(*args, **kwargs)
+                b.apply_defaults()
+                with self.display(title.format(**b.arguments)):
                     return revertfn(*args, **kwargs)
 
             w = cast(A, wrapper)
