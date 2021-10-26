@@ -226,7 +226,7 @@ def test_instance_describe(runner, ctx, obj, instance):
     assert "name: test" in result.output
 
 
-def test_instance_list(runner, instance, ctx, obj):
+def test_instance_list(runner, instance, ctx, obj, tmp_path):
     name, version = instance.name, instance.version
     port = instance.config().port
     path = instance.path
@@ -239,9 +239,16 @@ def test_instance_list(runner, instance, ctx, obj):
             "version": version,
         }
     ]
-    result = runner.invoke(cli, ["instance", "list", "--json"], obj=obj)
+    logfile = tmp_path / "logfile"
+    result = runner.invoke(
+        cli,
+        ["--log-level=info", f"--log-file={logfile}", "instance", "list", "--json"],
+        obj=obj,
+    )
     assert result.exit_code == 0
     assert json.loads(result.output) == expected_list_as_json
+
+    assert "pg_ctl --version" in logfile.read_text()
 
     result = runner.invoke(
         cli, ["instance", "list", "--json", f"--version={instance.version}"], obj=obj

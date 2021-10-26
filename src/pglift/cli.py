@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pathlib
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -17,6 +18,7 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -323,6 +325,13 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     default="warning",
 )
 @click.option(
+    "-l",
+    "--log-file",
+    type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+    metavar="LOGFILE",
+    help="Write log to LOGFILE",
+)
+@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -331,19 +340,30 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     help="Show program version.",
 )
 @click.pass_context
-def cli(context: click.Context, log_level: str) -> None:
+def cli(
+    context: click.Context, log_level: str, log_file: Optional[pathlib.Path]
+) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
     logger.setLevel(logging.DEBUG)
-    handler = rich.logging.RichHandler(
-        level=log_level,
-        console=rich.console.Console(stderr=True),
-        show_time=True,
-        log_time_format="%X",
-        omit_repeated_times=False,
-        show_path=False,
-        highlighter=NullHighlighter(),
-    )
+    handler: Union[logging.Handler, rich.logging.RichHandler]
+    if log_file:
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter(
+            fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%X"
+        )
+        handler.setFormatter(formatter)
+        handler.setLevel(log_level)
+    else:
+        handler = rich.logging.RichHandler(
+            level=log_level,
+            console=rich.console.Console(stderr=True),
+            show_time=True,
+            log_time_format="%X",
+            omit_repeated_times=False,
+            show_path=False,
+            highlighter=NullHighlighter(),
+        )
     logger.addHandler(handler)
     # Remove rich handler on close since this would pollute all tests stderr
     # otherwise.
