@@ -200,6 +200,10 @@ class LiveDisplayer(Live):
         self._level = 0
         self._width = width or self.console.size.width
 
+    def stop(self) -> None:
+        super().stop()
+        self.console.line()
+
     @contextmanager
     def handle(self, msg: str) -> Iterator[None]:
         """Register 'msg' as the current (running) operation."""
