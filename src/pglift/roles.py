@@ -198,6 +198,7 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         cnx.commit()
 
 
+@task("alter role '{role.name}' on instance {instance}")
 def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     """Alter 'role' in 'instance'.
 

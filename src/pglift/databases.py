@@ -115,6 +115,7 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
             )
 
 
+@task("alter '{database.name}' database on instance {instance}")
 def alter(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Alter 'database' in 'instance'.
 
