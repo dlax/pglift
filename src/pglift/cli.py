@@ -100,6 +100,7 @@ class Command(click.Command):
             try:
                 return super().invoke(context)
             except exceptions.Error as e:
+                logger.debug("an internal error occurred", exc_info=True)
                 msg = str(e)
                 if isinstance(e, exceptions.CommandError) and e.stderr:
                     msg += f"\n{e.stderr}"
@@ -107,6 +108,7 @@ class Command(click.Command):
             except (click.ClickException, click.Abort, click.exceptions.Exit):
                 raise
             except pydantic.ValidationError as e:
+                logger.debug("a validation error occurred", exc_info=True)
                 raise click.ClickException(str(e))
             except Exception:
                 keep_logfile = True
