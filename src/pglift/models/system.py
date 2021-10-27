@@ -223,7 +223,12 @@ class PostgreSQLInstance(BaseInstance):
 
         Refer to :func:`pglift.conf.read` for complete documentation.
         """
-        return conf.read(self.datadir, managed_only=managed_only)
+        try:
+            return conf.read(self.datadir, managed_only=managed_only)
+        except exceptions.FileNotFoundError:
+            if managed_only:
+                return Configuration()
+            raise
 
     @property
     def port(self) -> int:

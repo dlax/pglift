@@ -113,6 +113,8 @@ def test_postgresqlinstance_config(instance):
     assert config.port == 999
     assert config.unix_socket_directories == "/socks"
 
+    assert not instance.config(managed_only=True).as_dict()
+
 
 def test_postgresqlinstance_standby_for(ctx, instance):
     (instance.datadir / "postgresql.auto.conf").write_text(
