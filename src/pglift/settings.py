@@ -123,6 +123,11 @@ class AuthEnviron(TypedDict, total=False):
 
 @frozen
 class AuthSettings(BaseSettings):
+    """PostgreSQL authentication settings."""
+
+    class Config:
+        env_prefix = "postgresql_auth_"
+
     local: AuthMethod = "trust"
     """Default authentication method for local TCP/IP connections"""
     host: AuthMethod = "trust"
@@ -161,6 +166,9 @@ class AuthSettings(BaseSettings):
 class InitdbSettings(BaseSettings):
     """Settings for initdb step of a PostgreSQL instance."""
 
+    class Config:
+        env_prefix = "postgresql_initdb_"
+
     locale: Optional[str] = "C"
     """Instance locale as used by initdb."""
 
@@ -171,6 +179,9 @@ class InitdbSettings(BaseSettings):
 @frozen
 class PostgreSQLSettings(BaseSettings):
     """Settings for PostgreSQL."""
+
+    class Config:
+        env_prefix = "postgresql_"
 
     bindir: str = _postgresql_bindir()
     """Default PostgreSQL bindir, templated by version."""
@@ -244,6 +255,9 @@ class PostgreSQLSettings(BaseSettings):
 class PgBackRestSettings(BaseSettings):
     """Settings for pgBackRest."""
 
+    class Config:
+        env_prefix = "pgbackrest_"
+
     execpath: Path = Path("/usr/bin/pgbackrest")
     """Path to the pbBackRest executable."""
 
@@ -271,6 +285,9 @@ class PgBackRestSettings(BaseSettings):
 class PrometheusSettings(BaseSettings):
     """Settings for Prometheus postgres_exporter"""
 
+    class Config:
+        env_prefix = "prometheus_"
+
     execpath: Path = Path("/usr/bin/prometheus-postgres-exporter")
     """Path to the postgres_exporter executable."""
 
@@ -288,6 +305,10 @@ class PrometheusSettings(BaseSettings):
 
 @frozen
 class SystemdSettings(BaseSettings):
+    """Systemd settings."""
+
+    class Config:
+        env_prefix = "systemd_"
 
     unit_path: Path = xdg_data_home() / "systemd" / "user"
     """Base path where systemd units will be installed."""
