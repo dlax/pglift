@@ -11,4 +11,6 @@ export PYBUILD_NAME=pglift
 
 override_dh_auto_build:
 	dh_auto_build
+ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
 	PYTHONPATH=./src http_proxy='127.0.0.1:9' sphinx-build -b html -W -T -N docs/ docs/_build
+endif
