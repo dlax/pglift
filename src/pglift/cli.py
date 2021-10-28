@@ -394,14 +394,18 @@ def cli(
 @click.argument(
     "action", type=click.Choice(["install", "uninstall"]), default="install"
 )
-@click.option("--settings", type=click.Path(exists=True), help="custom settings file")
+@click.option(
+    "--settings",
+    type=click.Path(exists=True, path_type=pathlib.Path),
+    help="Custom settings file.",
+)
 @pass_runner
 @pass_ctx
 def site_configure(
     ctx: Context,
     runner: Runner,
     action: Literal["install", "uninstall"],
-    settings: Optional[str],
+    settings: Optional[pathlib.Path],
 ) -> None:
     with runner:
         if action == "install":
