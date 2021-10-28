@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+case "$1" in
+    configure)
+        env SETTINGS='{"service_manager": "systemd", "systemd": {"unit_path": "/lib/systemd/system"}}' \
+            pglift site-configure install
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

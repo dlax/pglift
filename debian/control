@@ -47,3 +47,12 @@ Description: PostgreSQL instances operation (common documentation)
  PostgreSQL instances operation.
  .
  This is the common documentation package.
+
+Package: systemd-pglift
+Architecture: all
+Section: admin
+Depends:
+  python3-pglift (= ${source:Version}),
+  systemd-sysv,
+Description: systemd template units for pglift
+ Provides systemd template units to be used by pglift.
