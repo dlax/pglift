@@ -134,6 +134,7 @@ def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
 
 def undo(ctx: BaseContext) -> None:
     if ctx.settings.service_manager != "systemd":
+        ctx.warning("not using systemd as 'service_manager', skipping uninstallation")
         return
     revert_postgresql_backup_systemd_templates(ctx)
     revert_postgres_exporter_systemd_unit_template(ctx)
