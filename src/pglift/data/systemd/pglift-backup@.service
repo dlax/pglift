@@ -1,6 +1,6 @@
 [Unit]
 Description=Backup %i PostgreSQL database instance
-After=postgresql@%i.service
+After=pglift-postgresql@%i.service
 
 [Service]
 Type=oneshot

@@ -13,7 +13,8 @@ from pglift.models.system import InstanceSpec, PrometheusService
 
 def test_systemd_unit(pg_version, instance):
     assert (
-        instance_mod.systemd_unit(instance) == f"postgresql@{pg_version}-test.service"
+        instance_mod.systemd_unit(instance)
+        == f"pglift-postgresql@{pg_version}-test.service"
     )
 
 

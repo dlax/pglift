@@ -7,7 +7,7 @@ from .pgbackrest import BackupType, backup
 
 
 def systemd_timer(instance: BaseInstance) -> str:
-    return f"postgresql-backup@{instance.version}-{instance.name}.timer"
+    return f"pglift-backup@{instance.version}-{instance.name}.timer"
 
 
 @hookimpl  # type: ignore[misc]

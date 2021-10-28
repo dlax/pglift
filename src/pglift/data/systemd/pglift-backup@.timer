@@ -1,7 +1,7 @@
 [Unit]
 Description=Backup %i PostgreSQL database instance
-Requires=postgresql@%i.service
-After=postgresql@%i.service
+Requires=pglift-postgresql@%i.service
+After=pglift-postgresql@%i.service
 
 [Timer]
 OnCalendar={calendar}

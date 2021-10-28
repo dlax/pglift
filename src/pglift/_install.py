@@ -5,6 +5,11 @@ from . import systemd
 from .ctx import BaseContext
 from .task import task
 
+POSTGRESQL_SERVICE_NAME = "pglift-postgresql@.service"
+POSTGRES_EXPORTER_SERVICE_NAME = "pglift-postgres_exporter@.service"
+BACKUP_SERVICE_NAME = "pglift-backup@.service"
+BACKUP_TIMER_NAME = "pglift-backup@.timer"
+
 
 def with_header(content: str, header: str) -> str:
     """Possibly insert `header` on top of `content`.
@@ -28,13 +33,13 @@ def postgresql_systemd_unit_template(
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
-    content = systemd.template("postgresql.service").format(
+    content = systemd.template(POSTGRESQL_SERVICE_NAME).format(
         python=sys.executable,
         environment=environment,
         pid_directory=settings.pid_directory,
     )
     systemd.install(
-        "postgresql@.service",
+        POSTGRESQL_SERVICE_NAME,
         with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
@@ -47,7 +52,9 @@ def postgresql_systemd_unit_template(
 def revert_postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
-    systemd.uninstall("postgresql@.service", ctx.settings.systemd.unit_path, logger=ctx)
+    systemd.uninstall(
+        POSTGRESQL_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=ctx
+    )
 
 
 @task("install systemd template unit for Prometheus postgres_exporter")
@@ -56,12 +63,12 @@ def postgres_exporter_systemd_unit_template(
 ) -> None:
     settings = ctx.settings.prometheus
     configpath = str(settings.configpath).replace("{name}", "%i")
-    content = systemd.template("postgres_exporter.service").format(
+    content = systemd.template(POSTGRES_EXPORTER_SERVICE_NAME).format(
         configpath=configpath,
         execpath=settings.execpath,
     )
     systemd.install(
-        "postgres_exporter@.service",
+        POSTGRES_EXPORTER_SERVICE_NAME,
         with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
@@ -75,7 +82,7 @@ def revert_postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
 ) -> None:
     systemd.uninstall(
-        "postgres_exporter@.service", ctx.settings.systemd.unit_path, logger=ctx
+        POSTGRES_EXPORTER_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=ctx
     )
 
 
@@ -86,22 +93,22 @@ def postgresql_backup_systemd_templates(
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
-    service_content = systemd.template("postgresql-backup.service").format(
+    service_content = systemd.template(BACKUP_SERVICE_NAME).format(
         environment=environment,
         python=sys.executable,
     )
     systemd.install(
-        "postgresql-backup@.service",
+        BACKUP_SERVICE_NAME,
         with_header(service_content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
     )
-    timer_content = systemd.template("postgresql-backup.timer").format(
+    timer_content = systemd.template(BACKUP_TIMER_NAME).format(
         # TODO: use a setting for that value
         calendar="daily",
     )
     systemd.install(
-        "postgresql-backup@.timer",
+        BACKUP_TIMER_NAME,
         with_header(timer_content, header),
         ctx.settings.systemd.unit_path,
         logger=ctx,
@@ -114,12 +121,8 @@ def postgresql_backup_systemd_templates(
 def revert_postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
-    systemd.uninstall(
-        "postgresql-backup@.service", ctx.settings.systemd.unit_path, logger=ctx
-    )
-    systemd.uninstall(
-        "postgresql-backup@.timer", ctx.settings.systemd.unit_path, logger=ctx
-    )
+    systemd.uninstall(BACKUP_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=ctx)
+    systemd.uninstall(BACKUP_TIMER_NAME, ctx.settings.systemd.unit_path, logger=ctx)
 
 
 def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:

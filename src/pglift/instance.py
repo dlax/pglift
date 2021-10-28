@@ -37,7 +37,7 @@ from .types import ConfigChanges
 
 
 def systemd_unit(instance: BaseInstance) -> str:
-    return f"postgresql@{instance.version}-{instance.name}.service"
+    return f"pglift-postgresql@{instance.version}-{instance.name}.service"
 
 
 def init_replication(

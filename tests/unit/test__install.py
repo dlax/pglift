@@ -7,7 +7,7 @@ def test_postgresql_systemd_unit_template(ctx):
     _install.postgresql_systemd_unit_template(
         ctx, env="SETTINGS=@settings.json", header="# Postgres managed by pglift"
     )
-    unit = ctx.settings.systemd.unit_path / "postgresql@.service"
+    unit = ctx.settings.systemd.unit_path / "pglift-postgresql@.service"
     assert unit.exists()
     lines = unit.read_text().splitlines()
     assert lines[0] == "# Postgres managed by pglift"
@@ -26,7 +26,7 @@ def test_postgresql_systemd_unit_template(ctx):
 
 def test_postgres_exporter_systemd_unit_template(ctx):
     _install.postgres_exporter_systemd_unit_template(ctx)
-    unit = ctx.settings.systemd.unit_path / "postgres_exporter@.service"
+    unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
     assert unit.exists()
     lines = unit.read_text().splitlines()
     assert (
@@ -43,7 +43,7 @@ def test_postgres_exporter_systemd_unit_template(ctx):
 
 def test_postgresql_backup_systemd_templates(ctx):
     _install.postgresql_backup_systemd_templates(ctx, env="X-DEBUG=no")
-    service_unit = ctx.settings.systemd.unit_path / "postgresql-backup@.service"
+    service_unit = ctx.settings.systemd.unit_path / "pglift-backup@.service"
     assert service_unit.exists()
     service_lines = service_unit.read_text().splitlines()
     for line in service_lines:
@@ -54,7 +54,7 @@ def test_postgresql_backup_systemd_templates(ctx):
     else:
         raise AssertionError("ExecStart line not found")
     assert "Environment=X-DEBUG=no" in service_lines
-    timer_unit = ctx.settings.systemd.unit_path / "postgresql-backup@.timer"
+    timer_unit = ctx.settings.systemd.unit_path / "pglift-backup@.timer"
     assert timer_unit.exists()
     timer_lines = timer_unit.read_text().splitlines()
     assert "OnCalendar=daily" in timer_lines

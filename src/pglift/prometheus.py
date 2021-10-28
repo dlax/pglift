@@ -31,7 +31,7 @@ def _pidfile(name: str, settings: PrometheusSettings) -> Path:
 
 
 def systemd_unit(name: str) -> str:
-    return f"postgres_exporter@{name}.service"
+    return f"pglift-postgres_exporter@{name}.service"
 
 
 def port(ctx: BaseContext, name: str) -> int:

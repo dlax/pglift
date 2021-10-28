@@ -9,7 +9,7 @@ from pglift.models import interface
 def test_systemd_unit(pg_version, instance):
     assert (
         prometheus.systemd_unit(instance.qualname)
-        == f"postgres_exporter@{pg_version}-test.service"
+        == f"pglift-postgres_exporter@{pg_version}-test.service"
     )
 
 
