@@ -202,7 +202,8 @@ class LiveDisplayer(Live):
 
     def stop(self) -> None:
         super().stop()
-        self.console.line()
+        if self.grid.rows:
+            self.console.line()
 
     @contextmanager
     def handle(self, msg: str) -> Iterator[None]:
