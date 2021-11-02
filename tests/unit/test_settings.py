@@ -132,7 +132,7 @@ def test_postgresql_surole(monkeypatch, tmp_path):
     assert s4.postgresql.surole.password is None
 
 
-def test_systemd(monkeypatch):
+def test_systemd():
     with patch("shutil.which", return_value=None) as which:
         with pytest.raises(ValidationError, match="systemctl command not found"):
             Settings(service_manager="systemd")
