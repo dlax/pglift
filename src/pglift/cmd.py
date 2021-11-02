@@ -6,7 +6,7 @@ import signal
 import subprocess
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE
+from subprocess import PIPE
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from . import exceptions
@@ -154,10 +154,13 @@ def run(
         ...
     pglift.exceptions.CommandError: Command '['cat', 'doesnotexist']' returned non-zero exit status 1.
     """
-    stdin = DEVNULL if input is None else PIPE
-
     if not args:
         raise ValueError("empty arguments sequence")
+
+    if input is not None:
+        if "stdin" in kwargs:
+            raise ValueError("stdin and input arguments may not both be used")
+        kwargs["stdin"] = PIPE
 
     try:
         capture_output = kwargs.pop("capture_output")
@@ -187,7 +190,7 @@ def run(
             sys.stderr.write(err)
 
     async def run() -> Tuple[asyncio.subprocess.Process, str, str]:
-        proc = await asyncio.create_subprocess_exec(*args, stdin=stdin, **kwargs)
+        proc = await asyncio.create_subprocess_exec(*args, **kwargs)
         out, err = await communicate_with(proc, input, process_stdout, process_stderr)
         assert proc.returncode is not None
         return proc, out, err
