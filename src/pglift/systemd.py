@@ -76,7 +76,9 @@ def log_status(fn: F) -> F:
 
 
 def status(ctx: BaseContext, unit: str) -> str:
-    proc = ctx.run(["systemctl", "--user", "--full", "status", unit], check=False)
+    proc = ctx.run(
+        ["systemctl", "--user", "--full", "--lines=100", "status", unit], check=False
+    )
     # https://www.freedesktop.org/software/systemd/man/systemctl.html#Exit%20status
     if proc.returncode not in (0, 1, 2, 3, 4):
         raise exceptions.CommandError(
