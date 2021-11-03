@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Sequence
 
 from . import __name__ as pkgname
+from . import exceptions
 from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
@@ -41,7 +42,11 @@ def main(
     logger = logging.getLogger(pkgname)
     handler = logging.StreamHandler()
     logger.addHandler(handler)
-    start_program(cmd, pidfile, logger=logger)
+    try:
+        start_program(cmd, pidfile, logger=logger)
+    except exceptions.CommandError as e:
+        logger.error("failed to start postgres: %s", e.stderr)
+        raise e.with_traceback(None)
 
 
 if __name__ == "__main__":  # pragma: nocover
