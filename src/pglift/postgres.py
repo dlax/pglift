@@ -1,8 +1,6 @@
 import argparse
-import logging
 from typing import Optional, Sequence
 
-from . import __name__ as pkgname
 from . import exceptions
 from .cmd import start_program
 from .ctx import Context
@@ -21,7 +19,7 @@ def main(
     argv: Optional[Sequence[str]] = None,
     *,
     ctx: Optional[Context] = None,
-) -> None:
+) -> int:
     args = parser.parse_args(argv)
     if ctx is None:
         ctx = Context(plugin_manager=PluginManager.get())
@@ -39,15 +37,15 @@ def main(
         ctx.settings.postgresql.pid_directory
         / f"postgresql-{instance.version}-{instance.name}.pid"
     )
-    logger = logging.getLogger(pkgname)
-    handler = logging.StreamHandler()
-    logger.addHandler(handler)
     try:
-        start_program(cmd, pidfile, logger=logger)
-    except exceptions.CommandError as e:
-        logger.error("failed to start postgres: %s", e.stderr)
-        raise e.with_traceback(None)
+        start_program(cmd, pidfile, capture_output=False)
+    except exceptions.CommandError:
+        return 1
+    else:
+        return 0
 
 
 if __name__ == "__main__":  # pragma: nocover
-    main()
+    import sys
+
+    sys.exit(main())
