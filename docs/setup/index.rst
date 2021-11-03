@@ -8,3 +8,4 @@ various aspects of deployment operations.
 
     settings
     postgresql_configuration
+    systemd
