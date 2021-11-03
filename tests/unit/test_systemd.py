@@ -3,6 +3,15 @@ import logging
 import pytest
 
 from pglift import systemd
+from pglift.settings import SystemdSettings
+
+
+def test_systemctl():
+    settings = SystemdSettings()
+    systemd.systemctl(settings, "user") == ["systemctl", "--user", "user"]
+
+    settings = SystemdSettings(user=False)
+    systemd.systemctl(settings, "root") == ["systemctl", "--system", "root"]
 
 
 def test_install_uninstall(tmp_path):

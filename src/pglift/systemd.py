@@ -1,16 +1,22 @@
 import functools
 import subprocess
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 from . import exceptions
 from . import template as _template
 from .ctx import BaseContext
+from .settings import SystemdSettings
 from .types import Logger
 
 
 def template(name: str) -> str:
     return _template("systemd", name)
+
+
+def systemctl(settings: SystemdSettings, *args: str) -> List[str]:
+    sflag = "--user" if settings.user else "--system"
+    return ["systemctl", sflag] + list(args)
 
 
 def install(name: str, content: str, unit_path: Path, *, logger: Logger) -> None:
@@ -31,11 +37,14 @@ def uninstall(name: str, unit_path: Path, *, logger: Logger) -> None:
 
 
 def daemon_reload(ctx: BaseContext) -> None:
-    ctx.run(["systemctl", "--user", "daemon-reload"], check=True)
+    ctx.run(systemctl(ctx.settings.systemd, "daemon-reload"), check=True)
 
 
 def is_enabled(ctx: BaseContext, unit: str) -> bool:
-    r = ctx.run(["systemctl", "--quiet", "--user", "is-enabled", unit], check=False)
+    r = ctx.run(
+        systemctl(ctx.settings.systemd, "--quiet", "is-enabled", unit),
+        check=False,
+    )
     return r.returncode == 0
 
 
@@ -43,7 +52,7 @@ def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
     if is_enabled(ctx, unit):
         ctx.debug("systemd unit %s already enabled, 'enable' action skipped", unit)
         return
-    cmd = ["systemctl", "--user", "enable", unit]
+    cmd = systemctl(ctx.settings.systemd, "enable", unit)
     if now:
         cmd.append("--now")
     ctx.run(cmd, check=True)
@@ -53,7 +62,7 @@ def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
     if not is_enabled(ctx, unit):
         ctx.debug("systemd unit %s not enabled, 'disable' action skipped", unit)
         return
-    cmd = ["systemctl", "--user", "disable", unit]
+    cmd = systemctl(ctx.settings.systemd, "disable", unit)
     if now:
         cmd.append("--now")
     ctx.run(cmd, check=True)
@@ -77,7 +86,8 @@ def log_status(fn: F) -> F:
 
 def status(ctx: BaseContext, unit: str) -> str:
     proc = ctx.run(
-        ["systemctl", "--user", "--full", "--lines=100", "status", unit], check=False
+        systemctl(ctx.settings.systemd, "--full", "--lines=100", "status", unit),
+        check=False,
     )
     # https://www.freedesktop.org/software/systemd/man/systemctl.html#Exit%20status
     if proc.returncode not in (0, 1, 2, 3, 4):
@@ -89,24 +99,27 @@ def status(ctx: BaseContext, unit: str) -> str:
 
 @log_status
 def start(ctx: BaseContext, unit: str) -> None:
-    ctx.run(["systemctl", "--user", "start", unit], check=True)
+    ctx.run(systemctl(ctx.settings.systemd, "start", unit), check=True)
 
 
 @log_status
 def stop(ctx: BaseContext, unit: str) -> None:
-    ctx.run(["systemctl", "--user", "stop", unit], check=True)
+    ctx.run(systemctl(ctx.settings.systemd, "stop", unit), check=True)
 
 
 @log_status
 def reload(ctx: BaseContext, unit: str) -> None:
-    ctx.run(["systemctl", "--user", "reload", unit], check=True)
+    ctx.run(systemctl(ctx.settings.systemd, "reload", unit), check=True)
 
 
 @log_status
 def restart(ctx: BaseContext, unit: str) -> None:
-    ctx.run(["systemctl", "--user", "restart", unit], check=True)
+    ctx.run(systemctl(ctx.settings.systemd, "restart", unit), check=True)
 
 
 def is_active(ctx: BaseContext, unit: str) -> bool:
-    r = ctx.run(["systemctl", "--quiet", "--user", "is-active", unit], check=False)
+    r = ctx.run(
+        systemctl(ctx.settings.systemd, "--quiet", "--user", "is-active", unit),
+        check=False,
+    )
     return r.returncode == 0

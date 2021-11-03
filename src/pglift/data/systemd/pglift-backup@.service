@@ -4,5 +4,7 @@ After=pglift-postgresql@%i.service
 
 [Service]
 Type=oneshot
+{executeas}
+
 {environment}
 ExecStart={python} -m pglift.backup %i

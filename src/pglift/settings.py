@@ -1,3 +1,5 @@
+import getpass
+import grp
 import json
 import os
 import shutil
@@ -34,6 +36,12 @@ def default_prefix(uid: int) -> Path:
     if uid == 0:
         return Path("/")
     return xdg_data_home() / pkgname
+
+
+def default_sysuser() -> Tuple[str, str]:
+    user = getpass.getuser()
+    group = grp.getgrgid(os.getuid()).gr_name
+    return user, group
 
 
 class PrefixedPath(PosixPath):
@@ -313,6 +321,9 @@ class SystemdSettings(BaseSettings):
     unit_path: Path = xdg_data_home() / "systemd" / "user"
     """Base path where systemd units will be installed."""
 
+    user: bool = True
+    """Use the system manager of the calling user, by passing --user to systemctl calls."""
+
 
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in data directory."""
@@ -358,6 +369,14 @@ class Settings(BaseSettings):
     """Path prefix for configuration and data files."""
 
     logpath: LogPath = LogPath()
+
+    sysuser: Tuple[str, str] = Field(
+        default_factory=default_sysuser,
+        help=(
+            "(username, groupname) of system user running PostgreSQL; "
+            "mostly applicable when operating PostgreSQL with systemd in non-user mode"
+        ),
+    )
 
     @root_validator
     def __prefix_paths(cls, values: Dict[str, Any]) -> Dict[str, Any]:

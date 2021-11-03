@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 Type=forking
+{executeas}
 
 # Disable OOM kill on the postmaster
 OOMScoreAdjust=-1000

@@ -3,6 +3,7 @@ from typing import Optional
 
 from . import systemd
 from .ctx import BaseContext
+from .settings import Settings
 from .task import task
 
 POSTGRESQL_SERVICE_NAME = "pglift-postgresql@.service"
@@ -25,6 +26,26 @@ def with_header(content: str, header: str) -> str:
     return content
 
 
+def executeas(settings: Settings) -> str:
+    """Return User/Group options for systemd unit depending on settings.
+
+    When systemd.user is set, return an empty string:
+    >>> s = Settings.parse_obj({"systemd": {"user": True}})
+    >>> executeas(s)
+    ''
+
+    Otherwise, user sysuser setting:
+    >>> s = Settings.parse_obj({"systemd": {"user": False}, "sysuser": ["postgres", "pgsql"]})
+    >>> print(executeas(s))
+    User=postgres
+    Group=pgsql
+    """
+    if settings.systemd.user:
+        return ""
+    user, group = settings.sysuser
+    return "\n".join([f"User={user}", f"Group={group}"])
+
+
 @task("install systemd template unit for PostgreSQL")
 def postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
@@ -34,6 +55,7 @@ def postgresql_systemd_unit_template(
     if env:
         environment = f"\nEnvironment={env}\n"
     content = systemd.template(POSTGRESQL_SERVICE_NAME).format(
+        executeas=executeas(ctx.settings),
         python=sys.executable,
         environment=environment,
         pid_directory=settings.pid_directory,
@@ -64,6 +86,7 @@ def postgres_exporter_systemd_unit_template(
     settings = ctx.settings.prometheus
     configpath = str(settings.configpath).replace("{name}", "%i")
     content = systemd.template(POSTGRES_EXPORTER_SERVICE_NAME).format(
+        executeas=executeas(ctx.settings),
         configpath=configpath,
         execpath=settings.execpath,
     )
@@ -94,6 +117,7 @@ def postgresql_backup_systemd_templates(
     if env:
         environment = f"\nEnvironment={env}\n"
     service_content = systemd.template(BACKUP_SERVICE_NAME).format(
+        executeas=executeas(ctx.settings),
         environment=environment,
         python=sys.executable,
     )
