@@ -282,11 +282,9 @@ def start_program(
                     pid,
                 )
             pidfile.unlink()
+    stdout = stderr = None
     if capture_output:
-        stderr = subprocess.PIPE
-    else:
-        stderr = subprocess.DEVNULL
-    stdout = subprocess.DEVNULL
+        stdout = stderr = subprocess.PIPE
     if logger:
         logger.info("%s", shlex_join(cmd))
     proc = subprocess.Popen(  # nosec
@@ -299,7 +297,8 @@ def start_program(
         pidfile.write_text(str(proc.pid))
         return None
     else:
-        if logger:
+        if capture_output and logger:
+            assert errs is not None
             for errline in errs.splitlines():
                 logger.error("%s: %s", prog, errline)
         raise exceptions.CommandError(proc.returncode, cmd, stderr=errs)
