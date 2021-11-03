@@ -214,7 +214,7 @@ class LiveDisplayer(Live):
         self.grid.add_row(text)
         try:
             yield None
-        except Exception:
+        except BaseException:
             tail = self.fail
             raise
         else:
