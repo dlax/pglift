@@ -132,8 +132,19 @@ def test_postgresql_surole(monkeypatch, tmp_path):
     assert s4.postgresql.surole.password is None
 
 
-def test_systemd():
+def test_systemd_systemctl():
     with patch("shutil.which", return_value=None) as which:
         with pytest.raises(ValidationError, match="systemctl command not found"):
             Settings(service_manager="systemd")
+    which.assert_called_once_with("systemctl")
+
+
+def test_systemd_sudo_user():
+    with patch("shutil.which", return_value=True) as which:
+        with pytest.raises(
+            ValidationError, match="'user' mode cannot be used with 'sudo'"
+        ):
+            Settings.parse_obj(
+                {"service_manager": "systemd", "systemd": {"user": True, "sudo": True}}
+            )
     which.assert_called_once_with("systemctl")

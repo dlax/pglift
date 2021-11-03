@@ -324,6 +324,15 @@ class SystemdSettings(BaseSettings):
     user: bool = True
     """Use the system manager of the calling user, by passing --user to systemctl calls."""
 
+    sudo: bool = False
+    """Run systemctl command with sudo; only applicable when 'user' is unset."""
+
+    @root_validator
+    def __sudo_and_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if values["user"] and values["sudo"]:
+            raise ValueError("'user' mode cannot be used with 'sudo'")
+        return values
+
 
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in data directory."""

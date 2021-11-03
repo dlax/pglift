@@ -13,6 +13,9 @@ def test_systemctl():
     settings = SystemdSettings(user=False)
     systemd.systemctl(settings, "root") == ["systemctl", "--system", "root"]
 
+    settings = SystemdSettings(user=False, sudo=True)
+    systemd.systemctl(settings, "sudoer") == ["sudo", "systemctl", "--system", "sudoer"]
+
 
 def test_install_uninstall(tmp_path):
     logger = logging.getLogger(__name__)

@@ -16,7 +16,10 @@ def template(name: str) -> str:
 
 def systemctl(settings: SystemdSettings, *args: str) -> List[str]:
     sflag = "--user" if settings.user else "--system"
-    return ["systemctl", sflag] + list(args)
+    cmd = ["systemctl", sflag] + list(args)
+    if settings.sudo:
+        cmd.insert(0, "sudo")
+    return cmd
 
 
 def install(name: str, content: str, unit_path: Path, *, logger: Logger) -> None:

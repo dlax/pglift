@@ -175,7 +175,10 @@ def run(
                 )
             kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
 
-    prog = args[0]
+    if args[0] == "sudo":
+        prog = f"{args[1]} (sudo)"
+    else:
+        prog = args[0]
 
     def process_stdout(out: str, prog: str = prog) -> None:
         if logger:
