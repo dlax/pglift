@@ -120,6 +120,8 @@ class Command(click.Command):
         finally:
             if not keep_logfile:
                 os.unlink(logfile)
+                if next(logfile.parent.iterdir(), None) is None:
+                    logfile.parent.rmdir()
 
 
 class Group(click.Group):
