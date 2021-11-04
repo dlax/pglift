@@ -6,11 +6,6 @@ here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-extras_cli = [
-    "click",
-    "rich",
-]
-extras_runtime_all = extras_cli
 extras_typing = [
     "mypy >= 0.901",
     "types-PyYAML",
@@ -60,9 +55,11 @@ setup(
         "python-dateutil",
         "typing-extensions",
         "PyYAML >= 5.1",
+        # CLI requirements
+        "click",
+        "rich",
     ],
     extras_require={
-        "cli": extras_cli,
         "dev": [
             "black >= 21.8b0",
             "check-manifest",
@@ -70,7 +67,6 @@ setup(
             "isort",
             "pre-commit",
         ]
-        + extras_runtime_all
         + extras_typing,
         "test": [
             "port-for",
@@ -79,8 +75,7 @@ setup(
             "requests",
             "tenacity >= 8.0.0",
             "ansible",
-        ]
-        + extras_runtime_all,
+        ],
         "typing": extras_typing,
         "docs": [
             "sphinx",
