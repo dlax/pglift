@@ -8,7 +8,6 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 import yaml
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
-from pydantic.env_settings import SettingsSourceCallable
 from pydantic.fields import ModelField
 from typing_extensions import Literal, TypedDict
 
@@ -16,6 +15,11 @@ from . import __name__ as pkgname
 from . import datapath
 from .types import Role
 from .util import xdg_data_home
+
+try:
+    from pydantic.env_settings import SettingsSourceCallable
+except ImportError:
+    SettingsSourceCallable = Callable[[BaseSettings], Dict[str, Any]]  # type: ignore[misc]
 
 T = TypeVar("T", bound=BaseSettings)
 
