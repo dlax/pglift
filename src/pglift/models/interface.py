@@ -135,6 +135,11 @@ class Instance(Manifest):
         cli={"hide": True},
         ansible={"spec": {"type": "dict", "required": False}},
     )
+    surole_password: Optional[SecretStr] = Field(
+        default=None,
+        description="super-user role password",
+        cli={"name": "surole-password"},
+    )
 
     standby: Optional[Standby] = None
 
@@ -344,3 +349,15 @@ class Privilege(Manifest):
     role: str
     object_type: str
     privileges: List[str]
+
+
+def instance_surole(settings: settings.Settings, instance: Instance) -> Role:
+    surole_settings = settings.postgresql.surole
+    if instance.surole_password:
+        return Role(
+            name=surole_settings.name,
+            password=instance.surole_password,
+            pgpass=surole_settings.pgpass,
+        )
+    else:
+        return Role(name=surole_settings.name)

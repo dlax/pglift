@@ -129,6 +129,7 @@ def test_instance_init(runner, ctx, obj, instance):
         "version",
         "port",
         "state",
+        "surole_password",
         "standby_for",
         "standby_slot",
         "prometheus_port",

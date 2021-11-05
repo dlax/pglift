@@ -270,8 +270,7 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
-    backuprole = ctx.settings.postgresql.surole
-    env = ctx.settings.postgresql.auth.libpq_environ(backuprole)
+    env = ctx.settings.postgresql.auth.libpq_environ()
     ctx.run(backup_command(instance, type=type), check=True, env=env)
 
 

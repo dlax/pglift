@@ -14,30 +14,29 @@ from pglift.types import Role
 
 def configure_instance(
     ctx: BaseContext,
-    i: Instance,
+    manifest: interface.Instance,
     *,
     port: Optional[int] = None,
     **confitems: Any,
 ) -> None:
     if port is None:
-        assert isinstance(i, Instance)
-        if port is None:
-            port = i.port
-    manifest = interface.Instance(name=i.name, version=i.version)
+        port = manifest.port
     instance_mod.configure(ctx, manifest, port=port, **confitems)
 
 
 @contextmanager
-def reconfigure_instance(ctx: BaseContext, i: Instance, *, port: int) -> Iterator[None]:
+def reconfigure_instance(
+    ctx: BaseContext, i: Instance, manifest: interface.Instance, *, port: int
+) -> Iterator[None]:
     config = i.config()
     assert config is not None
     initial_port = config.port
     assert initial_port
-    configure_instance(ctx, i, port=port)
+    configure_instance(ctx, manifest, port=port)
     try:
         yield
     finally:
-        configure_instance(ctx, i, port=initial_port)  # type: ignore[arg-type]
+        configure_instance(ctx, manifest, port=initial_port)  # type: ignore[arg-type]
 
 
 @overload

@@ -29,6 +29,7 @@ def test_configure(
     ctx: Context,
     installed: None,
     instance: system.Instance,
+    instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
     prometheus_settings = ctx.settings.prometheus
@@ -47,7 +48,7 @@ def test_configure(
     assert queriespath.exists()
 
     new_port = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, port=new_port):
+    with reconfigure_instance(ctx, instance, instance_manifest, port=new_port):
         new_prometheus_config = config_dict(configpath)
         dsn = new_prometheus_config["DATA_SOURCE_NAME"]
         assert f"port={new_port}" in dsn
@@ -56,6 +57,7 @@ def test_configure(
 @pytest.fixture
 def postgres_exporter(
     ctx: Context,
+    instance_manifest: interface.Instance,
     instance: system.Instance,
     installed: None,
     tmp_port_factory: Iterator[int],
@@ -63,7 +65,7 @@ def postgres_exporter(
     """Setup a postgres_exporter service for 'instance' using another port."""
     port = next(tmp_port_factory)
     name = "123-fo-o"
-    role = ctx.settings.postgresql.surole
+    role = interface.instance_surole(ctx.settings, instance_manifest)
     dsn = f"dbname=postgres port={instance.port} user={role.name} sslmode=disable"
     host = instance.config().get("unix_socket_directories")
     if host:

@@ -54,6 +54,13 @@
       "Runtime state"
     ]
   },
+  "surole_password": {
+    "description": [
+      "super-user role password"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "version": {
     "description": [
       "PostgreSQL version"

@@ -96,42 +96,6 @@ def test_postgresql_versions(monkeypatch, tmp_path):
     assert s.postgresql.default_version == "13"
 
 
-def test_postgresql_surole(monkeypatch, tmp_path):
-    # Username and password from init.
-    s1 = Settings(postgresql={"surole": {"name": "pgadmin", "password": "blah"}})
-    assert s1.postgresql.surole.name == "pgadmin"
-    assert s1.postgresql.surole.password is not None
-    assert s1.postgresql.surole.password.get_secret_value() == "blah"
-
-    # Username from SETTINGS, password from environment variable.
-    with monkeypatch.context() as m:
-        m.setenv("SETTINGS", json.dumps({"postgresql": {"surole": {"name": "pga"}}}))
-        m.setenv("postgresql_surole_password", "s3kret")
-        s2 = Settings()
-    assert s2.postgresql.surole.name == "pga"
-    assert s2.postgresql.surole.password is not None
-    assert s2.postgresql.surole.password.get_secret_value() == "s3kret"
-
-    # Password from SETTINGS.
-    with monkeypatch.context() as m:
-        m.setenv(
-            "SETTINGS",
-            json.dumps({"postgresql": {"surole": {"password": "json"}}}),
-        )
-        s3 = Settings()
-    assert s3.postgresql.surole.name == "postgres"
-    assert s3.postgresql.surole.password is not None
-    assert s3.postgresql.surole.password.get_secret_value() == "json"
-
-    # Username from env and password from secret file, which is NOT supported.
-    (tmp_path / "postgresql_surole_password").write_text("file")
-    with monkeypatch.context() as m:
-        m.setenv("postgresql_surole_name", "adm")
-        s4 = Settings(postgresql={"surole": {"_secrets_dir": tmp_path}})
-    assert s4.postgresql.surole.name == "adm"
-    assert s4.postgresql.surole.password is None
-
-
 def test_systemd_systemctl():
     with patch("shutil.which", return_value=None) as which:
         with pytest.raises(ValidationError, match="systemctl command not found"):

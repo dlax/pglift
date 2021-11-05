@@ -1,8 +1,6 @@
 ---
 - name: my postgresql instances
   hosts: localhost
-  environment:
-    postgresql_surole_password: "{{ postgresql_surole_password }}"
   tasks:
     - name: production instance
       dalibo.pglift.instance:
@@ -15,6 +13,7 @@
           shared_buffers: 1GB
           unix_socket_directories: /tmp
         prometheus_port: 9186
+        surole_password: "{{ postgresql_surole_password }}"
 
     - name: db, dropped
       dalibo.pglift.database:
@@ -43,3 +42,4 @@
           max_connections: 42
           unix_socket_directories: /tmp
         prometheus_port: 9189
+        surole_password: "{{ postgresql_surole_password }}"

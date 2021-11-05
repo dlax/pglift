@@ -355,7 +355,7 @@ def instance_configure(
     This is a no-op if if pg_hba.conf's content matches the initial
     configuration.
     """
-    surole = ctx.settings.postgresql.surole
+    surole = interface.instance_surole(ctx.settings, manifest)
     auth_settings = ctx.settings.postgresql.auth
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
@@ -560,21 +560,13 @@ def upgrade(
     if jobs is not None:
         cmd.extend(["--jobs", str(jobs)])
     surole = ctx.settings.postgresql.surole
-    kwargs: Dict[str, Any] = {}
-    if surole.password and "PGPASSWORD" not in os.environ:
-        # pg_upgrade need an access to old and new clusters so when pg_hba is
-        # not peer or trust we need to set PGPASSWORD allowing to connect to
-        # old and new cluster. Note pg_upgrade start clusters using a random
-        # port and unix_socket_directory is set to current working directory.
-        env = os.environ.copy()
-        env["PGPASSWORD"] = surole.password.get_secret_value()
-        kwargs["env"] = env
+    env = ctx.settings.postgresql.auth.libpq_environ()
     hba_path = newinstance.datadir / "pg_hba.conf"
     hba_content = hba_path.read_bytes()
     try:
         hba_path.write_text(f"local all {surole.name} trust\n")
         with tempfile.TemporaryDirectory() as tmpdir:
-            ctx.run(cmd, check=True, cwd=tmpdir, **kwargs)
+            ctx.run(cmd, check=True, cwd=tmpdir, env=env)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise

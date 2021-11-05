@@ -81,13 +81,9 @@ def connect(
 def superuser_connect(
     instance: "PostgreSQLInstance", **kwargs: Any
 ) -> ContextManager[psycopg2.extensions.connection]:
-    for badarg in ("user", "password"):
-        if badarg in kwargs:
-            raise TypeError(f"unexpected '{badarg}' argument")
-    surole = instance.settings.postgresql.surole
-    kwargs["user"] = surole.name
-    if surole.password:
-        kwargs["password"] = surole.password.get_secret_value()
+    if "user" in kwargs:
+        raise TypeError("unexpected 'user' argument")
+    kwargs["user"] = instance.settings.postgresql.surole.name
     return connect(instance, **kwargs)
 
 

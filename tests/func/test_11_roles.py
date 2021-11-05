@@ -152,19 +152,22 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
 
 def test_describe(
-    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    role_factory: RoleFactory,
 ) -> None:
     with pytest.raises(exceptions.RoleNotFound, match="absent"):
         roles.describe(ctx, instance, "absent")
 
     postgres = roles.describe(ctx, instance, "postgres")
     assert postgres is not None
-    surole = ctx.settings.postgresql.surole
+    surole = interface.instance_surole(ctx.settings, instance_manifest)
     assert postgres.name == "postgres"
     if surole.password:
         assert postgres.password is not None
-    if surole.pgpass:
-        assert postgres.pgpass is not None
+        if surole.pgpass:
+            assert postgres.pgpass is not None
     assert postgres.login
 
     role_factory(
@@ -213,7 +216,10 @@ def test_drop(
 
 
 def test_instance_port_changed(
-    ctx: Context, instance: system.Instance, tmp_port_factory: Iterator[int]
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    tmp_port_factory: Iterator[int],
 ) -> None:
     """Check that change of instance port is reflected in password file
     entries.
@@ -223,7 +229,7 @@ def test_instance_port_changed(
         interface.Role(name="r2", password="2", pgpass=True),
         interface.Role(name="r3", pgpass=False),
     )
-    surole = ctx.settings.postgresql.surole
+    surole = interface.instance_surole(ctx.settings, instance_manifest)
     roles.apply(ctx, instance, role1)
     roles.apply(ctx, instance, role2)
     roles.apply(ctx, instance, role3)
@@ -235,7 +241,7 @@ def test_instance_port_changed(
     if surole.pgpass:
         assert role_in_pgpass(passfile, surole, port=port)
     newport = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, port=newport):
+    with reconfigure_instance(ctx, instance, instance_manifest, port=newport):
         assert not role_in_pgpass(passfile, role1, port=port)
         assert role_in_pgpass(passfile, role1, port=newport)
         assert not role_in_pgpass(passfile, role2, port=port)

@@ -1,7 +1,7 @@
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
 import pytest
 
@@ -9,7 +9,7 @@ from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
 from pglift.ctx import Context
-from pglift.models import system
+from pglift.models import interface, system
 
 from . import execute, reconfigure_instance
 from .conftest import DatabaseFactory
@@ -29,6 +29,7 @@ def test_configure(
     ctx: Context,
     installed: None,
     instance: system.Instance,
+    instance_manifest: interface.Instance,
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
     directory: Path,
@@ -63,7 +64,7 @@ def test_configure(
     # updated.
     config_before = configpath.read_text()
     new_port = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, port=new_port):
+    with reconfigure_instance(ctx, instance, instance_manifest, port=new_port):
         config_after = configpath.read_text()
         assert config_after != config_before
         assert f"pg1-port = {new_port}" in config_after.splitlines()
@@ -71,6 +72,7 @@ def test_configure(
 
 def test_backup_restore(
     ctx: Context,
+    surole_password: Optional[str],
     instance: system.Instance,
     directory: Path,
     database_factory: DatabaseFactory,

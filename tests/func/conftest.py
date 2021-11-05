@@ -5,7 +5,8 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Any, Iterator, Set
+from typing import Any, Iterator, Optional, Set
+from unittest.mock import patch
 
 import pgtoolkit.conf
 import port_for
@@ -67,7 +68,6 @@ settings_by_id = {
                 "host": "reject",
             },
             "surole": {
-                "password": "s3kret",
                 "pgpass": True,
             },
         },
@@ -79,7 +79,6 @@ settings_by_id = {
                 "host": "reject",
             },
             "surole": {
-                "password": "s3kret",
                 "pgpass": False,
             },
         },
@@ -180,10 +179,28 @@ def tmp_port_factory() -> Iterator[int]:
 
 
 @pytest.fixture(scope="session")
+def surole_password(settings: Settings) -> Iterator[Optional[str]]:
+    if settings.postgresql.auth.local == "trust":
+        yield None
+        return
+
+    password = "s3kret"
+    with patch.dict("os.environ", {"PGPASSWORD": password}):
+        yield password
+
+
+@pytest.fixture(scope="session")
 def instance_manifest(
-    pg_version: str, settings: Settings, tmp_port_factory: Iterator[int]
+    pg_version: str,
+    settings: Settings,
+    surole_password: Optional[str],
+    tmp_port_factory: Iterator[int],
 ) -> interface.Instance:
-    return interface.Instance(name="test", version=pg_version)
+    return interface.Instance(
+        name="test",
+        version=pg_version,
+        surole_password=surole_password,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -208,13 +225,14 @@ def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
 @pytest.fixture(scope="session")
 def instance(
     ctx: Context,
+    instance_manifest: interface.Instance,
     instance_initialized: system.Instance,
     tmp_port_factory: Iterator[int],
     log_directory: pathlib.Path,
 ) -> system.Instance:
     port = next(tmp_port_factory)
     configure_instance(
-        ctx, instance_initialized, port=port, log_directory=str(log_directory)
+        ctx, instance_manifest, port=port, log_directory=str(log_directory)
     )
     return instance_initialized
 

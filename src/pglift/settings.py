@@ -145,7 +145,7 @@ class AuthSettings(BaseSettings):
 
     def libpq_environ(
         self,
-        role: Role,
+        role: Optional[Role] = None,
         *,
         base: Dict[str, str] = os.environ,  # type: ignore[assignment]
     ) -> Dict[str, str]:
@@ -165,7 +165,7 @@ class AuthSettings(BaseSettings):
         """
         env = base.copy()
         env.setdefault("PGPASSFILE", str(self.passfile))
-        if role.password:
+        if role is not None and role.password:
             env.setdefault("PGPASSWORD", role.password.get_secret_value())
         return env
 
@@ -227,21 +227,8 @@ class PostgreSQLSettings(BaseSettings):
     @frozen
     class SuRole(BaseSettings):
         name: str = "postgres"
-        password: Optional[SecretStr] = None
         pgpass: bool = False
         """Whether to store the password in .pgpass file."""
-
-        class Config:
-            env_prefix = "postgresql_surole_"
-
-            @classmethod
-            def customise_sources(
-                cls,
-                init_settings: SettingsSourceCallable,
-                env_settings: SettingsSourceCallable,
-                file_secret_settings: SettingsSourceCallable,
-            ) -> Tuple[SettingsSourceCallable, ...]:
-                return (init_settings, env_settings)
 
     surole: SuRole = SuRole()
     """Instance super-user role."""

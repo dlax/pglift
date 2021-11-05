@@ -39,7 +39,7 @@ def call_playbook(tmp_path: pathlib.Path) -> Iterator[Callable[[pathlib.Path], N
                 "host": "md5",
                 "passfile": str(tmp_path / "pgpass"),
             },
-            "surole": {"pgpass": False},
+            "surole": {"pgpass": True},
             "root": str(tmp_path / "postgresql"),
         },
     }

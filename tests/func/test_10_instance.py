@@ -1,7 +1,8 @@
 import contextlib
 import logging
 from pathlib import Path
-from typing import Iterator, List, NoReturn
+from typing import Iterator, List, NoReturn, Optional
+from unittest.mock import patch
 
 import psycopg2
 import pytest
@@ -63,13 +64,15 @@ def test_log_directory(
     assert instance_log_dir.exists()
 
 
-def test_pgpass(ctx: Context, instance: system.Instance) -> None:
+def test_pgpass(
+    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+) -> None:
     port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
-    if ctx.settings.postgresql.surole.pgpass:
+    if instance_manifest.surole_password and ctx.settings.postgresql.surole.pgpass:
         assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
-        with reconfigure_instance(ctx, instance, port=port + 1):
+        with reconfigure_instance(ctx, instance, instance_manifest, port=port + 1):
             assert passfile.read_text().splitlines() == [
                 "#hostname:port:database:username:password",
                 f"*:{port+1}:*:postgres:s3kret",
@@ -78,9 +81,11 @@ def test_pgpass(ctx: Context, instance: system.Instance) -> None:
         assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
 
-def test_auth(ctx: Context, instance: system.Instance) -> None:
+def test_auth(
+    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+) -> None:
     i = instance
-    surole = ctx.settings.postgresql.surole
+    surole = interface.instance_surole(ctx.settings, instance_manifest)
     port = i.port
     connargs = {
         "host": str(i.config().unix_socket_directories),
@@ -97,11 +102,14 @@ def test_auth(ctx: Context, instance: system.Instance) -> None:
     with instance_mod.running(ctx, i):
         if password is not None:
             with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
-                psycopg2.connect(**connargs).close()
-            if surole.pgpass:
-                connargs["passfile"] = str(passfile)
-            else:
+                with patch.dict("os.environ", clear=True):
+                    psycopg2.connect(**connargs).close()
+            if password:
                 connargs["password"] = password
+            else:
+                connargs["passfile"] = str(passfile)
+        else:
+            connargs["passfile"] = str(passfile)
         psycopg2.connect(**connargs).close()
 
     hba_path = i.datadir / "pg_hba.conf"
@@ -285,10 +293,12 @@ def test_standby(
     slot: str,
 ) -> None:
     socket_directory = instance.settings.postgresql.socket_directory
-    surole = instance.settings.postgresql.surole
+    surole = interface.instance_surole(settings, instance_manifest)
     standby_for = f"host={socket_directory} port={instance.port} user={surole.name}"
-    if not surole.pgpass and surole.password:
+    if surole.password:
         standby_for += f" password={surole.password.get_secret_value()}"
+    else:
+        standby_for += f" passfile={settings.postgresql.auth.passfile}"
     standby_manifest = interface.Instance(
         name="standby",
         version=pg_version,
@@ -314,13 +324,13 @@ def test_standby(
             assert pg_replication_slots() == [[slot]]
         else:
             assert not pg_replication_slots()
-        standby_instance = system.Instance.system_lookup(ctx, ("standby", pg_version))
         configure_instance(
             ctx,
-            standby_instance,
+            standby_manifest,
             port=next(tmp_port_factory),
             log_directory=str(tmp_path_factory.mktemp("postgres-standby-logs")),
         )
+        standby_instance = system.Instance.system_lookup(ctx, ("standby", pg_version))
         assert standby_instance.standby
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
@@ -361,6 +371,7 @@ def test_standby(
 def test_instance_upgrade(
     ctx: Context,
     instance: system.Instance,
+    surole_password: Optional[str],
     tmp_port_factory: Iterator[int],
     database_factory: DatabaseFactory,
 ) -> None:

@@ -7,13 +7,18 @@ from pgtoolkit.conf import Configuration
 
 from pglift import backup, exceptions, prometheus, systemd
 from pglift.ctx import Context
-from pglift.models import system
+from pglift.models import interface, system
 
 
-def test_pgpass(ctx: Context, installed: None, instance_dropped: Configuration) -> None:
+def test_pgpass(
+    ctx: Context,
+    installed: None,
+    instance_manifest: interface.Instance,
+    instance_dropped: Configuration,
+) -> None:
     config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
-    surole = ctx.settings.postgresql.surole
+    surole = interface.instance_surole(ctx.settings, instance_manifest)
     if surole.pgpass and surole.password:
         port = config.port
         pgpass_entries = passfile.read_text().splitlines()
