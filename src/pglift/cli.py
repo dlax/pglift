@@ -195,6 +195,8 @@ class LiveDisplayer(Live):
     ok.stylize("green", 1, 5)
     fail = rich.text.Text("[FAIL]")
     fail.stylize("red", 1, 5)
+    intr = rich.text.Text("[INTR]")
+    intr.stylize("yellow", 1, 5)
 
     def __init__(self, width: Optional[int] = None) -> None:
         self.grid = Table.grid()
@@ -216,7 +218,10 @@ class LiveDisplayer(Live):
         self.grid.add_row(text)
         try:
             yield None
-        except BaseException:
+        except KeyboardInterrupt:
+            tail = self.intr
+            raise
+        except Exception:
             tail = self.fail
             raise
         else:
