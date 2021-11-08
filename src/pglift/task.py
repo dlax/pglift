@@ -135,18 +135,20 @@ class Runner:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        if exc_value is not None:
-            self.logger.exception(str(exc_value))
-            assert Task._calls is not None
-            while True:
-                try:
-                    t, args, kwargs = Task._calls.pop()
-                except IndexError:
-                    break
-                if t.revert_action:
-                    t.revert_action(*args, **kwargs)
-        Task._calls = None
-        Task.displayer = None
+        try:
+            if exc_value is not None:
+                self.logger.exception(str(exc_value))
+                assert Task._calls is not None
+                while True:
+                    try:
+                        t, args, kwargs = Task._calls.pop()
+                    except IndexError:
+                        break
+                    if t.revert_action:
+                        t.revert_action(*args, **kwargs)
+        finally:
+            Task._calls = None
+            Task.displayer = None
 
-        if self.displayer is not None:
-            self.displayer.__exit__(exc_type, exc_value, traceback)
+            if self.displayer is not None:
+                self.displayer.__exit__(exc_type, exc_value, traceback)
