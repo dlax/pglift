@@ -15,6 +15,21 @@ By default, systemd is used in `user` mode, by running ``systemctl --user``
 commands. This way, the operator can install systemd units in their home
 directory (typically in ``$HOME/.local/share/systemd/user``).
 
+Several services are set up at instance creation; these can be listed as
+follows for an instance with ``13-main`` identifier:
+
+::
+
+    $ systemctl --user list-units "*13-main*"
+      UNIT                                     LOAD   ACTIVE SUB     DESCRIPTION
+      pglift-postgres_exporter@13-main.service loaded active running Prometheus exporter for PostgreSQL 13-main database server metrics
+      pglift-postgresql@13-main.service        loaded active running PostgreSQL 13-main database server
+      pglift-backup@13-main.timer              loaded active waiting Backup 13-main PostgreSQL database instance
+    $ systemctl --user list-timers "*13-main*"
+    NEXT                         LEFT     LAST                         PASSED       UNIT                            ACTIVATES
+    Sat 2021-08-07 00:00:00 CEST 10h left Fri 2021-08-06 12:21:07 CEST 1h 25min ago postgresql-backup@13-main.timer pglift-backup@13-main.service
+
+
 `system` mode
 -------------
 

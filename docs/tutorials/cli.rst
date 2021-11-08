@@ -49,22 +49,7 @@ a standby instance can also be created by passing the
 ``--standby-for=<primary dsn>`` option to ``instance init`` command.
 
 The instance actually consists of a PostgreSQL instance with a backup service (pgbackrest)
-and a monitoring service (Prometheus postgres_exporter) set up. By default,
-everything runs through systemd user services:
-
-::
-
-    $ systemctl --user list-units "*13-main*"
-      UNIT                              LOAD   ACTIVE SUB     DESCRIPTION
-      postgres_exporter@13-main.service loaded active running Prometheus exporter for PostgreSQL 13-main database server metrics
-      postgresql@13-main.service        loaded active running PostgreSQL 13-main database server
-      postgresql-backup@13-main.timer   loaded active waiting Backup 13-main PostgreSQL database instance
-    $ systemctl --user list-timers "*13-main*"
-    NEXT                         LEFT     LAST                         PASSED       UNIT                            ACTIVATES
-    Sat 2021-08-07 00:00:00 CEST 10h left Fri 2021-08-06 12:21:07 CEST 1h 25min ago postgresql-backup@13-main.timer postgresql-backup@13-main.service
-
-
-
+and a monitoring service (Prometheus postgres_exporter) set up.
 
 Listing instances:
 
