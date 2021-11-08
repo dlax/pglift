@@ -189,7 +189,6 @@ class LiveDisplayer(Live):
     compute something...........................[FAIL]
      use the result in another computation......[ OK ]
      now, something harder......................[FAIL]
-    <BLANKLINE>
     """
 
     ok = rich.text.Text("[ OK ]")
@@ -204,11 +203,6 @@ class LiveDisplayer(Live):
         super().__init__(self.grid)
         self._level = 0
         self._width = width or self.console.size.width
-
-    def stop(self) -> None:
-        super().stop()
-        if self.grid.rows:
-            self.console.line()
 
     @contextmanager
     def handle(self, msg: str) -> Iterator[None]:
