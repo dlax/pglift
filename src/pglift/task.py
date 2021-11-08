@@ -137,7 +137,11 @@ class Runner:
     ) -> None:
         try:
             if exc_value is not None:
-                self.logger.exception(str(exc_value))
+                if exc_type is KeyboardInterrupt:
+                    if Task._calls:
+                        self.logger.warning("%s interrupted", Task._calls[-1][0])
+                else:
+                    self.logger.exception(str(exc_value))
                 assert Task._calls is not None
                 while True:
                     try:

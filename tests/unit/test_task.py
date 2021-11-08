@@ -1,4 +1,5 @@
 import contextlib
+import logging
 import re
 from typing import Any, Iterator, List, Tuple
 
@@ -57,7 +58,7 @@ def test_runner_state(logger):
     assert task.Task._calls is None
 
 
-def test_runner(logger):
+def test_runner(logger, caplog):
     values = set()
 
     @task.task("add {x} to values")
@@ -106,3 +107,13 @@ def test_runner(logger):
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2, 3, 4}
+
+    @task.task("... INTR")
+    def intr() -> None:
+        raise KeyboardInterrupt
+
+    caplog.clear()
+    with pytest.raises(KeyboardInterrupt), caplog.at_level(logging.WARNING):
+        with task.Runner(logger):
+            intr()
+    assert caplog.messages == [f"{intr} interrupted"]
