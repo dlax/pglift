@@ -32,7 +32,7 @@ def instance_configure(
         old_port, port = changes["port"]
     except KeyError:
         old_port = port = config.get("port", 5432)
-    assert isinstance(port, int)
+    assert isinstance(port, int), port
 
     surole = ctx.settings.postgresql.surole
     with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
