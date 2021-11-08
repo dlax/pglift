@@ -11,6 +11,7 @@ from typing import (
     IO,
     Any,
     Callable,
+    Dict,
     Iterable,
     Iterator,
     List,
@@ -37,7 +38,7 @@ from rich.table import Table
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
-from . import _install, databases, exceptions
+from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest, pm, privileges, prometheus, roles, version
 from .ctx import Context
@@ -46,6 +47,7 @@ from .models import helpers, interface
 from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import Displayer, Runner
+from .types import ConfigChanges
 
 
 class Obj:
@@ -501,6 +503,108 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
         print_json_for(instances)
     else:
         print_table_for(instances)
+
+
+@instance.group("config")
+def instance_configure() -> None:
+    """Manage configuration of a PostgreSQL instance."""
+
+
+def show_configuration_changes(
+    changes: ConfigChanges, parameters: Iterable[str]
+) -> None:
+    for param, (old, new) in changes.items():
+        click.secho(f"{param}: {old} -> {new}", err=True, fg="green")
+    unchanged = set(parameters) - set(changes)
+    if unchanged:
+        click.secho(
+            f"changes in {', '.join(map(repr, sorted(unchanged)))} not applied",
+            err=True,
+            fg="red",
+        )
+        click.secho(
+            " hint: either these changes have no effect (values already set) "
+            "or specified parameters are already defined in an un-managed file "
+            "(e.g. 'postgresql.conf')",
+            err=True,
+            fg="blue",
+        )
+
+
+@instance_configure.command("show")
+@name_argument
+@version_argument
+@click.argument("parameter", nargs=-1)
+@pass_ctx
+def instance_configure_show(
+    ctx: Context, name: str, version: Optional[str], parameter: Tuple[str]
+) -> None:
+    """Show configuration (all parameters or specified ones)."""
+    instance = get_instance(ctx, name, version)
+    config = instance.config()
+    for entry in config.entries.values():
+        if parameter and entry.name not in parameter:
+            continue
+        if not entry.commented:
+            click.echo(f"{entry.name} = {entry.serialize()}")
+
+
+def validate_configuration_parameters(
+    context: click.Context, param: click.Parameter, value: Tuple[str]
+) -> Dict[str, str]:
+    items = {}
+    for v in value:
+        try:
+            key, val = v.split("=", 1)
+        except ValueError:
+            raise click.BadParameter(v)
+        items[key] = val
+    return items
+
+
+@instance_configure.command("set")
+@name_argument
+@version_argument
+@click.argument(
+    "parameters",
+    metavar="<PARAMETER>=<VALUE>",
+    nargs=-1,
+    callback=validate_configuration_parameters,
+)
+@pass_ctx
+def instance_configure_set(
+    ctx: Context, name: str, version: Optional[str], parameters: Dict[str, Any]
+) -> None:
+    """Set configuration items."""
+    instance = get_instance(ctx, name, version)
+    changes = instance_mod.configure(ctx, instance.as_spec(), **parameters)
+    show_configuration_changes(changes, parameters.keys())
+
+
+@instance_configure.command("remove")
+@name_argument
+@version_argument
+@click.argument("parameters", nargs=-1)
+@pass_ctx
+def instance_configure_remove(
+    ctx: Context, name: str, version: Optional[str], parameters: Tuple[str]
+) -> None:
+    """Remove configuration items."""
+    instance = get_instance(ctx, name, version)
+    confitems: Dict[str, Any] = {p: None for p in parameters}
+    changes = instance_mod.configure(ctx, instance.as_spec(), **confitems)
+    show_configuration_changes(changes, parameters)
+
+
+@instance_configure.command("edit")
+@name_argument
+@version_argument
+@pass_ctx
+def instance_configure_edit(ctx: Context, name: str, version: Optional[str]) -> None:
+    """Edit managed configuration."""
+    instance = get_instance(ctx, name, version)
+    confd = conf.info(instance.datadir)[0]
+    click.edit(filename=str(confd / "user.conf"))
 
 
 @instance.command("drop")

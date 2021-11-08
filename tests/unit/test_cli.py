@@ -271,6 +271,109 @@ def test_instance_list(runner, instance, ctx, obj, tmp_path):
     assert not result.output
 
 
+def test_instance_config_show(runner, obj, instance):
+    result = runner.invoke(
+        cli, ["instance", "config", "show", instance.name, instance.version], obj=obj
+    )
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.strip() == "\n".join(
+        ["port = 999", "unix_socket_directories = '/socks'"]
+    )
+
+
+def test_instance_config_set_validate(runner, obj, instance):
+    result = runner.invoke(
+        cli,
+        ["instance", "config", "set", instance.name, instance.version, "invalid"],
+        obj=obj,
+    )
+    assert result.exit_code == 2
+    assert "Error: Invalid value for '<PARAMETER>=<VALUE>': invalid" in result.stderr
+
+
+def test_instance_config_set(runner, ctx, obj, instance):
+    with patch.object(
+        instance_mod, "configure", return_value={"foo": ("baz", "bar")}
+    ) as configure:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "config",
+                "set",
+                instance.name,
+                instance.version,
+                "cluster_name=unittests",
+                "foo=bar",
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0
+    configure.assert_called_once_with(
+        ctx, instance.as_spec(), cluster_name="unittests", foo="bar"
+    )
+    assert "foo: baz -> bar" in result.stderr
+
+    with patch.object(instance_mod, "configure", return_value={}) as configure:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "config",
+                "set",
+                instance.name,
+                instance.version,
+                "foo=bar",
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0
+    configure.assert_called_once_with(ctx, instance.as_spec(), foo="bar")
+    assert "foo: baz -> bar" not in result.stderr
+    assert "changes in 'foo' not applied" in result.stderr
+    assert "\n hint:" in result.stderr
+
+
+def test_instance_config_remove(runner, ctx, obj, instance):
+    with patch.object(
+        instance_mod, "configure", return_value={"cluster_name": ("blah", None)}
+    ) as configure:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "config",
+                "remove",
+                instance.name,
+                instance.version,
+                "cluster_name",
+            ],
+            obj=obj,
+        )
+    configure.assert_called_once_with(ctx, instance.as_spec(), cluster_name=None)
+    assert result.exit_code == 0, result.stderr
+    assert "cluster_name: blah -> None" in result.stderr
+
+
+def test_instance_config_edit(runner, ctx, obj, instance):
+    with patch("click.edit") as edit:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "config",
+                "edit",
+                instance.name,
+                instance.version,
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0, result.stderr
+    edit.assert_called_once_with(
+        filename=str(instance.datadir / "conf.pglift.d" / "user.conf")
+    )
+
+
 def test_instance_drop(runner, ctx, obj, instance):
     result = runner.invoke(cli, ["instance", "drop"], obj=obj)
     assert result.exit_code == 2
