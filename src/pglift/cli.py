@@ -189,6 +189,7 @@ class LiveDisplayer(Live):
     compute something...........................[FAIL]
      use the result in another computation......[ OK ]
      now, something harder......................[FAIL]
+    <BLANKLINE>
     """
 
     ok = rich.text.Text("[ OK ]")
