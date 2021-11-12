@@ -220,6 +220,8 @@ def configure(
                 v = confitems[k]
             except KeyError:
                 continue
+            if v is None:
+                continue
             try:
                 confitems[k] = util.percent_memory(v, memtotal)
             except ValueError:
