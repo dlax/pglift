@@ -448,7 +448,7 @@ def instance_apply(ctx: Context, runner: Runner, file: IO[str]) -> None:
 
 
 @instance.command("alter")
-@helpers.parameters_from_model(interface.Instance, False)
+@helpers.parameters_from_model(interface.Instance, parse_model=False)
 @pass_runner
 @pass_ctx
 def instance_alter(
@@ -877,7 +877,7 @@ def role_create(
 
 @role.command("alter")
 @instance_identifier
-@helpers.parameters_from_model(interface.Role, False)
+@helpers.parameters_from_model(interface.Role, parse_model=False)
 @pass_runner
 @pass_ctx
 def role_alter(
@@ -980,7 +980,7 @@ def database_create(
 
 @database.command("alter")
 @instance_identifier
-@helpers.parameters_from_model(interface.Database, False)
+@helpers.parameters_from_model(interface.Database, parse_model=False)
 @pass_runner
 @pass_ctx
 def database_alter(

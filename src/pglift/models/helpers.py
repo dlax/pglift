@@ -132,7 +132,7 @@ def _decorators_from_model(
 
 
 def parameters_from_model(
-    model_type: ModelType, parse_model: bool = True
+    model_type: ModelType, *, parse_model: bool = True
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.

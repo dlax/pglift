@@ -155,7 +155,7 @@ def test_parameters_from_model():
 
 def test_parameters_from_model_no_parse():
     @click.command("add-person")
-    @helpers.parameters_from_model(Person, False)
+    @helpers.parameters_from_model(Person, parse_model=False)
     @click.pass_context
     def add_person(ctx: click.core.Context, **values: Any) -> None:
         click.echo(json.dumps(values))
