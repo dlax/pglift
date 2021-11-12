@@ -164,7 +164,6 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
             pgroot.rmdir()
 
 
-@task("configure PostgreSQL instance")
 def configure(
     ctx: BaseContext,
     instance: InstanceSpec,
@@ -266,50 +265,6 @@ def configure(
         conf.create_log_directory(instance, logdir)
 
     return changes
-
-
-@configure.revert("remove managed configuration from PostgreSQL instance")
-def revert_configure(
-    ctx: BaseContext,
-    instance: InstanceSpec,
-    *,
-    ssl: Union[bool, Tuple[Path, Path]] = False,
-    **kwargs: Any,
-) -> Any:
-    """Remove custom instance configuration, leaving the default
-    'postgresql.conf'.
-    """
-    pg_instance = PostgreSQLInstance.system_lookup(ctx, instance)
-    i_config = pg_instance.config()
-    if "log_directory" in i_config:
-        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        conf.remove_log_directory(instance, logdir)
-
-    configdir = instance.datadir
-    confd, include = conf.info(configdir)
-    for name in ("site", "user"):
-        conffile = confd / f"{name}.conf"
-        if conffile.exists():
-            conffile.unlink()
-    postgresql_conf = configdir / "postgresql.conf"
-    with postgresql_conf.open() as f:
-        line = f.readline()
-        if line.startswith(include):
-            while line:
-                # Move to next non-empty line in file.
-                pos = f.tell()
-                line = f.readline()
-                if line.strip():
-                    f.seek(pos)
-                    break
-            rest = f.read()
-            with postgresql_conf.open("w") as nf:
-                nf.write(rest)
-    if ssl is True:
-        for ext in ("crt", "key"):
-            fpath = configdir / f"server.{ext}"
-            if fpath.exists():
-                fpath.unlink()
 
 
 @contextlib.contextmanager
@@ -708,7 +663,6 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
 
     spec = instance.as_spec()
-    revert_configure(ctx, spec)
     revert_init(ctx, spec)
 
 

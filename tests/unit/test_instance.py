@@ -91,7 +91,6 @@ def test_configure(ctx_nohook, instance):
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open("w") as f:
         f.write("bonjour_name = 'test'\n")
-    initial_content = postgresql_conf.read_text()
 
     changes = instance_mod.configure(
         ctx,
@@ -158,13 +157,7 @@ def test_configure(ctx_nohook, instance):
     )
     assert mtime_before == mtime_after
 
-    instance_mod.revert_configure(ctx, instance)
-    assert postgresql_conf.read_text() == initial_content
-    assert not site_configfpath.exists()
-    assert not user_configfpath.exists()
-
     changes = instance_mod.configure(ctx, instance, ssl=True)
-    assert changes == {"ssl": (None, True)}
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -185,12 +178,10 @@ def test_configure(ctx_nohook, instance):
     assert "ssl = on" in lines
     assert f"ssl_cert_file = {instance.datadir / 'c.crt'}" in lines
     assert f"ssl_key_file = {instance.datadir / 'k.key'}" in lines
-    instance_mod.revert_configure(ctx, instance, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    instance_mod.configure(ctx, instance, ssl=ssl)
     changes = instance_mod.configure(ctx, instance, ssl=True)
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
