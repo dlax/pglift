@@ -5,7 +5,7 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Iterator, Set, Tuple
+from typing import Iterator, Set
 
 import pgtoolkit.conf
 import port_for
@@ -213,11 +213,11 @@ def instance(
 @pytest.fixture(scope="session")
 def instance_dropped(
     ctx: Context, instance: system.Instance
-) -> Tuple[system.Instance, pgtoolkit.conf.Configuration]:
+) -> pgtoolkit.conf.Configuration:
     config = instance.config()
     if instance.exists():
         instance_mod.drop(ctx, instance)
-    return instance, config
+    return config
 
 
 @pytest.fixture(scope="module")

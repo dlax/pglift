@@ -7,8 +7,8 @@ import requests
 from pglift import backup, exceptions, prometheus, systemd
 
 
-def test_pgpass(ctx, installed, instance_dropped):
-    instance, config = instance_dropped
+def test_pgpass(ctx, installed, instance, instance_dropped):
+    config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
     surole = ctx.settings.postgresql.surole
     if surole.pgpass and surole.password:
@@ -19,12 +19,11 @@ def test_pgpass(ctx, installed, instance_dropped):
     assert passfile.read_text() == "#hostname:port:database:username:password\n"
 
 
-def test_systemd_backup_job(ctx, installed, instance_dropped):
+def test_systemd_backup_job(ctx, installed, instance, instance_dropped):
     scheduler = ctx.settings.scheduler
     if scheduler != "systemd":
         pytest.skip(f"not applicable for scheduler method '{scheduler}'")
 
-    instance, __ = instance_dropped
     assert not systemd.is_active(ctx, backup.systemd_timer(instance))
     assert not systemd.is_enabled(ctx, backup.systemd_timer(instance))
 
@@ -32,8 +31,7 @@ def test_systemd_backup_job(ctx, installed, instance_dropped):
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test_pgbackrest_teardown(ctx, instance_dropped):
-    instance, __ = instance_dropped
+def test_pgbackrest_teardown(ctx, instance, instance_dropped):
     pgbackrest_settings = ctx.settings.pgbackrest
     configpath = pathlib.Path(
         str(pgbackrest_settings.configpath).format(instance=instance)
@@ -45,8 +43,7 @@ def test_pgbackrest_teardown(ctx, instance_dropped):
     assert not directory.exists()
 
 
-def test_prometheus_teardown(ctx, instance_dropped):
-    instance, __ = instance_dropped
+def test_prometheus_teardown(ctx, instance, instance_dropped):
     prometheus_settings = ctx.settings.prometheus
     configpath = pathlib.Path(
         str(prometheus_settings.configpath).format(name=instance.qualname)
@@ -62,7 +59,6 @@ def test_prometheus_teardown(ctx, instance_dropped):
             requests.get("http://0.0.0.0:9187/metrics")
 
 
-def test_instance(ctx, instance_dropped):
-    instance, __ = instance_dropped
+def test_instance(ctx, instance, instance_dropped):
     with pytest.raises(exceptions.InstanceNotFound, match=str(instance)):
         instance.exists()
