@@ -15,8 +15,6 @@ System model
    :members:
 .. autoclass:: Instance
    :members:
-.. autoclass:: InstanceSpec
-   :members:
 
 Interface model
 ---------------

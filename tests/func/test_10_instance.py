@@ -213,7 +213,6 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert r is None
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()
-    assert not i.as_spec().exists()
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 

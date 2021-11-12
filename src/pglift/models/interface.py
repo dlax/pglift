@@ -19,9 +19,7 @@ from pydantic import (
 from typing_extensions import Literal
 
 from .. import prometheus_default_port, settings
-from ..ctx import BaseContext
 from ..types import AutoStrEnum
-from . import system as system_model
 
 
 class InstanceState(AutoStrEnum):
@@ -196,30 +194,6 @@ class Instance(Manifest):
         if "port" in values.get("configuration", {}):
             raise ValueError("port should not be specified in configuration field")
         return values
-
-    def spec(self, ctx: BaseContext) -> system_model.InstanceSpec:
-        """Return an InstanceSpec matching this manifest."""
-        prometheus = system_model.PrometheusService(port=self.prometheus.port)
-        standby = (
-            None
-            if self.standby is None
-            else system_model.Standby(for_=self.standby.for_, slot=self.standby.slot)
-        )
-        if self.version is not None:
-            return system_model.InstanceSpec(
-                self.name,
-                self.version,
-                settings=ctx.settings,
-                prometheus=prometheus,
-                standby=standby,
-            )
-        else:
-            return system_model.InstanceSpec.default_version(
-                self.name,
-                ctx,
-                prometheus=prometheus,
-                standby=standby,
-            )
 
 
 class InstanceBackup(Manifest):

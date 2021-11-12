@@ -131,36 +131,6 @@ class Standby:
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
-class InstanceSpec(BaseInstance):
-    """Spec for an instance, to be created"""
-
-    prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
-    standby: Optional[Standby]
-
-    T = TypeVar("T", bound="InstanceSpec")
-
-    @classmethod
-    def default_version(
-        cls: Type[T],
-        name: str,
-        ctx: BaseContext,
-        *,
-        prometheus: PrometheusService,
-        standby: Optional[Standby],
-    ) -> T:
-        """Build an instance by guessing its version from installed PostgreSQL."""
-        version = default_postgresql_version(ctx)
-        settings = ctx.settings
-        return cls(
-            name=name,
-            version=version,
-            settings=settings,
-            prometheus=prometheus,
-            standby=standby,
-        )
-
-
-@attr.s(auto_attribs=True, frozen=True, slots=True)
 class PostgreSQLInstance(BaseInstance):
     """A bare PostgreSQL instance."""
 
@@ -272,8 +242,3 @@ class Instance(PostgreSQLInstance):
         values = attr.asdict(pg_instance)
         values["prometheus"] = PrometheusService.system_lookup(ctx, pg_instance)
         return cls(**values)
-
-    def as_spec(self) -> InstanceSpec:
-        return InstanceSpec(
-            **{k: getattr(self, k) for k in attr.fields_dict(InstanceSpec)}
-        )
