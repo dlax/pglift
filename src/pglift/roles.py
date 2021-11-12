@@ -14,7 +14,7 @@ from .types import ConfigChanges, Role
 @hookimpl  # type: ignore[misc]
 def instance_configure(
     ctx: BaseContext,
-    instance: Instance,
+    manifest: interface.Instance,
     config: conf.Configuration,
     changes: ConfigChanges,
 ) -> None:

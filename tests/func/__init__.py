@@ -6,6 +6,7 @@ from typing_extensions import Literal
 from pglift import db
 from pglift import instance as instance_mod
 from pglift.ctx import BaseContext
+from pglift.models import interface
 from pglift.models.system import Instance
 from pglift.types import Role
 
@@ -21,7 +22,8 @@ def configure_instance(
         assert isinstance(i, Instance)
         if port is None:
             port = i.port
-    instance_mod.configure(ctx, i, port=port, **confitems)
+    manifest = interface.Instance(name=i.name, version=i.version)
+    instance_mod.configure(ctx, manifest, port=port, **confitems)
 
 
 @contextmanager

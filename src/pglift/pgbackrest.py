@@ -15,6 +15,7 @@ from . import hookimpl
 from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
+from .models import interface
 from .models.interface import InstanceBackup
 from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .settings import PgBackRestSettings
@@ -197,16 +198,18 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
+def instance_configure(
+    ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
+) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     if not enabled(ctx):
         ctx.warning("pgbackrest not available, skipping backup configuration")
         return
+    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if instance.standby:
         return
-    i = PostgreSQLInstance.system_lookup(ctx, instance)
-    setup(ctx, i)
-    init(ctx, i)
+    setup(ctx, instance)
+    init(ctx, instance)
 
 
 @hookimpl  # type: ignore[misc]

@@ -3,6 +3,7 @@ from pgtoolkit.conf import Configuration
 
 from . import __name__ as pkgname
 from .ctx import BaseContext
+from .models import interface
 from .models.system import Instance
 from .types import ConfigChanges
 
@@ -12,7 +13,7 @@ hookspec = pluggy.HookspecMarker(pkgname)
 @hookspec  # type: ignore[misc]
 def instance_configure(
     ctx: BaseContext,
-    instance: Instance,
+    manifest: interface.Instance,
     config: Configuration,
     changes: ConfigChanges,
 ) -> None:

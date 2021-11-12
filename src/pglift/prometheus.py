@@ -195,7 +195,7 @@ def drop(ctx: BaseContext, name: str) -> None:
 
 
 def setup_local(
-    ctx: BaseContext, instance: Instance, instance_config: Configuration
+    ctx: BaseContext, manifest: interface.Instance, instance_config: Configuration
 ) -> None:
     """Setup Prometheus postgres_exporter for a local instance."""
     role = ctx.settings.postgresql.surole
@@ -211,18 +211,19 @@ def setup_local(
     password = None
     if role.password:
         password = role.password.get_secret_value()
+    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     setup(
         ctx,
         instance.qualname,
         dsn=" ".join(dsn),
         password=password,
-        port=instance.prometheus.port,
+        port=manifest.prometheus.port,
     )
 
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: BaseContext, instance: Instance, config: Configuration, **kwargs: Any
+    ctx: BaseContext, manifest: interface.Instance, config: Configuration, **kwargs: Any
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not enabled(ctx):
@@ -230,7 +231,7 @@ def instance_configure(
             "Prometheus postgres_exporter not available, skipping monitoring configuration"
         )
         return
-    setup_local(ctx, instance, config)
+    setup_local(ctx, manifest, config)
 
 
 @task("start postgres_exporter service")

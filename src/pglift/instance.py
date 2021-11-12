@@ -167,7 +167,7 @@ def revert_init(ctx: BaseContext, manifest: interface.Instance) -> None:
 
 def configure(
     ctx: BaseContext,
-    instance: Instance,
+    manifest: interface.Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **confitems: Any,
@@ -183,6 +183,7 @@ def configure(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
+    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     confd, include = conf.info(configdir)
@@ -260,7 +261,7 @@ def configure(
     i = PostgreSQLInstance.system_lookup(ctx, instance)
     i_config = i.config()
     ctx.pm.hook.instance_configure(
-        ctx=ctx, instance=instance, config=i_config, changes=changes
+        ctx=ctx, manifest=manifest, config=i_config, changes=changes
     )
 
     if "log_directory" in i_config:
@@ -343,7 +344,9 @@ def stopped(
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
+def instance_configure(
+    ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
+) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf
     and pg_ident.conf.
@@ -353,6 +356,7 @@ def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> N
     """
     surole = ctx.settings.postgresql.surole
     auth_settings = ctx.settings.postgresql.auth
+    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
     hba = template("postgresql", "pg_hba.conf").format(
         surole=surole.name,
@@ -364,9 +368,8 @@ def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> N
 
     if not instance.standby and surole.password:
         # standby instances are read-only
-        i = PostgreSQLInstance.system_lookup(ctx, instance)
-        with running(ctx, i):
-            roles.set_password_for(ctx, i, surole)
+        with running(ctx, instance):
+            roles.set_password_for(ctx, instance, surole)
 
     hba_path.write_text(hba)
 
@@ -600,16 +603,16 @@ def apply(
     if not instance.exists():
         init(ctx, manifest)
 
-    instance = Instance.from_manifest(ctx, manifest)
     configure_options = manifest.configuration or {}
     changes = configure(
         ctx,
-        instance,
+        manifest,
         ssl=manifest.ssl,
         port=manifest.port,
         **configure_options,
     )
 
+    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:
         if is_running:
