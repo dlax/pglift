@@ -533,16 +533,15 @@ def upgrade(
     """Upgrade an instance using pg_upgrade"""
     if version is None:
         version = default_postgresql_version(ctx)
-    new = interface.Instance(
+    new_manifest = interface.Instance(
         name=name or instance.name,
         version=version,
         port=port or instance.port,
         state=interface.InstanceState.stopped,
         prometheus={"port": instance.prometheus.port},
     )
-    spec = new.spec(ctx)
-    result = apply(ctx, new)
-    assert result is not None, new
+    result = apply(ctx, new_manifest)
+    assert result is not None, new_manifest
     (newinstance, _) = result
     bindir = ctx.pg_ctl(version).bindir
     pg_upgrade = str(bindir / "pg_upgrade")
@@ -551,7 +550,7 @@ def upgrade(
         f"--old-bindir={ctx.pg_ctl(instance.version).bindir}",
         f"--new-bindir={bindir}",
         f"--old-datadir={instance.datadir}",
-        f"--new-datadir={spec.datadir}",
+        f"--new-datadir={newinstance.datadir}",
         f"--username={ctx.settings.postgresql.surole.name}",
     ]
     if jobs is not None:
