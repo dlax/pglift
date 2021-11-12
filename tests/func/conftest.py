@@ -17,7 +17,7 @@ from pglift import _install
 from pglift import instance as instance_mod
 from pglift import pm
 from pglift.ctx import Context
-from pglift.models import system
+from pglift.models import interface, system
 from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 
 from . import configure_instance, execute
@@ -192,7 +192,10 @@ def instance_initialized(
     ctx: Context, instance_spec: system.InstanceSpec, installed: None
 ) -> system.InstanceSpec:
     assert instance_mod.status(ctx, instance_spec) == Status.unspecified_datadir
-    instance_mod.init(ctx, instance_spec)
+    manifest = interface.Instance(
+        name=instance_spec.name, version=instance_spec.version
+    )
+    instance_mod.init(ctx, manifest)
     assert instance_mod.status(ctx, instance_spec) == Status.not_running
     return instance_spec
 
@@ -210,9 +213,9 @@ def instance(
     log_directory: pathlib.Path,
 ) -> system.Instance:
     port = next(tmp_port_factory)
-    i = instance_initialized
-    configure_instance(ctx, i, port=port, log_directory=str(log_directory))
-    return system.Instance.system_lookup(ctx, i)
+    instance = system.Instance.system_lookup(ctx, instance_initialized)
+    configure_instance(ctx, instance, port=port, log_directory=str(log_directory))
+    return instance
 
 
 @pytest.fixture(scope="session")

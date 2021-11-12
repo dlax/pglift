@@ -573,7 +573,7 @@ def instance_configure_set(
     ctx: Context, instance: Instance, parameters: Dict[str, Any]
 ) -> None:
     """Set configuration items."""
-    changes = instance_mod.configure(ctx, instance.as_spec(), **parameters)
+    changes = instance_mod.configure(ctx, instance, **parameters)
     show_configuration_changes(changes, parameters.keys())
 
 
@@ -586,7 +586,7 @@ def instance_configure_remove(
 ) -> None:
     """Remove configuration items."""
     confitems: Dict[str, Any] = {p: None for p in parameters}
-    changes = instance_mod.configure(ctx, instance.as_spec(), **confitems)
+    changes = instance_mod.configure(ctx, instance, **confitems)
     show_configuration_changes(changes, parameters)
 
 

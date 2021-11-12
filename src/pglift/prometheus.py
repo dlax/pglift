@@ -9,7 +9,7 @@ from . import prometheus_default_port as default_port
 from . import systemd
 from .ctx import BaseContext
 from .models import interface
-from .models.system import Instance, InstanceSpec, PostgreSQLInstance
+from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
 
@@ -195,7 +195,7 @@ def drop(ctx: BaseContext, name: str) -> None:
 
 
 def setup_local(
-    ctx: BaseContext, instance: InstanceSpec, instance_config: Configuration
+    ctx: BaseContext, instance: Instance, instance_config: Configuration
 ) -> None:
     """Setup Prometheus postgres_exporter for a local instance."""
     role = ctx.settings.postgresql.surole
@@ -222,7 +222,7 @@ def setup_local(
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: BaseContext, instance: InstanceSpec, config: Configuration, **kwargs: Any
+    ctx: BaseContext, instance: Instance, config: Configuration, **kwargs: Any
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not enabled(ctx):

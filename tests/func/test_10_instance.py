@@ -266,12 +266,10 @@ def test_standby(
     standby_for = f"host={socket_directory} port={instance.port} user={surole.name}"
     if not surole.pgpass and surole.password:
         standby_for += f" password={surole.password.get_secret_value()}"
-    standby = system.InstanceSpec(
+    standby_manifest = interface.Instance(
         name="standby",
         version=pg_version,
-        prometheus=system.PrometheusService(next(tmp_port_factory)),
-        settings=settings,
-        standby=system.Standby(for_=standby_for, slot=slot),
+        standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
     )
 
     @contextlib.contextmanager
@@ -288,18 +286,18 @@ def test_standby(
 
     with instance_running_with_table():
         assert not pg_replication_slots()
-        instance_mod.init(ctx, standby)
+        instance_mod.init(ctx, standby_manifest)
         if slot:
             assert pg_replication_slots() == [[slot]]
         else:
             assert not pg_replication_slots()
+        standby_instance = system.Instance.system_lookup(ctx, ("standby", pg_version))
         configure_instance(
             ctx,
-            standby,
+            standby_instance,
             port=next(tmp_port_factory),
             log_directory=str(tmp_path_factory.mktemp("postgres-standby-logs")),
         )
-        standby_instance = system.Instance.system_lookup(ctx, standby)
         assert standby_instance.standby
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
@@ -322,7 +320,6 @@ def test_standby(
                 assert_replicated()
 
                 instance_mod.promote(ctx, standby_instance)
-                standby_instance = system.Instance.system_lookup(ctx, standby)
                 assert not standby_instance.standby
                 assert execute(
                     ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"

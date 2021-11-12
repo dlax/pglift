@@ -1,18 +1,18 @@
 from contextlib import contextmanager
-from typing import Any, Iterator, List, Optional, Union, overload
+from typing import Any, Iterator, List, Optional, overload
 
 from typing_extensions import Literal
 
 from pglift import db
 from pglift import instance as instance_mod
 from pglift.ctx import BaseContext
-from pglift.models.system import Instance, InstanceSpec
+from pglift.models.system import Instance
 from pglift.types import Role
 
 
 def configure_instance(
     ctx: BaseContext,
-    i: Union[Instance, InstanceSpec],
+    i: Instance,
     *,
     port: Optional[int] = None,
     **confitems: Any,
@@ -21,8 +21,7 @@ def configure_instance(
         assert isinstance(i, Instance)
         if port is None:
             port = i.port
-    spec = i.as_spec() if isinstance(i, Instance) else i
-    instance_mod.configure(ctx, spec, port=port, **confitems)
+    instance_mod.configure(ctx, i, port=port, **confitems)
 
 
 @contextmanager

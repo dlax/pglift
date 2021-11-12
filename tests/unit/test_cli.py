@@ -307,7 +307,7 @@ def test_instance_config_set(runner, ctx, obj, instance):
         )
     assert result.exit_code == 0
     configure.assert_called_once_with(
-        ctx, instance.as_spec(), cluster_name="unittests", foo="bar"
+        ctx, instance, cluster_name="unittests", foo="bar"
     )
     assert "foo: baz -> bar" in result.stderr
 
@@ -324,7 +324,7 @@ def test_instance_config_set(runner, ctx, obj, instance):
             obj=obj,
         )
     assert result.exit_code == 0
-    configure.assert_called_once_with(ctx, instance.as_spec(), foo="bar")
+    configure.assert_called_once_with(ctx, instance, foo="bar")
     assert "foo: baz -> bar" not in result.stderr
     assert "changes in 'foo' not applied" in result.stderr
     assert "\n hint:" in result.stderr
@@ -345,7 +345,7 @@ def test_instance_config_remove(runner, ctx, obj, instance):
             ],
             obj=obj,
         )
-    configure.assert_called_once_with(ctx, instance.as_spec(), cluster_name=None)
+    configure.assert_called_once_with(ctx, instance, cluster_name=None)
     assert result.exit_code == 0, result.stderr
     assert "cluster_name: blah -> None" in result.stderr
 

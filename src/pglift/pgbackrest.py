@@ -16,7 +16,7 @@ from . import instance as instance_mod
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .models.interface import InstanceBackup
-from .models.system import BaseInstance, Instance, InstanceSpec, PostgreSQLInstance
+from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
 from .types import AutoStrEnum
@@ -197,7 +197,7 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
+def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     if not enabled(ctx):
         ctx.warning("pgbackrest not available, skipping backup configuration")

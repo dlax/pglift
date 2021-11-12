@@ -8,7 +8,8 @@ from pgtoolkit.conf import parse as parse_pgconf
 from pglift import instance as instance_mod
 from pglift import task
 from pglift.exceptions import CommandError, InstanceStateError
-from pglift.models.system import InstanceSpec, PrometheusService
+from pglift.models import interface
+from pglift.models.system import BaseInstance
 
 
 def test_systemd_unit(pg_version, instance):
@@ -19,31 +20,21 @@ def test_systemd_unit(pg_version, instance):
 
 
 def test_init_lookup_failed(pg_version, settings, ctx):
-    i = InstanceSpec(
-        name="dirty",
-        version=pg_version,
-        settings=settings,
-        prometheus=PrometheusService(),
-        standby=None,
-    )
+    manifest = interface.Instance(name="dirty", version=pg_version)
+    i = BaseInstance.from_manifest(ctx, manifest)
     i.datadir.mkdir(parents=True)
     (i.datadir / "postgresql.conf").touch()
     pg_version = i.datadir / "PG_VERSION"
     pg_version.write_text("7.1")
     with pytest.raises(Exception, match="version mismatch"):
         with task.Runner(ctx):
-            instance_mod.init(ctx, i)
+            instance_mod.init(ctx, manifest)
     assert not pg_version.exists()  # per revert
 
 
 def test_init_dirty(pg_version, settings, ctx, monkeypatch):
-    i = InstanceSpec(
-        name="dirty",
-        version=pg_version,
-        settings=settings,
-        prometheus=PrometheusService(),
-        standby=None,
-    )
+    manifest = interface.Instance(name="dirty", version=pg_version)
+    i = BaseInstance.from_manifest(ctx, manifest)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []
@@ -51,7 +42,7 @@ def test_init_dirty(pg_version, settings, ctx, monkeypatch):
         with task.Runner(ctx):
             with monkeypatch.context() as m:
                 m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))
-                instance_mod.init(ctx, i)
+                instance_mod.init(ctx, manifest)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
     if ctx.settings.service_manager == "systemd":
@@ -63,15 +54,9 @@ def test_init_version_not_available(ctx):
     version = "11"
     if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
         pytest.skip(f"PostgreSQL {version} seems available")
-    i = InstanceSpec(
-        f"pg{version}",
-        version,
-        settings=settings,
-        prometheus=PrometheusService(),
-        standby=None,
-    )
+    manifest = interface.Instance(name=f"pg{version}", version=version)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
-        instance_mod.init(ctx, i)
+        instance_mod.init(ctx, manifest)
 
 
 def test_list_no_pgroot(ctx):

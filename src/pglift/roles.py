@@ -6,7 +6,7 @@ from psycopg2 import sql
 from . import db, exceptions, hookimpl
 from .ctx import BaseContext
 from .models import interface
-from .models.system import Instance, InstanceSpec, PostgreSQLInstance
+from .models.system import Instance, PostgreSQLInstance
 from .task import task
 from .types import ConfigChanges, Role
 
@@ -14,7 +14,7 @@ from .types import ConfigChanges, Role
 @hookimpl  # type: ignore[misc]
 def instance_configure(
     ctx: BaseContext,
-    instance: InstanceSpec,
+    instance: Instance,
     config: conf.Configuration,
     changes: ConfigChanges,
 ) -> None:

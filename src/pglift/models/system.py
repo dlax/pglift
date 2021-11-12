@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
@@ -10,6 +10,9 @@ from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
 from ..validators import known_postgresql_version
+
+if TYPE_CHECKING:
+    from . import interface
 
 
 def default_postgresql_version(ctx: BaseContext) -> str:
@@ -49,6 +52,8 @@ class BaseInstance:
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
     settings: Settings = attr.ib(validator=instance_of(Settings))
+
+    T = TypeVar("T", bound="BaseInstance")
 
     def __str__(self) -> str:
         return f"{self.version}/{self.name}"
@@ -91,6 +96,13 @@ class BaseInstance:
                 f"version mismatch ({real_version} != {self.version})"
             )
         return True
+
+    @classmethod
+    def from_manifest(
+        cls: Type[T], ctx: BaseContext, manifest: "interface.Instance"
+    ) -> T:
+        version = manifest.version or default_postgresql_version(ctx)
+        return cls(manifest.name, version, ctx.settings)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -203,6 +215,12 @@ class PostgreSQLInstance(BaseInstance):
         except ValueError:
             raise ValueError(f"invalid stanza '{stanza}'") from None
         return cls.system_lookup(ctx, (name, version))
+
+    @classmethod
+    def from_manifest(
+        cls: Type[T], ctx: BaseContext, manifest: "interface.Instance"
+    ) -> T:
+        return cls.system_lookup(ctx, (manifest.name, manifest.version))
 
     def exists(self) -> bool:
         """Return True if the instance exists and its configuration is valid.

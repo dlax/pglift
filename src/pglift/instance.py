@@ -28,7 +28,6 @@ from .models import interface
 from .models.system import (
     BaseInstance,
     Instance,
-    InstanceSpec,
     PostgreSQLInstance,
     default_postgresql_version,
 )
@@ -103,12 +102,13 @@ def init_replication(
 
 
 @task("initialize PostgreSQL instance")
-def init(ctx: BaseContext, instance: InstanceSpec) -> None:
+def init(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
     initdb_settings = settings.initdb
     surole = settings.surole
 
+    instance = BaseInstance.from_manifest(ctx, manifest)
     if instance.exists():
         return None
 
@@ -137,8 +137,8 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
         opts["data_checksums"] = True
 
     pg_ctl.init(instance.datadir, **opts)
-    if instance.standby:
-        init_replication(ctx, instance, instance.standby.for_, instance.standby.slot)
+    if manifest.standby:
+        init_replication(ctx, instance, manifest.standby.for_, manifest.standby.slot)
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
@@ -147,8 +147,9 @@ def init(ctx: BaseContext, instance: InstanceSpec) -> None:
 
 
 @init.revert("delete PostgreSQL instance")
-def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
+def revert_init(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Un-initialize a PostgreSQL instance."""
+    instance = BaseInstance.from_manifest(ctx, manifest)
     if ctx.settings.service_manager == "systemd":
         systemd.disable(ctx, systemd_unit(instance), now=True)
 
@@ -166,7 +167,7 @@ def revert_init(ctx: BaseContext, instance: InstanceSpec) -> None:
 
 def configure(
     ctx: BaseContext,
-    instance: InstanceSpec,
+    instance: Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     **confitems: Any,
@@ -342,7 +343,7 @@ def stopped(
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: BaseContext, instance: InstanceSpec, **kwargs: Any) -> None:
+def instance_configure(ctx: BaseContext, instance: Instance, **kwargs: Any) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf
     and pg_ident.conf.
@@ -574,7 +575,7 @@ def upgrade(
 
 
 def apply(
-    ctx: BaseContext, instance_manifest: interface.Instance
+    ctx: BaseContext, manifest: interface.Instance
 ) -> Optional[Tuple[Instance, ConfigChanges]]:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
@@ -588,28 +589,27 @@ def apply(
     running, it will be reloaded. Note that some changes require a full
     restart, this needs to be handled manually.
     """
-    instance_spec = instance_manifest.spec(ctx)
     States = interface.InstanceState
-    state = instance_manifest.state
+    state = manifest.state
 
+    instance = BaseInstance.from_manifest(ctx, manifest)
     if state == States.absent:
-        if instance_spec.exists():
-            instance = Instance.system_lookup(ctx, instance_spec)
-            drop(ctx, instance)
+        if instance.exists():
+            drop(ctx, Instance.from_manifest(ctx, manifest))
         return None
 
-    if not instance_spec.exists():
-        init(ctx, instance_spec)
+    if not instance.exists():
+        init(ctx, manifest)
 
-    configure_options = instance_manifest.configuration or {}
+    instance = Instance.from_manifest(ctx, manifest)
+    configure_options = manifest.configuration or {}
     changes = configure(
         ctx,
-        instance_spec,
-        ssl=instance_manifest.ssl,
-        port=instance_manifest.port,
+        instance,
+        ssl=manifest.ssl,
+        port=manifest.port,
         **configure_options,
     )
-    instance = Instance.system_lookup(ctx, instance_spec)
 
     is_running = status(ctx, instance) == Status.running
     if state == States.stopped:
@@ -626,11 +626,11 @@ def apply(
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
-    StandbyState = instance_manifest.Standby.State
+    StandbyState = manifest.Standby.State
 
     if (
-        instance_manifest.standby
-        and instance_manifest.standby.status == StandbyState.promoted
+        manifest.standby
+        and manifest.standby.status == StandbyState.promoted
         and instance.standby is not None
     ):
         promote(ctx, instance)
@@ -663,9 +663,8 @@ def drop(ctx: BaseContext, instance: Instance) -> None:
     stop(ctx, instance, run_hooks=True)
 
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
-
-    spec = instance.as_spec()
-    revert_init(ctx, spec)
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    revert_init(ctx, manifest)
 
 
 def list(
