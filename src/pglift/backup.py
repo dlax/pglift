@@ -40,7 +40,7 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 
 
 # This entry point is used by systemd 'postgresql-backup@' service.
-if __name__ == "__main__":  # pragma: nocover
+def main() -> None:
     import argparse
 
     from .pm import PluginManager
@@ -71,3 +71,7 @@ if __name__ == "__main__":  # pragma: nocover
     except exceptions.InstanceNotFound as e:
         parser.exit(2, str(e))
     args.func(ctx, instance, args)
+
+
+if __name__ == "__main__":  # pragma: nocover
+    main()
