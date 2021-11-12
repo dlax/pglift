@@ -4,17 +4,6 @@ from pglift import exceptions
 from pglift.models import system
 
 
-@pytest.fixture
-def instance_spec(instance):
-    return system.InstanceSpec(
-        instance.name,
-        instance.version,
-        settings=instance.settings,
-        prometheus=system.PrometheusService(instance.prometheus.port),
-        standby=None,
-    )
-
-
 def test_default_postgresql_version(pg_version, ctx, monkeypatch):
     major_version = pg_version[:2]
     assert system.default_postgresql_version(ctx) == major_version
@@ -56,38 +45,32 @@ def test_postgresqlinstance_default_version(ctx):
     assert i.version == major_version
 
 
-def test_postgresqlinstance_system_lookup(ctx, instance, instance_spec):
-    i = system.PostgreSQLInstance.system_lookup(ctx, instance_spec)
+def test_postgresqlinstance_system_lookup(ctx, instance):
+    i = system.PostgreSQLInstance.system_lookup(ctx, instance)
     expected = system.PostgreSQLInstance(
         instance.name, instance.version, instance.settings
     )
     assert i == expected
 
-    i = system.PostgreSQLInstance.system_lookup(
-        ctx, (instance_spec.name, instance_spec.version)
-    )
+    i = system.PostgreSQLInstance.system_lookup(ctx, (instance.name, instance.version))
     assert i == expected
 
     with pytest.raises(TypeError, match="expecting either a BaseInstance or"):
         system.PostgreSQLInstance.system_lookup(ctx, ("nameonly",))  # type: ignore[arg-type]
 
 
-def test_instance_system_lookup(ctx, instance, instance_spec):
-    i = system.Instance.system_lookup(ctx, instance_spec)
+def test_instance_system_lookup(ctx, instance):
+    i = system.Instance.system_lookup(ctx, instance)
     assert i == instance
 
-    i = system.Instance.system_lookup(ctx, (instance_spec.name, instance_spec.version))
+    i = system.Instance.system_lookup(ctx, (instance.name, instance.version))
     assert i == instance
 
 
-def test_instance_system_lookup_misconfigured(ctx, instance, instance_spec):
-    (instance_spec.datadir / "postgresql.conf").unlink()
-    with pytest.raises(exceptions.InstanceNotFound, match=str(instance_spec)):
-        system.Instance.system_lookup(ctx, instance_spec)
-
-
-def test_instance_as_spec(instance, instance_spec):
-    assert instance.as_spec() == instance_spec
+def test_instance_system_lookup_misconfigured(ctx, instance):
+    (instance.datadir / "postgresql.conf").unlink()
+    with pytest.raises(exceptions.InstanceNotFound, match=str(instance)):
+        system.Instance.system_lookup(ctx, instance)
 
 
 def test_postgresqlinstance_exists(pg_version, settings):
@@ -125,10 +108,3 @@ def test_postgresqlinstance_standby_for(ctx, instance):
     (instance.datadir / standbyfile).touch()
     assert instance.standby
     assert instance.standby.for_ == "host=/tmp port=4242 user=pg"
-
-
-def test_instancespec_default_version(pg_version, ctx):
-    i = system.InstanceSpec.default_version(
-        "default", ctx=ctx, prometheus=system.PrometheusService(), standby=None
-    )
-    assert i.version == pg_version

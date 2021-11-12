@@ -4,7 +4,7 @@ import shutil
 import pytest
 import requests
 
-from pglift import backup, prometheus, systemd
+from pglift import backup, exceptions, prometheus, systemd
 
 
 def test_pgpass(ctx, installed, instance_dropped):
@@ -64,4 +64,5 @@ def test_prometheus_teardown(ctx, instance_dropped):
 
 def test_instance(ctx, instance_dropped):
     instance, __ = instance_dropped
-    assert not instance.exists()
+    with pytest.raises(exceptions.InstanceNotFound, match=str(instance)):
+        instance.exists()

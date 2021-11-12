@@ -174,30 +174,21 @@ def tmp_port_factory() -> Iterator[int]:
 
 
 @pytest.fixture(scope="session")
-def instance_spec(
+def instance_manifest(
     pg_version: str, settings: Settings, tmp_port_factory: Iterator[int]
-) -> system.InstanceSpec:
-    prometheus_port = next(tmp_port_factory)
-    return system.InstanceSpec(
-        name="test",
-        version=pg_version,
-        prometheus=system.PrometheusService(prometheus_port),
-        settings=settings,
-        standby=None,
-    )
+) -> interface.Instance:
+    return interface.Instance(name="test", version=pg_version)
 
 
 @pytest.fixture(scope="session")
 def instance_initialized(
-    ctx: Context, instance_spec: system.InstanceSpec, installed: None
-) -> system.InstanceSpec:
-    assert instance_mod.status(ctx, instance_spec) == Status.unspecified_datadir
-    manifest = interface.Instance(
-        name=instance_spec.name, version=instance_spec.version
-    )
-    instance_mod.init(ctx, manifest)
-    assert instance_mod.status(ctx, instance_spec) == Status.not_running
-    return instance_spec
+    ctx: Context, instance_manifest: interface.Instance, installed: None
+) -> system.Instance:
+    instance = system.BaseInstance.from_manifest(ctx, instance_manifest)
+    assert instance_mod.status(ctx, instance) == Status.unspecified_datadir
+    instance_mod.init(ctx, instance_manifest)
+    assert instance_mod.status(ctx, instance) == Status.not_running
+    return system.Instance.system_lookup(ctx, instance)
 
 
 @pytest.fixture(scope="session")
@@ -208,24 +199,25 @@ def log_directory(tmp_path_factory):
 @pytest.fixture(scope="session")
 def instance(
     ctx: Context,
-    instance_initialized: system.InstanceSpec,
+    instance_initialized: system.Instance,
     tmp_port_factory: Iterator[int],
     log_directory: pathlib.Path,
 ) -> system.Instance:
     port = next(tmp_port_factory)
-    instance = system.Instance.system_lookup(ctx, instance_initialized)
-    configure_instance(ctx, instance, port=port, log_directory=str(log_directory))
-    return instance
+    configure_instance(
+        ctx, instance_initialized, port=port, log_directory=str(log_directory)
+    )
+    return instance_initialized
 
 
 @pytest.fixture(scope="session")
 def instance_dropped(
     ctx: Context, instance: system.Instance
-) -> Tuple[system.InstanceSpec, pgtoolkit.conf.Configuration]:
+) -> Tuple[system.Instance, pgtoolkit.conf.Configuration]:
     config = instance.config()
     if instance.exists():
         instance_mod.drop(ctx, instance)
-    return instance.as_spec(), config
+    return instance, config
 
 
 @pytest.fixture(scope="module")
