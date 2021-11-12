@@ -44,7 +44,7 @@ from . import pgbackrest, pm, privileges, prometheus, roles, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
-from .models.system import Instance
+from .models.system import BaseInstance, Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import Displayer, Runner
 from .types import ConfigChanges
@@ -435,7 +435,7 @@ def instance() -> None:
 @pass_ctx
 def instance_init(ctx: Context, runner: Runner, instance: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
-    if instance.spec(ctx).exists():
+    if BaseInstance.from_manifest(ctx, instance).exists():
         raise click.ClickException("instance already exists")
     with runner:
         instance_mod.apply(ctx, instance)
