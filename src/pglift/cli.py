@@ -175,6 +175,11 @@ def instance_lookup(
     return get_instance(ctx, name, version)
 
 
+instance_identifier = click.argument(
+    "instance", metavar="<version>/<name>", callback=instance_lookup
+)
+
+
 class LiveDisplayer(Live):
     """Render nested operations as a grid and live update their status.
 
@@ -473,17 +478,12 @@ def instance_schema() -> None:
     click.echo(interface.Instance.schema_json(indent=2), nl=False)
 
 
-name_argument = click.argument("name", type=click.STRING)
-version_argument = click.argument("version", required=False, type=click.STRING)
-
-
 @instance.command("describe")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_ctx
-def instance_describe(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_describe(ctx: Context, instance: Instance) -> None:
     """Describe a PostgreSQL instance"""
-    described = instance_mod.describe(ctx, name, version)
+    described = instance_mod.describe(ctx, instance.name, instance.version)
     click.echo(described.yaml(), nl=False)
 
 
@@ -532,15 +532,13 @@ def show_configuration_changes(
 
 
 @instance_configure.command("show")
-@name_argument
-@version_argument
+@instance_identifier
 @click.argument("parameter", nargs=-1)
 @pass_ctx
 def instance_configure_show(
-    ctx: Context, name: str, version: Optional[str], parameter: Tuple[str]
+    ctx: Context, instance: Instance, parameter: Tuple[str]
 ) -> None:
     """Show configuration (all parameters or specified ones)."""
-    instance = get_instance(ctx, name, version)
     config = instance.config()
     for entry in config.entries.values():
         if parameter and entry.name not in parameter:
@@ -563,8 +561,7 @@ def validate_configuration_parameters(
 
 
 @instance_configure.command("set")
-@name_argument
-@version_argument
+@instance_identifier
 @click.argument(
     "parameters",
     metavar="<PARAMETER>=<VALUE>",
@@ -573,69 +570,56 @@ def validate_configuration_parameters(
 )
 @pass_ctx
 def instance_configure_set(
-    ctx: Context, name: str, version: Optional[str], parameters: Dict[str, Any]
+    ctx: Context, instance: Instance, parameters: Dict[str, Any]
 ) -> None:
     """Set configuration items."""
-    instance = get_instance(ctx, name, version)
     changes = instance_mod.configure(ctx, instance.as_spec(), **parameters)
     show_configuration_changes(changes, parameters.keys())
 
 
 @instance_configure.command("remove")
-@name_argument
-@version_argument
+@instance_identifier
 @click.argument("parameters", nargs=-1)
 @pass_ctx
 def instance_configure_remove(
-    ctx: Context, name: str, version: Optional[str], parameters: Tuple[str]
+    ctx: Context, instance: Instance, parameters: Tuple[str]
 ) -> None:
     """Remove configuration items."""
-    instance = get_instance(ctx, name, version)
     confitems: Dict[str, Any] = {p: None for p in parameters}
     changes = instance_mod.configure(ctx, instance.as_spec(), **confitems)
     show_configuration_changes(changes, parameters)
 
 
 @instance_configure.command("edit")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_ctx
-def instance_configure_edit(ctx: Context, name: str, version: Optional[str]) -> None:
+def instance_configure_edit(ctx: Context, instance: Instance) -> None:
     """Edit managed configuration."""
-    instance = get_instance(ctx, name, version)
     confd = conf.info(instance.datadir)[0]
     click.edit(filename=str(confd / "user.conf"))
 
 
 @instance.command("drop")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_runner
 @pass_ctx
-def instance_drop(
-    ctx: Context, runner: Runner, name: str, version: Optional[str]
-) -> None:
+def instance_drop(ctx: Context, runner: Runner, instance: Instance) -> None:
     """Drop a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     with runner:
         instance_mod.drop(ctx, instance)
 
 
 @instance.command("status")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_runner
 @click.pass_context
-def instance_status(
-    context: click.Context, runner: Runner, name: str, version: Optional[str]
-) -> None:
+def instance_status(context: click.Context, runner: Runner, instance: Instance) -> None:
     """Check the status of a PostgreSQL instance.
 
     Output the status string value ('running', 'not running', 'unspecified
     datadir') and exit with respective status code (0, 3, 4).
     """
     ctx = context.obj.ctx
-    instance = get_instance(ctx, name, version)
     with runner:
         status = instance_mod.status(ctx, instance)
     click.echo(status.name.replace("_", " "))
@@ -643,66 +627,51 @@ def instance_status(
 
 
 @instance.command("start")
-@name_argument
-@version_argument
+@instance_identifier
 @foreground_option
 @pass_runner
 @pass_ctx
 def instance_start(
-    ctx: Context, runner: Runner, name: str, version: Optional[str], foreground: bool
+    ctx: Context, runner: Runner, instance: Instance, foreground: bool
 ) -> None:
     """Start a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.not_running)
     with runner:
         instance_mod.start(ctx, instance, foreground=foreground)
 
 
 @instance.command("stop")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_runner
 @pass_ctx
-def instance_stop(
-    ctx: Context, runner: Runner, name: str, version: Optional[str]
-) -> None:
+def instance_stop(ctx: Context, runner: Runner, instance: Instance) -> None:
     """Stop a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     with runner:
         instance_mod.stop(ctx, instance)
 
 
 @instance.command("reload")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_runner
 @pass_ctx
-def instance_reload(
-    ctx: Context, runner: Runner, name: str, version: Optional[str]
-) -> None:
+def instance_reload(ctx: Context, runner: Runner, instance: Instance) -> None:
     """Reload a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     with runner:
         instance_mod.reload(ctx, instance)
 
 
 @instance.command("restart")
-@name_argument
-@version_argument
+@instance_identifier
 @pass_runner
 @pass_ctx
-def instance_restart(
-    ctx: Context, runner: Runner, name: str, version: Optional[str]
-) -> None:
+def instance_restart(ctx: Context, runner: Runner, instance: Instance) -> None:
     """Restart a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     with runner:
         instance_mod.restart(ctx, instance)
 
 
 @instance.command("shell")
-@name_argument
-@version_argument
+@instance_identifier
 @click.option(
     "-d",
     "--dbname",
@@ -719,17 +688,15 @@ def instance_restart(
 )
 @pass_ctx
 def instance_shell(
-    ctx: Context, name: str, version: Optional[str], user: str, dbname: Optional[str]
+    ctx: Context, instance: Instance, user: str, dbname: Optional[str]
 ) -> None:
     """Open a PostgreSQL interactive shell on a running instance."""
-    instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.running)
     instance_mod.shell(ctx, instance, user=user, dbname=dbname)
 
 
 @instance.command("backup")
-@name_argument
-@version_argument
+@instance_identifier
 @click.option(
     "--type",
     "backup_type",
@@ -741,16 +708,14 @@ def instance_shell(
 @pass_ctx
 @require_pgbackrest
 def instance_backup(
-    ctx: Context, name: str, version: Optional[str], backup_type: pgbackrest.BackupType
+    ctx: Context, instance: Instance, backup_type: pgbackrest.BackupType
 ) -> None:
     """Back up a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     pgbackrest.backup(ctx, instance, type=backup_type)
 
 
 @instance.command("restore")
-@name_argument
-@version_argument
+@instance_identifier
 @click.option(
     "-l",
     "--list",
@@ -765,14 +730,12 @@ def instance_backup(
 @require_pgbackrest
 def instance_restore(
     ctx: Context,
-    name: str,
-    version: Optional[str],
+    instance: Instance,
     list_only: bool,
     label: Optional[str],
     date: Optional[datetime],
 ) -> None:
     """Restore a PostgreSQL instance"""
-    instance = get_instance(ctx, name, version)
     if list_only:
         backups = pgbackrest.iter_backups(ctx, instance)
         print_table_for(backups, title=f"Available backups for instance {instance}")
@@ -786,8 +749,7 @@ def instance_restore(
 
 
 @instance.command("privileges")
-@name_argument
-@version_argument
+@instance_identifier
 @click.option(
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
@@ -796,14 +758,12 @@ def instance_restore(
 @pass_ctx
 def instance_privileges(
     ctx: Context,
-    name: str,
-    version: Optional[str],
+    instance: Instance,
     databases: Sequence[str],
     roles: Sequence[str],
     as_json: bool,
 ) -> None:
     """List default privileges on instance."""
-    instance = get_instance(ctx, name, version)
     with instance_mod.running(ctx, instance):
         try:
             prvlgs = privileges.get(ctx, instance, databases=databases, roles=roles)
@@ -816,8 +776,7 @@ def instance_privileges(
 
 
 @instance.command("upgrade")
-@name_argument
-@version_argument
+@instance_identifier
 @click.argument("newversion", required=False, type=click.STRING)
 @click.argument("newname", required=False, type=click.STRING)
 @click.option("--port", required=False, type=click.INT)
@@ -832,26 +791,19 @@ def instance_privileges(
 def instance_upgrade(
     ctx: Context,
     runner: Runner,
-    name: str,
-    version: Optional[str],
+    instance: Instance,
     newversion: Optional[str],
     newname: Optional[str],
     port: Optional[int],
     jobs: Optional[int],
 ) -> None:
     """Upgrade an instance using pg_upgrade"""
-    instance = get_instance(ctx, name, version)
     instance_mod.check_status(ctx, instance, Status.not_running)
     with runner:
         new_instance = instance_mod.upgrade(
             ctx, instance, version=newversion, name=newname, port=port, jobs=jobs
         )
     instance_mod.start(ctx, new_instance)
-
-
-instance_identifier = click.argument(
-    "instance", metavar="<version>/<instance>", callback=instance_lookup
-)
 
 
 @cli.group("role")

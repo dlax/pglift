@@ -213,16 +213,16 @@ def test_instance_schema(runner, obj):
     assert schema["description"] == "PostgreSQL instance"
 
 
-def test_instance_describe(runner, ctx, obj, instance):
+def test_instance_describe(runner, ctx, obj, instance, pg_version):
     result = runner.invoke(cli, ["instance", "describe"], obj=obj)
     assert result.exit_code == 2
-    assert "Missing argument 'NAME'" in result.stderr
+    assert "Missing argument '<version>/<name>'" in result.stderr
 
     instance = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=instance) as describe:
         result = runner.invoke(cli, ["instance", "describe", "test"], obj=obj)
     assert result.exit_code == 0, (result, result.output)
-    describe.assert_called_once_with(ctx, "test", None)
+    describe.assert_called_once_with(ctx, "test", pg_version)
     assert "name: test" in result.output
 
 
@@ -272,9 +272,7 @@ def test_instance_list(runner, instance, ctx, obj, tmp_path):
 
 
 def test_instance_config_show(runner, obj, instance):
-    result = runner.invoke(
-        cli, ["instance", "config", "show", instance.name, instance.version], obj=obj
-    )
+    result = runner.invoke(cli, ["instance", "config", "show", str(instance)], obj=obj)
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(
         ["port = 999", "unix_socket_directories = '/socks'"]
@@ -284,7 +282,7 @@ def test_instance_config_show(runner, obj, instance):
 def test_instance_config_set_validate(runner, obj, instance):
     result = runner.invoke(
         cli,
-        ["instance", "config", "set", instance.name, instance.version, "invalid"],
+        ["instance", "config", "set", str(instance), "invalid"],
         obj=obj,
     )
     assert result.exit_code == 2
@@ -301,8 +299,7 @@ def test_instance_config_set(runner, ctx, obj, instance):
                 "instance",
                 "config",
                 "set",
-                instance.name,
-                instance.version,
+                str(instance),
                 "cluster_name=unittests",
                 "foo=bar",
             ],
@@ -321,8 +318,7 @@ def test_instance_config_set(runner, ctx, obj, instance):
                 "instance",
                 "config",
                 "set",
-                instance.name,
-                instance.version,
+                str(instance),
                 "foo=bar",
             ],
             obj=obj,
@@ -344,8 +340,7 @@ def test_instance_config_remove(runner, ctx, obj, instance):
                 "instance",
                 "config",
                 "remove",
-                instance.name,
-                instance.version,
+                str(instance),
                 "cluster_name",
             ],
             obj=obj,
@@ -359,13 +354,7 @@ def test_instance_config_edit(runner, ctx, obj, instance):
     with patch("click.edit") as edit:
         result = runner.invoke(
             cli,
-            [
-                "instance",
-                "config",
-                "edit",
-                instance.name,
-                instance.version,
-            ],
+            ["instance", "config", "edit", str(instance)],
             obj=obj,
         )
     assert result.exit_code == 0, result.stderr
@@ -377,7 +366,7 @@ def test_instance_config_edit(runner, ctx, obj, instance):
 def test_instance_drop(runner, ctx, obj, instance):
     result = runner.invoke(cli, ["instance", "drop"], obj=obj)
     assert result.exit_code == 2
-    assert "Missing argument 'NAME'" in result.stderr
+    assert "Missing argument '<version>/<name>'" in result.stderr
 
     with patch.object(instance_mod, "drop") as patched:
         result = runner.invoke(cli, ["instance", "drop", "test"], obj=obj)
@@ -401,9 +390,7 @@ def test_instance_status(runner, instance, ctx, obj):
 )
 def test_instance_operations(runner, instance, ctx, obj, action, kwargs):
     with patch.object(instance_mod, action) as patched:
-        result = runner.invoke(
-            cli, ["instance", action, instance.name, instance.version], obj=obj
-        )
+        result = runner.invoke(cli, ["instance", action, str(instance)], obj=obj)
     assert result.exit_code == 0, result
     patched.assert_called_once_with(ctx, instance, **kwargs)
 
@@ -430,7 +417,7 @@ def test_instance_backup(runner, instance, obj):
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
             cli,
-            ["instance", "backup", instance.name, instance.version, "--type=diff"],
+            ["instance", "backup", str(instance), "--type=diff"],
             obj=obj,
         )
     assert result.exit_code == 0, result
@@ -450,7 +437,7 @@ def test_instance_restore_list(runner, instance, obj):
     with patch.object(pgbackrest, "iter_backups", return_value=[bck]) as iter_backups:
         result = runner.invoke(
             cli,
-            ["instance", "restore", instance.name, instance.version, "--list"],
+            ["instance", "restore", str(instance), "--list"],
             obj=obj,
         )
     assert result.exit_code == 0, result
@@ -472,7 +459,7 @@ def test_instance_restore(runner, instance, ctx, obj):
     with patch("pglift.instance.status", return_value=Status.running) as status:
         result = runner.invoke(
             cli,
-            ["instance", "restore", instance.name, instance.version],
+            ["instance", "restore", str(instance)],
             obj=obj,
         )
     assert result.exit_code == 1, result
@@ -482,13 +469,7 @@ def test_instance_restore(runner, instance, ctx, obj):
     with patch.object(pgbackrest, "restore") as restore:
         result = runner.invoke(
             cli,
-            [
-                "instance",
-                "restore",
-                instance.name,
-                instance.version,
-                "--label=xyz",
-            ],
+            ["instance", "restore", str(instance), "--label=xyz"],
             obj=obj,
         )
     assert result.exit_code == 0, result
@@ -513,8 +494,7 @@ def test_instance_privileges(ctx, obj, instance, runner, running):
             [
                 "instance",
                 "privileges",
-                instance.name,
-                instance.version,
+                str(instance),
                 "--json",
                 "-d",
                 "db2",
