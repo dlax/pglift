@@ -211,3 +211,8 @@ def test_shell(ctx, instance):
         "test",
     ]
     patched.assert_called_once_with(psql, cmd)
+
+
+def test_exists(ctx, instance):
+    assert instance_mod.exists(ctx, instance.name, instance.version)
+    assert not instance_mod.exists(ctx, "doesnotexists", instance.version)

@@ -731,3 +731,12 @@ def shell(
     if dbname is not None:
         args.extend(["--dbname", dbname])
     cmd.execute_program(args, logger=ctx)
+
+
+def exists(ctx: BaseContext, name: str, version: Optional[str]) -> bool:
+    """Return true when instance exists"""
+    try:
+        PostgreSQLInstance.system_lookup(ctx, (name, version))
+    except exceptions.InstanceNotFound:
+        return False
+    return True
