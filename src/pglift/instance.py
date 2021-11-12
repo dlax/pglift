@@ -193,16 +193,15 @@ def configure(
     pgconfig = pgconf.parse(str(postgresql_conf))
     if ssl:
         confitems["ssl"] = True
-    if not pgconfig.get("ssl", False):
-        if ssl is True:
-            util.generate_certificate(configdir, run_command=ctx.run)
-        elif isinstance(ssl, tuple):
-            try:
-                certfile, keyfile = ssl
-            except ValueError:
-                raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
-            confitems["ssl_cert_file"] = certfile
-            confitems["ssl_key_file"] = keyfile
+    if not pgconfig.get("ssl", False) and ssl is True:
+        util.generate_certificate(configdir, run_command=ctx.run)
+    elif isinstance(ssl, tuple):
+        try:
+            certfile, keyfile = ssl
+        except ValueError:
+            raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
+        confitems["ssl_cert_file"] = certfile
+        confitems["ssl_key_file"] = keyfile
     original_content = postgresql_conf.read_text()
     if not any(line.startswith(include) for line in original_content.splitlines()):
         with postgresql_conf.open("w") as f:

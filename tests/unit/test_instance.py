@@ -163,15 +163,12 @@ def test_configure(ctx_nohook, instance):
     assert not site_configfpath.exists()
     assert not user_configfpath.exists()
 
-    instance_mod.configure(ctx, instance, ssl=True)
+    changes = instance_mod.configure(ctx, instance, ssl=True)
+    assert changes == {"ssl": (None, True)}
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
     assert (configdir / "server.key").exists()
-
-    instance_mod.revert_configure(ctx, instance, ssl=True)
-    assert not (configdir / "server.crt").exists()
-    assert not (configdir / "server.key").exists()
 
     ssl = (cert_file, key_file) = (
         instance.datadir / "c.crt",
@@ -181,7 +178,6 @@ def test_configure(ctx_nohook, instance):
         fpath.touch()
     changes = instance_mod.configure(ctx, instance, ssl=ssl)
     assert changes == {
-        "ssl": (None, True),
         "ssl_cert_file": (None, cert_file),
         "ssl_key_file": (None, key_file),
     }
@@ -192,6 +188,20 @@ def test_configure(ctx_nohook, instance):
     instance_mod.revert_configure(ctx, instance, ssl=ssl)
     for fpath in ssl:
         assert fpath.exists()
+
+    # reconfigure default ssl certs
+    instance_mod.configure(ctx, instance, ssl=ssl)
+    changes = instance_mod.configure(ctx, instance, ssl=True)
+    assert changes == {
+        "ssl_cert_file": (str(cert_file), None),
+        "ssl_key_file": (str(key_file), None),
+    }
+
+    # disable ssl
+    changes = instance_mod.configure(ctx, instance, ssl=False)
+    assert changes == {
+        "ssl": (True, None),
+    }
 
 
 def test_check_status(ctx, instance):
