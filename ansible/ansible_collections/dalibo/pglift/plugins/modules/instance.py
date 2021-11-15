@@ -117,7 +117,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
-from pglift.models import helpers, interface, system
+from pglift.models import helpers, interface
 from pglift.pm import PluginManager
 from pglift.task import Runner
 
@@ -139,7 +139,7 @@ def run_module() -> None:
     if module.check_mode:
         module.exit_json(**result)
 
-    instance_exists = system.BaseInstance.from_manifest(ctx, m).exists()
+    instance_exists = instance_mod.exists(ctx, m.name, m.version)
 
     try:
         with Runner(ctx):
