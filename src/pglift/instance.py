@@ -594,13 +594,12 @@ def apply(
     States = interface.InstanceState
     state = manifest.state
 
-    instance = BaseInstance.from_manifest(ctx, manifest)
     if state == States.absent:
-        if instance.exists():
+        if exists(ctx, manifest.name, manifest.version):
             drop(ctx, Instance.from_manifest(ctx, manifest))
         return None
 
-    if not instance.exists():
+    if not exists(ctx, manifest.name, manifest.version):
         init(ctx, manifest)
 
     configure_options = manifest.configuration or {}
