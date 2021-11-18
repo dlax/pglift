@@ -33,10 +33,16 @@ def test_configure(ctx, installed, instance, tmp_path, tmp_port_factory, directo
     assert f"pg1-port = {instance_port}" in lines
     assert directory.exists()
 
-    # Calling setup an other time doesn't overwrite configuration
     configdir = instance.datadir
     confd = conf_info(configdir)[0]
     pgconfigfile = confd / "pgbackrest.conf"
+    pgconfig = pgconfigfile.read_text().splitlines()
+    assert (
+        f"archive_command = '{pgbackrest_settings.execpath} --config={configpath}"
+        f" --stanza={instance.version}-{instance.name} archive-push %p'"
+    ) in pgconfig
+
+    # Calling setup an other time doesn't overwrite configuration
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     pgbackrest.setup(ctx, instance)
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
