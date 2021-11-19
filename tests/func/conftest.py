@@ -184,7 +184,10 @@ def instance_manifest(
 def instance_initialized(
     ctx: Context, instance_manifest: interface.Instance, installed: None
 ) -> system.Instance:
-    instance = system.BaseInstance.from_manifest(ctx, instance_manifest)
+    assert instance_manifest.version is not None
+    instance = system.BaseInstance(
+        instance_manifest.name, instance_manifest.version, ctx.settings
+    )
     assert instance_mod.status(ctx, instance) == Status.unspecified_datadir
     instance_mod.init(ctx, instance_manifest)
     assert instance_mod.status(ctx, instance) == Status.not_running

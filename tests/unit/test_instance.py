@@ -21,7 +21,7 @@ def test_systemd_unit(pg_version, instance):
 
 def test_init_lookup_failed(pg_version, settings, ctx):
     manifest = interface.Instance(name="dirty", version=pg_version)
-    i = BaseInstance.from_manifest(ctx, manifest)
+    i = BaseInstance("dirty", pg_version, settings)
     i.datadir.mkdir(parents=True)
     (i.datadir / "postgresql.conf").touch()
     pg_version = i.datadir / "PG_VERSION"
@@ -34,7 +34,7 @@ def test_init_lookup_failed(pg_version, settings, ctx):
 
 def test_init_dirty(pg_version, settings, ctx, monkeypatch):
     manifest = interface.Instance(name="dirty", version=pg_version)
-    i = BaseInstance.from_manifest(ctx, manifest)
+    i = BaseInstance("dirty", pg_version, settings)
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []
