@@ -211,7 +211,7 @@ def setup_local(
     password = None
     if role.password:
         password = role.password.get_secret_value()
-    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = PostgreSQLInstance.system_lookup(ctx, (manifest.name, manifest.version))
     setup(
         ctx,
         instance.qualname,

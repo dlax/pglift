@@ -183,7 +183,7 @@ def configure(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
-    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = PostgreSQLInstance.system_lookup(ctx, (manifest.name, manifest.version))
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     confd, include = conf.info(configdir)
