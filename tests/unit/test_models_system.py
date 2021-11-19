@@ -39,8 +39,8 @@ def test_baseinstance_paths(pg_version, instance, attrname, expected_suffix):
     assert path.match(expected_suffix.format(version=pg_version))
 
 
-def test_postgresqlinstance_default_version(ctx):
-    i = system.PostgreSQLInstance.default_version("test", ctx=ctx)
+def test_baseinstance_get(ctx):
+    i = system.BaseInstance.get("test", None, ctx=ctx)
     major_version = str(ctx.pg_ctl(None).version)[:2]
     assert i.version == major_version
 

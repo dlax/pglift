@@ -111,9 +111,7 @@ def init(ctx: BaseContext, manifest: interface.Instance) -> None:
     if exists(ctx, manifest.name, manifest.version):
         return None
 
-    instance = BaseInstance(
-        manifest.name, manifest.version or default_postgresql_version(ctx), ctx.settings
-    )
+    instance = BaseInstance.get(manifest.name, manifest.version, ctx)
 
     # Would raise SystemError if requested postgresql binaries are not
     # available or if versions mismatch.
@@ -152,9 +150,7 @@ def init(ctx: BaseContext, manifest: interface.Instance) -> None:
 @init.revert("delete PostgreSQL instance")
 def revert_init(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Un-initialize a PostgreSQL instance."""
-    instance = BaseInstance(
-        manifest.name, manifest.version or default_postgresql_version(ctx), ctx.settings
-    )
+    instance = BaseInstance.get(manifest.name, manifest.version, ctx)
     if ctx.settings.service_manager == "systemd":
         systemd.disable(ctx, systemd_unit(instance), now=True)
 

@@ -94,6 +94,10 @@ class BaseInstance:
             )
         return True
 
+    @classmethod
+    def get(cls: Type[T], name: str, version: Optional[str], ctx: BaseContext) -> T:
+        return cls(name, version or default_postgresql_version(ctx), ctx.settings)
+
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class Standby:
@@ -127,13 +131,6 @@ class PostgreSQLInstance(BaseInstance):
     T = TypeVar("T", bound="PostgreSQLInstance")
 
     @classmethod
-    def default_version(cls: Type[T], name: str, ctx: BaseContext) -> T:
-        """Build an instance by guessing its version from installed PostgreSQL."""
-        version = default_postgresql_version(ctx)
-        settings = ctx.settings
-        return cls(name=name, version=version, settings=settings)
-
-    @classmethod
     def system_lookup(
         cls: Type[T],
         ctx: BaseContext,
@@ -155,10 +152,7 @@ class PostgreSQLInstance(BaseInstance):
                 )
         else:
             name, version = value.name, value.version
-        if version is None:
-            self = cls.default_version(name, ctx)
-        else:
-            self = cls(name, version, ctx.settings)
+        self = cls.get(name, version, ctx)
         if not self.exists():
             raise exceptions.InstanceNotFound(str(self))
         return self
