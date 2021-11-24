@@ -89,7 +89,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
         raise exceptions.RoleNotFound(name)
     role = interface.Role(name=name)
     values = role.dict()
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         cnx.autocommit = True
         with cnx.cursor() as cur:
             cur.execute(db.query("role_inspect"), {"username": name})
@@ -107,7 +107,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_drop", username=sql.Identifier(name)))
         cnx.commit()
@@ -120,7 +120,7 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
 
     The instance should be running.
     """
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_exists"), {"username": name})
             return cur.rowcount == 1  # type: ignore[no-any-return]
@@ -128,7 +128,7 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
 
 def has_password(ctx: BaseContext, instance: Instance, name: str) -> bool:
     """Return True if the role has a password set."""
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_has_password"), {"username": name})
             (haspassword,) = cur.fetchone()
@@ -185,7 +185,7 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     The instance should be running and the role should not exist already.
     """
     options, args = options_and_args(role)
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
                 db.query(
@@ -212,7 +212,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         "grant": set(role.in_roles) - set(actual_role.in_roles),
         "revoke": set(actual_role.in_roles) - set(role.in_roles),
     }
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
                 db.query(
@@ -245,7 +245,7 @@ def set_password_for(
     if role.password is None:
         return
 
-    with db.connect(instance, ctx.settings.postgresql.surole) as conn:
+    with db.superuser_connect(instance) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(

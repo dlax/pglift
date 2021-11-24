@@ -36,7 +36,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
     """
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("database_inspect"), {"datname": name})
             values = dict(cur.fetchone())
@@ -46,7 +46,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
 def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabase]:
     """List all databases in instance."""
 
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         psycopg2.extensions.register_type(
             # select typarray from pg_type where typname = 'aclitem'; -> 1034
             psycopg2.extensions.new_array_type((1034,), "ACLITEM[]", psycopg2.STRING)
@@ -65,7 +65,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
-    with db.connect(instance, ctx.settings.postgresql.surole, autocommit=True) as cnx:
+    with db.superuser_connect(instance, autocommit=True) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("database_drop", database=sql.Identifier(name)))
 
@@ -75,7 +75,7 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
 
     The instance should be running.
     """
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("database_exists"), {"database": name})
             return cur.rowcount == 1  # type: ignore[no-any-return]
@@ -103,7 +103,7 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
     The instance should be running and the database should not exist already.
     """
     options, args = options_and_args(database)
-    with db.connect(instance, ctx.settings.postgresql.surole, autocommit=True) as cnx:
+    with db.superuser_connect(instance, autocommit=True) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
                 db.query(
@@ -129,7 +129,7 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
     else:
         owner = sql.Identifier(database.owner)
     options = sql.SQL(" ").join([sql.SQL("OWNER TO"), owner])
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
                 db.query(
@@ -155,11 +155,8 @@ def run(
             dbnames and database.name not in dbnames
         ) or database.name in exclude_dbnames:
             continue
-        with db.connect(
-            instance,
-            ctx.settings.postgresql.surole,
-            dbname=database.name,
-            autocommit=True,
+        with db.superuser_connect(
+            instance, dbname=database.name, autocommit=True
         ) as cnx:
             cnx.notices = notice_handler
             with cnx.cursor() as cur:

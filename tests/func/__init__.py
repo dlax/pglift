@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from functools import partial
 from typing import Any, Iterator, List, Optional, overload
 
 from typing_extensions import Literal
@@ -75,9 +76,15 @@ def execute(
     **kwargs: Any,
 ) -> Optional[List[Any]]:
     if role is None:
-        role = ctx.settings.postgresql.surole
+        connect = db.superuser_connect
+    elif role.password:
+        connect = partial(
+            db.connect, user=role.name, password=role.password.get_secret_value()
+        )
+    else:
+        connect = partial(db.connect, user=role.name)
     with instance_mod.running(ctx, instance):
-        with db.connect(instance, role, autocommit=autocommit, **kwargs) as conn:
+        with connect(instance, autocommit=autocommit, **kwargs) as conn:
             with conn.cursor() as cur:
                 cur.execute(query)
                 conn.commit()

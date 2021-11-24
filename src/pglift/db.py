@@ -11,7 +11,6 @@ from psycopg2 import sql
 
 if TYPE_CHECKING:  # pragma: nocover
     from .models.system import PostgreSQLInstance
-    from .types import Role
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 
@@ -33,21 +32,18 @@ def queries() -> Iterator[Tuple[str, str]]:
         yield qname.strip(), query.strip()
 
 
-def dsn(instance: "PostgreSQLInstance", role: "Role", **kwargs: Any) -> str:
-    for badarg in ("port", "user", "password", "passfile", "host"):
+def dsn(instance: "PostgreSQLInstance", **kwargs: Any) -> str:
+    for badarg in ("port", "passfile", "host"):
         if badarg in kwargs:
             raise TypeError(f"unexpected '{badarg}' argument")
 
     kwargs["port"] = instance.port
-    kwargs["user"] = role.name
     config = instance.config()
     if config.unix_socket_directories:
         kwargs["host"] = config.unix_socket_directories
     passfile = instance.settings.postgresql.auth.passfile
     if passfile.exists():
         kwargs["passfile"] = str(passfile)
-    if role.password:
-        kwargs["password"] = role.password.get_secret_value()
 
     assert "dsn" not in kwargs
     return psycopg2.extensions.make_dsn(**kwargs)  # type: ignore[no-any-return]
@@ -72,14 +68,27 @@ def connect_dsn(
 
 def connect(
     instance: "PostgreSQLInstance",
-    role: "Role",
     *,
     dbname: str = "postgres",
     autocommit: bool = False,
+    **kwargs: Any,
 ) -> ContextManager[psycopg2.extensions.connection]:
     """Connect to specified database of `instance` with `role`."""
-    conninfo = dsn(instance, role, dbname=dbname)
+    conninfo = dsn(instance, dbname=dbname, **kwargs)
     return connect_dsn(conninfo, autocommit=autocommit)
+
+
+def superuser_connect(
+    instance: "PostgreSQLInstance", **kwargs: Any
+) -> ContextManager[psycopg2.extensions.connection]:
+    for badarg in ("user", "password"):
+        if badarg in kwargs:
+            raise TypeError(f"unexpected '{badarg}' argument")
+    surole = instance.settings.postgresql.surole
+    kwargs["user"] = surole.name
+    if surole.password:
+        kwargs["password"] = surole.password.get_secret_value()
+    return connect(instance, **kwargs)
 
 
 class NoticeHandlerStderr:

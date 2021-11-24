@@ -16,7 +16,7 @@ def inspect_default_acl(
     if roles:
         where_clause = sql.SQL("WHERE pg_roles.rolname IN %(roles)s")
         args["roles"] = tuple(roles)
-    with db.connect(instance, ctx.settings.postgresql.surole, dbname=database) as cnx:
+    with db.superuser_connect(instance, dbname=database) as cnx:
         with cnx.cursor() as cur:
             cur.execute(
                 db.query("database_default_acl", where_clause=where_clause), args
@@ -42,7 +42,7 @@ def get(
         exist.
     """
 
-    with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+    with db.superuser_connect(instance) as cnx:
         with cnx.cursor() as cur:
             cur.execute(db.query("database_list"))
             existing_databases = [db["name"] for db in cur.fetchall()]
@@ -54,7 +54,7 @@ def get(
             raise ValueError(f"database(s) not found: {', '.join(unknown_dbs)}")
 
     if roles:
-        with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
+        with db.superuser_connect(instance) as cnx:
             with cnx.cursor() as cur:
                 cur.execute(db.query("role_list_names"))
                 existing_roles = [n for n, in cur.fetchall()]
