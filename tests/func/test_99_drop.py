@@ -3,11 +3,14 @@ import shutil
 
 import pytest
 import requests
+from pgtoolkit.conf import Configuration
 
 from pglift import backup, exceptions, prometheus, systemd
+from pglift.ctx import Context
+from pglift.models import system
 
 
-def test_pgpass(ctx, installed, instance, instance_dropped):
+def test_pgpass(ctx: Context, installed: None, instance_dropped: Configuration) -> None:
     config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
     surole = ctx.settings.postgresql.surole
@@ -19,7 +22,12 @@ def test_pgpass(ctx, installed, instance, instance_dropped):
     assert passfile.read_text() == "#hostname:port:database:username:password\n"
 
 
-def test_systemd_backup_job(ctx, installed, instance, instance_dropped):
+def test_systemd_backup_job(
+    ctx: Context,
+    installed: None,
+    instance: system.Instance,
+    instance_dropped: Configuration,
+) -> None:
     scheduler = ctx.settings.scheduler
     if scheduler != "systemd":
         pytest.skip(f"not applicable for scheduler method '{scheduler}'")
@@ -31,7 +39,9 @@ def test_systemd_backup_job(ctx, installed, instance, instance_dropped):
 @pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
 )
-def test_pgbackrest_teardown(ctx, instance, instance_dropped):
+def test_pgbackrest_teardown(
+    ctx: Context, instance: system.Instance, instance_dropped: Configuration
+) -> None:
     pgbackrest_settings = ctx.settings.pgbackrest
     configpath = pathlib.Path(
         str(pgbackrest_settings.configpath).format(instance=instance)
@@ -43,7 +53,9 @@ def test_pgbackrest_teardown(ctx, instance, instance_dropped):
     assert not directory.exists()
 
 
-def test_prometheus_teardown(ctx, instance, instance_dropped):
+def test_prometheus_teardown(
+    ctx: Context, instance: system.Instance, instance_dropped: Configuration
+) -> None:
     prometheus_settings = ctx.settings.prometheus
     configpath = pathlib.Path(
         str(prometheus_settings.configpath).format(name=instance.qualname)
@@ -59,6 +71,8 @@ def test_prometheus_teardown(ctx, instance, instance_dropped):
             requests.get("http://0.0.0.0:9187/metrics")
 
 
-def test_instance(ctx, instance, instance_dropped):
+def test_instance(
+    ctx: Context, instance: system.Instance, instance_dropped: Configuration
+) -> None:
     with pytest.raises(exceptions.InstanceNotFound, match=str(instance)):
         instance.exists()

@@ -14,6 +14,7 @@ from pglift.ctx import Context
 from pglift.models import interface, system
 
 from . import execute, reconfigure_instance
+from .conftest import RoleFactory
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -22,13 +23,15 @@ def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
         yield
 
 
-def test_exists(ctx, instance, role_factory):
+def test_exists(
+    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+) -> None:
     assert not roles.exists(ctx, instance, "absent")
     role_factory("present")
     assert roles.exists(ctx, instance, "present")
 
 
-def test_create(ctx, instance):
+def test_create(ctx: Context, instance: system.Instance) -> None:
     role = interface.Role(name="nopassword")
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
@@ -102,7 +105,7 @@ def role_in_pgpass(
     return False
 
 
-def test_apply(ctx, instance):
+def test_apply(ctx: Context, instance: system.Instance) -> None:
     rolname = "applyme"
     _role_in_pgpass = functools.partial(
         role_in_pgpass, ctx.settings.postgresql.auth.passfile
@@ -148,7 +151,9 @@ def test_apply(ctx, instance):
     assert roles.describe(ctx, instance, rolname).connection_limit is None
 
 
-def test_describe(ctx, instance, role_factory):
+def test_describe(
+    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+) -> None:
     with pytest.raises(exceptions.RoleNotFound, match="absent"):
         roles.describe(ctx, instance, "absent")
 
@@ -175,7 +180,9 @@ def test_describe(ctx, instance, role_factory):
     assert r1.validity == datetime.datetime(2051, 7, 29, tzinfo=datetime.timezone.utc)
 
 
-def test_alter(ctx, instance, role_factory):
+def test_alter(
+    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+) -> None:
     role = interface.Role(
         name="alter",
         password="scret",
@@ -195,7 +202,9 @@ def test_alter(ctx, instance, role_factory):
     assert described == expected
 
 
-def test_drop(ctx, instance, role_factory):
+def test_drop(
+    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+) -> None:
     with pytest.raises(exceptions.RoleNotFound, match="dropping_absent"):
         roles.drop(ctx, instance, "dropping_absent")
     role_factory("dropme")
@@ -203,7 +212,9 @@ def test_drop(ctx, instance, role_factory):
     assert not roles.exists(ctx, instance, "dropme")
 
 
-def test_instance_port_changed(ctx, instance, tmp_port_factory):
+def test_instance_port_changed(
+    ctx: Context, instance: system.Instance, tmp_port_factory: Iterator[int]
+) -> None:
     """Check that change of instance port is reflected in password file
     entries.
     """

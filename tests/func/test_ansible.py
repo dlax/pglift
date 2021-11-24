@@ -84,7 +84,9 @@ def cluster_name(dsn: str) -> str:
             return name
 
 
-def test_ansible(tmpdir, call_playbook):
+def test_ansible(
+    tmp_path: pathlib.Path, call_playbook: Callable[[pathlib.Path], None]
+) -> None:
     call_playbook(PLAYDIR / "play1.yml")
 
     prod_dsn = "host=/tmp user=postgres password=supers3kret dbname=postgres port=5433"

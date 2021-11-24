@@ -47,7 +47,7 @@ def roles_and_privileges(
     )
 
 
-def test_get(ctx, instance):
+def test_get(ctx: Context, instance: system.Instance) -> None:
     expected = [
         Privilege(
             database="db1",

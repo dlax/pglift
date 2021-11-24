@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from pathlib import Path
-from typing import List
+from typing import Iterator, List, NoReturn
 
 import psycopg2
 import pytest
@@ -16,8 +16,10 @@ from pglift import instance as instance_mod
 from pglift import systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.settings import Settings
 
 from . import configure_instance, execute, reconfigure_instance
+from .conftest import DatabaseFactory
 
 
 def test_init(
@@ -42,23 +44,26 @@ def test_init(
     # Instance alread exists, no-op.
     with monkeypatch.context() as m:
 
-        def fail():
+        def fail() -> NoReturn:
             raise AssertionError("unexpected called")
 
         m.setattr(ctx, "pg_ctl", fail)
         instance_mod.init(ctx, interface.Instance(name=i.name, version=i.version))
 
 
-def test_log_directory(ctx, instance, log_directory, redhat):
+def test_log_directory(
+    ctx: Context, instance: system.Instance, log_directory: Path, redhat: bool
+) -> None:
     if redhat:
         pytest.xfail("postgresql.conf on redhat contains 'log_directory' uncommented")
     config = instance.config()
+    assert isinstance(config.log_directory, str)
     instance_log_dir = Path(config.log_directory)
     assert instance_log_dir == log_directory
     assert instance_log_dir.exists()
 
 
-def test_pgpass(ctx, instance):
+def test_pgpass(ctx: Context, instance: system.Instance) -> None:
     port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
     if ctx.settings.postgresql.surole.pgpass:
@@ -73,7 +78,7 @@ def test_pgpass(ctx, instance):
         assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
 
 
-def test_auth(ctx, instance):
+def test_auth(ctx: Context, instance: system.Instance) -> None:
     i = instance
     surole = ctx.settings.postgresql.surole
     port = i.port
@@ -116,7 +121,12 @@ def test_auth(ctx, instance):
     assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
 
 
-def test_start_stop_restart_running_stopped(ctx, instance, tmp_path, caplog):
+def test_start_stop_restart_running_stopped(
+    ctx: Context,
+    instance: system.Instance,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     i = instance
     use_systemd = ctx.settings.service_manager == "systemd"
     if use_systemd:
@@ -170,7 +180,9 @@ def test_start_stop_restart_running_stopped(ctx, instance, tmp_path, caplog):
     assert instance_mod.status(ctx, i) == Status.not_running
 
 
-def test_apply(ctx, installed, tmp_path, tmp_port_factory):
+def test_apply(
+    ctx: Context, installed: None, tmp_path: Path, tmp_port_factory: Iterator[int]
+) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
     im = interface.Instance(
@@ -219,7 +231,9 @@ def test_apply(ctx, installed, tmp_path, tmp_port_factory):
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx, instance, log_directory, redhat):
+def test_describe(
+    ctx: Context, instance: system.Instance, log_directory: Path, redhat: bool
+) -> None:
     im = instance_mod.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
@@ -233,7 +247,7 @@ def test_describe(ctx, instance, log_directory, redhat):
     assert im.state.name == "stopped"
 
 
-def test_list(ctx, instance):
+def test_list(ctx: Context, instance: system.Instance) -> None:
     not_instance_dir = ctx.settings.postgresql.root / "12" / "notAnInstanceDir"
     not_instance_dir.mkdir(parents=True)
     try:
@@ -261,8 +275,15 @@ def test_list(ctx, instance):
 
 @pytest.mark.parametrize("slot", ["standby", None], ids=["with-slot", "no-slot"])
 def test_standby(
-    ctx, instance, settings, tmp_port_factory, tmp_path_factory, pg_version, slot
-):
+    ctx: Context,
+    instance: system.Instance,
+    instance_manifest: interface.Instance,
+    settings: Settings,
+    tmp_port_factory: Iterator[int],
+    tmp_path_factory: pytest.TempPathFactory,
+    pg_version: str,
+    slot: str,
+) -> None:
     socket_directory = instance.settings.postgresql.socket_directory
     surole = instance.settings.postgresql.surole
     standby_for = f"host={socket_directory} port={instance.port} user={surole.name}"
@@ -275,7 +296,7 @@ def test_standby(
     )
 
     @contextlib.contextmanager
-    def instance_running_with_table():
+    def instance_running_with_table() -> Iterator[None]:
         with instance_mod.running(ctx, instance):
             execute(ctx, instance, "CREATE TABLE t AS (SELECT 1 AS i)", fetch=False)
             try:
@@ -337,7 +358,12 @@ def test_standby(
             instance_mod.drop(ctx, standby_instance)
 
 
-def test_instance_upgrade(ctx, instance, tmp_port_factory, database_factory):
+def test_instance_upgrade(
+    ctx: Context,
+    instance: system.Instance,
+    tmp_port_factory: Iterator[int],
+    database_factory: DatabaseFactory,
+) -> None:
     database_factory("present")
     port = next(tmp_port_factory)
     newinstance = instance_mod.upgrade(

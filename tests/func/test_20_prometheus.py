@@ -25,7 +25,12 @@ def config_dict(configpath: Path) -> Dict[str, str]:
     return config
 
 
-def test_configure(ctx, installed, instance, tmp_port_factory):
+def test_configure(
+    ctx: Context,
+    installed: None,
+    instance: system.Instance,
+    tmp_port_factory: Iterator[int],
+) -> None:
     prometheus_settings = ctx.settings.prometheus
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
@@ -80,7 +85,9 @@ def postgres_exporter(
     assert not queriespath.exists()
 
 
-def test_setup(ctx, instance, postgres_exporter):
+def test_setup(
+    ctx: Context, instance: system.Instance, postgres_exporter: Tuple[str, str, int]
+) -> None:
     name, dsn, port = postgres_exporter
     configpath = Path(str(ctx.settings.prometheus.configpath).format(name=name))
 
@@ -94,7 +101,7 @@ def request_metrics(port: int) -> requests.Response:
     return requests.get(f"http://0.0.0.0:{port}/metrics")
 
 
-def test_start_stop(ctx, installed, instance):
+def test_start_stop(ctx: Context, installed: None, instance: system.Instance) -> None:
     port = instance.prometheus.port
 
     if ctx.settings.service_manager == "systemd":
@@ -121,7 +128,9 @@ def test_start_stop(ctx, installed, instance):
             request_metrics(port)
 
 
-def test_start_stop_nonlocal(ctx, instance, postgres_exporter):
+def test_start_stop_nonlocal(
+    ctx: Context, instance: system.Instance, postgres_exporter: Tuple[str, str, int]
+) -> None:
     name, dsn, port = postgres_exporter
 
     if ctx.settings.service_manager == "systemd":
@@ -149,7 +158,7 @@ def test_start_stop_nonlocal(ctx, instance, postgres_exporter):
             request_metrics(port)
 
 
-def test_apply(ctx, tmp_port_factory):
+def test_apply(ctx: Context, tmp_port_factory: Iterator[int]) -> None:
     port = next(tmp_port_factory)
     m = interface.PostgresExporter(name="test", dsn="dbname=test", port=port)
     prometheus.apply(ctx, m)
@@ -175,7 +184,9 @@ def test_apply(ctx, tmp_port_factory):
     assert not queriespath.exists()
 
 
-def test_drop_exists(ctx, tmp_port_factory, caplog):
+def test_drop_exists(
+    ctx: Context, tmp_port_factory: Iterator[int], caplog: pytest.LogCaptureFixture
+) -> None:
     port = next(tmp_port_factory)
     prometheus.setup(ctx, "dropme", port=port)
     assert prometheus.port(ctx, "dropme") == port

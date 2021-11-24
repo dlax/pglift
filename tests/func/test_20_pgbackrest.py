@@ -1,6 +1,7 @@
 import shutil
 from datetime import datetime
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 
@@ -11,6 +12,7 @@ from pglift.ctx import Context
 from pglift.models import system
 
 from . import execute, reconfigure_instance
+from .conftest import DatabaseFactory
 
 pytestmark = pytest.mark.skipif(
     shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
@@ -23,7 +25,14 @@ def directory(ctx: Context, instance: system.Instance) -> Path:
     return Path(str(pgbackrest_settings.directory).format(instance=instance))
 
 
-def test_configure(ctx, installed, instance, tmp_path, tmp_port_factory, directory):
+def test_configure(
+    ctx: Context,
+    installed: None,
+    instance: system.Instance,
+    tmp_path: Path,
+    tmp_port_factory: Iterator[int],
+    directory: Path,
+) -> None:
     instance_config = instance.config()
     assert instance_config
     instance_port = instance_config.port
@@ -60,7 +69,12 @@ def test_configure(ctx, installed, instance, tmp_path, tmp_port_factory, directo
         assert f"pg1-port = {new_port}" in config_after.splitlines()
 
 
-def test_backup_restore(ctx, instance, directory, database_factory):
+def test_backup_restore(
+    ctx: Context,
+    instance: system.Instance,
+    directory: Path,
+    database_factory: DatabaseFactory,
+) -> None:
     latest_backup = (
         directory / "backup" / f"{instance.version}-{instance.name}" / "latest"
     )

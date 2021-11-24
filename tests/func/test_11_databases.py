@@ -10,6 +10,7 @@ from pglift.ctx import Context
 from pglift.models import interface, system
 
 from . import execute
+from .conftest import DatabaseFactory, RoleFactory
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -18,13 +19,17 @@ def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
         yield
 
 
-def test_exists(ctx, instance, database_factory):
+def test_exists(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     assert not databases.exists(ctx, instance, "absent")
     database_factory("present")
     assert databases.exists(ctx, instance, "present")
 
 
-def test_create(ctx, instance, role_factory):
+def test_create(
+    ctx: Context, instance: system.Instance, role_factory: RoleFactory
+) -> None:
     database = interface.Database(name="db1")
     assert not databases.exists(ctx, instance, database.name)
     databases.create(ctx, instance, database)
@@ -46,7 +51,12 @@ def test_create(ctx, instance, role_factory):
         databases.drop(ctx, instance, database.name)
 
 
-def test_apply(ctx, instance, database_factory, role_factory):
+def test_apply(
+    ctx: Context,
+    instance: system.Instance,
+    database_factory: DatabaseFactory,
+    role_factory: RoleFactory,
+) -> None:
     database = interface.Database(name="db2")
     assert not databases.exists(ctx, instance, database.name)
     databases.apply(ctx, instance, database)
@@ -71,7 +81,9 @@ def test_apply(ctx, instance, database_factory, role_factory):
     assert not databases.exists(ctx, instance, database.name)
 
 
-def test_describe(ctx, instance, database_factory):
+def test_describe(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     with pytest.raises(exceptions.DatabaseNotFound, match="absent"):
         databases.describe(ctx, instance, "absent")
 
@@ -80,7 +92,9 @@ def test_describe(ctx, instance, database_factory):
     assert database.name == "describeme"
 
 
-def test_list(ctx, instance, database_factory):
+def test_list(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     database_factory("db1")
     dbs = databases.list(ctx, instance)
     db1 = next(d for d in dbs if d.name == "db1").dict()
@@ -98,7 +112,12 @@ def test_list(ctx, instance, database_factory):
     }
 
 
-def test_alter(ctx, instance, database_factory, role_factory):
+def test_alter(
+    ctx: Context,
+    instance: system.Instance,
+    database_factory: DatabaseFactory,
+    role_factory: RoleFactory,
+) -> None:
     database = interface.Database(name="alterme")
     with pytest.raises(exceptions.DatabaseNotFound, match="alter"):
         databases.alter(ctx, instance, database)
@@ -116,7 +135,9 @@ def test_alter(ctx, instance, database_factory, role_factory):
     )
 
 
-def test_drop(ctx, instance, database_factory):
+def test_drop(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     with pytest.raises(exceptions.DatabaseNotFound, match="absent"):
         databases.drop(ctx, instance, "absent")
 
@@ -125,7 +146,9 @@ def test_drop(ctx, instance, database_factory):
     assert not databases.exists(ctx, instance, "dropme")
 
 
-def test_run_analyze(ctx, instance, database_factory):
+def test_run_analyze(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     database_factory("test")
 
     def last_analyze() -> datetime.datetime:
@@ -149,7 +172,9 @@ def test_run_analyze(ctx, instance, database_factory):
     assert last_analyze() == now
 
 
-def test_run_output_notices(ctx, instance, capsys):
+def test_run_output_notices(
+    ctx: Context, instance: system.Instance, capsys: pytest.CaptureFixture[str]
+) -> None:
     databases.run(
         ctx, instance, "DO $$ BEGIN RAISE NOTICE 'foo'; END $$", dbnames=["postgres"]
     )
