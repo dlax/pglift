@@ -14,12 +14,15 @@ from tenacity.wait import wait_fixed
 from pglift import databases, exceptions
 from pglift import instance as instance_mod
 from pglift import systemd
+from pglift.ctx import Context
 from pglift.models import interface, system
 
 from . import configure_instance, execute, reconfigure_instance
 
 
-def test_init(ctx, instance_initialized, monkeypatch):
+def test_init(
+    ctx: Context, instance_initialized: system.Instance, monkeypatch: pytest.MonkeyPatch
+) -> None:
     i = instance_initialized
     assert i.datadir.exists()
     assert i.waldir.exists()
@@ -43,7 +46,7 @@ def test_init(ctx, instance_initialized, monkeypatch):
             raise AssertionError("unexpected called")
 
         m.setattr(ctx, "pg_ctl", fail)
-        instance_mod.init(ctx, i)
+        instance_mod.init(ctx, interface.Instance(name=i.name, version=i.version))
 
 
 def test_log_directory(ctx, instance, log_directory, redhat):
