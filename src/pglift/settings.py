@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 import yaml
 from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
 from pydantic.fields import ModelField
-from typing_extensions import Literal, TypedDict
+from typing_extensions import Literal
 
 from . import __name__ as pkgname
 from . import datapath
@@ -128,11 +128,6 @@ AuthMethod = Literal[
 ]
 
 
-class AuthEnviron(TypedDict, total=False):
-    PGPASSWORD: str
-    PGPASSFILE: str
-
-
 @frozen
 class AuthSettings(BaseSettings):
     """PostgreSQL authentication settings."""
@@ -148,7 +143,12 @@ class AuthSettings(BaseSettings):
     passfile: Path = Path.home() / ".pgpass"
     """Path to .pgpass file."""
 
-    def libpq_environ(self, role: Role) -> AuthEnviron:
+    def libpq_environ(
+        self,
+        role: Role,
+        *,
+        base: Dict[str, str] = os.environ,  # type: ignore[assignment]
+    ) -> Dict[str, str]:
         """Return a dict with libpq environment variables for `role`
         authentication.
 
@@ -157,14 +157,16 @@ class AuthSettings(BaseSettings):
         ...     password: Optional[SecretStr] = None
 
         >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
-        >>> s.libpq_environ(MyRole(name="bob"))
-        {'PGPASSFILE': '/srv/pg/.pgpass'}
-        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")))
-        {'PGPASSFILE': '/srv/pg/.pgpass', 'PGPASSWORD': 'secret'}
+        >>> s.libpq_environ(MyRole(name="bob"), base={"PGPASSWORD": "secret"})
+        {'PGPASSWORD': 'secret', 'PGPASSFILE': '/srv/pg/.pgpass'}
+        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")),
+        ...                 base={'PGPASSFILE': '/var/lib/pgsql/pgpass'})
+        {'PGPASSFILE': '/var/lib/pgsql/pgpass', 'PGPASSWORD': 'secret'}
         """
-        env: AuthEnviron = {"PGPASSFILE": str(self.passfile)}
+        env = base.copy()
+        env.setdefault("PGPASSFILE", str(self.passfile))
         if role.password:
-            env["PGPASSWORD"] = role.password.get_secret_value()
+            env.setdefault("PGPASSWORD", role.password.get_secret_value())
         return env
 
 
