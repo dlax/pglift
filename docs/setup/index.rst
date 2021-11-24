@@ -8,4 +8,5 @@ various aspects of deployment operations.
 
     settings
     postgresql_configuration
+    postgresql_authentication
     systemd
