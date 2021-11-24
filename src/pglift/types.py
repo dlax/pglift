@@ -29,7 +29,6 @@ ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 class Role(Protocol):
     name: str
     password: Optional[SecretStr]
-    pgpass: bool
 
 
 class Logger(Protocol):

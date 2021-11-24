@@ -32,7 +32,7 @@ def test_create(ctx, instance):
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert not roles.has_password(ctx, instance, role)
+    assert not roles.has_password(ctx, instance, role.name)
 
     role = interface.Role(
         name="password",
@@ -45,7 +45,7 @@ def test_create(ctx, instance):
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert roles.has_password(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role.name)
     r = execute(ctx, instance, "select 1", role=role)
     assert r[0][0] == 1
     ((valid_until, connection_limit),) = execute(
@@ -111,7 +111,7 @@ def test_apply(ctx, instance):
     assert not roles.exists(ctx, instance, role.name)
     roles.apply(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert not roles.has_password(ctx, instance, role)
+    assert not roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
 
     role = interface.Role(name=rolname, state="absent")
@@ -121,12 +121,12 @@ def test_apply(ctx, instance):
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
     roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
     roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
 
     role = interface.Role(
@@ -136,13 +136,13 @@ def test_apply(ctx, instance):
         connection_limit=5,
     )
     roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
     assert roles.describe(ctx, instance, rolname).connection_limit == 5
 
     role = interface.Role(name=rolname, pgpass=False)
     roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role)
+    assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
     assert roles.describe(ctx, instance, rolname).connection_limit is None
 

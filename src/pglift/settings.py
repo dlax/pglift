@@ -155,7 +155,6 @@ class AuthSettings(BaseSettings):
         >>> class MyRole(BaseSettings):
         ...     name: str
         ...     password: Optional[SecretStr] = None
-        ...     pgpass: bool = False
 
         >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
         >>> s.libpq_environ(MyRole(name="bob"))

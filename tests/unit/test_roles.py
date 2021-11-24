@@ -72,8 +72,8 @@ def passfile(ctx):
 
 
 def test_in_pgpass(ctx, instance, passfile):
-    assert roles.in_pgpass(ctx, instance, Role("edgar"))
-    assert not roles.in_pgpass(ctx, instance, Role("alice"))
+    assert roles.in_pgpass(ctx, instance, "edgar")
+    assert not roles.in_pgpass(ctx, instance, "alice")
 
 
 @pytest.mark.parametrize(

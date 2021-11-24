@@ -94,7 +94,7 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
         with cnx.cursor() as cur:
             cur.execute(db.query("role_inspect"), {"username": name})
             values.update(dict(cur.fetchone()))
-    if in_pgpass(ctx, instance, role):
+    if in_pgpass(ctx, instance, name):
         values["pgpass"] = True
     return interface.Role(**values)
 
@@ -126,11 +126,11 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
             return cur.rowcount == 1  # type: ignore[no-any-return]
 
 
-def has_password(ctx: BaseContext, instance: Instance, role: Role) -> bool:
+def has_password(ctx: BaseContext, instance: Instance, name: str) -> bool:
     """Return True if the role has a password set."""
     with db.connect(instance, ctx.settings.postgresql.surole) as cnx:
         with cnx.cursor() as cur:
-            cur.execute(db.query("role_has_password"), {"username": role.name})
+            cur.execute(db.query("role_has_password"), {"username": name})
             (haspassword,) = cur.fetchone()
             return haspassword  # type: ignore[no-any-return]
 
@@ -206,7 +206,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     """
     actual_role = describe(ctx, instance, role.name)
     options, args = options_and_args(
-        role, with_password=not has_password(ctx, instance, role), in_roles=False
+        role, with_password=not has_password(ctx, instance, role.name), in_roles=False
     )
     in_roles = {
         "grant": set(role.in_roles) - set(actual_role.in_roles),
@@ -254,15 +254,19 @@ def set_password_for(
             )
 
 
-def in_pgpass(ctx: BaseContext, instance: Instance, role: Role) -> bool:
-    """Return True if 'role' is present in password file for 'instance'."""
+def in_pgpass(ctx: BaseContext, instance: Instance, name: str) -> bool:
+    """Return True if a role with 'name' is present in password file for
+    'instance'.
+    """
     port = int(instance.config().port)  # type: ignore[arg-type]
     passfile = pgpass.parse(ctx.settings.postgresql.auth.passfile)
-    return any(entry.matches(username=role.name, port=port) for entry in passfile)
+    return any(entry.matches(username=name, port=port) for entry in passfile)
 
 
 @task("edit password file entry for '{role.name}' role")
-def set_pgpass_entry_for(ctx: BaseContext, instance: Instance, role: Role) -> None:
+def set_pgpass_entry_for(
+    ctx: BaseContext, instance: Instance, role: interface.Role
+) -> None:
     """Add, update or remove a password file entry for 'role' of 'instance'."""
 
     port = instance.port
