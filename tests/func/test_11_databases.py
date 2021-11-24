@@ -1,17 +1,19 @@
 import datetime
 import time
+from typing import Iterator
 
 import pytest
 
 from pglift import databases, exceptions
 from pglift import instance as instance_mod
-from pglift.models import interface
+from pglift.ctx import Context
+from pglift.models import interface, system
 
 from . import execute
 
 
 @pytest.fixture(scope="module", autouse=True)
-def instance_running(ctx, instance):
+def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
     with instance_mod.running(ctx, instance):
         yield
 

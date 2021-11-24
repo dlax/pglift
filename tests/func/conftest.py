@@ -5,13 +5,14 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Iterator, Set
+from typing import Any, Iterator, Set
 
 import pgtoolkit.conf
 import port_for
 import pydantic
 import pytest
 from pgtoolkit.ctl import Status
+from typing_extensions import Protocol
 
 from pglift import _install
 from pglift import instance as instance_mod
@@ -24,12 +25,12 @@ from . import configure_instance, execute
 
 
 @pytest.fixture(scope="session")
-def redhat():
+def redhat() -> bool:
     return pathlib.Path("/etc/redhat-release").exists()
 
 
 @pytest.fixture(autouse=True)
-def journalctl():
+def journalctl() -> Iterator[None]:
     journalctl = shutil.which("journalctl")
     if journalctl is None:
         yield
@@ -40,7 +41,7 @@ def journalctl():
 
 
 @pytest.fixture(scope="session")
-def systemd_available():
+def systemd_available() -> bool:
     try:
         subprocess.run(
             ["systemctl", "--user", "status"],
@@ -89,7 +90,11 @@ ids = tuple(f"settings:{i}" for i in ids)
 
 
 @pytest.fixture(scope="session", params=params, ids=ids)
-def settings(request, tmp_path_factory, systemd_available):
+def settings(
+    request: Any,
+    tmp_path_factory: pytest.TempPathFactory,
+    systemd_available: bool,
+) -> Settings:
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
     passfile.touch(mode=0o600)
     passfile.write_text("#hostname:port:database:username:password\n")
@@ -123,15 +128,16 @@ def settings(request, tmp_path_factory, systemd_available):
     params=POSTGRESQL_SUPPORTED_VERSIONS,
     ids=lambda v: f"postgresql:{v}",
 )
-def pg_version(request, settings):
+def pg_version(request: Any, settings: Settings) -> str:
     version = request.param
+    assert isinstance(version, str)
     if not pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
         pytest.skip(f"PostgreSQL {version} not available")
     return version
 
 
 @pytest.fixture(scope="session")
-def ctx(settings):
+def ctx(settings: Settings) -> Context:
     p = pm.PluginManager.get()
     p.trace.root.setwriter(print)
     p.enable_tracing()
@@ -141,7 +147,7 @@ def ctx(settings):
 
 
 @pytest.fixture(scope="session")
-def installed(ctx, tmp_path_factory):
+def installed(ctx: Context, tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     tmp_path = tmp_path_factory.mktemp("config")
     settings = ctx.settings
     if settings.service_manager != "systemd":
@@ -195,7 +201,7 @@ def instance_initialized(
 
 
 @pytest.fixture(scope="session")
-def log_directory(tmp_path_factory):
+def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
     return tmp_path_factory.mktemp("postgres-logs")
 
 
@@ -223,8 +229,13 @@ def instance_dropped(
     return config
 
 
+class RoleFactory(Protocol):
+    def __call__(self, name: str, options: str = "") -> None:
+        ...
+
+
 @pytest.fixture(scope="module")
-def role_factory(ctx, instance):
+def role_factory(ctx: Context, instance: system.Instance) -> Iterator[RoleFactory]:
     rolnames = set()
 
     def factory(name: str, options: str = "") -> None:
@@ -239,8 +250,15 @@ def role_factory(ctx, instance):
         execute(ctx, instance, f"DROP ROLE IF EXISTS {name}", fetch=False)
 
 
+class DatabaseFactory(Protocol):
+    def __call__(self, name: str) -> None:
+        ...
+
+
 @pytest.fixture(scope="module")
-def database_factory(ctx, instance):
+def database_factory(
+    ctx: Context, instance: system.Instance
+) -> Iterator[DatabaseFactory]:
     datnames = set()
 
     def factory(name: str) -> None:

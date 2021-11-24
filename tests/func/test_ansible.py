@@ -6,6 +6,7 @@ import secrets
 import socket
 import string
 import subprocess
+from typing import Callable, Iterator
 
 import dateutil.tz
 import psycopg2
@@ -24,45 +25,54 @@ def generate_secret(length: int) -> str:
 
 
 @pytest.fixture
-def call_playbook(tmpdir):
+def call_playbook(tmp_path: pathlib.Path) -> Iterator[Callable[[pathlib.Path], None]]:
     env = os.environ.copy()
     env["ANSIBLE_COLLECTIONS_PATH"] = str(
         pathlib.Path(__file__).parent.parent.parent / "ansible"
     )
     env["ANSIBLE_VERBOSITY"] = "3"
     settings = {
-        "prefix": str(tmpdir),
+        "prefix": str(tmp_path),
         "postgresql": {
-            "auth": {"local": "md5", "host": "md5", "passfile": str(tmpdir / "pgpass")},
+            "auth": {
+                "local": "md5",
+                "host": "md5",
+                "passfile": str(tmp_path / "pgpass"),
+            },
             "surole": {"pgpass": False},
-            "root": str(tmpdir / "postgresql"),
+            "root": str(tmp_path / "postgresql"),
         },
     }
-    with (tmpdir / "config.json").open("w") as f:
+    with (tmp_path / "config.json").open("w") as f:
         json.dump(settings, f)
-    env["SETTINGS"] = f"@{tmpdir / 'config.json'}"
+    env["SETTINGS"] = f"@{tmp_path / 'config.json'}"
 
-    with (tmpdir / "vault-pass").open("w") as f:
+    with (tmp_path / "vault-pass").open("w") as f:
         f.write(generate_secret(32))
-    env["ANSIBLE_VAULT_PASSWORD_FILE"] = str(tmpdir / "vault-pass")
+    env["ANSIBLE_VAULT_PASSWORD_FILE"] = str(tmp_path / "vault-pass")
 
-    with (tmpdir / "vars").open("w") as f:
+    with (tmp_path / "vars").open("w") as f:
         passwords = {
             "postgresql_surole_password": "supers3kret",
             "prod_bob_password": "s3kret",
         }
         yaml.dump(passwords, f)
-    subprocess.check_call(["ansible-vault", "encrypt", str(tmpdir / "vars")], env=env)
+    subprocess.check_call(["ansible-vault", "encrypt", str(tmp_path / "vars")], env=env)
 
     def call(playfile: pathlib.Path) -> None:
         subprocess.check_call(
-            ["ansible-playbook", "--extra-vars", f'@{tmpdir / "vars"}', str(playfile)],
+            [
+                "ansible-playbook",
+                "--extra-vars",
+                f'@{tmp_path / "vars"}',
+                str(playfile),
+            ],
             env=env,
         )
 
     yield call
     call(PLAYDIR / "play3.yml")
-    assert not (tmpdir / "pgpass").exists()
+    assert not (tmp_path / "pgpass").exists()
 
 
 def cluster_name(dsn: str) -> str:

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterator, Tuple
 
 import pytest
 import requests
@@ -11,7 +11,8 @@ from tenacity.wait import wait_fixed
 from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
-from pglift.models import interface
+from pglift.ctx import Context
+from pglift.models import interface, system
 
 from . import reconfigure_instance
 
@@ -48,7 +49,12 @@ def test_configure(ctx, installed, instance, tmp_port_factory):
 
 
 @pytest.fixture
-def postgres_exporter(ctx, instance, installed, tmp_port_factory):
+def postgres_exporter(
+    ctx: Context,
+    instance: system.Instance,
+    installed: None,
+    tmp_port_factory: Iterator[int],
+) -> Iterator[Tuple[str, str, int]]:
     """Setup a postgres_exporter service for 'instance' using another port."""
     port = next(tmp_port_factory)
     name = "123-fo-o"

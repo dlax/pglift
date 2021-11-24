@@ -7,6 +7,8 @@ import pytest
 from pglift import instance as instance_mod
 from pglift import pgbackrest
 from pglift.conf import info as conf_info
+from pglift.ctx import Context
+from pglift.models import system
 
 from . import execute, reconfigure_instance
 
@@ -16,7 +18,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture
-def directory(ctx, instance):
+def directory(ctx: Context, instance: system.Instance) -> Path:
     pgbackrest_settings = ctx.settings.pgbackrest
     return Path(str(pgbackrest_settings.directory).format(instance=instance))
 
