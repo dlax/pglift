@@ -159,18 +159,13 @@ class AuthSettings(BaseSettings):
 
         >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
         >>> s.libpq_environ(MyRole(name="bob"))
-        {}
-        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")))
-        {'PGPASSWORD': 'secret'}
-        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("whatever"), pgpass=True))
         {'PGPASSFILE': '/srv/pg/.pgpass'}
+        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")))
+        {'PGPASSFILE': '/srv/pg/.pgpass', 'PGPASSWORD': 'secret'}
         """
-        env: AuthEnviron = {}
+        env: AuthEnviron = {"PGPASSFILE": str(self.passfile)}
         if role.password:
-            if role.pgpass:
-                env["PGPASSFILE"] = str(self.passfile)
-            else:
-                env["PGPASSWORD"] = role.password.get_secret_value()
+            env["PGPASSWORD"] = role.password.get_secret_value()
         return env
 
 

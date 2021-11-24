@@ -30,16 +30,12 @@ def test_query():
     "rolspec, expected",
     [
         (
-            ("bob", None, False),
-            "dbname=mydb sslmode=off port=999 user=bob host=/socks",
+            ("bob", None),
+            "dbname=mydb sslmode=off port=999 user=bob host=/socks passfile={passfile}",
         ),
         (
-            ("alice", "s3kret", True),
-            "dbname=mydb sslmode=off port=999 user=alice host=/socks passfile={passfile}",
-        ),
-        (
-            ("charles", "s3kret", False),
-            "dbname=mydb sslmode=off port=999 user=charles host=/socks password=s3kret",
+            ("alice", "s3kret"),
+            "dbname=mydb sslmode=off port=999 user=alice host=/socks passfile={passfile} password=s3kret",
         ),
     ],
 )
@@ -47,12 +43,10 @@ def test_dsn(settings, instance, rolspec, expected):
     passfile = settings.postgresql.auth.passfile
 
     class MyRole:
-        def __init__(
-            self, username: str, password: Optional[str], pgpass: bool
-        ) -> None:
+        def __init__(self, username: str, password: Optional[str]) -> None:
             self.name = username
             self.password = SecretStr(password) if password is not None else None
-            self.pgpass = pgpass
+            self.pgpass = False
 
     conninfo = db.dsn(instance, MyRole(*rolspec), dbname="mydb", sslmode="off")
     assert conninfo == expected.format(passfile=passfile)
@@ -64,7 +58,7 @@ def test_dsn_badarg(instance):
         db.dsn(instance, role, port=123)
 
 
-def test_connect(instance):
+def test_connect(instance, settings):
     role = MagicMock()
     role.configure_mock(name="dba", password=None, pgpass=False)
     with patch("psycopg2.connect") as connect:
@@ -72,7 +66,9 @@ def test_connect(instance):
         assert not connect.called
         with cnx:
             pass
+    passfile = settings.postgresql.auth.passfile
+    assert passfile.exists()
     connect.assert_called_once_with(
-        "dbname=postgres port=999 user=dba host=/socks",
+        f"dbname=postgres port=999 user=dba host=/socks passfile={passfile}",
         connection_factory=psycopg2.extras.DictConnection,
     )

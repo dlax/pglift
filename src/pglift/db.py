@@ -44,9 +44,9 @@ def dsn(instance: "PostgreSQLInstance", role: "Role", **kwargs: Any) -> str:
     if config.unix_socket_directories:
         kwargs["host"] = config.unix_socket_directories
     passfile = instance.settings.postgresql.auth.passfile
-    if role.pgpass and passfile.exists():
+    if passfile.exists():
         kwargs["passfile"] = str(passfile)
-    elif role.password:
+    if role.password:
         kwargs["password"] = role.password.get_secret_value()
 
     assert "dsn" not in kwargs
