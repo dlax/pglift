@@ -569,12 +569,17 @@ def upgrade(
         env = os.environ.copy()
         env["PGPASSWORD"] = surole.password.get_secret_value()
         kwargs["env"] = env
+    hba_path = newinstance.datadir / "pg_hba.conf"
+    hba_content = hba_path.read_bytes()
     try:
+        hba_path.write_text(f"local all {surole.name} trust\n")
         with tempfile.TemporaryDirectory() as tmpdir:
             ctx.run(cmd, check=True, cwd=tmpdir, **kwargs)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise
+    else:
+        hba_path.write_bytes(hba_content)
     return newinstance
 
 
