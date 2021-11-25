@@ -570,7 +570,8 @@ def upgrade(
         env["PGPASSWORD"] = surole.password.get_secret_value()
         kwargs["env"] = env
     try:
-        ctx.run(cmd, check=True, **kwargs)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ctx.run(cmd, check=True, cwd=tmpdir, **kwargs)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise
