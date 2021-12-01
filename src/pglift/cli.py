@@ -104,8 +104,11 @@ class Command(click.Command):
             except exceptions.Error as e:
                 logger.debug("an internal error occurred", exc_info=True)
                 msg = str(e)
-                if isinstance(e, exceptions.CommandError) and e.stderr:
-                    msg += f"\n{e.stderr}"
+                if isinstance(e, exceptions.CommandError):
+                    if e.stderr:
+                        msg += f"\n{e.stderr}"
+                    if e.stdout:
+                        msg += f"\n{e.stdout}"
                 raise click.ClickException(msg)
             except (click.ClickException, click.Abort, click.exceptions.Exit):
                 raise

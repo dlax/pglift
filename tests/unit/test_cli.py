@@ -54,7 +54,7 @@ def test_command_error(runner, obj):
     assert result.exit_code == 1
     assert (
         result.stderr
-        == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\n"
+        == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\noutput\n"
     )
     logpath = obj.ctx.settings.logpath
     assert not list(logpath.glob("*.log"))
