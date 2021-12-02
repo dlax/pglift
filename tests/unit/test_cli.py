@@ -2,6 +2,7 @@ import datetime
 import functools
 import json
 import re
+from pathlib import Path
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
@@ -945,6 +946,46 @@ def test_database_drop(runner, ctx, obj, instance, running):
             obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0
+
+
+def test_database_backup(runner, ctx, obj, instance, running):
+    output_file = "my/root/foo.dump"
+    with patch.object(
+        databases, "backup", side_effect=exceptions.DatabaseNotFound("bar")
+    ) as backup:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "backup",
+                str(instance),
+                "foo",
+                output_file,
+            ],
+            obj=obj,
+        )
+    backup.assert_called_once_with(ctx, instance, "foo", Path(output_file))
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 1
+    assert "Error: database 'bar' not found" in result.stderr.strip()
+
+    running.reset_mock()
+
+    with patch.object(databases, "backup") as backup:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "backup",
+                str(instance),
+                "foo",
+                output_file,
+            ],
+            obj=obj,
+        )
+    backup.assert_called_once_with(ctx, instance, "foo", Path(output_file))
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
 

@@ -1009,6 +1009,24 @@ def database_drop(ctx: Context, runner: Runner, instance: Instance, name: str) -
         databases.drop(ctx, instance, name)
 
 
+@database.command("backup")
+@instance_identifier
+@click.argument("name")
+@click.argument("output_file", type=click.Path(path_type=pathlib.Path))
+@pass_runner
+@pass_ctx
+def database_backup(
+    ctx: Context,
+    runner: Runner,
+    instance: Instance,
+    name: str,
+    output_file: pathlib.Path,
+) -> None:
+    """Dump a database in a PostgreSQL instance"""
+    with runner, instance_mod.running(ctx, instance):
+        databases.backup(ctx, instance, name, output_file)
+
+
 @database.command("privileges")
 @instance_identifier
 @click.argument("name")
