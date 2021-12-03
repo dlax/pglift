@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 from pgtoolkit import conf as pgconf
+from pgtoolkit import pgpass
 from pgtoolkit.ctl import Status as Status
+from pydantic import SecretStr
 from typing_extensions import Literal
 
 from . import (
@@ -537,12 +539,20 @@ def upgrade(
     """Upgrade an instance using pg_upgrade"""
     if version is None:
         version = default_postgresql_version(ctx)
+    surole = ctx.settings.postgresql.surole
+    surole_password = os.environ.get("PGPASSWORD")
+    if not surole_password and ctx.settings.postgresql.auth.passfile:
+        with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
+            for entry in passfile:
+                if entry.matches(port=instance.port, username=surole.name):
+                    surole_password = entry.password
     new_manifest = interface.Instance(
         name=name or instance.name,
         version=version,
         port=port or instance.port,
         state=interface.InstanceState.stopped,
         prometheus={"port": instance.prometheus.port},
+        surole_password=SecretStr(surole_password) if surole_password else None,
     )
     result = apply(ctx, new_manifest)
     assert result is not None, new_manifest
@@ -559,19 +569,15 @@ def upgrade(
     ]
     if jobs is not None:
         cmd.extend(["--jobs", str(jobs)])
-    surole = ctx.settings.postgresql.surole
     env = ctx.libpq_environ()
-    hba_path = newinstance.datadir / "pg_hba.conf"
-    hba_content = hba_path.read_bytes()
+    if surole_password:
+        env.setdefault("PGPASSWORD", surole_password)
     try:
-        hba_path.write_text(f"local all {surole.name} trust\n")
         with tempfile.TemporaryDirectory() as tmpdir:
             ctx.run(cmd, check=True, cwd=tmpdir, env=env)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise
-    else:
-        hba_path.write_bytes(hba_content)
     return newinstance
 
 
