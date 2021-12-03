@@ -185,7 +185,10 @@ def surole_password(settings: Settings) -> Iterator[Optional[str]]:
         return
 
     password = "s3kret"
-    with patch.dict("os.environ", {"PGPASSWORD": password}):
+    if not settings.postgresql.surole.pgpass:
+        with patch.dict("os.environ", {"PGPASSWORD": password}):
+            yield password
+    else:
         yield password
 
 
