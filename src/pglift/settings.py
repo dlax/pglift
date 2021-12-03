@@ -145,7 +145,7 @@ class AuthSettings(BaseSettings):
     def libpq_environ(
         self,
         *,
-        base: Dict[str, str] = os.environ,  # type: ignore[assignment]
+        base: Optional[Dict[str, str]] = None,
     ) -> Dict[str, str]:
         """Return a dict with libpq environment variables for authentication.
 
@@ -155,7 +155,10 @@ class AuthSettings(BaseSettings):
         >>> s.libpq_environ(base={'PGPASSFILE': '/var/lib/pgsql/pgpass'})
         {'PGPASSFILE': '/var/lib/pgsql/pgpass'}
         """
-        env = base.copy()
+        if base is None:
+            env = os.environ.copy()
+        else:
+            env = base.copy()
         env.setdefault("PGPASSFILE", str(self.passfile))
         return env
 
