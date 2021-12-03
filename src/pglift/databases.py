@@ -174,7 +174,7 @@ def backup(
         name,
     ]
 
-    env = ctx.settings.postgresql.auth.libpq_environ()
+    env = ctx.libpq_environ()
     ctx.run(cmd, check=True, env=env)
 
 

@@ -560,7 +560,7 @@ def upgrade(
     if jobs is not None:
         cmd.extend(["--jobs", str(jobs)])
     surole = ctx.settings.postgresql.surole
-    env = ctx.settings.postgresql.auth.libpq_environ()
+    env = ctx.libpq_environ()
     hba_path = newinstance.datadir / "pg_hba.conf"
     hba_content = hba_path.read_bytes()
     try:
@@ -731,7 +731,7 @@ def shell(
     ]
     if dbname is not None:
         args.extend(["--dbname", dbname])
-    env = ctx.settings.postgresql.auth.libpq_environ()
+    env = ctx.libpq_environ()
     cmd.execute_program(args, logger=ctx, env=env)
 
 

@@ -142,26 +142,6 @@ class AuthSettings(BaseSettings):
     passfile: Path = Path.home() / ".pgpass"
     """Path to .pgpass file."""
 
-    def libpq_environ(
-        self,
-        *,
-        base: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, str]:
-        """Return a dict with libpq environment variables for authentication.
-
-        >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
-        >>> s.libpq_environ(base={"PGPASSWORD": "secret"})
-        {'PGPASSWORD': 'secret', 'PGPASSFILE': '/srv/pg/.pgpass'}
-        >>> s.libpq_environ(base={'PGPASSFILE': '/var/lib/pgsql/pgpass'})
-        {'PGPASSFILE': '/var/lib/pgsql/pgpass'}
-        """
-        if base is None:
-            env = os.environ.copy()
-        else:
-            env = base.copy()
-        env.setdefault("PGPASSFILE", str(self.passfile))
-        return env
-
 
 @frozen
 class InitdbSettings(BaseSettings):

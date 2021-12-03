@@ -270,7 +270,7 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
-    env = ctx.settings.postgresql.auth.libpq_environ()
+    env = ctx.libpq_environ()
     ctx.run(backup_command(instance, type=type), check=True, env=env)
 
 
