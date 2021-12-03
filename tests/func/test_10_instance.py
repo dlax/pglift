@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from pathlib import Path
-from typing import Iterator, List, NoReturn, Optional
+from typing import Iterator, List, NoReturn
 from unittest.mock import patch
 
 import psycopg2
@@ -371,7 +371,6 @@ def test_standby(
 def test_instance_upgrade(
     ctx: Context,
     instance: system.Instance,
-    surole_password: Optional[str],
     tmp_port_factory: Iterator[int],
     database_factory: DatabaseFactory,
 ) -> None:
