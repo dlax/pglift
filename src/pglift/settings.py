@@ -7,13 +7,12 @@ from pathlib import Path, PosixPath
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 import yaml
-from pydantic import BaseSettings, Field, SecretStr, root_validator, validator
+from pydantic import BaseSettings, Field, root_validator, validator
 from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
 from . import datapath
-from .types import Role
 from .util import xdg_data_home
 
 try:
@@ -145,28 +144,19 @@ class AuthSettings(BaseSettings):
 
     def libpq_environ(
         self,
-        role: Optional[Role] = None,
         *,
         base: Dict[str, str] = os.environ,  # type: ignore[assignment]
     ) -> Dict[str, str]:
-        """Return a dict with libpq environment variables for `role`
-        authentication.
-
-        >>> class MyRole(BaseSettings):
-        ...     name: str
-        ...     password: Optional[SecretStr] = None
+        """Return a dict with libpq environment variables for authentication.
 
         >>> s = AuthSettings.parse_obj({"passfile": "/srv/pg/.pgpass"})
-        >>> s.libpq_environ(MyRole(name="bob"), base={"PGPASSWORD": "secret"})
+        >>> s.libpq_environ(base={"PGPASSWORD": "secret"})
         {'PGPASSWORD': 'secret', 'PGPASSFILE': '/srv/pg/.pgpass'}
-        >>> s.libpq_environ(MyRole(name="bob", password=SecretStr("secret")),
-        ...                 base={'PGPASSFILE': '/var/lib/pgsql/pgpass'})
-        {'PGPASSFILE': '/var/lib/pgsql/pgpass', 'PGPASSWORD': 'secret'}
+        >>> s.libpq_environ(base={'PGPASSFILE': '/var/lib/pgsql/pgpass'})
+        {'PGPASSFILE': '/var/lib/pgsql/pgpass'}
         """
         env = base.copy()
         env.setdefault("PGPASSFILE", str(self.passfile))
-        if role is not None and role.password:
-            env.setdefault("PGPASSWORD", role.password.get_secret_value())
         return env
 
 
