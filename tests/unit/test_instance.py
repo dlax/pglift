@@ -1,3 +1,4 @@
+import os
 import pathlib
 import re
 from unittest.mock import patch
@@ -196,7 +197,7 @@ def test_start_foreground(ctx, instance):
 
 
 def test_shell(ctx, instance):
-    with patch("os.execv") as patched:
+    with patch("os.execve") as patched:
         instance_mod.shell(ctx, instance, user="test", dbname="test")
     psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
     cmd = [
@@ -210,7 +211,9 @@ def test_shell(ctx, instance):
         "--dbname",
         "test",
     ]
-    patched.assert_called_once_with(psql, cmd)
+    expected_env = os.environ.copy()
+    expected_env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
+    patched.assert_called_once_with(psql, cmd, expected_env)
 
 
 def test_exists(ctx, instance):

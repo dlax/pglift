@@ -731,7 +731,8 @@ def shell(
     ]
     if dbname is not None:
         args.extend(["--dbname", dbname])
-    cmd.execute_program(args, logger=ctx)
+    env = ctx.settings.postgresql.auth.libpq_environ()
+    cmd.execute_program(args, logger=ctx, env=env)
 
 
 def exists(ctx: BaseContext, name: str, version: Optional[str]) -> bool:
