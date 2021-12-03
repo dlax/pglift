@@ -303,6 +303,7 @@ def test_standby(
         name="standby",
         version=pg_version,
         standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
+        surole_password=surole.password,
     )
 
     @contextlib.contextmanager
