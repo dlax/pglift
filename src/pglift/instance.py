@@ -44,14 +44,6 @@ def systemd_unit(instance: BaseInstance) -> str:
 def init_replication(
     ctx: BaseContext, instance: BaseInstance, standby_for: str, slot: Optional[str]
 ) -> None:
-
-    # use existing PGPASSFILE env or use passfile from settings
-    passfile = (
-        None
-        if "PGPASSFILE" in os.environ
-        else str(instance.settings.postgresql.auth.passfile)
-    )
-
     with tempfile.TemporaryDirectory() as _tmpdir:
         tmpdir = Path(_tmpdir)
         # pg_basebackup will also copy config files from primary datadir.
@@ -79,9 +71,14 @@ def init_replication(
             str(instance.waldir),
         ]
 
+        env = ctx.libpq_environ()
         if slot:
             cmd += ["--slot", slot]
-            with db.connect_dsn(standby_for, passfile=passfile) as cnx:
+            with db.connect_dsn(
+                standby_for,
+                passfile=env.get("PGPASSFILE"),
+                password=env.get("PGPASSWORD"),
+            ) as cnx:
                 # ensure the replication slot does not exists
                 # otherwise --create-slot will raise an error
                 with cnx.cursor() as cur:
@@ -91,9 +88,6 @@ def init_replication(
                     else:
                         cmd += ["--create-slot"]
 
-        env = os.environ.copy()
-        if passfile:
-            env["PGPASSFILE"] = passfile
         ctx.run(cmd, env=env, check=True)
         for name in keep:
             shutil.copyfile(tmpdir / name, instance.datadir / name)
