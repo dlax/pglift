@@ -25,4 +25,8 @@ as all libpq operations would use it.
 Otherwise, the password is read from ``PGPASSWORD`` environment variable so
 this should be set in the environment running interactive commands.
 
+Alternatively, you can configure a ``postgresql.auth.password_command`` option
+in site settings, it can be any user-managed executable command and `pglift`
+and must return the super-user role password as stdout.
+
 .. _`password file`: https://www.postgresql.org/docs/current/libpq-pgpass.html

@@ -75,7 +75,7 @@ def execute(
     **kwargs: Any,
 ) -> Optional[List[Any]]:
     if role is None:
-        connect = db.superuser_connect
+        connect = partial(db.superuser_connect, ctx)
     elif role.password:
         connect = partial(
             db.connect, user=role.name, password=role.password.get_secret_value()

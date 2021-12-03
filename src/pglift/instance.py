@@ -1,6 +1,5 @@
 import builtins
 import contextlib
-import os
 import shutil
 import tempfile
 import time
@@ -534,7 +533,7 @@ def upgrade(
     if version is None:
         version = default_postgresql_version(ctx)
     surole = ctx.settings.postgresql.surole
-    surole_password = os.environ.get("PGPASSWORD")
+    surole_password = ctx.libpq_environ().get("PGPASSWORD")
     if not surole_password and ctx.settings.postgresql.auth.passfile:
         with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
             for entry in passfile:

@@ -55,6 +55,10 @@ class BaseContext(ABC):
         else:
             env = base.copy()
         env.setdefault("PGPASSFILE", str(auth.passfile))
+        if auth.password_command and "PGPASSWORD" not in env:
+            password = self.run([auth.password_command], check=True).stdout.strip()
+            if password:
+                env["PGPASSWORD"] = password
         return env
 
     @abstractmethod

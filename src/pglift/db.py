@@ -10,6 +10,7 @@ import psycopg2.extras
 from psycopg2 import sql
 
 if TYPE_CHECKING:  # pragma: nocover
+    from .ctx import BaseContext
     from .models.system import PostgreSQLInstance
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
@@ -79,11 +80,13 @@ def connect(
 
 
 def superuser_connect(
-    instance: "PostgreSQLInstance", **kwargs: Any
+    ctx: "BaseContext", instance: "PostgreSQLInstance", **kwargs: Any
 ) -> ContextManager[psycopg2.extensions.connection]:
     if "user" in kwargs:
         raise TypeError("unexpected 'user' argument")
     kwargs["user"] = instance.settings.postgresql.surole.name
+    if "password" not in kwargs:
+        kwargs["password"] = ctx.libpq_environ().get("PGPASSWORD")
     return connect(instance, **kwargs)
 
 

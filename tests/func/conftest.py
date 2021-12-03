@@ -6,7 +6,6 @@ import shutil
 import subprocess
 from datetime import datetime
 from typing import Any, Iterator, Optional, Set
-from unittest.mock import patch
 
 import pgtoolkit.conf
 import port_for
@@ -72,7 +71,7 @@ settings_by_id = {
             },
         },
     },
-    "postgresql_password_auth__surole_no_pgpass": {
+    "postgresql_password_auth__surole_password_command": {
         "postgresql": {
             "auth": {
                 "local": "password",
@@ -109,6 +108,14 @@ def settings(
     pgauth_obj = pg_obj.setdefault("auth", {})
     assert "passfile" not in pgauth_obj
     pgauth_obj["passfile"] = str(passfile)
+
+    if pgauth_obj.get("local", "trust") != "trust" and not pg_obj.get("surole", {}).get(
+        "pgpass", True
+    ):
+        assert "password_command" not in pgauth_obj
+        pgauth_obj["password_command"] = str(
+            tmp_path_factory.mktemp("home") / "passcmd"
+        )
     if obj.get("service_manager") == "systemd" and not systemd_available:
         pytest.skip("systemd not functional")
     try:
@@ -184,12 +191,17 @@ def surole_password(settings: Settings) -> Iterator[Optional[str]]:
         yield None
         return
 
-    password = "s3kret"
-    if not settings.postgresql.surole.pgpass:
-        with patch.dict("os.environ", {"PGPASSWORD": password}):
-            yield password
-    else:
-        yield password
+    passcmdfile = (
+        pathlib.Path(settings.postgresql.auth.password_command)
+        if settings.postgresql.auth.password_command
+        else None
+    )
+    if passcmdfile:
+        with passcmdfile.open("w") as f:
+            f.write("#!/bin/sh\necho s3kret\n")
+        passcmdfile.chmod(0o700)
+
+    yield "s3kret"
 
 
 @pytest.fixture(scope="session")

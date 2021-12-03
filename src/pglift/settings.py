@@ -142,6 +142,9 @@ class AuthSettings(BaseSettings):
     passfile: Path = Path.home() / ".pgpass"
     """Path to .pgpass file."""
 
+    password_command: Optional[str] = None
+    """An optional command to retrieve PGPASSWORD from"""
+
 
 @frozen
 class InitdbSettings(BaseSettings):
