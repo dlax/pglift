@@ -71,7 +71,7 @@ def ctx_nohook(ctx):
     return ctx
 
 
-def test_configure(ctx_nohook, instance):
+def test_configure(ctx_nohook, instance, instance_manifest):
     ctx = ctx_nohook
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
@@ -80,7 +80,7 @@ def test_configure(ctx_nohook, instance):
 
     changes = instance_mod.configure(
         ctx,
-        instance,
+        instance_manifest,
         port=5433,
         max_connections=100,
         shared_buffers="10 %",
@@ -118,7 +118,7 @@ def test_configure(ctx_nohook, instance):
     assert config.cluster_name == "test"
 
     changes = instance_mod.configure(
-        ctx, instance, listen_address="*", ssl=True, port=None
+        ctx, instance_manifest, listen_address="*", ssl=True, port=None
     )
     assert changes == {
         "effective_cache_size": ("5MB", None),
@@ -134,7 +134,9 @@ def test_configure(ctx_nohook, instance):
         site_configfpath.stat().st_mtime,
         user_configfpath.stat().st_mtime,
     )
-    changes = instance_mod.configure(ctx, instance, listen_address="*", ssl=True)
+    changes = instance_mod.configure(
+        ctx, instance_manifest, listen_address="*", ssl=True
+    )
     assert changes == {}
     mtime_after = (
         postgresql_conf.stat().st_mtime,
@@ -143,7 +145,7 @@ def test_configure(ctx_nohook, instance):
     )
     assert mtime_before == mtime_after
 
-    changes = instance_mod.configure(ctx, instance, ssl=True)
+    changes = instance_mod.configure(ctx, instance_manifest, ssl=True)
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -155,7 +157,7 @@ def test_configure(ctx_nohook, instance):
     )
     for fpath in ssl:
         fpath.touch()
-    changes = instance_mod.configure(ctx, instance, ssl=ssl)
+    changes = instance_mod.configure(ctx, instance_manifest, ssl=ssl)
     assert changes == {
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
@@ -168,14 +170,14 @@ def test_configure(ctx_nohook, instance):
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    changes = instance_mod.configure(ctx, instance, ssl=True)
+    changes = instance_mod.configure(ctx, instance_manifest, ssl=True)
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
         "ssl_key_file": (str(key_file), None),
     }
 
     # disable ssl
-    changes = instance_mod.configure(ctx, instance, ssl=False)
+    changes = instance_mod.configure(ctx, instance_manifest, ssl=False)
     assert changes == {
         "ssl": (True, None),
     }

@@ -6,6 +6,7 @@ from pgtoolkit.ctl import PGCtl
 
 from pglift import pm, prometheus
 from pglift.ctx import Context
+from pglift.models import interface
 from pglift.models.system import Instance, PrometheusService
 from pglift.settings import Settings
 from pglift.util import short_version
@@ -58,6 +59,11 @@ def pg_version() -> str:
 def ctx(settings: Settings) -> Context:
     p = pm.PluginManager.get()
     return Context(plugin_manager=p, settings=settings)
+
+
+@pytest.fixture
+def instance_manifest(pg_version: str) -> interface.Instance:
+    return interface.Instance(name="test", version=pg_version)
 
 
 @pytest.fixture
