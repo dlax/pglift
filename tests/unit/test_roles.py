@@ -55,13 +55,15 @@ def test_options_and_args(with_password):
     assert args == expected_args
 
 
-class Role:
+class Role(interface.Role):
     def __init__(
         self, name: str, password: Optional[str] = None, pgpass: bool = False
     ) -> None:
-        self.name = name
-        self.password = SecretStr(password) if password is not None else None
-        self.pgpass = pgpass
+        super().__init__(
+            name=name,
+            password=SecretStr(password) if password is not None else None,
+            pgpass=pgpass,
+        )
 
 
 @pytest.fixture
