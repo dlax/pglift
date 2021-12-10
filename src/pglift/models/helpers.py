@@ -9,6 +9,7 @@ from typing import (
     Iterator,
     List,
     Mapping,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -59,7 +60,7 @@ DEFAULT = object()
 
 
 def _decorators_from_model(
-    model_type: ModelType, *, _prefix: str = ""
+    model_type: ModelType, *, exclude: Sequence[str] = (), _prefix: str = ""
 ) -> Iterator[Tuple[Tuple[str, str], Callable[[Callback], Callback]]]:
     """Yield click.{argument,option} decorators corresponding to fields of
     a pydantic model type along with respective callback argument name and
@@ -77,6 +78,8 @@ def _decorators_from_model(
         if cli_config.get("hide", False):
             continue
         argname = cli_config.get("name", field.alias)
+        if argname in exclude:
+            continue
         modelname = field.alias
         ftype = field.outer_type_
         if not _prefix and field.required:
@@ -132,18 +135,19 @@ def _decorators_from_model(
 
 
 def parameters_from_model(
-    model_type: ModelType, *, parse_model: bool = True
+    model_type: ModelType, *, exclude: Sequence[str] = (), parse_model: bool = True
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.
 
     >>> class Obj(pydantic.BaseModel):
     ...     message: str
+    ...     ignored: int = 0
 
     >>> import click
 
     >>> @click.command("echo")
-    ... @parameters_from_model(Obj)
+    ... @parameters_from_model(Obj, exclude=['ignored'])
     ... @click.option("--caps", is_flag=True, default=False)
     ... @click.pass_context
     ... def cmd(ctx, obj, caps):
@@ -169,7 +173,7 @@ def parameters_from_model(
     def decorator(f: Callback) -> Callback:
 
         modelnames_and_argnames, param_decorators = zip(
-            *reversed(list(_decorators_from_model(model_type)))
+            *reversed(list(_decorators_from_model(model_type, exclude=exclude)))
         )
 
         def params_to_modelargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
