@@ -15,7 +15,7 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, prometheus, roles
-from pglift.cli import Command, Obj, cli, instance_init, require_component
+from pglift.cli import Command, Obj, cli, get_instance, instance_init, require_component
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -98,6 +98,26 @@ def test_require_component(runner: CliRunner, ctx: Context) -> None:
     r = runner.invoke(command, obj=ctx)
     assert r.exit_code == 0
     assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
+
+
+def test_get_instance(ctx: Context, instance: Instance) -> None:
+    assert get_instance(ctx, instance.name, instance.version) == instance
+
+    assert get_instance(ctx, instance.name, None) == instance
+
+    with pytest.raises(click.BadParameter):
+        get_instance(ctx, "notfound", None)
+
+    with pytest.raises(click.BadParameter):
+        get_instance(ctx, "notfound", instance.version)
+
+    with patch.object(Instance, "system_lookup") as system_lookup:
+        with pytest.raises(
+            click.BadParameter,
+            match="instance 'foo' exists in several PostgreSQL version",
+        ):
+            get_instance(ctx, "foo", None)
+    assert system_lookup.call_count == 2
 
 
 def test_cli(runner: CliRunner, obj: Obj) -> None:

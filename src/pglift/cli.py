@@ -155,6 +155,28 @@ require_prometheus = partial(
 
 
 def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
+    """Return an Instance from name/version, possibly guessing version if unspecified."""
+    if version is None:
+        found = None
+        for version in POSTGRESQL_SUPPORTED_VERSIONS:
+            try:
+                instance = Instance.system_lookup(ctx, (name, version))
+            except exceptions.InstanceNotFound:
+                ctx.debug("instance '%s' not found in version %s", name, version)
+            else:
+                ctx.info("instance '%s' found in version %s", name, version)
+                if found:
+                    raise click.BadParameter(
+                        f"instance '{name}' exists in several PostgreSQL version;"
+                        " please select version explicitly"
+                    )
+                found = instance
+
+        if found:
+            return found
+
+        raise click.BadParameter(f"instance '{name}' not found")
+
     try:
         return Instance.system_lookup(ctx, (name, version))
     except Exception as e:
