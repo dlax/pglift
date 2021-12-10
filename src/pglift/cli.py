@@ -456,19 +456,21 @@ def instance_apply(ctx: Context, runner: Runner, file: IO[str]) -> None:
 
 
 @instance.command("alter")
-@helpers.parameters_from_model(interface.Instance, parse_model=False)
+@instance_identifier
+@helpers.parameters_from_model(
+    interface.Instance, exclude=["name", "version"], parse_model=False
+)
 @pass_runner
 @pass_ctx
 def instance_alter(
     ctx: Context,
     runner: Runner,
-    name: str,
-    version: Optional[str] = None,
+    instance: Instance,
     **changes: Any,
 ) -> None:
     """Alter a PostgreSQL instance"""
     changes = helpers.unnest(interface.Instance, changes)
-    values = instance_mod.describe(ctx, name, version).dict()
+    values = instance_mod.describe(ctx, instance.name, instance.version).dict()
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
     with runner:

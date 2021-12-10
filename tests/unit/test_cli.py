@@ -172,19 +172,19 @@ def test_instance_apply(tmp_path, runner, ctx, obj):
     assert isinstance(mock_method.call_args[0][1], interface.Instance)
 
 
-def test_instance_alter(runner, ctx, obj):
+def test_instance_alter(runner, ctx, obj, instance):
     result = runner.invoke(
-        cli, ["instance", "alter", "notfound", "--version=11"], obj=obj
+        cli, ["instance", "alter", "11/notfound", "--port=1"], obj=obj
     )
-    assert result.exit_code == 1
-    assert "Error: instance '11/notfound' not found" in result.stderr
+    assert result.exit_code == 2, result.stderr
+    assert "instance '11/notfound' not found" in result.stderr
 
     actual = interface.Instance.parse_obj(
-        {"name": "alterme", "prometheus": {"port": 1212}}
+        {"name": instance.name, "prometheus": {"port": 1212}}
     )
     altered = interface.Instance.parse_obj(
         {
-            "name": "alterme",
+            "name": instance.name,
             "state": "stopped",
             "prometheus": {"port": 2121},
         }
@@ -197,13 +197,13 @@ def test_instance_alter(runner, ctx, obj):
             [
                 "instance",
                 "alter",
-                "alterme",
+                str(instance),
                 "--state=stopped",
                 "--prometheus-port=2121",
             ],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, "alterme", None)
+    describe.assert_called_once_with(ctx, instance.name, instance.version)
     apply.assert_called_once_with(ctx, altered)
     assert result.exit_code == 0, result.output
 
