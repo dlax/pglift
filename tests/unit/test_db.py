@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Dict
 from unittest.mock import patch
 
 import psycopg2.extras
@@ -6,9 +8,11 @@ import pytest
 from psycopg2 import sql
 
 from pglift import db
+from pglift.models.system import Instance
+from pglift.settings import Settings
 
 
-def test_queries(datadir, regen_test_data):
+def test_queries(datadir: Path, regen_test_data: bool) -> None:
     actual = dict(db.queries())
     fpath = datadir / "queries.json"
     if regen_test_data:
@@ -18,7 +22,7 @@ def test_queries(datadir, regen_test_data):
     assert actual == expected
 
 
-def test_query():
+def test_query() -> None:
     query = db.query("role_alter_password", username=sql.Identifier("bob"))
     qs = "".join(q.string for q in query.seq)
     assert qs == "ALTER ROLE bob PASSWORD %(password)s;"
@@ -37,18 +41,20 @@ def test_query():
         ),
     ],
 )
-def test_dsn(settings, instance, connargs, expected):
+def test_dsn(
+    settings: Settings, instance: Instance, connargs: Dict[str, str], expected: str
+) -> None:
     passfile = settings.postgresql.auth.passfile
     conninfo = db.dsn(instance, dbname="mydb", sslmode="off", **connargs)
     assert conninfo == expected.format(passfile=passfile)
 
 
-def test_dsn_badarg(instance):
+def test_dsn_badarg(instance: Instance) -> None:
     with pytest.raises(TypeError, match="unexpected 'port' argument"):
         db.dsn(instance, port=123)
 
 
-def test_connect(instance, settings):
+def test_connect(instance: Instance, settings: Settings) -> None:
     with patch("psycopg2.connect") as connect:
         cnx = db.connect(instance, user="dba")
         assert not connect.called

@@ -1,7 +1,8 @@
 import enum
 import json
 from datetime import datetime
-from typing import Any, List, Optional
+from pathlib import Path
+from typing import Any, List, Optional, Type
 
 import click
 import pytest
@@ -61,7 +62,7 @@ class Person(BaseModel):
         extra = "forbid"
 
 
-def test_parameters_from_model_typeerror():
+def test_parameters_from_model_typeerror() -> None:
     with pytest.raises(TypeError, match="expecting a 'person: Person' parameter"):
 
         @click.command("add-person")
@@ -79,7 +80,7 @@ def test_parameters_from_model_typeerror():
             pass
 
 
-def test_parameters_from_model():
+def test_parameters_from_model() -> None:
     @click.command("add-person")
     @click.option("--sort-keys", is_flag=True, default=False)
     @helpers.parameters_from_model(Person)
@@ -153,7 +154,7 @@ def test_parameters_from_model():
     }
 
 
-def test_parameters_from_model_no_parse():
+def test_parameters_from_model_no_parse() -> None:
     @click.command("add-person")
     @helpers.parameters_from_model(Person, parse_model=False)
     @click.pass_context
@@ -187,7 +188,7 @@ def test_parameters_from_model_no_parse():
     }
 
 
-def test_unnest():
+def test_unnest() -> None:
     params = {
         "name": "alice",
         "age": 42,
@@ -217,7 +218,7 @@ def test_unnest():
         helpers.unnest(Person, {"age": None, "in_va_lid": "value"})
 
 
-def test_parse_params_as():
+def test_parse_params_as() -> None:
     address_params = {
         "city": "paris",
         "country": "fr",
@@ -257,7 +258,7 @@ def test_parse_params_as():
     assert helpers.parse_params_as(Person, params_nested) == person
 
 
-def test_argspec_from_model():
+def test_argspec_from_model() -> None:
     argspec = helpers.argspec_from_model(Person)
     assert argspec == {
         "name": {"required": True, "type": "str"},
@@ -282,7 +283,7 @@ def test_argspec_from_model():
     }
 
 
-def test_argspec_from_model_nested_optional():
+def test_argspec_from_model_nested_optional() -> None:
     """An optional nested model should propagate non-required on all nested models."""
 
     class Sub(BaseModel):
@@ -303,7 +304,7 @@ def test_argspec_from_model_nested_optional():
     }
 
 
-def test_argspec_from_model_nested_default():
+def test_argspec_from_model_nested_default() -> None:
     """A default value on a optional nested model should not be set as "default" in ansible"""
 
     class Nested(BaseModel):
@@ -319,7 +320,7 @@ def test_argspec_from_model_nested_default():
     }
 
 
-def test_argspec_from_model_keep_default():
+def test_argspec_from_model_keep_default() -> None:
     """A non-required field with a default value should keep the "default" in ansible"""
 
     class Nested(BaseModel):
@@ -342,7 +343,9 @@ def test_argspec_from_model_keep_default():
         interface.Database,
     ],
 )
-def test_argspec_from_model_manifest(datadir, regen_test_data, manifest_type):
+def test_argspec_from_model_manifest(
+    datadir: Path, regen_test_data: bool, manifest_type: Type[interface.Manifest]
+) -> None:
     actual = helpers.argspec_from_model(manifest_type)
     fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
     if regen_test_data:

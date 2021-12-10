@@ -1,9 +1,10 @@
 import re
 
 from pglift import _install
+from pglift.ctx import Context
 
 
-def test_postgresql_systemd_unit_template(ctx):
+def test_postgresql_systemd_unit_template(ctx: Context) -> None:
     _install.postgresql_systemd_unit_template(
         ctx, env="SETTINGS=@settings.json", header="# Postgres managed by pglift"
     )
@@ -24,7 +25,7 @@ def test_postgresql_systemd_unit_template(ctx):
     assert not unit.exists()
 
 
-def test_postgres_exporter_systemd_unit_template(ctx):
+def test_postgres_exporter_systemd_unit_template(ctx: Context) -> None:
     _install.postgres_exporter_systemd_unit_template(ctx)
     unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
     assert unit.exists()
@@ -41,7 +42,7 @@ def test_postgres_exporter_systemd_unit_template(ctx):
     assert not unit.exists()
 
 
-def test_postgresql_backup_systemd_templates(ctx):
+def test_postgresql_backup_systemd_templates(ctx: Context) -> None:
     _install.postgresql_backup_systemd_templates(ctx, env="X-DEBUG=no")
     service_unit = ctx.settings.systemd.unit_path / "pglift-backup@.service"
     assert service_unit.exists()

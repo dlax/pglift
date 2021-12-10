@@ -2,9 +2,12 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from pglift import pgbackrest
+from pglift.ctx import Context
+from pglift.models.system import Instance
+from pglift.settings import Settings
 
 
-def test_make_cmd(pg_version, settings, instance):
+def test_make_cmd(pg_version: str, settings: Settings, instance: Instance) -> None:
     assert pgbackrest.make_cmd(instance, settings.pgbackrest, "stanza-upgrade") == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
@@ -13,7 +16,9 @@ def test_make_cmd(pg_version, settings, instance):
     ]
 
 
-def test_backup_info(ctx, settings, pg_version, instance):
+def test_backup_info(
+    ctx: Context, settings: Settings, pg_version: str, instance: Instance
+) -> None:
     with patch.object(ctx, "run") as run:
         run.return_value.stdout = "[]"
         assert pgbackrest.backup_info(ctx, instance, backup_set="foo") == []
@@ -30,7 +35,9 @@ def test_backup_info(ctx, settings, pg_version, instance):
     )
 
 
-def test_backup_command(pg_version, settings, instance):
+def test_backup_command(
+    pg_version: str, settings: Settings, instance: Instance
+) -> None:
     assert pgbackrest.backup_command(instance, type=pgbackrest.BackupType.full) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
@@ -42,7 +49,9 @@ def test_backup_command(pg_version, settings, instance):
     ]
 
 
-def test_expire_command(pg_version, settings, instance):
+def test_expire_command(
+    pg_version: str, settings: Settings, instance: Instance
+) -> None:
     assert pgbackrest.expire_command(instance) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
@@ -52,7 +61,9 @@ def test_expire_command(pg_version, settings, instance):
     ]
 
 
-def test_restore_command(pg_version, settings, instance):
+def test_restore_command(
+    pg_version: str, settings: Settings, instance: Instance
+) -> None:
     assert pgbackrest.restore_command(
         instance, date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc), backup_set="x"
     ) == [

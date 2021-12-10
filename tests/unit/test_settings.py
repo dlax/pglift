@@ -8,7 +8,9 @@ from pydantic import ValidationError
 from pglift.settings import DataPath, Settings
 
 
-def test_json_config_settings_source(monkeypatch, tmp_path):
+def test_json_config_settings_source(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     settings = tmp_path / "settings.json"
     settings.write_text('{"postgresql": {"root": "/mnt/postgresql"}}')
     with monkeypatch.context() as m:
@@ -25,7 +27,7 @@ def test_json_config_settings_source(monkeypatch, tmp_path):
             Settings()
 
 
-def test_yaml_settings(tmp_path, monkeypatch):
+def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "settings.yaml").write_text("prefix: /tmp")
     with monkeypatch.context() as m:
         m.setattr("pglift.settings.datapath", tmp_path)
@@ -39,7 +41,7 @@ def test_yaml_settings(tmp_path, monkeypatch):
             Settings()
 
 
-def test_settings(tmp_path):
+def test_settings(tmp_path: Path) -> None:
     s = Settings(prefix="/")
     assert hasattr(s, "postgresql")
     assert hasattr(s.postgresql, "root")
@@ -60,7 +62,7 @@ def test_settings(tmp_path):
     assert str(s.postgresql.pid_directory) == "/prefix/run/pgsql"
 
 
-def test_postgresql_versions(monkeypatch, tmp_path):
+def test_postgresql_versions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     config = {
         "postgresql": {
             "bindir": "/usr/lib/pgsql/{version}/bin",
@@ -96,14 +98,14 @@ def test_postgresql_versions(monkeypatch, tmp_path):
     assert s.postgresql.default_version == "13"
 
 
-def test_systemd_systemctl():
+def test_systemd_systemctl() -> None:
     with patch("shutil.which", return_value=None) as which:
         with pytest.raises(ValidationError, match="systemctl command not found"):
             Settings(service_manager="systemd")
     which.assert_called_once_with("systemctl")
 
 
-def test_systemd_sudo_user():
+def test_systemd_sudo_user() -> None:
     with patch("shutil.which", return_value=True) as which:
         with pytest.raises(
             ValidationError, match="'user' mode cannot be used with 'sudo'"

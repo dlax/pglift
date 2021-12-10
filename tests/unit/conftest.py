@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pgtoolkit.ctl import PGCtl
@@ -12,7 +13,7 @@ from pglift.settings import Settings
 from pglift.util import short_version
 
 
-def pytest_addoption(parser, pluginmanager):
+def pytest_addoption(parser: Any) -> None:
     parser.addoption(
         "--regen-test-data",
         action="store_true",
@@ -22,8 +23,10 @@ def pytest_addoption(parser, pluginmanager):
 
 
 @pytest.fixture
-def regen_test_data(request):
-    return request.config.getoption("--regen-test-data")
+def regen_test_data(request: Any) -> bool:
+    value = request.config.getoption("--regen-test-data")
+    assert isinstance(value, bool)
+    return value
 
 
 @pytest.fixture

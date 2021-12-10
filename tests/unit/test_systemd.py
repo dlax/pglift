@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import pytest
 
@@ -6,7 +7,7 @@ from pglift import systemd
 from pglift.settings import SystemdSettings
 
 
-def test_systemctl():
+def test_systemctl() -> None:
     settings = SystemdSettings()
     systemd.systemctl(settings, "user") == ["systemctl", "--user", "user"]
 
@@ -17,7 +18,7 @@ def test_systemctl():
     systemd.systemctl(settings, "sudoer") == ["sudo", "systemctl", "--system", "sudoer"]
 
 
-def test_install_uninstall(tmp_path):
+def test_install_uninstall(tmp_path: Path) -> None:
     logger = logging.getLogger(__name__)
     systemd.install("foo", "ahah", tmp_path, logger=logger)
     unit_path = tmp_path / "foo"

@@ -6,7 +6,7 @@ import pytest
 from pglift import util
 
 
-def test_xdg_data_home(monkeypatch):
+def test_xdg_data_home(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setenv("XDG_DATA_HOME", "/x/y")
         assert util.xdg_data_home() == Path("/x/y")
@@ -19,7 +19,7 @@ def test_xdg_data_home(monkeypatch):
         assert util.xdg_data_home() == Path("/ho/me/.local/share")
 
 
-def test_gen_certificate(tmp_path):
+def test_gen_certificate(tmp_path: Path) -> None:
 
     util.generate_certificate(tmp_path)
     crt = tmp_path / "server.crt"
@@ -30,11 +30,11 @@ def test_gen_certificate(tmp_path):
     assert stat.filemode(key.stat().st_mode) == "-rw-------"
 
 
-def test_total_memory(meminfo):
+def test_total_memory(meminfo: Path) -> None:
     assert util.total_memory(meminfo) == 6166585344.0
 
 
-def test_total_memory_error(tmp_path):
+def test_total_memory_error(tmp_path: Path) -> None:
     meminfo = tmp_path / "meminfo"
     meminfo.touch()
     with pytest.raises(Exception, match="could not retrieve memory information from"):

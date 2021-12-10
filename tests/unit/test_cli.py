@@ -3,7 +3,7 @@ import functools
 import json
 import re
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Dict, Iterator
 from unittest.mock import MagicMock, patch
 
 import click
@@ -22,12 +22,12 @@ from pglift.models.system import Instance
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     return CliRunner(mix_stderr=False)
 
 
 @pytest.fixture
-def obj(ctx):
+def obj(ctx: Context) -> Obj:
     return Obj(ctx, None)
 
 
@@ -41,7 +41,7 @@ def running(ctx: Context, instance: Instance) -> Iterator[MagicMock]:
 @click.command(cls=Command)
 @click.argument("error")
 @click.pass_context
-def cmd(ctx, error):
+def cmd(ctx: click.Context, error: str) -> None:
     if error == "error":
         raise exceptions.CommandError(1, ["bad", "cmd"], "output", "errs")
     if error == "runtimeerror":
@@ -50,7 +50,7 @@ def cmd(ctx, error):
         ctx.exit(1)
 
 
-def test_command_error(runner, obj):
+def test_command_error(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cmd, ["error"], obj=obj)
     assert result.exit_code == 1
     assert (
@@ -61,7 +61,7 @@ def test_command_error(runner, obj):
     assert not list(logpath.glob("*.log"))
 
 
-def test_command_exit(runner, obj):
+def test_command_exit(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cmd, ["exit"], obj=obj)
     assert result.exit_code == 1
     assert not result.stdout
@@ -69,7 +69,7 @@ def test_command_exit(runner, obj):
     assert not list(logpath.glob("*.log"))
 
 
-def test_command_internal_error(runner, obj):
+def test_command_internal_error(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cmd, ["runtimeerror"], obj=obj)
     assert result.exit_code == 1
     logpath = obj.ctx.settings.logpath
@@ -80,13 +80,13 @@ def test_command_internal_error(runner, obj):
     assert "RuntimeError: oups" in logcontent
 
 
-def test_require_component(runner, ctx):
+def test_require_component(runner: CliRunner, ctx: Context) -> None:
     mod = MagicMock()
 
     @click.command("command")
     @click.pass_obj
     @functools.partial(require_component, mod, "mymod")
-    def command(ctx, *args):
+    def command(ctx: click.Context, *args: Any) -> None:
         click.echo(f"ctx is {type(ctx)}")
 
     mod.enabled.return_value = False
@@ -100,17 +100,19 @@ def test_require_component(runner, ctx):
     assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
 
 
-def test_cli(runner, obj):
+def test_cli(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, obj=obj)
     assert result.exit_code == 0
 
 
-def test_version(runner, obj):
+def test_version(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, ["--version"], obj=obj)
     assert re.match(r"pglift version (\d\.).*", result.stdout)
 
 
-def test_site_configure(runner, ctx, obj, tmp_path):
+def test_site_configure(
+    runner: CliRunner, ctx: Context, obj: Obj, tmp_path: Path
+) -> None:
     with patch.object(_install, "do") as do_install:
         result = runner.invoke(
             cli, ["site-configure", "install", f"--settings={tmp_path}"], obj=obj
@@ -124,7 +126,9 @@ def test_site_configure(runner, ctx, obj, tmp_path):
     undo_install.assert_called_once_with(ctx)
 
 
-def test_instance_init(runner, ctx, obj, instance):
+def test_instance_init(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     assert [p.name for p in instance_init.params] == [
         "name",
         "version",
@@ -156,7 +160,9 @@ def test_instance_init(runner, ctx, obj, instance):
     assert result.exit_code == 0, result
 
 
-def test_instance_apply(tmp_path, runner, ctx, obj):
+def test_instance_apply(
+    tmp_path: Path, runner: CliRunner, ctx: Context, obj: Obj
+) -> None:
     result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=obj)
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.stderr
@@ -172,7 +178,9 @@ def test_instance_apply(tmp_path, runner, ctx, obj):
     assert isinstance(mock_method.call_args[0][1], interface.Instance)
 
 
-def test_instance_alter(runner, ctx, obj, instance):
+def test_instance_alter(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     result = runner.invoke(
         cli, ["instance", "alter", "11/notfound", "--port=1"], obj=obj
     )
@@ -208,27 +216,31 @@ def test_instance_alter(runner, ctx, obj, instance):
     assert result.exit_code == 0, result.output
 
 
-def test_instance_schema(runner, obj):
+def test_instance_schema(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, ["instance", "schema"], obj=obj)
     schema = json.loads(result.output)
     assert schema["title"] == "Instance"
     assert schema["description"] == "PostgreSQL instance"
 
 
-def test_instance_describe(runner, ctx, obj, instance, pg_version):
+def test_instance_describe(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, pg_version: str
+) -> None:
     result = runner.invoke(cli, ["instance", "describe"], obj=obj)
     assert result.exit_code == 2
     assert "Missing argument '<version>/<name>'" in result.stderr
 
-    instance = interface.Instance(name="test")
-    with patch.object(instance_mod, "describe", return_value=instance) as describe:
+    manifest = interface.Instance(name="test")
+    with patch.object(instance_mod, "describe", return_value=manifest) as describe:
         result = runner.invoke(cli, ["instance", "describe", "test"], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     describe.assert_called_once_with(ctx, "test", pg_version)
     assert "name: test" in result.output
 
 
-def test_instance_list(runner, instance, ctx, obj, tmp_path):
+def test_instance_list(
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj, tmp_path: Path
+) -> None:
     name, version = instance.name, instance.version
     port = instance.config().port
     path = instance.path
@@ -273,7 +285,7 @@ def test_instance_list(runner, instance, ctx, obj, tmp_path):
     assert not result.output
 
 
-def test_instance_config_show(runner, obj, instance):
+def test_instance_config_show(runner: CliRunner, obj: Obj, instance: Instance) -> None:
     result = runner.invoke(cli, ["instance", "config", "show", str(instance)], obj=obj)
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(
@@ -281,7 +293,9 @@ def test_instance_config_show(runner, obj, instance):
     )
 
 
-def test_instance_config_set_validate(runner, obj, instance):
+def test_instance_config_set_validate(
+    runner: CliRunner, obj: Obj, instance: Instance
+) -> None:
     result = runner.invoke(
         cli,
         ["instance", "config", "set", str(instance), "invalid"],
@@ -291,7 +305,9 @@ def test_instance_config_set_validate(runner, obj, instance):
     assert "Error: Invalid value for '<PARAMETER>=<VALUE>': invalid" in result.stderr
 
 
-def test_instance_config_set(runner, ctx, obj, instance):
+def test_instance_config_set(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     with patch.object(
         instance_mod, "configure", return_value={"foo": ("baz", "bar")}
     ) as configure:
@@ -334,7 +350,9 @@ def test_instance_config_set(runner, ctx, obj, instance):
     assert "\n hint:" in result.stderr
 
 
-def test_instance_config_remove(runner, ctx, obj, instance):
+def test_instance_config_remove(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     with patch.object(
         instance_mod, "configure", return_value={"cluster_name": ("blah", None)}
     ) as configure:
@@ -355,7 +373,9 @@ def test_instance_config_remove(runner, ctx, obj, instance):
     assert "cluster_name: blah -> None" in result.stderr
 
 
-def test_instance_config_edit(runner, ctx, obj, instance):
+def test_instance_config_edit(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     with patch("click.edit") as edit:
         result = runner.invoke(
             cli,
@@ -368,7 +388,9 @@ def test_instance_config_edit(runner, ctx, obj, instance):
     )
 
 
-def test_instance_drop(runner, ctx, obj, instance):
+def test_instance_drop(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
     result = runner.invoke(cli, ["instance", "drop"], obj=obj)
     assert result.exit_code == 2
     assert "Missing argument '<version>/<name>'" in result.stderr
@@ -379,7 +401,9 @@ def test_instance_drop(runner, ctx, obj, instance):
     patched.assert_called_once_with(ctx, instance)
 
 
-def test_instance_status(runner, instance, ctx, obj):
+def test_instance_status(
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
+) -> None:
     with patch.object(
         instance_mod, "status", return_value=Status.not_running
     ) as patched:
@@ -393,14 +417,23 @@ def test_instance_status(runner, instance, ctx, obj):
     ["action", "kwargs"],
     [("start", {"foreground": False}), ("stop", {}), ("reload", {}), ("restart", {})],
 )
-def test_instance_operations(runner, instance, ctx, obj, action, kwargs):
+def test_instance_operations(
+    runner: CliRunner,
+    instance: Instance,
+    ctx: Context,
+    obj: Obj,
+    action: str,
+    kwargs: Dict[str, bool],
+) -> None:
     with patch.object(instance_mod, action) as patched:
         result = runner.invoke(cli, ["instance", action, str(instance)], obj=obj)
     assert result.exit_code == 0, result
     patched.assert_called_once_with(ctx, instance, **kwargs)
 
 
-def test_instance_shell(runner, instance, ctx, obj):
+def test_instance_shell(
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
+) -> None:
     with patch.object(
         instance_mod, "status", return_value=instance_mod.Status.not_running
     ) as status, patch.object(instance_mod, "shell") as shell:
@@ -418,7 +451,7 @@ def test_instance_shell(runner, instance, ctx, obj):
     shell.assert_called_once_with(ctx, instance, user="bob", dbname=None)
 
 
-def test_instance_backup(runner, instance, obj):
+def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
             cli,
@@ -430,7 +463,7 @@ def test_instance_backup(runner, instance, obj):
     assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
 
 
-def test_instance_restore_list(runner, instance, obj):
+def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     bck = interface.InstanceBackup(
         label="foo",
         size=12,
@@ -460,7 +493,9 @@ def test_instance_restore_list(runner, instance, obj):
     ]
 
 
-def test_instance_restore(runner, instance, ctx, obj):
+def test_instance_restore(
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
+) -> None:
     with patch("pglift.instance.status", return_value=Status.running) as status:
         result = runner.invoke(
             cli,
@@ -481,7 +516,9 @@ def test_instance_restore(runner, instance, ctx, obj):
     assert restore.called_once_with(ctx, instance, label="xyz")
 
 
-def test_instance_privileges(ctx, obj, instance, runner, running):
+def test_instance_privileges(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
+) -> None:
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -523,7 +560,9 @@ def test_instance_privileges(ctx, obj, instance, runner, running):
     ]
 
 
-def test_role_create(ctx, obj, instance, runner, running):
+def test_role_create(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
+) -> None:
     with patch.object(roles, "exists", return_value=False) as exists, patch.object(
         roles, "apply"
     ) as apply:
@@ -575,7 +614,9 @@ def test_role_create(ctx, obj, instance, runner, running):
     running.assert_called_once_with(ctx, instance)
 
 
-def test_role_alter(runner, ctx, obj, instance, running):
+def test_role_alter(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     actual = interface.Role(name="alterme", connection_limit=3)
     altered = interface.Role(
         name="alterme",
@@ -609,14 +650,21 @@ def test_role_alter(runner, ctx, obj, instance, running):
     assert result.exit_code == 0, result.output
 
 
-def test_role_schema(runner):
+def test_role_schema(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["role", "schema"])
     schema = json.loads(result.output)
     assert schema["title"] == "Role"
     assert schema["description"] == "PostgreSQL role"
 
 
-def test_role_apply(runner, tmp_path, ctx, obj, instance, running):
+def test_role_apply(
+    runner: CliRunner,
+    tmp_path: Path,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    running: MagicMock,
+) -> None:
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "roltest", "pgpass": True})
     manifest.write_text(content)
@@ -636,7 +684,9 @@ def test_role_apply(runner, tmp_path, ctx, obj, instance, running):
     assert kwargs == {}
 
 
-def test_role_describe(runner, ctx, obj, instance, running):
+def test_role_describe(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     with patch.object(
         roles, "describe", side_effect=exceptions.RoleNotFound("absent")
     ) as describe:
@@ -688,7 +738,9 @@ def test_role_describe(runner, ctx, obj, instance, running):
     }
 
 
-def test_role_drop(runner, ctx, obj, instance, running):
+def test_role_drop(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     with patch.object(
         roles, "drop", side_effect=exceptions.RoleNotFound("bar")
     ) as drop:
@@ -715,7 +767,9 @@ def test_role_drop(runner, ctx, obj, instance, running):
     assert result.exit_code == 0
 
 
-def test_role_privileges(ctx, obj, instance, runner, running):
+def test_role_privileges(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
+) -> None:
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -757,7 +811,9 @@ def test_role_privileges(ctx, obj, instance, runner, running):
     ]
 
 
-def test_database_create(ctx, obj, instance, runner, running):
+def test_database_create(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
+) -> None:
     with patch.object(databases, "exists", return_value=False) as exists, patch.object(
         databases, "apply"
     ) as apply:
@@ -796,7 +852,9 @@ def test_database_create(ctx, obj, instance, runner, running):
     running.assert_called_once_with(ctx, instance)
 
 
-def test_database_alter(runner, ctx, obj, instance, running):
+def test_database_alter(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     actual = interface.Database(name="alterme")
     altered = interface.Database(name="alterme", owner="dba")
 
@@ -819,14 +877,21 @@ def test_database_alter(runner, ctx, obj, instance, running):
     assert result.exit_code == 0, result.output
 
 
-def test_database_schema(runner):
+def test_database_schema(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["database", "schema"])
     schema = json.loads(result.output)
     assert schema["title"] == "Database"
     assert schema["description"] == "PostgreSQL database"
 
 
-def test_database_apply(runner, tmp_path, ctx, obj, instance, running):
+def test_database_apply(
+    runner: CliRunner,
+    tmp_path: Path,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    running: MagicMock,
+) -> None:
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "dbtest"})
     manifest.write_text(content)
@@ -846,7 +911,9 @@ def test_database_apply(runner, tmp_path, ctx, obj, instance, running):
     assert kwargs == {}
 
 
-def test_database_describe(runner, ctx, obj, instance, running):
+def test_database_describe(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     with patch.object(
         databases, "describe", side_effect=exceptions.DatabaseNotFound("absent")
     ) as describe:
@@ -879,7 +946,9 @@ def test_database_describe(runner, ctx, obj, instance, running):
     assert described == {"name": "present", "owner": "dba"}
 
 
-def test_database_list(runner, ctx, obj, instance, running):
+def test_database_list(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     with patch.object(
         databases,
         "list",
@@ -923,7 +992,9 @@ def test_database_list(runner, ctx, obj, instance, running):
     ]
 
 
-def test_database_drop(runner, ctx, obj, instance, running):
+def test_database_drop(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     with patch.object(
         databases, "drop", side_effect=exceptions.DatabaseNotFound("bar")
     ) as drop:
@@ -950,7 +1021,9 @@ def test_database_drop(runner, ctx, obj, instance, running):
     assert result.exit_code == 0
 
 
-def test_database_backup(runner, ctx, obj, instance, running):
+def test_database_backup(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
     output_file = "my/root/foo.dump"
     with patch.object(
         databases, "backup", side_effect=exceptions.DatabaseNotFound("bar")
@@ -990,7 +1063,9 @@ def test_database_backup(runner, ctx, obj, instance, running):
     assert result.exit_code == 0
 
 
-def test_database_privileges(ctx, obj, instance, runner, running):
+def test_database_privileges(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
+) -> None:
     with patch(
         "pglift.privileges.get",
         return_value=[
@@ -1036,7 +1111,14 @@ def test_database_privileges(ctx, obj, instance, runner, running):
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
 )
-def test_postgres_exporter_start_stop(runner, ctx, obj, instance, action, kwargs):
+def test_postgres_exporter_start_stop(
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    action: str,
+    kwargs: Dict[str, bool],
+) -> None:
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
             cli,
@@ -1047,14 +1129,16 @@ def test_postgres_exporter_start_stop(runner, ctx, obj, instance, action, kwargs
     assert result.exit_code == 0, result
 
 
-def test_postgres_exporter_schema(runner):
+def test_postgres_exporter_schema(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["postgres_exporter", "schema"])
     schema = json.loads(result.output)
     assert schema["title"] == "PostgresExporter"
     assert schema["description"] == "Prometheus postgres_exporter service."
 
 
-def test_postgres_exporter_apply(runner, tmp_path, ctx, obj):
+def test_postgres_exporter_apply(
+    runner: CliRunner, tmp_path: Path, ctx: Context, obj: Obj
+) -> None:
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "123-exp", "dsn": "dbname=monitoring", "port": 123})
     manifest.write_text(content)
@@ -1071,7 +1155,7 @@ def test_postgres_exporter_apply(runner, tmp_path, ctx, obj):
     )
 
 
-def test_postgres_exporter_install(runner, ctx, obj):
+def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "apply") as apply:
         result = runner.invoke(
             cli,
@@ -1085,7 +1169,7 @@ def test_postgres_exporter_install(runner, ctx, obj):
     )
 
 
-def test_postgres_exporter_uninstall(runner, ctx, obj):
+def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "drop") as drop:
         result = runner.invoke(
             cli,

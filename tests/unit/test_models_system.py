@@ -1,10 +1,15 @@
 import pytest
 
 from pglift import exceptions
+from pglift.ctx import Context
 from pglift.models import system
+from pglift.models.system import Instance
+from pglift.settings import Settings
 
 
-def test_default_postgresql_version(pg_version, ctx, monkeypatch):
+def test_default_postgresql_version(
+    pg_version: str, ctx: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
     major_version = pg_version[:2]
     assert system.default_postgresql_version(ctx) == major_version
 
@@ -18,11 +23,11 @@ def test_default_postgresql_version(pg_version, ctx, monkeypatch):
         assert system.default_postgresql_version(ctx) == "42"
 
 
-def test_baseinstance_str(pg_version, instance):
+def test_baseinstance_str(pg_version: str, instance: Instance) -> None:
     assert str(instance) == f"{pg_version}/test"
 
 
-def test_baseinstance_qualname(pg_version, instance):
+def test_baseinstance_qualname(pg_version: str, instance: Instance) -> None:
     assert instance.qualname == f"{pg_version}-test"
 
 
@@ -34,18 +39,20 @@ def test_baseinstance_qualname(pg_version, instance):
         ("waldir", "srv/pgsql/{version}/test/wal"),
     ],
 )
-def test_baseinstance_paths(pg_version, instance, attrname, expected_suffix):
+def test_baseinstance_paths(
+    pg_version: str, instance: Instance, attrname: str, expected_suffix: str
+) -> None:
     path = getattr(instance, attrname)
     assert path.match(expected_suffix.format(version=pg_version))
 
 
-def test_baseinstance_get(ctx):
+def test_baseinstance_get(ctx: Context) -> None:
     i = system.BaseInstance.get("test", None, ctx=ctx)
     major_version = str(ctx.pg_ctl(None).version)[:2]
     assert i.version == major_version
 
 
-def test_postgresqlinstance_system_lookup(ctx, instance):
+def test_postgresqlinstance_system_lookup(ctx: Context, instance: Instance) -> None:
     i = system.PostgreSQLInstance.system_lookup(ctx, instance)
     expected = system.PostgreSQLInstance(
         instance.name, instance.version, instance.settings
@@ -59,7 +66,7 @@ def test_postgresqlinstance_system_lookup(ctx, instance):
         system.PostgreSQLInstance.system_lookup(ctx, ("nameonly",))  # type: ignore[arg-type]
 
 
-def test_instance_system_lookup(ctx, instance):
+def test_instance_system_lookup(ctx: Context, instance: Instance) -> None:
     i = system.Instance.system_lookup(ctx, instance)
     assert i == instance
 
@@ -67,13 +74,13 @@ def test_instance_system_lookup(ctx, instance):
     assert i == instance
 
 
-def test_instance_system_lookup_misconfigured(ctx, instance):
+def test_instance_system_lookup_misconfigured(ctx: Context, instance: Instance) -> None:
     (instance.datadir / "postgresql.conf").unlink()
     with pytest.raises(exceptions.InstanceNotFound, match=str(instance)):
         system.Instance.system_lookup(ctx, instance)
 
 
-def test_postgresqlinstance_exists(pg_version, settings):
+def test_postgresqlinstance_exists(pg_version: str, settings: Settings) -> None:
     instance = system.PostgreSQLInstance(
         name="exists", version=pg_version, settings=settings
     )
@@ -87,11 +94,11 @@ def test_postgresqlinstance_exists(pg_version, settings):
     assert instance.exists()
 
 
-def test_postgresqlinstance_port(instance):
+def test_postgresqlinstance_port(instance: Instance) -> None:
     assert instance.port == 999
 
 
-def test_postgresqlinstance_config(instance):
+def test_postgresqlinstance_config(instance: Instance) -> None:
     config = instance.config()
     assert config.port == 999
     assert config.unix_socket_directories == "/socks"
@@ -99,7 +106,7 @@ def test_postgresqlinstance_config(instance):
     assert not instance.config(managed_only=True).as_dict()
 
 
-def test_postgresqlinstance_standby_for(ctx, instance):
+def test_postgresqlinstance_standby_for(ctx: Context, instance: Instance) -> None:
     (instance.datadir / "postgresql.auto.conf").write_text(
         "primary_conninfo = host=/tmp port=4242 user=pg\n"
     )

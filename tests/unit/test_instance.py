@@ -8,32 +8,36 @@ from pgtoolkit.conf import parse as parse_pgconf
 
 from pglift import instance as instance_mod
 from pglift import task
+from pglift.ctx import Context
 from pglift.exceptions import CommandError, InstanceStateError
 from pglift.models import interface
-from pglift.models.system import BaseInstance
+from pglift.models.system import BaseInstance, Instance
+from pglift.settings import Settings
 
 
-def test_systemd_unit(pg_version, instance):
+def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     assert (
         instance_mod.systemd_unit(instance)
         == f"pglift-postgresql@{pg_version}-test.service"
     )
 
 
-def test_init_lookup_failed(pg_version, settings, ctx):
+def test_init_lookup_failed(pg_version: str, settings: Settings, ctx: Context) -> None:
     manifest = interface.Instance(name="dirty", version=pg_version)
     i = BaseInstance("dirty", pg_version, settings)
     i.datadir.mkdir(parents=True)
     (i.datadir / "postgresql.conf").touch()
-    pg_version = i.datadir / "PG_VERSION"
-    pg_version.write_text("7.1")
+    pg_version_file = i.datadir / "PG_VERSION"
+    pg_version_file.write_text("7.1")
     with pytest.raises(Exception, match="version mismatch"):
         with task.Runner(ctx):
             instance_mod.init(ctx, manifest)
-    assert not pg_version.exists()  # per revert
+    assert not pg_version_file.exists()  # per revert
 
 
-def test_init_dirty(pg_version, settings, ctx, monkeypatch):
+def test_init_dirty(
+    pg_version: str, settings: Settings, ctx: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
     manifest = interface.Instance(name="dirty", version=pg_version)
     i = BaseInstance("dirty", pg_version, settings)
     i.datadir.mkdir(parents=True)
@@ -50,7 +54,7 @@ def test_init_dirty(pg_version, settings, ctx, monkeypatch):
         assert not calls
 
 
-def test_init_version_not_available(ctx):
+def test_init_version_not_available(ctx: Context) -> None:
     settings = ctx.settings
     version = "11"
     if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
@@ -60,18 +64,20 @@ def test_init_version_not_available(ctx):
         instance_mod.init(ctx, manifest)
 
 
-def test_list_no_pgroot(ctx):
+def test_list_no_pgroot(ctx: Context) -> None:
     assert not ctx.settings.postgresql.root.exists()
     assert list(instance_mod.list(ctx)) == []
 
 
 @pytest.fixture
-def ctx_nohook(ctx):
+def ctx_nohook(ctx: Context) -> Context:
     ctx.pm.unregister_all()
     return ctx
 
 
-def test_configure(ctx_nohook, instance, instance_manifest):
+def test_configure(
+    ctx_nohook: Context, instance: Instance, instance_manifest: interface.Instance
+) -> None:
     ctx = ctx_nohook
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
@@ -183,13 +189,13 @@ def test_configure(ctx_nohook, instance, instance_manifest):
     }
 
 
-def test_check_status(ctx, instance):
+def test_check_status(ctx: Context, instance: Instance) -> None:
     with pytest.raises(InstanceStateError, match="instance is not_running"):
         instance_mod.check_status(ctx, instance, instance_mod.Status.running)
     instance_mod.check_status(ctx, instance, instance_mod.Status.not_running)
 
 
-def test_start_foreground(ctx, instance):
+def test_start_foreground(ctx: Context, instance: Instance) -> None:
     with patch("os.execv") as execv:
         instance_mod.start(ctx, instance, foreground=True)
     postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
@@ -198,7 +204,7 @@ def test_start_foreground(ctx, instance):
     )
 
 
-def test_shell(ctx, instance):
+def test_shell(ctx: Context, instance: Instance) -> None:
     with patch("os.execve") as patched:
         instance_mod.shell(ctx, instance, user="test", dbname="test")
     psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
@@ -218,6 +224,6 @@ def test_shell(ctx, instance):
     patched.assert_called_once_with(psql, cmd, expected_env)
 
 
-def test_exists(ctx, instance):
+def test_exists(ctx: Context, instance: Instance) -> None:
     assert instance_mod.exists(ctx, instance.name, instance.version)
     assert not instance_mod.exists(ctx, "doesnotexists", instance.version)

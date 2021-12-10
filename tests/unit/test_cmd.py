@@ -9,7 +9,7 @@ from pglift import cmd
 from pglift.exceptions import CommandError, SystemError
 
 
-def test_execute_program(caplog, tmp_path):
+def test_execute_program(caplog: pytest.LogCaptureFixture, tmp_path: Path) -> None:
     command = ["/c", "m", "d"]
     with patch("os.execve") as execve, patch("os.execv") as execv:
         cmd.execute_program(command, env={"X": "Y"})
@@ -25,7 +25,9 @@ def test_execute_program(caplog, tmp_path):
     assert "executing program /c m d" in caplog.records[0].message
 
 
-def test_start_program_terminate_program_status_program(caplog, tmp_path):
+def test_start_program_terminate_program_status_program(
+    caplog: pytest.LogCaptureFixture, tmp_path: Path
+) -> None:
     logger = logging.getLogger(__name__)
 
     pidfile = tmp_path / "sleep" / "pid"

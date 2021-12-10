@@ -27,7 +27,7 @@ class SimpleDisplayer:
             self.records.append((msg, True))
 
 
-def test_task():
+def test_task() -> None:
     @task.task("negate")
     def neg(x: int) -> int:
         return -x
@@ -45,7 +45,7 @@ def test_task():
     assert neg.revert_action(-1) == 1
 
 
-def test_runner_state(logger):
+def test_runner_state(logger: logging.Logger) -> None:
     with pytest.raises(RuntimeError, match="inconsistent task state"):
         with task.Runner(logger):
             with task.Runner(logger):
@@ -58,7 +58,7 @@ def test_runner_state(logger):
     assert task.Task._calls is None
 
 
-def test_runner(logger, caplog):
+def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> None:
     values = set()
 
     @task.task("add {x} to values")
