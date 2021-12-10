@@ -157,13 +157,13 @@ def test_configure(ctx_nohook, instance):
         fpath.touch()
     changes = instance_mod.configure(ctx, instance, ssl=ssl)
     assert changes == {
-        "ssl_cert_file": (None, cert_file),
-        "ssl_key_file": (None, key_file),
+        "ssl_cert_file": (None, str(cert_file)),
+        "ssl_key_file": (None, str(key_file)),
     }
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
-    assert f"ssl_cert_file = {instance.datadir / 'c.crt'}" in lines
-    assert f"ssl_key_file = {instance.datadir / 'k.key'}" in lines
+    assert f"ssl_cert_file = '{instance.datadir / 'c.crt'}'" in lines
+    assert f"ssl_key_file = '{instance.datadir / 'k.key'}'" in lines
     for fpath in ssl:
         assert fpath.exists()
 

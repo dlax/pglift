@@ -166,7 +166,7 @@ def configure(
     manifest: interface.Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
-    **confitems: Any,
+    **confitems: Optional[pgconf.Value],
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
@@ -197,15 +197,15 @@ def configure(
             certfile, keyfile = ssl
         except ValueError:
             raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
-        confitems["ssl_cert_file"] = certfile
-        confitems["ssl_key_file"] = keyfile
+        confitems["ssl_cert_file"] = str(certfile)
+        confitems["ssl_key_file"] = str(keyfile)
     original_content = postgresql_conf.read_text()
     if not any(line.startswith(include) for line in original_content.splitlines()):
         with postgresql_conf.open("w") as f:
             f.write(f"{include}\n\n")
             f.write(original_content)
 
-    site_confitems: Dict[str, pgconf.Value] = {"cluster_name": instance.name}
+    site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": instance.name}
     site_config_template = datapath / "postgresql" / "site.conf"
     if site_config_template.exists():
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
@@ -231,7 +231,9 @@ def configure(
     format_values(confitems)
     format_values(site_confitems)
 
-    def make_config(fpath: Path, items: Dict[str, Any]) -> ConfigChanges:
+    def make_config(
+        fpath: Path, items: Dict[str, Optional[pgconf.Value]]
+    ) -> ConfigChanges:
         config = conf.make(instance.name, **items)
 
         config_before = {}

@@ -1,7 +1,7 @@
 import shutil
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Tuple, cast
+from typing import TYPE_CHECKING, Callable, Optional, Tuple, cast
 
 from pgtoolkit import conf as pgconf
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .models.system import BaseInstance
 
 
-def make(instance: str, **confitems: Any) -> pgconf.Configuration:
+def make(instance: str, **confitems: Optional[pgconf.Value]) -> pgconf.Configuration:
     """Return a :class:`pgtoolkit.conf.Configuration` for named `instance`
     filled with given items.
     """
