@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import os
 import shutil
 import tempfile
 import time
@@ -707,33 +708,56 @@ def list(
             )
 
 
-def shell(
-    ctx: BaseContext, instance: Instance, *, user: Optional[str], dbname: Optional[str]
-) -> None:
-    """Start a PostgreSQL shell (psql) and replace the current process.
+def env_for(
+    ctx: BaseContext, instance: Instance, *, path: bool = False
+) -> Dict[str, str]:
+    """Return libpq environment variables suitable to connect to `instance`.
 
-    The instance should be running.
+    If 'path' is True, also inject PostgreSQL binaries directory in PATH.
     """
+    env = ctx.libpq_environ(base={})
     config = instance.config()
     try:
         host = config.unix_socket_directories.split(",")[0]  # type: ignore[union-attr]
     except (AttributeError, IndexError):
         host = "localhost"
-    if user is None:
-        user = ctx.settings.postgresql.surole.name
-    args = [
-        str(ctx.pg_ctl(instance.version).bindir / "psql"),
-        "--port",
-        str(instance.port),
-        "--host",
-        host,
-        "--user",
-        user,
-    ]
-    if dbname is not None:
-        args.extend(["--dbname", dbname])
-    env = ctx.libpq_environ()
-    cmd.execute_program(args, logger=ctx, env=env)
+    env.update(
+        {
+            "PGUSER": ctx.settings.postgresql.surole.name,
+            "PGPORT": str(instance.port),
+            "PGHOST": host,
+        }
+    )
+    if path:
+        env["PATH"] = ":".join(
+            [str(ctx.pg_ctl(instance.version).bindir)]
+            + ([os.environ["PATH"]] if "PATH" in os.environ else [])
+        )
+    return env
+
+
+def exec(ctx: BaseContext, instance: Instance, command: Tuple[str, ...]) -> None:
+    """Execute given PostgreSQL command in the libpq environment for `instance`.
+
+    The command to be executed is looked up for in PostgreSQL binaries directory.
+    """
+    env = os.environ.copy()
+    env.update(env_for(ctx, instance))
+    progname, *args = command
+    program = ctx.pg_ctl(instance.version).bindir / progname
+    try:
+        cmd.execute_program([str(program)] + args, env=env)
+    except FileNotFoundError as e:
+        raise exceptions.FileNotFoundError(str(e))
+
+
+def env(ctx: BaseContext, instance: Instance) -> str:
+    return "\n".join(
+        [
+            f"export {key}={value}"
+            for key, value in sorted(env_for(ctx, instance, path=True).items())
+        ]
+    )
 
 
 def exists(ctx: BaseContext, name: str, version: Optional[str]) -> bool:

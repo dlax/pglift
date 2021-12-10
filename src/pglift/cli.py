@@ -699,29 +699,29 @@ def instance_restart(ctx: Context, runner: Runner, instance: Instance) -> None:
         instance_mod.restart(ctx, instance)
 
 
-@instance.command("shell")
+@instance.command("exec")
 @instance_identifier
-@click.option(
-    "-d",
-    "--dbname",
-    metavar="DBNAME",
-    envvar="PGDATABASE",
-    help="database name to connect to",
-)
-@click.option(
-    "-U",
-    "--user",
-    metavar="USER",
-    envvar="PGUSER",
-    help="database user name",
-)
+@click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @pass_ctx
-def instance_shell(
-    ctx: Context, instance: Instance, user: str, dbname: Optional[str]
-) -> None:
-    """Open a PostgreSQL interactive shell on a running instance."""
-    instance_mod.check_status(ctx, instance, Status.running)
-    instance_mod.shell(ctx, instance, user=user, dbname=dbname)
+def instance_exec(ctx: Context, instance: Instance, command: Tuple[str, ...]) -> None:
+    """Execute command in the libpq environment for a PostgreSQL instance."""
+    if not command:
+        raise click.ClickException("no command given")
+    instance_mod.exec(ctx, instance, command)
+
+
+@instance.command("env")
+@instance_identifier
+@pass_ctx
+def instance_env(ctx: Context, instance: Instance) -> None:
+    """Output environment variables suitable to connect to a PostgreSQL instance.
+
+    This can be injected in shell using:
+
+    export $(pglift instance env myinstance)
+    """
+    for key, value in sorted(instance_mod.env_for(ctx, instance, path=True).items()):
+        click.echo(f"{key}={value}")
 
 
 @instance.command("backup")

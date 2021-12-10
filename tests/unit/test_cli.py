@@ -1,6 +1,7 @@
 import datetime
 import functools
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterator
@@ -451,24 +452,46 @@ def test_instance_operations(
     patched.assert_called_once_with(ctx, instance, **kwargs)
 
 
-def test_instance_shell(
+def test_instance_exec(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
-    with patch.object(
-        instance_mod, "status", return_value=instance_mod.Status.not_running
-    ) as status, patch.object(instance_mod, "shell") as shell:
-        r = runner.invoke(cli, ["instance", "shell", instance.name], obj=obj)
-    status.assert_called_once_with(ctx, instance)
-    assert not shell.called
+    with patch.object(instance_mod, "exec") as instance_exec:
+        r = runner.invoke(
+            cli,
+            ["instance", "exec", instance.name],
+            obj=obj,
+        )
+    assert not instance_exec.called
     assert r.exit_code == 1
-    assert "instance is not_running" in r.stderr
+    assert r.stderr == "Error: no command given\n"
 
-    with patch.object(
-        instance_mod, "status", return_value=instance_mod.Status.running
-    ) as status, patch.object(instance_mod, "shell") as shell:
-        runner.invoke(cli, ["instance", "shell", instance.name, "-U", "bob"], obj=obj)
-    status.assert_called_once_with(ctx, instance)
-    shell.assert_called_once_with(ctx, instance, user="bob", dbname=None)
+    with patch.object(instance_mod, "exec") as instance_exec:
+        runner.invoke(
+            cli,
+            ["instance", "exec", instance.name, "--", "psql", "-d", "test"],
+            obj=obj,
+        )
+    instance_exec.assert_called_once_with(ctx, instance, ("psql", "-d", "test"))
+
+
+def test_instance_env(
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
+) -> None:
+    r = runner.invoke(
+        cli,
+        ["instance", "env", instance.name],
+        obj=obj,
+    )
+    assert r.exit_code == 0, r
+    bindir = ctx.pg_ctl(instance.version).bindir
+    path = os.environ["PATH"]
+    assert r.stdout == (
+        f"PATH={bindir}:{path}\n"
+        "PGHOST=/socks\n"
+        f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}\n"
+        "PGPORT=999\n"
+        "PGUSER=postgres\n"
+    )
 
 
 def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> None:

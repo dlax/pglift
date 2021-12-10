@@ -1,4 +1,3 @@
-import os
 import pathlib
 import re
 from unittest.mock import patch
@@ -204,24 +203,52 @@ def test_start_foreground(ctx: Context, instance: Instance) -> None:
     )
 
 
-def test_shell(ctx: Context, instance: Instance) -> None:
-    with patch("os.execve") as patched:
-        instance_mod.shell(ctx, instance, user="test", dbname="test")
-    psql = str(ctx.pg_ctl(instance.version).bindir / "psql")
+def test_env_for(ctx: Context, instance: Instance) -> None:
+    assert instance_mod.env_for(ctx, instance) == {
+        "PGHOST": "/socks",
+        "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
+        "PGPORT": "999",
+        "PGUSER": "postgres",
+    }
+
+
+def test_exec(ctx: Context, instance: Instance) -> None:
+    with patch("os.execve") as patched, patch.dict(
+        "os.environ", {"PGPASSWORD": "qwerty"}, clear=True
+    ):
+        instance_mod.exec(
+            ctx, instance, command=("psql", "--user", "test", "--dbname", "test")
+        )
+    expected_env = {
+        "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
+        "PGPORT": "999",
+        "PGUSER": "postgres",
+        "PGHOST": "/socks",
+        "PGPASSWORD": "qwerty",
+    }
+    bindir = ctx.pg_ctl(instance.version).bindir
     cmd = [
-        psql,
-        "--port",
-        str(instance.port),
-        "--host",
-        "/socks",
+        f"{bindir}/psql",
         "--user",
         "test",
         "--dbname",
         "test",
     ]
-    expected_env = os.environ.copy()
-    expected_env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
-    patched.assert_called_once_with(psql, cmd, expected_env)
+    patched.assert_called_once_with(f"{bindir}/psql", cmd, expected_env)
+
+
+def test_env(ctx: Context, instance: Instance) -> None:
+    bindir = ctx.pg_ctl(instance.version).bindir
+    with patch.dict("os.environ", {"PATH": "/pg10/bin"}):
+        assert instance_mod.env(ctx, instance) == "\n".join(
+            [
+                f"export PATH={bindir}:/pg10/bin",
+                "export PGHOST=/socks",
+                f"export PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
+                "export PGPORT=999",
+                "export PGUSER=postgres",
+            ]
+        )
 
 
 def test_exists(ctx: Context, instance: Instance) -> None:
