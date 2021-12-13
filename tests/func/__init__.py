@@ -84,9 +84,8 @@ def execute(
         connect = partial(db.connect, user=role.name)
     with instance_mod.running(ctx, instance):
         with connect(instance, autocommit=autocommit, **kwargs) as conn:
-            with conn.cursor() as cur:
-                cur.execute(query)
-                conn.commit()
-                if fetch:
-                    return cur.fetchall()  # type: ignore[no-any-return]
+            cur = conn.execute(query)
+            conn.commit()
+            if fetch:
+                return cur.fetchall()
         return None

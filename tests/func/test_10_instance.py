@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterator, List, NoReturn
 from unittest.mock import patch
 
-import psycopg2
+import psycopg
 import pytest
 from pgtoolkit.ctl import Status
 from tenacity import retry
@@ -101,16 +101,16 @@ def test_auth(
 
     with instance_mod.running(ctx, i):
         if password is not None:
-            with pytest.raises(psycopg2.OperationalError, match="no password supplied"):
+            with pytest.raises(psycopg.OperationalError, match="no password supplied"):
                 with patch.dict("os.environ", clear=True):
-                    psycopg2.connect(**connargs).close()
+                    psycopg.connect(**connargs).close()  # type: ignore[call-overload]
             if password:
                 connargs["password"] = password
             else:
                 connargs["passfile"] = str(passfile)
         else:
             connargs["passfile"] = str(passfile)
-        psycopg2.connect(**connargs).close()
+        psycopg.connect(**connargs).close()  # type: ignore[call-overload]
 
     hba_path = i.datadir / "pg_hba.conf"
     hba = hba_path.read_text().splitlines()
@@ -315,14 +315,15 @@ def test_standby(
             finally:
                 execute(ctx, instance, "DROP TABLE t", fetch=False)
 
-    def pg_replication_slots() -> List[List[str]]:
-        return execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
+    def pg_replication_slots() -> List[str]:
+        rows = execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
+        return [r["slot_name"] for r in rows]
 
     with instance_running_with_table():
         assert not pg_replication_slots()
         instance_mod.init(ctx, standby_manifest)
         if slot:
-            assert pg_replication_slots() == [[slot]]
+            assert pg_replication_slots() == [slot]
         else:
             assert not pg_replication_slots()
         configure_instance(
@@ -339,8 +340,8 @@ def test_standby(
             with instance_mod.running(ctx, standby_instance):
                 assert execute(
                     ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
-                ) == [[True]]
-                assert execute(ctx, standby_instance, "SELECT * FROM t") == [[1]]
+                ) == [{"pg_is_in_recovery": True}]
+                assert execute(ctx, standby_instance, "SELECT * FROM t") == [{"i": 1}]
                 execute(ctx, instance, "UPDATE t SET i = 42", fetch=False)
 
                 @retry(
@@ -349,7 +350,9 @@ def test_standby(
                     stop=stop_after_attempt(4),
                 )
                 def assert_replicated() -> None:
-                    assert execute(ctx, standby_instance, "SELECT * FROM t") == [[42]]
+                    assert execute(ctx, standby_instance, "SELECT * FROM t") == [
+                        {"i": 42}
+                    ]
 
                 assert_replicated()
 
@@ -357,7 +360,7 @@ def test_standby(
                 assert not standby_instance.standby
                 assert execute(
                     ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
-                ) == [[False]]
+                ) == [{"pg_is_in_recovery": False}]
         finally:
             if slot:
                 execute(

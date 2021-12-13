@@ -1,6 +1,6 @@
 from typing import List, Sequence
 
-from psycopg2 import sql
+from psycopg import sql
 
 from . import db
 from .ctx import BaseContext
@@ -14,14 +14,13 @@ def inspect_default_acl(
     args = {}
     where_clause = sql.SQL("")
     if roles:
-        where_clause = sql.SQL("WHERE pg_roles.rolname IN %(roles)s")
-        args["roles"] = tuple(roles)
+        where_clause = sql.SQL("WHERE pg_roles.rolname = ANY(%(roles)s)")
+        args["roles"] = list(roles)
     with db.superuser_connect(ctx, instance, dbname=database) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                db.query("database_default_acl", where_clause=where_clause), args
-            )
-            results = cur.fetchall()
+        cur = cnx.execute(
+            db.query("database_default_acl", where_clause=where_clause), args
+        )
+        results = cur.fetchall()
     return [interface.Privilege(**r) for r in results]
 
 
@@ -43,9 +42,8 @@ def get(
     """
 
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("database_list"))
-            existing_databases = [db["name"] for db in cur.fetchall()]
+        cur = cnx.execute(db.query("database_list"))
+        existing_databases = [db["name"] for db in cur.fetchall()]
     if not databases:
         databases = existing_databases
     else:
@@ -55,9 +53,8 @@ def get(
 
     if roles:
         with db.superuser_connect(ctx, instance) as cnx:
-            with cnx.cursor() as cur:
-                cur.execute(db.query("role_list_names"))
-                existing_roles = [n for n, in cur.fetchall()]
+            cur = cnx.execute(db.query("role_list_names"))
+            existing_roles = [n["rolname"] for n in cur.fetchall()]
         unknown_roles = set(roles) - set(existing_roles)
         if unknown_roles:
             raise ValueError(f"role(s) not found: {', '.join(unknown_roles)}")

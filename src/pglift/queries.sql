@@ -6,18 +6,16 @@ CREATE ROLE {username} {options};
 
 -- name: role_has_password
 SELECT
-    rolpassword IS NOT NULL FROM pg_authid
+    rolpassword IS NOT NULL as haspassword FROM pg_authid
 WHERE
     rolname = %(username)s;
 
 -- name: role_alter
 ALTER ROLE {username} {options};
 
--- name: role_alter_password
-ALTER ROLE {username} PASSWORD %(password)s;
-
 -- name: role_inspect
 SELECT
+    r.rolname AS name,
     CASE WHEN r.rolpassword IS NOT NULL THEN
         '<set>'
     ELSE
@@ -43,7 +41,12 @@ FROM
 WHERE
     r.rolname = %(username)s
 GROUP BY
-    r.rolpassword, r.rolinherit, r.rolcanlogin, r.rolconnlimit, r.rolvaliduntil;
+    r.rolname,
+    r.rolpassword,
+    r.rolinherit,
+    r.rolcanlogin,
+    r.rolconnlimit,
+    r.rolvaliduntil;
 
 -- name: role_grant
 GRANT {rolname} TO {rolspec};
@@ -68,6 +71,7 @@ ALTER DATABASE {database} {options};
 
 -- name: database_inspect
 SELECT
+    db.datname AS name,
     r.rolname AS owner
 FROM
     pg_database db

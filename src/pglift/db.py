@@ -4,10 +4,10 @@ import sys
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, ContextManager, Iterator, Tuple
 
-import psycopg2
-import psycopg2.extensions
-import psycopg2.extras
-from psycopg2 import sql
+import psycopg.conninfo
+import psycopg.errors
+import psycopg.rows
+from psycopg import sql
 
 if TYPE_CHECKING:  # pragma: nocover
     from .ctx import BaseContext
@@ -47,17 +47,15 @@ def dsn(instance: "PostgreSQLInstance", **kwargs: Any) -> str:
         kwargs["passfile"] = str(passfile)
 
     assert "dsn" not in kwargs
-    return psycopg2.extensions.make_dsn(**kwargs)  # type: ignore[no-any-return]
+    return psycopg.conninfo.make_conninfo(**kwargs)
 
 
 @contextmanager
 def connect_dsn(
     conninfo: str, autocommit: bool = False, **kwargs: Any
-) -> Iterator[psycopg2.extensions.connection]:
+) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to specified database of `conninfo` dsn string"""
-    conn = psycopg2.connect(
-        conninfo, connection_factory=psycopg2.extras.DictConnection, **kwargs
-    )
+    conn = psycopg.connect(conninfo, row_factory=psycopg.rows.dict_row, **kwargs)
     if autocommit:
         conn.autocommit = True
         yield conn
@@ -73,7 +71,7 @@ def connect(
     dbname: str = "postgres",
     autocommit: bool = False,
     **kwargs: Any,
-) -> ContextManager[psycopg2.extensions.connection]:
+) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to specified database of `instance` with `role`."""
     conninfo = dsn(instance, dbname=dbname, **kwargs)
     return connect_dsn(conninfo, autocommit=autocommit)
@@ -81,7 +79,7 @@ def connect(
 
 def superuser_connect(
     ctx: "BaseContext", instance: "PostgreSQLInstance", **kwargs: Any
-) -> ContextManager[psycopg2.extensions.connection]:
+) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
     if "user" in kwargs:
         raise TypeError("unexpected 'user' argument")
     kwargs["user"] = instance.settings.postgresql.surole.name
@@ -90,10 +88,6 @@ def superuser_connect(
     return connect(instance, **kwargs)
 
 
-class NoticeHandlerStderr:
-    @staticmethod
-    def append(notice: str) -> None:
-        sys.stderr.write(notice)
-
-
-default_notice_handler = NoticeHandlerStderr()
+def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:
+    if diag.message_primary is not None:
+        sys.stderr.write(diag.message_primary)

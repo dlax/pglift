@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
-from psycopg2 import sql
+from psycopg import sql
 from pydantic import SecretStr
 
 from pglift import roles
@@ -13,7 +13,7 @@ from pglift.models.system import Instance
 
 
 @pytest.mark.parametrize("with_password", [True, False])
-def test_options_and_args(with_password: bool) -> None:
+def test_options(with_password: bool) -> None:
     role = interface.Role(
         name="r",
         password="skret",
@@ -23,39 +23,32 @@ def test_options_and_args(with_password: bool) -> None:
         validity=datetime.datetime(2024, 1, 1),
         in_roles=["pg_monitor"],
     )
-    options, args = roles.options_and_args(role, with_password=with_password)
+    options = roles.options(role, with_password=with_password)
 
     SQL = sql.SQL
     Composed = sql.Composed
     Identifier = sql.Identifier
-    Placeholder = sql.Placeholder
+    Literal = sql.Literal
 
     expected_seq = (
         [SQL("NOINHERIT"), SQL(" "), SQL("LOGIN"), SQL(" ")]
         + (
-            [Composed([SQL("PASSWORD"), SQL(" "), Placeholder("password")]), SQL(" ")]
+            [Composed([SQL("PASSWORD"), SQL(" "), Literal("skret")]), SQL(" ")]  # type: ignore[list-item]
             if with_password
             else []
         )
         + [
-            Composed([SQL("VALID UNTIL"), SQL(" "), Placeholder("validity")]),
+            Composed([SQL("VALID UNTIL"), SQL(" "), Literal("2024-01-01T00:00:00")]),  # type: ignore[list-item]
             SQL(" "),
-            Composed(
-                [SQL("CONNECTION LIMIT"), SQL(" "), Placeholder("connection_limit")]
+            Composed(  # type: ignore[list-item]
+                [SQL("CONNECTION LIMIT"), SQL(" "), Literal(2)]
             ),
             SQL(" "),
-            Composed([SQL("IN ROLE"), SQL(" "), Composed([Identifier("pg_monitor")])]),
+            Composed([SQL("IN ROLE"), SQL(" "), Composed([Identifier("pg_monitor")])]),  # type: ignore[list-item]
         ]
     )
 
-    assert options.seq == expected_seq
-    expected_args = {
-        "connection_limit": 2,
-        "validity": "2024-01-01T00:00:00",
-    }
-    if with_password:
-        expected_args["password"] = "skret"
-    assert args == expected_args
+    assert list(options) == expected_seq  # type: ignore[call-overload]
 
 
 class Role(interface.Role):

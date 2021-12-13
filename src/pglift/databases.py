@@ -1,8 +1,7 @@
 from typing import Any, Dict, List, Sequence, Tuple
 
-import psycopg2
-import psycopg2.extensions
-from psycopg2 import sql
+import psycopg.rows
+from psycopg import sql
 
 from . import db, exceptions, types
 from .ctx import BaseContext
@@ -37,24 +36,23 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("database_inspect"), {"datname": name})
-            values = dict(cur.fetchone())
-    return interface.Database(name=name, **values)
+        with cnx.cursor(row_factory=psycopg.rows.class_row(interface.Database)) as cur:
+            row = cur.execute(
+                db.query("database_inspect"), {"datname": name}
+            ).fetchone()
+        assert row is not None
+        return row
 
 
 def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabase]:
     """List all databases in instance."""
 
     with db.superuser_connect(ctx, instance) as cnx:
-        psycopg2.extensions.register_type(
-            # select typarray from pg_type where typname = 'aclitem'; -> 1034
-            psycopg2.extensions.new_array_type((1034,), "ACLITEM[]", psycopg2.STRING)
-        )
-        with cnx.cursor() as cur:
+        with cnx.cursor(
+            row_factory=psycopg.rows.class_row(interface.DetailedDatabase)
+        ) as cur:
             cur.execute(db.query("database_list"))
-            values = cur.fetchall()
-    return [interface.DetailedDatabase(**v) for v in values]
+            return cur.fetchall()
 
 
 @task("drop '{name}' database from instance {instance}")
@@ -66,8 +64,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
     with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("database_drop", database=sql.Identifier(name)))
+        cnx.execute(db.query("database_drop", database=sql.Identifier(name)))
 
 
 def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
@@ -76,9 +73,8 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
     The instance should be running.
     """
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("database_exists"), {"database": name})
-            return cur.rowcount == 1  # type: ignore[no-any-return]
+        cur = cnx.execute(db.query("database_exists"), {"database": name})
+        return cur.rowcount == 1
 
 
 def options_and_args(
@@ -104,15 +100,14 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
     """
     options, args = options_and_args(database)
     with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                db.query(
-                    "database_create",
-                    database=sql.Identifier(database.name),
-                    options=options,
-                ),
-                args,
-            )
+        cnx.execute(
+            db.query(
+                "database_create",
+                database=sql.Identifier(database.name),
+                options=options,
+            ),
+            args,
+        )
 
 
 @task("alter '{database.name}' database on instance {instance}")
@@ -124,20 +119,20 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
     if not exists(ctx, instance, database.name):
         raise exceptions.DatabaseNotFound(database.name)
 
+    owner: sql.Composable
     if database.owner is None:
         owner = sql.SQL("CURRENT_USER")
     else:
         owner = sql.Identifier(database.owner)
     options = sql.SQL(" ").join([sql.SQL("OWNER TO"), owner])
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                db.query(
-                    "database_alter_owner",
-                    database=sql.Identifier(database.name),
-                    options=options,
-                ),
-            )
+        cnx.execute(
+            db.query(
+                "database_alter_owner",
+                database=sql.Identifier(database.name),
+                options=options,
+            ),
+        )
         cnx.commit()
 
 
@@ -158,7 +153,6 @@ def run(
         with db.superuser_connect(
             ctx, instance, dbname=database.name, autocommit=True
         ) as cnx:
-            cnx.notices = notice_handler
-            with cnx.cursor() as cur:
-                ctx.info("run %s on database %s of %s", sql_command, database, instance)
-                cur.execute(sql_command)
+            cnx.add_notice_handler(notice_handler)
+            ctx.info("run %s on database %s of %s", sql_command, database, instance)
+            cnx.execute(sql_command)

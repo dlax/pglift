@@ -155,9 +155,9 @@ def test_run_analyze(
         result = execute(
             ctx,
             instance,
-            "SELECT MIN(last_analyze) FROM pg_stat_all_tables WHERE last_analyze IS NOT NULL",
+            "SELECT MIN(last_analyze) m FROM pg_stat_all_tables WHERE last_analyze IS NOT NULL",
             dbname="test",
-        )[0][0]
+        )[0]["m"]
         assert isinstance(result, datetime.datetime), result
         return result
 
@@ -180,4 +180,4 @@ def test_run_output_notices(
     )
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err == "NOTICE:  foo\n"
+    assert captured.err == "foo"

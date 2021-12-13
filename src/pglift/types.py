@@ -2,6 +2,7 @@ import enum
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
+import psycopg.errors
 from pgtoolkit import conf as pgconf
 from pydantic import SecretStr
 from typing_extensions import Protocol
@@ -49,7 +50,7 @@ class Logger(Protocol):
 
 
 class NoticeHandler(Protocol):
-    def append(self, notice: str) -> None:
+    def __call__(self, diag: psycopg.errors.Diagnostic) -> Any:
         ...
 
 

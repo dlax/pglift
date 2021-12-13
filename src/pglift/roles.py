@@ -1,7 +1,8 @@
-from typing import Any, Dict, Tuple
+from typing import List
 
+import psycopg.rows
 from pgtoolkit import conf, pgpass
-from psycopg2 import sql
+from psycopg import sql
 
 from . import db, exceptions, hookimpl
 from .ctx import BaseContext
@@ -87,16 +88,14 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Role:
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
-    role = interface.Role(name=name)
-    values = role.dict()
     with db.superuser_connect(ctx, instance) as cnx:
-        cnx.autocommit = True
-        with cnx.cursor() as cur:
+        with cnx.cursor(row_factory=psycopg.rows.class_row(interface.Role)) as cur:
             cur.execute(db.query("role_inspect"), {"username": name})
-            values.update(dict(cur.fetchone()))
+            role = cur.fetchone()
+            assert role is not None
     if in_pgpass(ctx, instance, name):
-        values["pgpass"] = True
-    return interface.Role(**values)
+        role.pgpass = True
+    return role
 
 
 @task("drop role '{name}' from instance {instance}")
@@ -108,8 +107,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("role_drop", username=sql.Identifier(name)))
+        cnx.execute(db.query("role_drop", username=sql.Identifier(name)))
         cnx.commit()
     role = interface.Role(name=name, pgpass=False)
     set_pgpass_entry_for(ctx, instance, role)
@@ -121,48 +119,50 @@ def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
     The instance should be running.
     """
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("role_exists"), {"username": name})
-            return cur.rowcount == 1  # type: ignore[no-any-return]
+        cur = cnx.execute(db.query("role_exists"), {"username": name})
+        return cur.rowcount == 1
 
 
 def has_password(ctx: BaseContext, instance: Instance, name: str) -> bool:
     """Return True if the role has a password set."""
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(db.query("role_has_password"), {"username": name})
-            (haspassword,) = cur.fetchone()
-            return haspassword  # type: ignore[no-any-return]
+        cur = cnx.execute(db.query("role_has_password"), {"username": name})
+        haspassword = cur.fetchone()["haspassword"]  # type: ignore[index]
+        assert isinstance(haspassword, bool)
+        return haspassword
 
 
-def options_and_args(
+def options(
     role: interface.Role, *, with_password: bool = True, in_roles: bool = True
-) -> Tuple[sql.Composable, Dict[str, Any]]:
+) -> sql.Composable:
     """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
-    based on 'role' model along with query arguments.
+    based on 'role' model.
     """
-    opts = [
+    opts: List[sql.Composable] = [
         sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         sql.SQL("LOGIN" if role.login else "NOLOGIN"),
     ]
-    args: Dict[str, Any] = {}
     if with_password and role.password is not None:
         opts.append(
-            sql.SQL(" ").join([sql.SQL("PASSWORD"), sql.Placeholder("password")])
+            sql.SQL(" ").join(
+                [sql.SQL("PASSWORD"), sql.Literal(role.password.get_secret_value())]
+            )
         )
-        args["password"] = role.password.get_secret_value()
     if role.validity is not None:
         opts.append(
-            sql.SQL(" ").join((sql.SQL("VALID UNTIL"), sql.Placeholder("validity")))
+            sql.SQL(" ").join(
+                (sql.SQL("VALID UNTIL"), sql.Literal(role.validity.isoformat()))
+            )
         )
-        args["validity"] = role.validity.isoformat()
     opts.append(
         sql.SQL(" ").join(
-            (sql.SQL("CONNECTION LIMIT"), sql.Placeholder("connection_limit"))
+            (
+                sql.SQL("CONNECTION LIMIT"),
+                sql.Literal(
+                    role.connection_limit if role.connection_limit is not None else -1
+                ),
+            )
         )
-    )
-    args["connection_limit"] = (
-        role.connection_limit if role.connection_limit is not None else -1
     )
     if in_roles and role.in_roles:
         opts.append(
@@ -175,7 +175,7 @@ def options_and_args(
                 ]
             )
         )
-    return sql.SQL(" ").join(opts), args
+    return sql.SQL(" ").join(opts)
 
 
 @task("create role '{role.name}' on instance {instance}")
@@ -184,17 +184,11 @@ def create(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
 
     The instance should be running and the role should not exist already.
     """
-    options, args = options_and_args(role)
+    opts = options(role)
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                db.query(
-                    "role_create",
-                    username=sql.Identifier(role.name),
-                    options=options,
-                ),
-                args,
-            )
+        cnx.execute(
+            db.query("role_create", username=sql.Identifier(role.name), options=opts)
+        )
         cnx.commit()
 
 
@@ -205,7 +199,7 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
     The instance should be running and the role should exist already.
     """
     actual_role = describe(ctx, instance, role.name)
-    options, args = options_and_args(
+    opts = options(
         role, with_password=not has_password(ctx, instance, role.name), in_roles=False
     )
     in_roles = {
@@ -213,27 +207,22 @@ def alter(ctx: BaseContext, instance: Instance, role: interface.Role) -> None:
         "revoke": set(actual_role.in_roles) - set(role.in_roles),
     }
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                db.query(
-                    "role_alter",
-                    username=sql.Identifier(role.name),
-                    options=options,
-                ),
-                args,
-            )
-            for action, values in in_roles.items():
-                if values:
-                    cur.execute(
-                        db.query(
-                            f"role_{action}",
-                            rolname=sql.SQL(", ").join(
-                                sql.Identifier(r) for r in values
-                            ),
-                            rolspec=sql.Identifier(role.name),
-                        ),
-                        args,
+        cnx.execute(
+            db.query(
+                "role_alter",
+                username=sql.Identifier(role.name),
+                options=opts,
+            ),
+        )
+        for action, values in in_roles.items():
+            if values:
+                cnx.execute(
+                    db.query(
+                        f"role_{action}",
+                        rolname=sql.SQL(", ").join(sql.Identifier(r) for r in values),
+                        rolspec=sql.Identifier(role.name),
                     )
+                )
         cnx.commit()
 
 
@@ -245,13 +234,14 @@ def set_password_for(
     if role.password is None:
         return
 
+    options = sql.SQL(" ").join(
+        [sql.SQL("PASSWORD"), sql.Literal(role.password.get_secret_value())]
+    )
     with db.superuser_connect(ctx, instance) as conn:
         conn.autocommit = True
-        with conn.cursor() as cur:
-            cur.execute(
-                db.query("role_alter_password", username=sql.Identifier(role.name)),
-                {"password": role.password.get_secret_value()},
-            )
+        conn.execute(
+            db.query("role_alter", username=sql.Identifier(role.name), options=options),
+        )
 
 
 def in_pgpass(ctx: BaseContext, instance: Instance, name: str) -> bool:

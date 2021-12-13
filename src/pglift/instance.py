@@ -81,12 +81,11 @@ def init_replication(
             ) as cnx:
                 # ensure the replication slot does not exists
                 # otherwise --create-slot will raise an error
-                with cnx.cursor() as cur:
-                    cur.execute(db.query("drop_replication_slot"), {"slot": slot})
-                    if int(instance.version) <= 10:
-                        cur.execute(db.query("create_replication_slot"), {"slot": slot})
-                    else:
-                        cmd += ["--create-slot"]
+                cnx.execute(db.query("drop_replication_slot"), {"slot": slot})
+                if int(instance.version) <= 10:
+                    cnx.execute(db.query("create_replication_slot"), {"slot": slot})
+                else:
+                    cmd += ["--create-slot"]
 
         ctx.run(cmd, env=env, check=True)
         for name in keep:

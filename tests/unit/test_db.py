@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Dict
 from unittest.mock import patch
 
-import psycopg2.extras
+import psycopg.rows
 import pytest
-from psycopg2 import sql
+from psycopg import sql
 
 from pglift import db
 from pglift.models.system import Instance
@@ -23,9 +23,18 @@ def test_queries(datadir: Path, regen_test_data: bool) -> None:
 
 
 def test_query() -> None:
-    query = db.query("role_alter_password", username=sql.Identifier("bob"))
-    qs = "".join(q.string for q in query.seq)
-    assert qs == "ALTER ROLE bob PASSWORD %(password)s;"
+    query = db.query(
+        "role_alter",
+        username=sql.Identifier("bob"),
+        options=sql.Literal("PASSWORD 'ha'"),
+    )
+    assert list(query) == [
+        sql.SQL("ALTER ROLE "),
+        sql.Identifier("bob"),
+        sql.SQL(" "),
+        sql.Literal("PASSWORD 'ha'"),
+        sql.SQL(";"),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -55,7 +64,7 @@ def test_dsn_badarg(instance: Instance) -> None:
 
 
 def test_connect(instance: Instance, settings: Settings) -> None:
-    with patch("psycopg2.connect") as connect:
+    with patch("psycopg.connect") as connect:
         cnx = db.connect(instance, user="dba")
         assert not connect.called
         with cnx:
@@ -64,5 +73,5 @@ def test_connect(instance: Instance, settings: Settings) -> None:
     assert passfile.exists()
     connect.assert_called_once_with(
         f"dbname=postgres user=dba port=999 host=/socks passfile={passfile}",
-        connection_factory=psycopg2.extras.DictConnection,
+        row_factory=psycopg.rows.dict_row,
     )

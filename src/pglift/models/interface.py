@@ -4,10 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
-import psycopg2
+import psycopg
+import psycopg.conninfo
 import yaml
 from pgtoolkit.ctl import Status
-from psycopg2.extensions import parse_dsn
 from pydantic import (
     BaseModel,
     DirectoryPath,
@@ -252,8 +252,8 @@ class PostgresExporter(Manifest):
     @validator("dsn")
     def __validate_dsn_(cls, value: str) -> str:
         try:
-            parse_dsn(value)
-        except psycopg2.ProgrammingError as e:
+            psycopg.conninfo.conninfo_to_dict(value)
+        except psycopg.ProgrammingError as e:
             raise ValueError(str(e)) from e
         return value
 

@@ -9,7 +9,7 @@ import subprocess
 from typing import Callable, Iterator
 
 import dateutil.tz
-import psycopg2
+import psycopg
 import pytest
 import yaml
 
@@ -77,11 +77,12 @@ def call_playbook(tmp_path: pathlib.Path) -> Iterator[Callable[[pathlib.Path], N
 
 def cluster_name(dsn: str) -> str:
     with db.connect_dsn(dsn) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute("SELECT setting FROM pg_settings WHERE name = 'cluster_name'")
-            name = cur.fetchall()[0][0]
-            assert isinstance(name, str), name
-            return name
+        cur = cnx.execute("SELECT setting FROM pg_settings WHERE name = 'cluster_name'")
+        row = cur.fetchone()
+        assert row
+        name = row["setting"]
+        assert isinstance(name, str), name
+        return name
 
 
 def test_ansible(
@@ -92,34 +93,33 @@ def test_ansible(
     prod_dsn = "host=/tmp user=postgres password=supers3kret dbname=postgres port=5433"
     assert cluster_name(prod_dsn) == "prod"
     with db.connect_dsn(prod_dsn) as cnx:
-        with cnx.cursor() as cur:
-            cur.execute(
-                "SELECT rolname,rolinherit,rolcanlogin,rolconnlimit,rolpassword,rolvaliduntil FROM pg_roles WHERE rolname = 'bob'"
-            )
-            assert cur.fetchall() == [
-                [
-                    "bob",
-                    True,
-                    True,
-                    10,
-                    "********",
-                    datetime.datetime(2025, 1, 1, tzinfo=dateutil.tz.tzlocal()),
-                ]
-            ]
-            cur.execute(
-                "SELECT r.rolname AS role, ARRAY_AGG(m.rolname) AS member_of FROM pg_auth_members JOIN pg_authid m ON pg_auth_members.roleid = m.oid JOIN pg_authid r ON pg_auth_members.member = r.oid GROUP BY r.rolname"
-            )
-            assert cur.fetchall() == [
-                ["bob", ["pg_read_all_stats", "pg_signal_backend"]],
-                [
-                    "pg_monitor",
-                    [
-                        "pg_read_all_settings",
-                        "pg_read_all_stats",
-                        "pg_stat_scan_tables",
-                    ],
+        cur = cnx.execute(
+            "SELECT rolname,rolinherit,rolcanlogin,rolconnlimit,rolpassword,rolvaliduntil FROM pg_roles WHERE rolname = 'bob'"
+        )
+        assert cur.fetchone() == {
+            "rolname": "bob",
+            "rolinherit": True,
+            "rolcanlogin": True,
+            "rolconnlimit": 10,
+            "rolpassword": "********",
+            "rolvaliduntil": datetime.datetime(
+                2025, 1, 1, tzinfo=dateutil.tz.tzlocal()
+            ),
+        }
+        cur = cnx.execute(
+            "SELECT r.rolname AS role, ARRAY_AGG(m.rolname) AS member_of FROM pg_auth_members JOIN pg_authid m ON pg_auth_members.roleid = m.oid JOIN pg_authid r ON pg_auth_members.member = r.oid GROUP BY r.rolname"
+        )
+        assert cur.fetchall() == [
+            {"role": "bob", "member_of": ["pg_read_all_stats", "pg_signal_backend"]},
+            {
+                "role": "pg_monitor",
+                "member_of": [
+                    "pg_read_all_settings",
+                    "pg_read_all_stats",
+                    "pg_stat_scan_tables",
                 ],
-            ]
+            },
+        ]
 
     socket.create_connection(("localhost", 9186), 1)
 
@@ -135,7 +135,7 @@ def test_ansible(
     socket.create_connection(("localhost", 9188), 1)
 
     # check dev cluster & postgres_exporter are stopped
-    with pytest.raises(psycopg2.OperationalError, match="No such file or directory"):
+    with pytest.raises(psycopg.OperationalError, match="No such file or directory"):
         cluster_name(
             "host=/tmp user=postgres password=supers3kret dbname=postgres port=5444"
         )
@@ -150,20 +150,20 @@ def test_ansible(
     assert cluster_name(prod_dsn) == "prod"
     # bob user and db database no longer exists
     with pytest.raises(
-        psycopg2.OperationalError, match='password authentication failed for user "bob"'
+        psycopg.OperationalError, match='password authentication failed for user "bob"'
     ):
         with db.connect_dsn(
             "host=/tmp user=bob password=s3kret dbname=template1 port=5433"
         ):
             pass
-    with pytest.raises(psycopg2.OperationalError, match='database "db" does not exist'):
+    with pytest.raises(psycopg.OperationalError, match='database "db" does not exist'):
         with db.connect_dsn(
             "host=/tmp user=postgres password=supers3kret dbname=db port=5433"
         ):
             pass
 
     # preprod stopped
-    with pytest.raises(psycopg2.OperationalError, match="No such file or directory"):
+    with pytest.raises(psycopg.OperationalError, match="No such file or directory"):
         assert cluster_name(preprod_dsn) == "preprod"
     with pytest.raises(ConnectionRefusedError):
         socket.create_connection(("localhost", 9188), 1)

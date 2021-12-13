@@ -3,7 +3,7 @@ import functools
 import pathlib
 from typing import Iterator, Optional, Union
 
-import psycopg2
+import psycopg
 import pytest
 from pydantic import SecretStr
 
@@ -50,16 +50,16 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role.name)
-    r = execute(ctx, instance, "select 1", role=role)
-    assert r[0][0] == 1
-    ((valid_until, connection_limit),) = execute(
+    r = execute(ctx, instance, "select 1 as v", role=role)
+    assert r[0]["v"] == 1
+    (record,) = execute(
         ctx,
         instance,
         f"select rolvaliduntil, rolconnlimit from pg_roles where rolname = '{role.name}'",
         role=role,
     )
-    assert valid_until == role.validity
-    assert connection_limit == role.connection_limit
+    assert record["rolvaliduntil"] == role.validity
+    assert record["rolconnlimit"] == role.connection_limit
     r = execute(
         ctx,
         instance,
@@ -75,12 +75,12 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
             r.rolname
         """,
     )
-    assert ["password", ["pg_monitor"]] in r
+    assert {"role": "password", "member_of": ["pg_monitor"]} in r
 
     nologin = interface.Role(name="nologin", password="passwd", login=False)
     roles.create(ctx, instance, nologin)
     with pytest.raises(
-        psycopg2.OperationalError, match='role "nologin" is not permitted to log in'
+        psycopg.OperationalError, match='role "nologin" is not permitted to log in'
     ):
         execute(ctx, instance, "select 1", role=nologin)
 

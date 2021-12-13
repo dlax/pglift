@@ -94,7 +94,7 @@ def test_backup_restore(
     assert not latest_backup.exists()
     with instance_mod.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
-        assert "backrest" in [r[0] for r in rows]
+        assert "backrest" in [r["datname"] for r in rows]
         pgbackrest.backup(
             ctx,
             instance,
@@ -104,9 +104,8 @@ def test_backup_restore(
         pgbackrest.expire(ctx, instance)
         # TODO: check some result from 'expire' command here.
 
-        ((before_drop,),) = execute(
-            ctx, instance, "SELECT current_timestamp", fetch=True
-        )
+        (record,) = execute(ctx, instance, "SELECT current_timestamp", fetch=True)
+        before_drop = record["current_timestamp"]
 
         execute(ctx, instance, "DROP DATABASE backrest", autocommit=True, fetch=False)
 
@@ -118,4 +117,4 @@ def test_backup_restore(
     pgbackrest.restore(ctx, instance, date=before_drop)
     with instance_mod.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
-        assert "backrest" in [r[0] for r in rows]
+        assert "backrest" in [r["datname"] for r in rows]
