@@ -1,5 +1,4 @@
 import datetime
-import pathlib
 import time
 from typing import Iterator
 
@@ -145,26 +144,6 @@ def test_drop(
     database_factory("dropme")
     databases.drop(ctx, instance, "dropme")
     assert not databases.exists(ctx, instance, "dropme")
-
-
-def test_backup(
-    ctx: Context,
-    instance: system.Instance,
-    database_factory: DatabaseFactory,
-    tmp_path: pathlib.Path,
-) -> None:
-    output_file = tmp_path / "db.dump"
-    with pytest.raises(exceptions.DatabaseNotFound, match="absent"):
-        databases.backup(ctx, instance, "absent", output_file)
-    assert not output_file.exists()
-
-    database_factory("backupme")
-    databases.run(
-        ctx, instance, "CREATE TABLE test(x int, y text);", dbnames=["backupme"]
-    )
-    databases.backup(ctx, instance, "backupme", output_file)
-    assert output_file.exists()
-    assert b"CREATE TABLE public.test " in output_file.read_bytes()
 
 
 def test_run_analyze(

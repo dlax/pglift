@@ -127,9 +127,3 @@ Adding and manipulating instance objects:
     postgres   postgres  UTF8        C            C                                                  8319535  default administrative connection database  pg_default                      41011771
     template1  postgres  UTF8        C            C        ['=c/postgres', 'postgres=CTc/postgres']  8167939  default template for new databases          pg_default                      41011771
     $ pglift database drop 13/main myapp
-
-Dumping a database of an instance:
-
-::
-
-    $ pglift database backup 13/main myapp my/path/mydump.dump

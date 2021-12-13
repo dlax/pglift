@@ -1,4 +1,3 @@
-import pathlib
 from typing import Any, Dict, List, Sequence, Tuple
 
 import psycopg2
@@ -140,42 +139,6 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
                 ),
             )
         cnx.commit()
-
-
-@task("backup '{name}' database on instance {instance}")
-def backup(
-    ctx: BaseContext, instance: Instance, name: str, output_file: pathlib.Path
-) -> None:
-    """Dump a database.
-
-    The instance should be running and the database should exist already.
-    """
-    if not exists(ctx, instance, name):
-        raise exceptions.DatabaseNotFound(name)
-
-    bindir = ctx.pg_ctl(instance.version).bindir
-    config = instance.config()
-    try:
-        host = config.unix_socket_directories.split(",")[0]  # type: ignore[union-attr]
-    except (AttributeError, IndexError):
-        host = "localhost"
-    user = ctx.settings.postgresql.surole.name
-    cmd = [
-        str(bindir / "pg_dump"),
-        "--port",
-        str(instance.port),
-        "--host",
-        host,
-        "--user",
-        user,
-        "-Fc",
-        "-f",
-        str(output_file),
-        name,
-    ]
-
-    env = ctx.libpq_environ()
-    ctx.run(cmd, check=True, env=env)
 
 
 def run(

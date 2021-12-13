@@ -1065,48 +1065,6 @@ def test_database_drop(
     assert result.exit_code == 0
 
 
-def test_database_backup(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
-) -> None:
-    output_file = "my/root/foo.dump"
-    with patch.object(
-        databases, "backup", side_effect=exceptions.DatabaseNotFound("bar")
-    ) as backup:
-        result = runner.invoke(
-            cli,
-            [
-                "database",
-                "backup",
-                str(instance),
-                "foo",
-                output_file,
-            ],
-            obj=obj,
-        )
-    backup.assert_called_once_with(ctx, instance, "foo", Path(output_file))
-    running.assert_called_once_with(ctx, instance)
-    assert result.exit_code == 1
-    assert "Error: database 'bar' not found" in result.stderr.strip()
-
-    running.reset_mock()
-
-    with patch.object(databases, "backup") as backup:
-        result = runner.invoke(
-            cli,
-            [
-                "database",
-                "backup",
-                str(instance),
-                "foo",
-                output_file,
-            ],
-            obj=obj,
-        )
-    backup.assert_called_once_with(ctx, instance, "foo", Path(output_file))
-    running.assert_called_once_with(ctx, instance)
-    assert result.exit_code == 0
-
-
 def test_database_privileges(
     ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
 ) -> None:
