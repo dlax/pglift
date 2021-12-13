@@ -167,7 +167,7 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
                 ctx.info("instance '%s' found in version %s", name, version)
                 if found:
                     raise click.BadParameter(
-                        f"instance '{name}' exists in several PostgreSQL version;"
+                        f"instance '{name}' exists in several PostgreSQL versions;"
                         " please select version explicitly"
                     )
                 found = instance
