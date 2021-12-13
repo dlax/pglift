@@ -487,6 +487,7 @@ def test_instance_env(
     path = os.environ["PATH"]
     assert r.stdout == (
         f"PATH={bindir}:{path}\n"
+        f"PGDATA={instance.datadir}\n"
         "PGHOST=/socks\n"
         f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}\n"
         "PGPORT=999\n"

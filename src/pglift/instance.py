@@ -726,6 +726,7 @@ def env_for(
             "PGUSER": ctx.settings.postgresql.surole.name,
             "PGPORT": str(instance.port),
             "PGHOST": host,
+            "PGDATA": str(instance.datadir),
         }
     )
     if path:

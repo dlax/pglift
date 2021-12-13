@@ -205,6 +205,7 @@ def test_start_foreground(ctx: Context, instance: Instance) -> None:
 
 def test_env_for(ctx: Context, instance: Instance) -> None:
     assert instance_mod.env_for(ctx, instance) == {
+        "PGDATA": str(instance.datadir),
         "PGHOST": "/socks",
         "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
         "PGPORT": "999",
@@ -220,6 +221,7 @@ def test_exec(ctx: Context, instance: Instance) -> None:
             ctx, instance, command=("psql", "--user", "test", "--dbname", "test")
         )
     expected_env = {
+        "PGDATA": str(instance.datadir),
         "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
         "PGPORT": "999",
         "PGUSER": "postgres",
@@ -243,6 +245,7 @@ def test_env(ctx: Context, instance: Instance) -> None:
         assert instance_mod.env(ctx, instance) == "\n".join(
             [
                 f"export PATH={bindir}:/pg10/bin",
+                f"export PGDATA={instance.datadir}",
                 "export PGHOST=/socks",
                 f"export PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
                 "export PGPORT=999",
