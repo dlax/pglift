@@ -24,6 +24,7 @@ from typing import (
 )
 
 import click
+import psycopg2
 import pydantic.json
 import rich.console
 import rich.logging
@@ -115,6 +116,9 @@ class Command(click.Command):
             except pydantic.ValidationError as e:
                 logger.debug("a validation error occurred", exc_info=True)
                 raise click.ClickException(str(e))
+            except psycopg2.OperationalError as e:
+                logger.debug("an operational error occurred", exc_info=True)
+                raise click.ClickException(str(e).strip())
             except Exception:
                 keep_logfile = True
                 logger.exception("an unexpected error occurred")
