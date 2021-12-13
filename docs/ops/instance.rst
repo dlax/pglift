@@ -22,8 +22,11 @@ modification, deletion as well as status management (start, stop, restart).
       alter       Alter a PostgreSQL instance
       apply       Apply manifest as a PostgreSQL instance
       backup      Back up a PostgreSQL instance
+      config      Manage configuration of a PostgreSQL instance.
       describe    Describe a PostgreSQL instance
       drop        Drop a PostgreSQL instance
+      env         Output environment variables suitable to connect to a...
+      exec        Execute command in the libpq environment for a PostgreSQL...
       init        Initialize a PostgreSQL instance
       list        List the available instances
       privileges  List default privileges on instance.
@@ -31,10 +34,10 @@ modification, deletion as well as status management (start, stop, restart).
       restart     Restart a PostgreSQL instance
       restore     Restore a PostgreSQL instance
       schema      Print the JSON schema of PostgreSQL instance model
-      shell       Open a PostgreSQL interactive shell on a running instance.
       start       Start a PostgreSQL instance
       status      Check the status of a PostgreSQL instance.
       stop        Stop a PostgreSQL instance
+      upgrade     Upgrade an instance using pg_upgrade
 
 
 Ansible module
