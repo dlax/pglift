@@ -211,11 +211,13 @@ def instance_manifest(
     surole_password: Optional[str],
     tmp_port_factory: Iterator[int],
 ) -> interface.Instance:
+    port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
     return interface.Instance.parse_obj(
         {
             "name": "test",
             "version": pg_version,
+            "port": port,
             "surole_password": surole_password,
             "prometheus": {"port": prometheus_port},
         }
@@ -248,13 +250,9 @@ def instance(
     ctx: Context,
     instance_manifest: interface.Instance,
     instance_initialized: system.PostgreSQLInstance,
-    tmp_port_factory: Iterator[int],
     log_directory: pathlib.Path,
 ) -> system.Instance:
-    port = next(tmp_port_factory)
-    configure_instance(
-        ctx, instance_manifest, port=port, log_directory=str(log_directory)
-    )
+    configure_instance(ctx, instance_manifest, log_directory=str(log_directory))
     return system.Instance.system_lookup(
         ctx, (instance_manifest.name, instance_manifest.version)
     )
