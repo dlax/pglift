@@ -747,7 +747,7 @@ def exec(ctx: BaseContext, instance: Instance, command: Tuple[str, ...]) -> None
     progname, *args = command
     program = ctx.pg_ctl(instance.version).bindir / progname
     try:
-        cmd.execute_program([str(program)] + args, env=env)
+        cmd.execute_program([str(program)] + args, env=env, logger=logger)
     except FileNotFoundError as e:
         raise exceptions.FileNotFoundError(str(e))
 
