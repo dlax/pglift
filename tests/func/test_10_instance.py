@@ -24,7 +24,9 @@ from .conftest import DatabaseFactory
 
 
 def test_init(
-    ctx: Context, instance_initialized: system.Instance, monkeypatch: pytest.MonkeyPatch
+    ctx: Context,
+    instance_initialized: system.PostgreSQLInstance,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     i = instance_initialized
     assert i.datadir.exists()

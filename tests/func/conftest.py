@@ -221,7 +221,7 @@ def instance_manifest(
 @pytest.fixture(scope="session")
 def instance_initialized(
     ctx: Context, instance_manifest: interface.Instance, installed: None
-) -> system.Instance:
+) -> system.PostgreSQLInstance:
     assert instance_manifest.version is not None
     instance = system.BaseInstance.get(
         instance_manifest.name, instance_manifest.version, ctx
@@ -229,7 +229,9 @@ def instance_initialized(
     assert instance_mod.status(ctx, instance) == Status.unspecified_datadir
     instance_mod.init(ctx, instance_manifest)
     assert instance_mod.status(ctx, instance) == Status.not_running
-    return system.Instance.system_lookup(ctx, instance)
+    return system.PostgreSQLInstance.system_lookup(
+        ctx, (instance_manifest.name, instance_manifest.version)
+    )
 
 
 @pytest.fixture(scope="session")
@@ -241,7 +243,7 @@ def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
 def instance(
     ctx: Context,
     instance_manifest: interface.Instance,
-    instance_initialized: system.Instance,
+    instance_initialized: system.PostgreSQLInstance,
     tmp_port_factory: Iterator[int],
     log_directory: pathlib.Path,
 ) -> system.Instance:
@@ -249,7 +251,9 @@ def instance(
     configure_instance(
         ctx, instance_manifest, port=port, log_directory=str(log_directory)
     )
-    return instance_initialized
+    return system.Instance.system_lookup(
+        ctx, (instance_manifest.name, instance_manifest.version)
+    )
 
 
 @pytest.fixture(scope="session")
