@@ -45,7 +45,6 @@ setup(
     setup_requires=["setuptools_scm"],
     install_requires=[
         "attrs",
-        "contextlib2; python_version < '3.7'",
         "humanize",
         "importlib_metadata;python_version<'3.7'",
         "pgtoolkit >= 0.17.0",

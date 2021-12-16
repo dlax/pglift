@@ -20,7 +20,6 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from ._compat import nullcontext
 from .types import Logger
 
 A = TypeVar("A", bound=Callable[..., Any])
@@ -74,11 +73,10 @@ class Task(Generic[A]):
     @contextlib.contextmanager
     def display(self, title: str) -> Iterator[None]:
         if self.displayer is None:
-            cm = nullcontext()
-        else:
-            cm = self.displayer.handle(title)
+            yield None
+            return
 
-        with cm:
+        with self.displayer.handle(title):
             yield None
 
     def revert(self, title: str) -> Callable[[A], A]:
