@@ -17,6 +17,12 @@ from pglift.models import interface, system
 from . import reconfigure_instance
 
 
+@pytest.fixture(autouse=True)
+def prometheus_available(ctx: Context) -> None:
+    if not prometheus.enabled(ctx):
+        pytest.skip("prometheus not available")
+
+
 def config_dict(configpath: Path) -> Dict[str, str]:
     config = {}
     for line in configpath.read_text().splitlines():
