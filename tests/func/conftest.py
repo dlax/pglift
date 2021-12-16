@@ -211,10 +211,14 @@ def instance_manifest(
     surole_password: Optional[str],
     tmp_port_factory: Iterator[int],
 ) -> interface.Instance:
-    return interface.Instance(
-        name="test",
-        version=pg_version,
-        surole_password=surole_password,
+    prometheus_port = next(tmp_port_factory)
+    return interface.Instance.parse_obj(
+        {
+            "name": "test",
+            "version": pg_version,
+            "surole_password": surole_password,
+            "prometheus": {"port": prometheus_port},
+        }
     )
 
 
