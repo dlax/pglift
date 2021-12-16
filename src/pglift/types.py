@@ -32,23 +32,6 @@ class Role(Protocol):
     password: Optional[SecretStr]
 
 
-class Logger(Protocol):
-    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-
 class NoticeHandler(Protocol):
     def __call__(self, diag: psycopg.errors.Diagnostic) -> Any:
         ...

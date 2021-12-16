@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from pgtoolkit.conf import Configuration
 
-from . import cmd, exceptions, hookimpl
+from . import cmd, exceptions, hookimpl, logger
 from . import prometheus_default_port as default_port
 from . import systemd
 from .ctx import BaseContext
@@ -187,7 +187,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
 def drop(ctx: BaseContext, name: str) -> None:
     """Remove a postgres_exporter service."""
     if not exists(ctx, name):
-        ctx.warning("no postgres_exporter service '%s' found", name)
+        logger.warning("no postgres_exporter service '%s' found", name)
         return
 
     stop(ctx, name)
@@ -227,7 +227,7 @@ def instance_configure(
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not enabled(ctx):
-        ctx.warning(
+        logger.warning(
             "Prometheus postgres_exporter not available, skipping monitoring configuration"
         )
         return
@@ -256,13 +256,13 @@ def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
         opts = shlex.split(env.pop("POSTGRES_EXPORTER_OPTS")[1:-1])
         args = [str(settings.execpath)] + opts
         if foreground:
-            cmd.execute_program(args, env=env, logger=ctx)
+            cmd.execute_program(args, env=env, logger=logger)
         else:
             pidfile = _pidfile(name, settings)
             if cmd.status_program(pidfile) == cmd.Status.running:
-                ctx.debug("postgres_exporter '%s' is already running", name)
+                logger.debug("postgres_exporter '%s' is already running", name)
                 return
-            cmd.start_program(args, pidfile, env=env, logger=ctx)
+            cmd.start_program(args, pidfile, env=env, logger=logger)
 
 
 @hookimpl  # type: ignore[misc]
@@ -281,9 +281,9 @@ def stop(ctx: BaseContext, name: str) -> None:
     else:
         pidfile = _pidfile(name, ctx.settings.prometheus)
         if cmd.status_program(pidfile) == cmd.Status.not_running:
-            ctx.debug("postgres_exporter '%s' is already stopped", name)
+            logger.debug("postgres_exporter '%s' is already stopped", name)
             return
-        cmd.terminate_program(pidfile, logger=ctx)
+        cmd.terminate_program(pidfile, logger=logger)
 
 
 @hookimpl  # type: ignore[misc]

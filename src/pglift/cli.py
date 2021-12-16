@@ -41,7 +41,7 @@ from typing_extensions import Literal
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
-from . import pgbackrest, pm, privileges, prometheus, roles, version
+from . import logger, pgbackrest, pm, privileges, prometheus, roles, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
@@ -56,7 +56,7 @@ class Obj:
 
     def __init__(self, context: Context, displayer: Optional[Displayer]) -> None:
         self.ctx = context
-        self.runner = Runner(context, displayer)
+        self.runner = Runner(displayer)
 
 
 def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -166,9 +166,9 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
             try:
                 instance = Instance.system_lookup(ctx, (name, version))
             except exceptions.InstanceNotFound:
-                ctx.debug("instance '%s' not found in version %s", name, version)
+                logger.debug("instance '%s' not found in version %s", name, version)
             else:
-                ctx.info("instance '%s' found in version %s", name, version)
+                logger.info("instance '%s' found in version %s", name, version)
                 if found:
                     raise click.BadParameter(
                         f"instance '{name}' exists in several PostgreSQL versions;"

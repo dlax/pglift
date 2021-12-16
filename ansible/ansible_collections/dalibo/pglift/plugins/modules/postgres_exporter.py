@@ -78,7 +78,7 @@ def run_module() -> None:
         module.exit_json(**result)
 
     try:
-        with Runner(ctx):
+        with Runner():
             prometheus.apply(ctx, exporter)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

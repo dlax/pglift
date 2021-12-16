@@ -45,20 +45,20 @@ def test_task() -> None:
     assert neg.revert_action(-1) == 1
 
 
-def test_runner_state(logger: logging.Logger) -> None:
+def test_runner_state() -> None:
     with pytest.raises(RuntimeError, match="inconsistent task state"):
-        with task.Runner(logger):
-            with task.Runner(logger):
+        with task.Runner():
+            with task.Runner():
                 pass
 
     with pytest.raises(ValueError, match="expected"):
-        with task.Runner(logger):
+        with task.Runner():
             assert task.Task._calls is not None
             raise ValueError("expected")
     assert task.Task._calls is None
 
 
-def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> None:
+def test_runner(caplog: pytest.LogCaptureFixture) -> None:
     values = set()
 
     @task.task("add {x} to values")
@@ -72,7 +72,7 @@ def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> Non
 
     displayer = SimpleDisplayer()
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(logger, displayer):
+        with task.Runner(displayer):
             add(2, fail=True)
     # no revert action
     assert values == {1, 2}
@@ -86,7 +86,7 @@ def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> Non
             pass
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(logger, displayer):
+        with task.Runner(displayer):
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2}
@@ -103,7 +103,7 @@ def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> Non
             raise ValueError("failed to fail")
 
     with pytest.raises(ValueError, match="failed to fail"):
-        with task.Runner(logger):
+        with task.Runner():
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2, 3, 4}
@@ -114,6 +114,6 @@ def test_runner(logger: logging.Logger, caplog: pytest.LogCaptureFixture) -> Non
 
     caplog.clear()
     with pytest.raises(KeyboardInterrupt), caplog.at_level(logging.WARNING):
-        with task.Runner(logger):
+        with task.Runner():
             intr()
     assert caplog.messages == [f"{intr} interrupted"]

@@ -5,13 +5,14 @@ import os
 import signal
 import subprocess
 import sys
+from logging import Logger
 from pathlib import Path
 from subprocess import PIPE
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from . import exceptions
 from ._compat import shlex_join
-from .types import AutoStrEnum, CompletedProcess, Logger
+from .types import AutoStrEnum, CompletedProcess
 
 
 async def process_stream_with(

@@ -5,7 +5,7 @@ import attr
 from attr.validators import instance_of
 from pgtoolkit.conf import Configuration
 
-from .. import conf, exceptions, prometheus_default_port
+from .. import conf, exceptions, logger, prometheus_default_port
 from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
@@ -35,7 +35,7 @@ class PrometheusService:
         try:
             port = prometheus.port(ctx, instance.qualname)
         except exceptions.FileNotFoundError as exc:
-            ctx.warning(
+            logger.warning(
                 "failed to read postgres_exporter port for %s: %s", instance, exc
             )
             return cls()

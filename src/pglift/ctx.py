@@ -1,5 +1,4 @@
 import functools
-import logging
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Sequence
@@ -7,8 +6,7 @@ from typing import Any, Dict, Optional, Sequence
 from pgtoolkit import ctl
 from pluggy import PluginManager
 
-from . import __name__ as pkgname
-from . import cmd, exceptions, util
+from . import cmd, exceptions, logger, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
@@ -62,26 +60,6 @@ class BaseContext(ABC):
         return env
 
     @abstractmethod
-    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    @abstractmethod
-    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    @abstractmethod
-    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    @abstractmethod
-    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    @abstractmethod
-    def exception(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        ...
-
-    @abstractmethod
     def run(
         self,
         args: Sequence[str],
@@ -97,28 +75,10 @@ class BaseContext(ABC):
 class Context(BaseContext):
     """Default execution context."""
 
-    _logger = logging.getLogger(pkgname)
-    _logger.addHandler(logging.NullHandler())
-
-    def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        return self._logger.debug(msg, *args, **kwargs)
-
-    def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        return self._logger.info(msg, *args, **kwargs)
-
-    def warning(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        return self._logger.warning(msg, *args, **kwargs)
-
-    def error(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        return self._logger.error(msg, *args, **kwargs)
-
-    def exception(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        return self._logger.exception(msg, *args, **kwargs)
-
     def run(
         self, args: Sequence[str], log_command: bool = True, **kwargs: Any
     ) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
         if log_command:
-            self.info("%s", shlex_join(args))
-        return cmd.run(args, logger=self, **kwargs)
+            logger.info("%s", shlex_join(args))
+        return cmd.run(args, logger=logger, **kwargs)

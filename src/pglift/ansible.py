@@ -1,7 +1,9 @@
+import logging
 from typing import Any, Mapping, Optional, Sequence, Tuple
 
 from typing_extensions import Protocol
 
+from . import logger
 from .ctx import BaseContext
 from .types import CompletedProcess
 
@@ -19,26 +21,25 @@ class _AnsibleModule(Protocol):
         ...
 
 
+class AnsibleLoggingHandler(logging.Handler):
+    def __init__(self, module: _AnsibleModule, *args: Any, **kwargs: Any) -> None:
+        self._ansible_module = module
+        super().__init__(*args, **kwargs)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno == logging.DEBUG:
+            self._ansible_module.debug(record.message)
+        else:
+            self._ansible_module.log(f"[record.levelname.lower()] {record.message}")
+
+
 class AnsibleContext(BaseContext):
     """Execution context that uses an Ansible module."""
 
     def __init__(self, module: _AnsibleModule, **kwargs: Any) -> None:
         self.module = module
+        logger.addHandler(AnsibleLoggingHandler(module))
         super().__init__(**kwargs)
-
-    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        return self.module.debug(msg % args)
-
-    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        return self.module.log(f"[info] {msg % args}")
-
-    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        return self.module.log(f"[warn] {msg % args}")
-
-    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        return self.module.log(f"[error] {msg % args}")
-
-    exception = error
 
     def run(
         self, args: Sequence[str], log_command: bool = True, **kwargs: Any

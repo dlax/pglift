@@ -1,13 +1,13 @@
 import functools
 import subprocess
+from logging import Logger
 from pathlib import Path
 from typing import Callable, List
 
-from . import exceptions
+from . import exceptions, logger
 from . import template as _template
 from .ctx import BaseContext
 from .settings import SystemdSettings
-from .types import Logger
 
 
 def template(name: str) -> str:
@@ -53,7 +53,7 @@ def is_enabled(ctx: BaseContext, unit: str) -> bool:
 
 def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
     if is_enabled(ctx, unit):
-        ctx.debug("systemd unit %s already enabled, 'enable' action skipped", unit)
+        logger.debug("systemd unit %s already enabled, 'enable' action skipped", unit)
         return
     cmd = systemctl(ctx.settings.systemd, "enable", unit)
     if now:
@@ -63,7 +63,7 @@ def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
 
 def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
     if not is_enabled(ctx, unit):
-        ctx.debug("systemd unit %s not enabled, 'disable' action skipped", unit)
+        logger.debug("systemd unit %s not enabled, 'disable' action skipped", unit)
         return
     cmd = systemctl(ctx.settings.systemd, "disable", unit)
     if now:
@@ -81,7 +81,7 @@ def log_status(fn: F) -> F:
             return fn(ctx, unit)
         except (subprocess.CalledProcessError, SystemExit):
             # Ansible runner would call sys.exit(1), hence SystemExit.
-            ctx.error(status(ctx, unit))
+            logger.error(status(ctx, unit))
             raise
 
     return wrapper

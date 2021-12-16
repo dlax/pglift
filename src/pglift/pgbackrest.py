@@ -13,6 +13,7 @@ from typing_extensions import Literal
 
 from . import hookimpl
 from . import instance as instance_mod
+from . import logger
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .models import interface
@@ -203,7 +204,7 @@ def instance_configure(
 ) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     if not enabled(ctx):
-        ctx.warning("pgbackrest not available, skipping backup configuration")
+        logger.warning("pgbackrest not available, skipping backup configuration")
         return
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if instance.standby:

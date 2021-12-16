@@ -142,7 +142,7 @@ def run_module() -> None:
     instance_exists = instance_mod.exists(ctx, m.name, m.version)
 
     try:
-        with Runner(ctx):
+        with Runner():
             instance_and_changes = instance_mod.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

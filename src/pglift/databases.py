@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 import psycopg.rows
 from psycopg import sql
 
-from . import db, exceptions, types
+from . import db, exceptions, logger, types
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance
@@ -154,5 +154,5 @@ def run(
             ctx, instance, dbname=database.name, autocommit=True
         ) as cnx:
             cnx.add_notice_handler(notice_handler)
-            ctx.info("run %s on database %s of %s", sql_command, database, instance)
+            logger.info("run %s on database %s of %s", sql_command, database, instance)
             cnx.execute(sql_command)

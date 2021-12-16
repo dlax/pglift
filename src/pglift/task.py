@@ -2,6 +2,7 @@ import collections
 import contextlib
 import functools
 import inspect
+import logging
 from types import TracebackType
 from typing import (
     Any,
@@ -20,11 +21,13 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from .types import Logger
+from . import __name__ as pkgname
 
 A = TypeVar("A", bound=Callable[..., Any])
 
 Call = Tuple["Task", Tuple[Any, ...], Dict[str, Any]]
+
+logger = logging.getLogger(pkgname)
 
 
 class Displayer(Protocol):
@@ -114,8 +117,7 @@ def task(title: str) -> Callable[[A], Task[A]]:
 class Runner:
     """Context manager handling possible revert of a chain to task calls."""
 
-    def __init__(self, logger: Logger, displayer: Optional[Displayer] = None):
-        self.logger = logger
+    def __init__(self, displayer: Optional[Displayer] = None):
         self.displayer = displayer
 
     def __enter__(self) -> None:
@@ -137,9 +139,9 @@ class Runner:
             if exc_value is not None:
                 if exc_type is KeyboardInterrupt:
                     if Task._calls:
-                        self.logger.warning("%s interrupted", Task._calls[-1][0])
+                        logger.warning("%s interrupted", Task._calls[-1][0])
                 else:
-                    self.logger.exception(str(exc_value))
+                    logger.exception(str(exc_value))
                 assert Task._calls is not None
                 while True:
                     try:
