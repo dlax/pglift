@@ -315,7 +315,6 @@ def test_standby(
         version=pg_version,
         port=next(tmp_port_factory),
         standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
-        surole_password=surole.password,
     )
 
     @contextlib.contextmanager
@@ -343,10 +342,18 @@ def test_standby(
         assert standby_instance.standby.slot == slot
         try:
             with instance_mod.running(ctx, standby_instance):
+                assert (
+                    execute(
+                        ctx,
+                        standby_instance,
+                        "SELECT * FROM pg_is_in_recovery()",
+                        role=surole,
+                    )
+                    == [{"pg_is_in_recovery": True}]
+                )
                 assert execute(
-                    ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
-                ) == [{"pg_is_in_recovery": True}]
-                assert execute(ctx, standby_instance, "SELECT * FROM t") == [{"i": 1}]
+                    ctx, standby_instance, "SELECT * FROM t", role=surole
+                ) == [{"i": 1}]
                 execute(ctx, instance, "UPDATE t SET i = 42", fetch=False)
 
                 @retry(
@@ -355,17 +362,23 @@ def test_standby(
                     stop=stop_after_attempt(4),
                 )
                 def assert_replicated() -> None:
-                    assert execute(ctx, standby_instance, "SELECT * FROM t") == [
-                        {"i": 42}
-                    ]
+                    assert execute(
+                        ctx, standby_instance, "SELECT * FROM t", role=surole
+                    ) == [{"i": 42}]
 
                 assert_replicated()
 
                 instance_mod.promote(ctx, standby_instance)
                 assert not standby_instance.standby
-                assert execute(
-                    ctx, standby_instance, "SELECT * FROM pg_is_in_recovery()"
-                ) == [{"pg_is_in_recovery": False}]
+                assert (
+                    execute(
+                        ctx,
+                        standby_instance,
+                        "SELECT * FROM pg_is_in_recovery()",
+                        role=surole,
+                    )
+                    == [{"pg_is_in_recovery": False}]
+                )
         finally:
             if slot:
                 execute(
