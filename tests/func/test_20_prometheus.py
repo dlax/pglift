@@ -33,7 +33,6 @@ def config_dict(configpath: Path) -> Dict[str, str]:
 
 def test_configure(
     ctx: Context,
-    installed: None,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
@@ -66,7 +65,6 @@ def postgres_exporter(
     ctx: Context,
     instance_manifest: interface.Instance,
     instance: system.Instance,
-    installed: None,
     tmp_port_factory: Iterator[int],
 ) -> Iterator[Tuple[str, str, int]]:
     """Setup a postgres_exporter service for 'instance' using another port."""
@@ -110,7 +108,7 @@ def request_metrics(port: int) -> requests.Response:
     return requests.get(f"http://0.0.0.0:{port}/metrics")
 
 
-def test_start_stop(ctx: Context, installed: None, instance: system.Instance) -> None:
+def test_start_stop(ctx: Context, instance: system.Instance) -> None:
     assert instance.prometheus
     port = instance.prometheus.port
 

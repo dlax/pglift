@@ -194,9 +194,9 @@ def test_start_stop_restart_running_stopped(
     assert instance_mod.status(ctx, i) == Status.not_running
 
 
+@pytest.mark.usefixtures("installed")
 def test_apply(
     ctx: Context,
-    installed: None,
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],

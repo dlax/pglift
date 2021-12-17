@@ -7,9 +7,7 @@ from pglift.ctx import Context
 from pglift.models import system
 
 
-def test_systemd_backup_job(
-    ctx: Context, installed: None, instance: system.Instance
-) -> None:
+def test_systemd_backup_job(ctx: Context, instance: system.Instance) -> None:
     scheduler = ctx.settings.scheduler
     if scheduler != "systemd":
         pytest.skip(f"not applicable for scheduler method '{scheduler}'")

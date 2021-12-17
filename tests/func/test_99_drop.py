@@ -12,7 +12,6 @@ from pglift.models import interface, system
 
 def test_pgpass(
     ctx: Context,
-    installed: None,
     instance_manifest: interface.Instance,
     instance_dropped: Configuration,
 ) -> None:
@@ -29,7 +28,6 @@ def test_pgpass(
 
 def test_systemd_backup_job(
     ctx: Context,
-    installed: None,
     instance: system.Instance,
     instance_dropped: Configuration,
 ) -> None:

@@ -27,7 +27,6 @@ def directory(ctx: Context, instance: system.Instance) -> Path:
 
 def test_configure(
     ctx: Context,
-    installed: None,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     tmp_path: Path,
