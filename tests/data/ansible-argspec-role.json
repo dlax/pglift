@@ -50,6 +50,13 @@
     ],
     "default": "present"
   },
+  "superuser": {
+    "default": false,
+    "description": [
+      "superuser role"
+    ],
+    "type": "bool"
+  },
   "validity": {
     "description": [
       "sets a date and time after which the role's password is no longer valid"

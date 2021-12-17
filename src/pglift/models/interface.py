@@ -275,6 +275,7 @@ class Role(Manifest):
         description="let the role inherits the privileges of the roles its is a member of",
     )
     login: bool = Field(default=False, description="allow the role to log in")
+    superuser: bool = Field(default=False, description="superuser role")
     connection_limit: Optional[int] = Field(
         description="how many concurrent connections the role can make",
         cli={"name": "connection-limit"},

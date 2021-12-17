@@ -31,7 +31,14 @@ def test_options(with_password: bool) -> None:
     Literal = sql.Literal
 
     expected_seq = (
-        [SQL("NOINHERIT"), SQL(" "), SQL("LOGIN"), SQL(" ")]
+        [
+            SQL("NOINHERIT"),
+            SQL(" "),
+            SQL("LOGIN"),
+            SQL(" "),
+            SQL("NOSUPERUSER"),
+            SQL(" "),
+        ]
         + (
             [Composed([SQL("PASSWORD"), SQL(" "), Literal("skret")]), SQL(" ")]  # type: ignore[list-item]
             if with_password
