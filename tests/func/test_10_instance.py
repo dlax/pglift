@@ -71,16 +71,20 @@ def test_pgpass(
 ) -> None:
     port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
+
+    def postgres_entry() -> str:
+        (entry,) = [
+            line for line in passfile.read_text().splitlines() if ":postgres:" in line
+        ]
+        return entry
+
     if instance_manifest.surole_password and ctx.settings.postgresql.surole.pgpass:
-        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
+        assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
 
         with reconfigure_instance(ctx, instance, instance_manifest, port=port + 1):
-            assert passfile.read_text().splitlines() == [
-                "#hostname:port:database:username:password",
-                f"*:{port+1}:*:postgres:s3kret",
-            ]
+            assert postgres_entry() == f"*:{port+1}:*:postgres:s3kret"
 
-        assert passfile.read_text().splitlines()[1:] == [f"*:{port}:*:postgres:s3kret"]
+        assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
 
 
 def test_auth(
