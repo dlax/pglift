@@ -87,7 +87,7 @@ def test_pgpass(
         assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
 
 
-def test_auth(
+def test_connect(
     ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
 ) -> None:
     i = instance
@@ -118,7 +118,9 @@ def test_auth(
             connargs["passfile"] = str(passfile)
         psycopg.connect(**connargs).close()  # type: ignore[call-overload]
 
-    hba_path = i.datadir / "pg_hba.conf"
+
+def test_hba(ctx: Context, instance: system.Instance) -> None:
+    hba_path = instance.datadir / "pg_hba.conf"
     hba = hba_path.read_text().splitlines()
     auth = ctx.settings.postgresql.auth
     assert (
@@ -130,7 +132,9 @@ def test_auth(
         in hba
     )
 
-    ident_path = i.datadir / "pg_ident.conf"
+
+def test_ident(ctx: Context, instance: system.Instance) -> None:
+    ident_path = instance.datadir / "pg_ident.conf"
     ident = ident_path.read_text().splitlines()
     assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
 
