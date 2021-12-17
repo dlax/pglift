@@ -333,12 +333,11 @@ def test_standby(
 
     with instance_running_with_table():
         assert not pg_replication_slots()
-        instance_mod.apply(ctx, standby_manifest)
+        standby_instance, _ = instance_mod.apply(ctx, standby_manifest)  # type: ignore[misc]
         if slot:
             assert pg_replication_slots() == [slot]
         else:
             assert not pg_replication_slots()
-        standby_instance = system.Instance.system_lookup(ctx, ("standby", pg_version))
         assert standby_instance.standby
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
