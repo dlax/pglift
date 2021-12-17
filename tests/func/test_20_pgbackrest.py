@@ -43,7 +43,11 @@ def test_configure(
     assert configpath.exists()
     lines = configpath.read_text().splitlines()
     assert f"pg1-port = {instance_port}" in lines
+    assert "pg1-user = backup" in lines
     assert directory.exists()
+
+    lines = ctx.settings.postgresql.auth.passfile.read_text().splitlines()
+    assert any(line.startswith(f"*:{instance.port}:*:backup:") for line in lines)
 
     configdir = instance.datadir
     confd = conf_info(configdir)[0]

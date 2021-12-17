@@ -209,6 +209,9 @@ class PostgreSQLSettings(BaseSettings):
     surole: SuRole = SuRole()
     """Instance super-user role."""
 
+    backuprole: str = "backup"
+    """Instance role used to backup."""
+
     datadir: str = "data"
     """Path segment from instance base directory to PGDATA directory."""
 

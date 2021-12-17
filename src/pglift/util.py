@@ -1,4 +1,6 @@
 import os
+import secrets
+import string
 import tempfile
 from pathlib import Path
 
@@ -45,6 +47,12 @@ def generate_certificate(
             check=True,
         )
     certfile.chmod(0o600)
+
+
+def generate_password(length: int = 32) -> str:
+    return "".join(
+        secrets.choice(string.ascii_letters + string.digits) for _ in range(length)
+    )
 
 
 def short_version(version: int) -> str:

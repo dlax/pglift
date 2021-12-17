@@ -2,6 +2,7 @@ import configparser
 import datetime
 import enum
 import json
+import os
 import re
 import shutil
 from pathlib import Path
@@ -13,7 +14,7 @@ from typing_extensions import Literal
 
 from . import hookimpl
 from . import instance as instance_mod
-from . import logger
+from . import logger, roles, util
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .models import interface
@@ -106,8 +107,6 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     instance_config = instance.config()
     stanza = _stanza(instance)
 
-    backuprole = ctx.settings.postgresql.surole
-
     # Always use string values so that this would match with actual config (on
     # disk) that's parsed later on.
     config = {
@@ -126,7 +125,7 @@ def setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
         stanza: {
             "pg1-path": f"{instance.datadir}",
             "pg1-port": str(instance.port),
-            "pg1-user": backuprole.name,
+            "pg1-user": ctx.settings.postgresql.backuprole,
         },
     }
     unix_socket_directories = instance_config.get("unix_socket_directories")
@@ -193,6 +192,16 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
         return
 
     with instance_mod.running(ctx, instance):
+        role = interface.Role(
+            name=ctx.settings.postgresql.backuprole,
+            password=util.generate_password(),
+            login=True,
+            superuser=True,
+            pgpass=True,
+        )
+        if not roles.exists(ctx, instance, role.name):
+            roles.create(ctx, instance, role)
+            roles.set_pgpass_entry_for(ctx, instance, role)
         ctx.run(make_cmd(instance, settings, "start"), check=True)
         ctx.run(make_cmd(instance, settings, "stanza-create"), check=True)
         ctx.run(make_cmd(instance, settings, "check"), check=True)
@@ -271,7 +280,10 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
-    env = ctx.libpq_environ()
+    # Don't use ctx.libpq_environ() here since it applies to surole and we use
+    # backuprole.
+    env = os.environ.copy()
+    env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
     ctx.run(backup_command(instance, type=type), check=True, env=env)
 
 
