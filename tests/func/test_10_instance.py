@@ -19,7 +19,7 @@ from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import Settings
 
-from . import configure_instance, execute, reconfigure_instance
+from . import execute, reconfigure_instance
 from .conftest import DatabaseFactory
 
 
@@ -313,6 +313,7 @@ def test_standby(
     standby_manifest = interface.Instance(
         name="standby",
         version=pg_version,
+        port=next(tmp_port_factory),
         standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
         surole_password=surole.password,
     )
@@ -332,17 +333,11 @@ def test_standby(
 
     with instance_running_with_table():
         assert not pg_replication_slots()
-        instance_mod.init(ctx, standby_manifest)
+        instance_mod.apply(ctx, standby_manifest)
         if slot:
             assert pg_replication_slots() == [slot]
         else:
             assert not pg_replication_slots()
-        configure_instance(
-            ctx,
-            standby_manifest,
-            port=next(tmp_port_factory),
-            log_directory=str(tmp_path_factory.mktemp("postgres-standby-logs")),
-        )
         standby_instance = system.Instance.system_lookup(ctx, ("standby", pg_version))
         assert standby_instance.standby
         assert standby_instance.standby.for_
