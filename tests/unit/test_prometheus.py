@@ -22,15 +22,21 @@ def test_port(ctx: Context, instance: Instance) -> None:
     configpath = pathlib.Path(
         str(ctx.settings.prometheus.configpath).format(name=instance.qualname)
     )
-    configpath.write_text("\nempty\n")
-    with pytest.raises(LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"):
-        prometheus.port(ctx, instance.qualname)
+    original_content = configpath.read_text()
+    try:
+        configpath.write_text("\nempty\n")
+        with pytest.raises(
+            LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"
+        ):
+            prometheus.port(ctx, instance.qualname)
 
-    configpath.write_text("\nPG_EXPORTER_WEB_LISTEN_ADDRESS=42\n")
-    with pytest.raises(
-        LookupError, match="malformatted PG_EXPORTER_WEB_LISTEN_ADDRESS"
-    ):
-        prometheus.port(ctx, instance.qualname)
+        configpath.write_text("\nPG_EXPORTER_WEB_LISTEN_ADDRESS=42\n")
+        with pytest.raises(
+            LookupError, match="malformatted PG_EXPORTER_WEB_LISTEN_ADDRESS"
+        ):
+            prometheus.port(ctx, instance.qualname)
+    finally:
+        configpath.write_text(original_content)
 
 
 def test_apply(ctx: Context, instance: Instance) -> None:
