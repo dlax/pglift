@@ -542,13 +542,15 @@ def upgrade(
             for entry in passfile:
                 if entry.matches(port=instance.port, username=surole.name):
                     surole_password = entry.password
-    new_manifest = interface.Instance(
-        name=name or instance.name,
-        version=version,
-        port=port or instance.port,
-        state=interface.InstanceState.stopped,
-        prometheus={"port": instance.prometheus.port},
-        surole_password=SecretStr(surole_password) if surole_password else None,
+    new_manifest = interface.Instance.parse_obj(
+        {
+            "name": name or instance.name,
+            "version": version,
+            "port": port or instance.port,
+            "state": interface.InstanceState.stopped,
+            "prometheus": {"port": instance.prometheus.port},
+            "surole_password": SecretStr(surole_password) if surole_password else None,
+        }
     )
     result = apply(ctx, new_manifest)
     assert result is not None, new_manifest
