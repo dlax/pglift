@@ -554,9 +554,8 @@ def upgrade(
             "surole_password": SecretStr(surole_password) if surole_password else None,
         }
     )
-    result = apply(ctx, new_manifest)
-    assert result is not None, new_manifest
-    (newinstance, _) = result
+    init(ctx, new_manifest)
+    newinstance = Instance.system_lookup(ctx, (new_manifest.name, new_manifest.version))
     bindir = ctx.pg_ctl(version).bindir
     pg_upgrade = str(bindir / "pg_upgrade")
     cmd = [
@@ -575,6 +574,7 @@ def upgrade(
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             ctx.run(cmd, check=True, cwd=tmpdir, env=env)
+        apply(ctx, new_manifest)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise
