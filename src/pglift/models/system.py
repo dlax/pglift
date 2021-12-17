@@ -5,7 +5,7 @@ import attr
 from attr.validators import instance_of
 from pgtoolkit.conf import Configuration
 
-from .. import conf, exceptions, logger, prometheus_default_port
+from .. import conf, exceptions, logger
 from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
@@ -23,22 +23,24 @@ def default_postgresql_version(ctx: BaseContext) -> str:
 class PrometheusService:
     """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
 
-    port: int = prometheus_default_port
+    port: int
     """TCP port for the web interface and telemetry."""
 
     T = TypeVar("T", bound="PrometheusService")
 
     @classmethod
-    def system_lookup(cls: Type[T], ctx: BaseContext, instance: "BaseInstance") -> T:
+    def system_lookup(
+        cls: Type[T], ctx: BaseContext, instance: "BaseInstance"
+    ) -> Optional[T]:
         from .. import prometheus
 
         try:
             port = prometheus.port(ctx, instance.qualname)
         except exceptions.FileNotFoundError as exc:
-            logger.warning(
+            logger.debug(
                 "failed to read postgres_exporter port for %s: %s", instance, exc
             )
-            return cls()
+            return None
         else:
             return cls(port)
 
@@ -206,7 +208,9 @@ class PostgreSQLInstance(BaseInstance):
 class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
-    prometheus: PrometheusService = attr.ib(validator=instance_of(PrometheusService))
+    prometheus: Optional[PrometheusService] = attr.ib(
+        validator=instance_of((type(None), PrometheusService))
+    )
 
     T = TypeVar("T", bound="Instance")
 

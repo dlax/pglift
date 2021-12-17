@@ -143,7 +143,7 @@ class Instance(Manifest):
 
     standby: Optional[Standby] = None
 
-    prometheus: Prometheus = Prometheus()
+    prometheus: Optional[Prometheus] = Prometheus()
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:

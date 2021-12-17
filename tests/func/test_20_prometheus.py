@@ -38,6 +38,7 @@ def test_configure(
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
+    assert instance.prometheus is not None
     prometheus_settings = ctx.settings.prometheus
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
@@ -110,6 +111,7 @@ def request_metrics(port: int) -> requests.Response:
 
 
 def test_start_stop(ctx: Context, installed: None, instance: system.Instance) -> None:
+    assert instance.prometheus
     port = instance.prometheus.port
 
     if ctx.settings.service_manager == "systemd":

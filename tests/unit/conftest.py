@@ -4,7 +4,8 @@ from typing import Any
 import pytest
 from pgtoolkit.ctl import PGCtl
 
-from pglift import pm, prometheus
+from pglift import pm
+from pglift import prometheus as prometheus_mod
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance, PrometheusService
@@ -68,14 +69,14 @@ def instance_manifest(pg_version: str) -> interface.Instance:
     return interface.Instance(name="test", version=pg_version)
 
 
-@pytest.fixture
-def instance(pg_version: str, settings: Settings) -> Instance:
-    prometheus_port = 9817
+@pytest.fixture(params=[True, False], ids=["prometheus=yes", "prometheus=no"])
+def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
+    prometheus = None
+    if request.param:
+        prometheus_port = 9817
+        prometheus = PrometheusService(port=prometheus_port)
     instance = Instance(
-        name="test",
-        version=pg_version,
-        settings=settings,
-        prometheus=PrometheusService(port=prometheus_port),
+        name="test", version=pg_version, settings=settings, prometheus=prometheus
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
@@ -83,9 +84,14 @@ def instance(pg_version: str, settings: Settings) -> Instance:
         "\n".join(["port = 999", "unix_socket_directories = /socks"])
     )
 
-    prometheus_config = prometheus._configpath(instance.qualname, settings.prometheus)
-    prometheus_config.parent.mkdir(parents=True)
-    prometheus_config.write_text(f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus_port}")
+    if prometheus:
+        prometheus_config = prometheus_mod._configpath(
+            instance.qualname, settings.prometheus
+        )
+        prometheus_config.parent.mkdir(parents=True)
+        prometheus_config.write_text(
+            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus_port}"
+        )
 
     return instance
 

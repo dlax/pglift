@@ -548,7 +548,9 @@ def upgrade(
             "version": version,
             "port": port or instance.port,
             "state": interface.InstanceState.stopped,
-            "prometheus": {"port": instance.prometheus.port},
+            "prometheus": (
+                {"port": instance.prometheus.port} if instance.prometheus else None
+            ),
             "surole_password": SecretStr(surole_password) if surole_password else None,
         }
     )
@@ -649,7 +651,11 @@ def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.I
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
     state = interface.InstanceState.from_pg_status(status(ctx, instance))
-    prometheus = interface.Instance.Prometheus(port=instance.prometheus.port)
+    prometheus = (
+        interface.Instance.Prometheus(port=instance.prometheus.port)
+        if instance.prometheus
+        else None
+    )
     return interface.Instance(
         name=instance.name,
         version=instance.version,

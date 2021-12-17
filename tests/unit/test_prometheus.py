@@ -16,13 +16,21 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
 
 
 def test_port(ctx: Context, instance: Instance) -> None:
-    port = prometheus.port(ctx, instance.qualname)
-    assert port == 9817
+    if instance.prometheus:
+        port = prometheus.port(ctx, instance.qualname)
+        assert port == 9817
+    else:
+        with pytest.raises(exceptions.FileNotFoundError):
+            prometheus.port(ctx, instance.qualname)
 
     configpath = pathlib.Path(
         str(ctx.settings.prometheus.configpath).format(name=instance.qualname)
     )
-    original_content = configpath.read_text()
+    original_content = None
+    if instance.prometheus:
+        original_content = configpath.read_text()
+    else:
+        configpath.parent.mkdir(parents=True)  # exists not ok
     try:
         configpath.write_text("\nempty\n")
         with pytest.raises(
@@ -36,7 +44,8 @@ def test_port(ctx: Context, instance: Instance) -> None:
         ):
             prometheus.port(ctx, instance.qualname)
     finally:
-        configpath.write_text(original_content)
+        if original_content is not None:
+            configpath.write_text(original_content)
 
 
 def test_apply(ctx: Context, instance: Instance) -> None:
