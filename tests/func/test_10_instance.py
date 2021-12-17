@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from pathlib import Path
-from typing import Iterator, List, NoReturn
+from typing import Iterator, List, NoReturn, Optional
 from unittest.mock import patch
 
 import psycopg
@@ -195,7 +195,11 @@ def test_start_stop_restart_running_stopped(
 
 
 def test_apply(
-    ctx: Context, installed: None, tmp_path: Path, tmp_port_factory: Iterator[int]
+    ctx: Context,
+    installed: None,
+    tmp_path: Path,
+    tmp_port_factory: Iterator[int],
+    surole_password: Optional[str],
 ) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
@@ -206,6 +210,7 @@ def test_apply(
         state=interface.InstanceState.stopped,
         configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
+        surole_password=surole_password,
     )
     r = instance_mod.apply(ctx, im)
     assert r is not None
