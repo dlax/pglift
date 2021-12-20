@@ -1,5 +1,5 @@
-Command Line Interface
-======================
+Using the Command Line Interface
+================================
 
 .. highlight:: console
 

@@ -1,5 +1,5 @@
-Ansible
-=======
+Using Ansible modules
+=====================
 
 .. highlight:: console
 

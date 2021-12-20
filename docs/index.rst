@@ -1,19 +1,49 @@
-Welcome to pglift's documentation!
-==================================
+pglift documentation
+====================
+
+pglift provides a command-line interface, a Python library and an Ansible
+collection to deploy and manage production-ready instances of PostgreSQL.
+
+Tutorials
+---------
 
 .. toctree::
-    :maxdepth: 2
-    :caption: Contents:
+    :maxdepth: 1
 
-    tutorials/index
-    setup/index
-    ops/index
+    tutorials/install
+    tutorials/cli
+    tutorials/ansible
+
+
+User guides
+-----------
+
+.. toctree::
+    :maxdepth: 1
+
+    user/setup/index
+    user/ops/index
+
+Reference
+---------
+
+.. toctree::
+    :maxdepth: 1
+
     api/index
+
+How to guides
+-------------
+
+
+.. toctree::
+    :maxdepth: 1
+
     dev
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

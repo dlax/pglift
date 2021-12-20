@@ -2,8 +2,8 @@
 
 .. _devenv:
 
-Development environment
-=======================
+Contributing
+++++++++++++
 
 Setup
 -----
