@@ -5,7 +5,6 @@ Welcome to pglift's documentation!
     :maxdepth: 2
     :caption: Contents:
 
-    install
     tutorials/index
     setup/index
     ops/index
