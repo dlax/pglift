@@ -39,6 +39,7 @@ How to guides
 .. toctree::
     :maxdepth: 1
 
+    howto/database-maintenance
     dev
 
 
