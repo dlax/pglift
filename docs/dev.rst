@@ -3,10 +3,10 @@
 .. _devenv:
 
 Contributing
-++++++++++++
+------------
 
 Setup
------
+~~~~~
 
 Install the project in a Python3 virtualenv:
 
@@ -17,7 +17,7 @@ Install the project in a Python3 virtualenv:
     (.venv) $ pip install -e ".[dev,test]"
 
 Running tests
--------------
+~~~~~~~~~~~~~
 
 The test suite can be run either either directly:
 
@@ -32,7 +32,7 @@ or through ``tox``:
     $ tox [-e tests]
 
 Pre-commit hooks
-----------------
+~~~~~~~~~~~~~~~~
 
 Some checks (linting, typing, syntax checking, …) can be done for you
 before git commits.
@@ -44,7 +44,7 @@ You just need to install the pre-commit hooks:
     (.venv) $ pre-commit install
 
 Working on documentation
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Building the documentation requires a few more dependencies:
 
@@ -71,7 +71,7 @@ to get the documentation rebuilt and along with a live-reloaded Web browser
 (the reason for ``sphinx-autobuild`` dependency above).
 
 Release workflow
-----------------
+~~~~~~~~~~~~~~~~
 
 * Create an *annotated* git tag following the ``v<MAJOR>.<MINOR>.<PATCH>``
   pattern. For instance:
