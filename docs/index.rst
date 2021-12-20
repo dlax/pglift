@@ -39,6 +39,8 @@ How to guides
 .. toctree::
     :maxdepth: 1
 
+    howto/instance-shell
+    howto/instance-env
     howto/database-maintenance
     dev
 
