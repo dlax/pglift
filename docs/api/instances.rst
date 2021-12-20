@@ -8,6 +8,7 @@ instances:
 
 .. autofunction:: apply
 .. autofunction:: describe
+.. autofunction:: exists
 .. autofunction:: list
 .. autofunction:: drop
 .. autofunction:: init
@@ -17,5 +18,8 @@ instances:
 .. autofunction:: restart
 .. autofunction:: reload
 .. autofunction:: status
+.. autofunction:: check_status
 .. autofunction:: running
+.. autofunction:: stopped
 .. autofunction:: promote
+.. autofunction:: upgrade

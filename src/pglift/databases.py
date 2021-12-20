@@ -145,6 +145,13 @@ def run(
     exclude_dbnames: Sequence[str] = (),
     notice_handler: types.NoticeHandler = db.default_notice_handler,
 ) -> None:
+    """Execute a SQL command on databases of `instance`.
+
+    :param dbnames: restrict operation on databases with a name in this list.
+    :param exclude_dbnames: exclude databases with a name in this list from
+        the operation.
+    :param notice_handler: a function to handle notice.
+    """
     for database in list(ctx, instance):
         if (
             dbnames and database.name not in dbnames

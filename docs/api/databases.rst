@@ -13,3 +13,4 @@ PostgreSQL databases:
 .. autofunction:: list
 .. autofunction:: describe
 .. autofunction:: drop
+.. autofunction:: run
