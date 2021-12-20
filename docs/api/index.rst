@@ -14,3 +14,9 @@ describes the data models used through the API.
     ctx
     cmd
     conf
+    instances
+    databases
+    roles
+    privileges
+    pgbackrest
+    postgres_exporter

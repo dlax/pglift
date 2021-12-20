@@ -48,13 +48,3 @@ list privileges for specified database (resp. role):
     database    schema    role    object_type    privileges
     ----------  --------  ------  -------------  -----------------------------------------------------------------------------
     myapp       public    manuel  TABLE          ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']
-
-Python API
-----------
-
-.. currentmodule:: pglift.privileges
-
-Module :mod:`pglift.privileges` exposes the following API to manipulate
-access privileges:
-
-.. autofunction:: get
