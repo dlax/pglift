@@ -14,7 +14,7 @@ help:
 .PHONY: help Makefile
 
 serve:
-	sphinx-autobuild --watch=../src "$(SOURCEDIR)" "$(BUILDDIR)"
+	sphinx-autobuild --watch=../src "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
