@@ -23,6 +23,7 @@ SELECT
     END AS password,
     r.rolinherit AS inherit,
     r.rolcanlogin AS login,
+    r.rolsuper AS superuser,
     CASE WHEN r.rolconnlimit <> - 1 THEN
         r.rolconnlimit
     ELSE
@@ -45,6 +46,7 @@ GROUP BY
     r.rolpassword,
     r.rolinherit,
     r.rolcanlogin,
+    r.rolsuper,
     r.rolconnlimit,
     r.rolvaliduntil;
 

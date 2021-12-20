@@ -169,6 +169,7 @@ def test_describe(
         if surole.pgpass:
             assert postgres.pgpass is not None
     assert postgres.login
+    assert postgres.superuser
 
     role_factory(
         "r1",
@@ -178,6 +179,7 @@ def test_describe(
     assert r1.password is None
     assert not r1.inherit
     assert r1.login
+    assert not r1.superuser
     assert r1.connection_limit == 10
     assert r1.in_roles == ["pg_monitor"]
     assert r1.validity == datetime.datetime(2051, 7, 29, tzinfo=datetime.timezone.utc)
