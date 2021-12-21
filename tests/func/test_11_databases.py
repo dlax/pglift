@@ -180,4 +180,4 @@ def test_run_output_notices(
     )
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err == "foo"
+    assert captured.err == "foo\n"

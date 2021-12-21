@@ -90,4 +90,4 @@ def superuser_connect(
 
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:
     if diag.message_primary is not None:
-        sys.stderr.write(diag.message_primary)
+        sys.stderr.write(diag.message_primary + "\n")
