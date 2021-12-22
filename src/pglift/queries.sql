@@ -24,6 +24,7 @@ SELECT
     r.rolinherit AS inherit,
     r.rolcanlogin AS login,
     r.rolsuper AS superuser,
+    r.rolreplication AS replication,
     CASE WHEN r.rolconnlimit <> - 1 THEN
         r.rolconnlimit
     ELSE
@@ -47,6 +48,7 @@ GROUP BY
     r.rolinherit,
     r.rolcanlogin,
     r.rolsuper,
+    r.rolreplication,
     r.rolconnlimit,
     r.rolvaliduntil;
 

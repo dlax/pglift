@@ -276,6 +276,7 @@ class Role(Manifest):
     )
     login: bool = Field(default=False, description="allow the role to log in")
     superuser: bool = Field(default=False, description="superuser role")
+    replication: bool = Field(default=False, description="replication role")
     connection_limit: Optional[int] = Field(
         description="how many concurrent connections the role can make",
         cli={"name": "connection-limit"},

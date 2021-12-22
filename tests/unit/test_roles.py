@@ -38,6 +38,8 @@ def test_options(with_password: bool) -> None:
             SQL(" "),
             SQL("NOSUPERUSER"),
             SQL(" "),
+            SQL("NOREPLICATION"),
+            SQL(" "),
         ]
         + (
             [Composed([SQL("PASSWORD"), SQL(" "), Literal("skret")]), SQL(" ")]  # type: ignore[list-item]

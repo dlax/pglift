@@ -777,6 +777,7 @@ def test_role_describe(
         "inherit": False,
         "login": False,
         "superuser": False,
+        "replication": False,
         "connection_limit": 5,
         "validity": "2022-01-01T00:00:00",
         "in_roles": ["observers", "monitoring"],

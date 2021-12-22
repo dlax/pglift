@@ -146,6 +146,7 @@ def options(
         sql.SQL("INHERIT" if role.inherit else "NOINHERIT"),
         sql.SQL("LOGIN" if role.login else "NOLOGIN"),
         sql.SQL("SUPERUSER" if role.superuser else "NOSUPERUSER"),
+        sql.SQL("REPLICATION" if role.replication else "NOREPLICATION"),
     ]
     if with_password and role.password is not None:
         opts.append(

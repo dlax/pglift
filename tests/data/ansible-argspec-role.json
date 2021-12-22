@@ -57,6 +57,13 @@
     ],
     "type": "bool"
   },
+  "replication": {
+    "default": false,
+    "description": [
+      "replication role"
+    ],
+    "type": "bool"
+  },
   "validity": {
     "description": [
       "sets a date and time after which the role's password is no longer valid"
