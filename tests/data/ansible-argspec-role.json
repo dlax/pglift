@@ -43,6 +43,13 @@
     ],
     "type": "bool"
   },
+  "replication": {
+    "default": false,
+    "description": [
+      "replication role"
+    ],
+    "type": "bool"
+  },
   "state": {
     "choices": [
       "present",
@@ -54,13 +61,6 @@
     "default": false,
     "description": [
       "superuser role"
-    ],
-    "type": "bool"
-  },
-  "replication": {
-    "default": false,
-    "description": [
-      "replication role"
     ],
     "type": "bool"
   },
