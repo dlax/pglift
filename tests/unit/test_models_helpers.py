@@ -349,6 +349,6 @@ def test_argspec_from_model_manifest(
     actual = helpers.argspec_from_model(manifest_type)
     fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
     if regen_test_data:
-        fpath.write_text(json.dumps(actual, indent=2, sort_keys=True))
+        fpath.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n")
     expected = json.loads(fpath.read_text())
     assert actual == expected

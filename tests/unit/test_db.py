@@ -16,8 +16,7 @@ def test_queries(datadir: Path, regen_test_data: bool) -> None:
     actual = dict(db.queries())
     fpath = datadir / "queries.json"
     if regen_test_data:
-        with fpath.open("w") as f:
-            json.dump(actual, f, indent=2, sort_keys=True)
+        fpath.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n")
     expected = json.loads(fpath.read_text())
     assert actual == expected
 
