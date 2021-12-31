@@ -20,6 +20,13 @@
     ],
     "type": "int"
   },
+  "replrole_password": {
+    "description": [
+      "replication role password"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "ssl": {
     "default": false,
     "required": false,

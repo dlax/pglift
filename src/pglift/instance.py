@@ -72,13 +72,11 @@ def init_replication(
             str(instance.waldir),
         ]
 
-        env = ctx.libpq_environ()
         if slot:
             cmd += ["--slot", slot]
             with db.connect_dsn(
                 standby_for,
-                passfile=env.get("PGPASSFILE"),
-                password=env.get("PGPASSWORD"),
+                dbname="template1",
             ) as cnx:
                 # ensure the replication slot does not exists
                 # otherwise --create-slot will raise an error
@@ -88,7 +86,7 @@ def init_replication(
                 else:
                     cmd += ["--create-slot"]
 
-        ctx.run(cmd, env=env, check=True)
+        ctx.run(cmd, check=True)
         for name in keep:
             shutil.copyfile(tmpdir / name, instance.datadir / name)
         # When primary is also managed by pglift, pg_basebackup will also copy
@@ -354,21 +352,25 @@ def instance_configure(
     configuration.
     """
     surole = interface.instance_surole(ctx.settings, manifest)
+    replrole = interface.instance_replrole(ctx.settings, manifest)
     auth_settings = ctx.settings.postgresql.auth
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
     hba = template("postgresql", "pg_hba.conf").format(
         surole=surole.name,
+        replrole=replrole.name,
         auth_local=auth_settings.local,
         auth_host=auth_settings.host,
     )
     if hba_path.read_text() == hba:
         return
 
-    if not instance.standby and surole.password:
+    if not instance.standby:
         # standby instances are read-only
         with running(ctx, instance):
-            roles.set_password_for(ctx, instance, surole)
+            if surole.password:
+                roles.set_password_for(ctx, instance, surole)
+            roles.apply(ctx, instance, replrole)
 
     hba_path.write_text(hba)
 

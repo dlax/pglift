@@ -1,4 +1,3 @@
-import contextlib
 import logging
 from pathlib import Path
 from typing import Iterator, List, NoReturn, Optional
@@ -304,16 +303,15 @@ def test_standby(
     settings: Settings,
     tmp_port_factory: Iterator[int],
     tmp_path_factory: pytest.TempPathFactory,
+    database_factory: DatabaseFactory,
     pg_version: str,
     slot: str,
 ) -> None:
     socket_directory = instance.settings.postgresql.socket_directory
-    surole = interface.instance_surole(settings, instance_manifest)
-    standby_for = f"host={socket_directory} port={instance.port} user={surole.name}"
-    if surole.password:
-        standby_for += f" password={surole.password.get_secret_value()}"
-    else:
-        standby_for += f" passfile={settings.postgresql.auth.passfile}"
+    replrole = interface.instance_replrole(settings, instance_manifest)
+    standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
+    if replrole.password:
+        standby_for += f" password={replrole.password.get_secret_value()}"
     standby_manifest = interface.Instance(
         name="standby",
         version=pg_version,
@@ -321,20 +319,20 @@ def test_standby(
         standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
     )
 
-    @contextlib.contextmanager
-    def instance_running_with_table() -> Iterator[None]:
-        with instance_mod.running(ctx, instance):
-            execute(ctx, instance, "CREATE TABLE t AS (SELECT 1 AS i)", fetch=False)
-            try:
-                yield
-            finally:
-                execute(ctx, instance, "DROP TABLE t", fetch=False)
-
     def pg_replication_slots() -> List[str]:
         rows = execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
         return [r["slot_name"] for r in rows]
 
-    with instance_running_with_table():
+    with instance_mod.running(ctx, instance):
+        database_factory("test")
+        execute(
+            ctx,
+            instance,
+            "CREATE TABLE t AS (SELECT 1 AS i)",
+            dbname="test",
+            fetch=False,
+            role=replrole,
+        )
         assert not pg_replication_slots()
         standby_instance, _ = instance_mod.apply(ctx, standby_manifest)  # type: ignore[misc]
         if slot:
@@ -351,14 +349,29 @@ def test_standby(
                         ctx,
                         standby_instance,
                         "SELECT * FROM pg_is_in_recovery()",
-                        role=surole,
+                        role=replrole,
+                        dbname="template1",
                     )
                     == [{"pg_is_in_recovery": True}]
                 )
-                assert execute(
-                    ctx, standby_instance, "SELECT * FROM t", role=surole
-                ) == [{"i": 1}]
-                execute(ctx, instance, "UPDATE t SET i = 42", fetch=False)
+                assert (
+                    execute(
+                        ctx,
+                        standby_instance,
+                        "SELECT * FROM t",
+                        role=replrole,
+                        dbname="test",
+                    )
+                    == [{"i": 1}]
+                )
+                execute(
+                    ctx,
+                    instance,
+                    "UPDATE t SET i = 42",
+                    dbname="test",
+                    role=replrole,
+                    fetch=False,
+                )
 
                 @retry(
                     retry=retry_if_exception_type(AssertionError),
@@ -366,9 +379,16 @@ def test_standby(
                     stop=stop_after_attempt(4),
                 )
                 def assert_replicated() -> None:
-                    assert execute(
-                        ctx, standby_instance, "SELECT * FROM t", role=surole
-                    ) == [{"i": 42}]
+                    assert (
+                        execute(
+                            ctx,
+                            standby_instance,
+                            "SELECT * FROM t",
+                            role=replrole,
+                            dbname="test",
+                        )
+                        == [{"i": 42}]
+                    )
 
                 assert_replicated()
 
@@ -379,7 +399,8 @@ def test_standby(
                         ctx,
                         standby_instance,
                         "SELECT * FROM pg_is_in_recovery()",
-                        role=surole,
+                        role=replrole,
+                        dbname="template1",
                     )
                     == [{"pg_is_in_recovery": False}]
                 )

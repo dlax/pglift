@@ -140,6 +140,11 @@ class Instance(Manifest):
         description="super-user role password",
         cli={"name": "surole-password"},
     )
+    replrole_password: Optional[SecretStr] = Field(
+        default=None,
+        description="replication role password",
+        cli={"name": "replication-password"},
+    )
 
     standby: Optional[Standby] = None
 
@@ -363,3 +368,20 @@ def instance_surole(settings: settings.Settings, instance: Instance) -> Role:
         )
     else:
         return Role(name=surole_settings.name)
+
+
+def instance_replrole(settings: settings.Settings, instance: Instance) -> Role:
+    replrole_settings = settings.postgresql.replrole
+    if instance.replrole_password:
+        return Role(
+            name=replrole_settings,
+            password=instance.replrole_password,
+            login=True,
+            replication=True,
+        )
+    else:
+        return Role(
+            name=replrole_settings,
+            login=True,
+            replication=True,
+        )

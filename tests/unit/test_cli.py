@@ -156,6 +156,7 @@ def test_instance_init(
         "port",
         "state",
         "surole_password",
+        "replication_password",
         "standby_for",
         "standby_slot",
         "prometheus_port",

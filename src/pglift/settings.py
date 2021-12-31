@@ -209,6 +209,9 @@ class PostgreSQLSettings(BaseSettings):
     surole: SuRole = SuRole()
     """Instance super-user role."""
 
+    replrole: str = "replication"
+    """Instance replication role."""
+
     backuprole: str = "backup"
     """Instance role used to backup."""
 

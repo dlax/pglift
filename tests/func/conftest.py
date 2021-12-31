@@ -204,10 +204,18 @@ def surole_password(settings: Settings) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
+def replrole_password(settings: Settings) -> Optional[str]:
+    if settings.postgresql.auth.local == "trust":
+        return None
+    return "r3pl"
+
+
+@pytest.fixture(scope="session")
 def instance_manifest(
     pg_version: str,
     settings: Settings,
     surole_password: Optional[str],
+    replrole_password: Optional[str],
     tmp_port_factory: Iterator[int],
 ) -> interface.Instance:
     port = next(tmp_port_factory)
@@ -218,6 +226,7 @@ def instance_manifest(
             "version": pg_version,
             "port": port,
             "surole_password": surole_password,
+            "replrole_password": replrole_password,
             "prometheus": {"port": prometheus_port},
         }
     )
