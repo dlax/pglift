@@ -78,6 +78,7 @@ setup(
         "typing": extras_typing,
         "docs": [
             "sphinx",
+            "furo",
         ],
     },
     include_package_data=True,
