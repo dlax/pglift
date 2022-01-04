@@ -123,7 +123,7 @@ def settings(
     except pydantic.ValidationError as exc:
         pytest.skip(
             "; ".join(
-                f"unsupported setting(s) {' '.join(e['loc'])}: {e['msg']}"
+                f"unsupported setting(s) {' '.join(map(str, e['loc']))}: {e['msg']}"
                 for e in exc.errors()
             )
         )
