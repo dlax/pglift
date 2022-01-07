@@ -18,7 +18,7 @@ def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
         yield
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(autouse=True)
 def roles_and_privileges(
     ctx: Context,
     instance: system.Instance,

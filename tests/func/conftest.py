@@ -273,7 +273,7 @@ class RoleFactory(Protocol):
         ...
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def role_factory(ctx: Context, instance: system.Instance) -> Iterator[RoleFactory]:
     rolnames = set()
 
@@ -294,7 +294,7 @@ class DatabaseFactory(Protocol):
         ...
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def database_factory(
     ctx: Context, instance: system.Instance
 ) -> Iterator[DatabaseFactory]:
