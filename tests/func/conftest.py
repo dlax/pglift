@@ -186,10 +186,9 @@ def tmp_port_factory() -> Iterator[int]:
 
 
 @pytest.fixture(scope="session")
-def surole_password(settings: Settings) -> Iterator[Optional[str]]:
+def surole_password(settings: Settings) -> Optional[str]:
     if settings.postgresql.auth.local == "trust":
-        yield None
-        return
+        return None
 
     passcmdfile = (
         pathlib.Path(settings.postgresql.auth.password_command)
@@ -201,7 +200,7 @@ def surole_password(settings: Settings) -> Iterator[Optional[str]]:
             f.write("#!/bin/sh\necho s3kret\n")
         passcmdfile.chmod(0o700)
 
-    yield "s3kret"
+    return "s3kret"
 
 
 @pytest.fixture(scope="session")
