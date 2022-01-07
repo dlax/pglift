@@ -1,4 +1,5 @@
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Iterator, Optional
@@ -107,6 +108,7 @@ def test_backup_restore(
         pgbackrest.expire(ctx, instance)
         # TODO: check some result from 'expire' command here.
 
+        time.sleep(1)
         (record,) = execute(ctx, instance, "SELECT current_timestamp", fetch=True)
         before_drop = record["current_timestamp"]
 
