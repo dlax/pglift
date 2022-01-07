@@ -384,6 +384,7 @@ def test_standby(
                     == [{"pg_is_in_recovery": False}]
                 )
         finally:
+            instance_mod.drop(ctx, standby_instance)
             if slot:
                 execute(
                     ctx,
@@ -391,7 +392,6 @@ def test_standby(
                     f"SELECT true FROM pg_drop_replication_slot('{slot}')",
                 )
             assert not pg_replication_slots()
-            instance_mod.drop(ctx, standby_instance)
 
 
 def test_instance_upgrade(
