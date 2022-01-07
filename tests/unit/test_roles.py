@@ -1,63 +1,13 @@
-import datetime
 from pathlib import Path
 from typing import Optional
 
 import pytest
-from psycopg import sql
 from pydantic import SecretStr
 
 from pglift import roles
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
-
-
-@pytest.mark.parametrize("with_password", [True, False])
-def test_options(with_password: bool) -> None:
-    role = interface.Role(
-        name="r",
-        password="skret",
-        inherit=False,
-        login=True,
-        connection_limit=2,
-        validity=datetime.datetime(2024, 1, 1),
-        in_roles=["pg_monitor"],
-    )
-    options = roles.options(role, with_password=with_password)
-
-    SQL = sql.SQL
-    Composed = sql.Composed
-    Identifier = sql.Identifier
-    Literal = sql.Literal
-
-    expected_seq = (
-        [
-            SQL("NOINHERIT"),
-            SQL(" "),
-            SQL("LOGIN"),
-            SQL(" "),
-            SQL("NOSUPERUSER"),
-            SQL(" "),
-            SQL("NOREPLICATION"),
-            SQL(" "),
-        ]
-        + (
-            [Composed([SQL("PASSWORD"), SQL(" "), Literal("skret")]), SQL(" ")]  # type: ignore[list-item]
-            if with_password
-            else []
-        )
-        + [
-            Composed([SQL("VALID UNTIL"), SQL(" "), Literal("2024-01-01T00:00:00")]),  # type: ignore[list-item]
-            SQL(" "),
-            Composed(  # type: ignore[list-item]
-                [SQL("CONNECTION LIMIT"), SQL(" "), Literal(2)]
-            ),
-            SQL(" "),
-            Composed([SQL("IN ROLE"), SQL(" "), Composed([Identifier("pg_monitor")])]),  # type: ignore[list-item]
-        ]
-    )
-
-    assert list(options) == expected_seq  # type: ignore[call-overload]
 
 
 class Role(interface.Role):

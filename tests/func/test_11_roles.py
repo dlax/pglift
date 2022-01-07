@@ -50,7 +50,16 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert roles.has_password(ctx, instance, role.name)
-    r = execute(ctx, instance, "select 1 as v", role=role)
+    r = execute(
+        ctx,
+        instance,
+        f"select rolpassword from pg_authid where rolname = '{role.name}'",
+    )
+    if int(instance.version) > 10:
+        assert r[0]["rolpassword"].startswith("SCRAM-SHA-256$4096:")
+    else:
+        assert r[0]["rolpassword"].startswith("md5")
+    r = execute(ctx, instance, "select 1 as v", dbname="template1", role=role)
     assert r[0]["v"] == 1
     (record,) = execute(
         ctx,

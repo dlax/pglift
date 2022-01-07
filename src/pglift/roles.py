@@ -1,5 +1,6 @@
-from typing import List
+from typing import Any, List
 
+import psycopg.pq
 import psycopg.rows
 from pgtoolkit import conf, pgpass
 from psycopg import sql
@@ -136,8 +137,20 @@ def has_password(ctx: BaseContext, instance: PostgreSQLInstance, name: str) -> b
         return haspassword
 
 
+def encrypt_password(cnx: psycopg.Connection[Any], role: Role) -> str:
+    assert role.password is not None, "role has no password to encrypt"
+    encoding = cnx.info.encoding
+    return cnx.pgconn.encrypt_password(
+        role.password.get_secret_value().encode(encoding), role.name.encode(encoding)
+    ).decode(encoding)
+
+
 def options(
-    role: interface.Role, *, with_password: bool = True, in_roles: bool = True
+    cnx: psycopg.Connection[Any],
+    role: interface.Role,
+    *,
+    with_password: bool = True,
+    in_roles: bool = True,
 ) -> sql.Composable:
     """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
     based on 'role' model.
@@ -151,7 +164,7 @@ def options(
     if with_password and role.password is not None:
         opts.append(
             sql.SQL(" ").join(
-                [sql.SQL("PASSWORD"), sql.Literal(role.password.get_secret_value())]
+                [sql.SQL("PASSWORD"), sql.Literal(encrypt_password(cnx, role))]
             )
         )
     if role.validity is not None:
@@ -192,8 +205,8 @@ def create(
 
     The instance should be running and the role should not exist already.
     """
-    opts = options(role)
     with db.superuser_connect(ctx, instance) as cnx:
+        opts = options(cnx, role)
         cnx.execute(
             db.query("role_create", username=sql.Identifier(role.name), options=opts)
         )
@@ -207,14 +220,17 @@ def alter(ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role) 
     The instance should be running and the role should exist already.
     """
     actual_role = describe(ctx, instance, role.name)
-    opts = options(
-        role, with_password=not has_password(ctx, instance, role.name), in_roles=False
-    )
     in_roles = {
         "grant": set(role.in_roles) - set(actual_role.in_roles),
         "revoke": set(actual_role.in_roles) - set(role.in_roles),
     }
     with db.superuser_connect(ctx, instance) as cnx:
+        opts = options(
+            cnx,
+            role,
+            with_password=not has_password(ctx, instance, role.name),
+            in_roles=False,
+        )
         cnx.execute(
             db.query(
                 "role_alter",
@@ -242,11 +258,11 @@ def set_password_for(
     if role.password is None:
         return
 
-    options = sql.SQL(" ").join(
-        [sql.SQL("PASSWORD"), sql.Literal(role.password.get_secret_value())]
-    )
     with db.superuser_connect(ctx, instance) as conn:
         conn.autocommit = True
+        options = sql.SQL(" ").join(
+            [sql.SQL("PASSWORD"), sql.Literal(encrypt_password(conn, role))]
+        )
         conn.execute(
             db.query("role_alter", username=sql.Identifier(role.name), options=options),
         )
