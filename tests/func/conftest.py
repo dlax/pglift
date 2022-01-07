@@ -300,16 +300,13 @@ def database_factory(
 ) -> Iterator[DatabaseFactory]:
     datnames = set()
 
-    def factory(name: str) -> None:
+    def factory(name: str, *, owner: Optional[str] = None) -> None:
         if name in datnames:
             raise ValueError(f"'{name}' name already taken")
-        execute(
-            ctx,
-            instance,
-            f"CREATE DATABASE {name}",
-            fetch=False,
-            autocommit=True,
-        )
+        sql = f"CREATE DATABASE {name}"
+        if owner:
+            sql += f" OWNER {owner}"
+        execute(ctx, instance, sql, fetch=False, autocommit=True)
         datnames.add(name)
 
     yield factory
