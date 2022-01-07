@@ -162,24 +162,13 @@ def options(
         sql.SQL("REPLICATION" if role.replication else "NOREPLICATION"),
     ]
     if with_password and role.password is not None:
-        opts.append(
-            sql.SQL(" ").join(
-                [sql.SQL("PASSWORD"), sql.Literal(encrypt_password(cnx, role))]
-            )
-        )
+        opts.append(sql.SQL("PASSWORD {}").format(encrypt_password(cnx, role)))
     if role.validity is not None:
-        opts.append(
-            sql.SQL(" ").join(
-                (sql.SQL("VALID UNTIL"), sql.Literal(role.validity.isoformat()))
-            )
-        )
+        opts.append(sql.SQL("VALID UNTIL {}").format(role.validity.isoformat()))
     opts.append(
-        sql.SQL(" ").join(
-            (
-                sql.SQL("CONNECTION LIMIT"),
-                sql.Literal(
-                    role.connection_limit if role.connection_limit is not None else -1
-                ),
+        sql.SQL(
+            "CONNECTION LIMIT {}".format(
+                role.connection_limit if role.connection_limit is not None else -1
             )
         )
     )
@@ -260,9 +249,7 @@ def set_password_for(
 
     with db.superuser_connect(ctx, instance) as conn:
         conn.autocommit = True
-        options = sql.SQL(" ").join(
-            [sql.SQL("PASSWORD"), sql.Literal(encrypt_password(conn, role))]
-        )
+        options = sql.SQL("PASSWORD {}").format(encrypt_password(conn, role))
         conn.execute(
             db.query("role_alter", username=sql.Identifier(role.name), options=options),
         )

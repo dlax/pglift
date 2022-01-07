@@ -86,9 +86,7 @@ def options_and_args(
     opts = []
     args: Dict[str, Any] = {}
     if database.owner is not None:
-        opts.append(
-            sql.SQL(" ").join([sql.SQL("OWNER"), sql.Identifier(database.owner)])
-        )
+        opts.append(sql.SQL("OWNER {}").format(sql.Identifier(database.owner)))
     return sql.SQL(" ").join(opts), args
 
 
@@ -124,7 +122,7 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
         owner = sql.SQL("CURRENT_USER")
     else:
         owner = sql.Identifier(database.owner)
-    options = sql.SQL(" ").join([sql.SQL("OWNER TO"), owner])
+    options = sql.SQL("OWNER TO {}").format(owner)
     with db.superuser_connect(ctx, instance) as cnx:
         cnx.execute(
             db.query(
