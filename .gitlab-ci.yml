@@ -57,6 +57,9 @@ docs:
     - cd ci/$WORKSUBDIR
     - docker pull $IMAGE_TAG || true
     - docker build --pull --cache-from $IMAGE_TAG --tag $IMAGE_TAG -f $DOCKERFILE .
+    - wget -O duuh https://github.com/philpep/duuh/releases/download/1.0/duuh-linux-amd64
+    - chmod +x duuh
+    - ./duuh -build $IMAGE_TAG
     - docker push $IMAGE_TAG
 
 debian_ci_image:
