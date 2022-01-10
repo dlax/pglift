@@ -280,8 +280,8 @@ def print_table_for(items: Iterable[_M], title: Optional[str] = None) -> None:
     >>> print_table_for(items, title="address book")  # doctest: +NORMALIZE_WHITESPACE
                    address book
     ┏━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-    ┃ name ┃ address     ┃ address ┃ address ┃
-    ┃      ┃ street      ┃ zip     ┃ city    ┃
+    ┃      ┃ address     ┃ address ┃ address ┃
+    ┃ name ┃ street      ┃ zip     ┃ city    ┃
     ┡━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
     │ bob  │ main street │ 31234   │ luz     │
     └──────┴─────────────┴─────────┴─────────┘

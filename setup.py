@@ -56,7 +56,7 @@ setup(
         "PyYAML >= 5.1",
         # CLI requirements
         "click >= 8.0.0",
-        "rich >= 0.13",
+        "rich >= 11.0.0",
     ],
     extras_require={
         "dev": [
