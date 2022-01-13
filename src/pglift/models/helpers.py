@@ -97,6 +97,9 @@ def _decorators_from_model(
             else:
                 fname = f"--{argname}"
                 argname = argname.replace("-", "_")
+            description = None
+            if field.field_info.description:
+                description = field.field_info.description.capitalize()
             attrs: Dict[str, Any] = {}
             origin_type = get_origin(field.outer_type_)
             if lenient_issubclass(ftype, enum.Enum):
@@ -113,7 +116,7 @@ def _decorators_from_model(
                 attrs["multiple"] = True
                 attrs["metavar"] = metavar
             elif lenient_issubclass(ftype, pydantic.SecretStr):
-                attrs["prompt"] = True
+                attrs["prompt"] = description if description is not None else True
                 attrs["prompt_required"] = False
                 attrs["confirmation_prompt"] = True
                 attrs["hide_input"] = True
@@ -126,8 +129,7 @@ def _decorators_from_model(
                 attrs["default"] = None
             else:
                 attrs["metavar"] = metavar
-            if field.field_info.description:
-                description = field.field_info.description.capitalize()
+            if description is not None:
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
