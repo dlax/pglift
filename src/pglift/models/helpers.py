@@ -245,6 +245,7 @@ def argspec_from_model(
     this is useful when sub-models are optionals.
     """
     spec = {}
+    model_config = getattr(model_type, "_ansible_config", {})
     for field in model_type.__fields__.values():
         ftype = field.outer_type_
         if lenient_issubclass(ftype, pydantic.BaseModel):
@@ -255,7 +256,7 @@ def argspec_from_model(
                 spec[f"{field.alias}_{subname}"] = subspec
             continue
 
-        ansible_config = field.field_info.extra.get("ansible", {})
+        ansible_config = model_config.get(field.name, {})
         if ansible_config.get("hide", False):
             continue
         try:

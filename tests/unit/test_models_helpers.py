@@ -29,21 +29,18 @@ class Address(BaseModel):
         "country": {"choices": [Country.France.value, Country.Belgium.value]},
         "city": {"name": "town"},
     }
+    _ansible_config: ClassVar[Dict[str, interface.AnsibleConfig]] = {
+        "building": {"hide": True},
+        "zip_code": {"hide": True},
+        "city": {"spec": {"type": "str", "description": ["the city"]}},
+        "country": {"choices": [Country.France.value, Country.UnitedKindom.value]},
+    }
 
     street: List[str] = Field(description="street lines")
     building: Optional[str] = Field(ansible={"hide": True})
-    zip_code: int = Field(
-        default=0,
-        description="ZIP code",
-        ansible={"hide": True},
-    )
-    city: str = Field(
-        description="city",
-        ansible={"spec": {"type": "str", "description": "the city"}},
-    )
-    country: Country = Field(
-        ansible={"choices": [Country.France.value, Country.UnitedKindom.value]},
-    )
+    zip_code: int = Field(default=0, description="ZIP code")
+    city: str = Field(description="city")
+    country: Country = Field()
     shared: bool = Field(description="is this a collocation?")
     primary: bool = Field(
         default=False, description="is this person's primary address?"
@@ -273,7 +270,7 @@ def test_argspec_from_model() -> None:
             "type": "list",
             "description": ["street lines"],
         },
-        "address_city": {"type": "str", "description": "the city"},
+        "address_city": {"type": "str", "description": ["the city"]},
         "address_country": {"choices": ["fr", "gb"]},
         "address_shared": {
             "type": "bool",

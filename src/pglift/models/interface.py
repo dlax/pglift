@@ -19,7 +19,7 @@ from pydantic import (
 from typing_extensions import Literal, TypedDict
 
 from .. import prometheus_default_port, settings
-from ..types import AutoStrEnum
+from ..types import AnsibleArgSpec, AutoStrEnum
 
 
 class CLIConfig(TypedDict, total=False):
@@ -28,6 +28,12 @@ class CLIConfig(TypedDict, total=False):
     name: str
     hide: bool
     choices: List[str]
+
+
+class AnsibleConfig(TypedDict, total=False):
+    hide: bool
+    choices: List[str]
+    spec: AnsibleArgSpec
 
 
 class InstanceState(AutoStrEnum):
@@ -85,6 +91,7 @@ class Manifest(BaseModel):
     """Base class for manifest data classes."""
 
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {}
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {}
 
     class Config:
         extra = "forbid"
@@ -111,6 +118,10 @@ class Instance(Manifest):
         },
         "ssl": {"hide": True},
         "configuration": {"hide": True},
+    }
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
+        "ssl": {"spec": {"type": "bool", "required": False, "default": False}},
+        "configuration": {"spec": {"type": "dict", "required": False}},
     }
 
     class Standby(BaseModel):
@@ -148,14 +159,8 @@ class Instance(Manifest):
         default=InstanceState.started,
         description="Runtime state",
     )
-    ssl: Union[bool, Tuple[Path, Path]] = Field(
-        default=False,
-        ansible={"spec": {"type": "bool", "required": False, "default": False}},
-    )
-    configuration: Dict[str, Any] = Field(
-        default_factory=dict,
-        ansible={"spec": {"type": "dict", "required": False}},
-    )
+    ssl: Union[bool, Tuple[Path, Path]] = False
+    configuration: Dict[str, Any] = Field(default_factory=dict)
     surole_password: Optional[SecretStr] = Field(
         default=None,
         description="super-user role password",
