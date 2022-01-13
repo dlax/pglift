@@ -147,7 +147,7 @@ class Instance(Manifest):
     replrole_password: Optional[SecretStr] = Field(
         default=None,
         description="replication role password",
-        cli={"name": "replication-password"},
+        cli={"name": "replrole-password"},
     )
 
     standby: Optional[Standby] = None
