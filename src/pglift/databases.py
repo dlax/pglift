@@ -17,7 +17,7 @@ def apply(
 
     The instance should be running.
     """
-    if database_manifest.state == interface.Database.State.absent:
+    if database_manifest.state == interface.PresenceState.absent:
         if exists(ctx, instance, database_manifest.name):
             drop(ctx, instance, database_manifest.name)
         return None

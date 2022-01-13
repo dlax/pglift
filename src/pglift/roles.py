@@ -72,7 +72,7 @@ def apply(
 
     The instance should be running.
     """
-    if role_manifest.state == interface.Role.State.absent:
+    if role_manifest.state == interface.PresenceState.absent:
         if exists(ctx, instance, role_manifest.name):
             drop(ctx, instance, role_manifest.name)
         return None

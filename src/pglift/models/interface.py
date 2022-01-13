@@ -54,6 +54,13 @@ class InstanceState(AutoStrEnum):
         )
 
 
+class PresenceState(AutoStrEnum):
+    """Should the object be present or absent?"""
+
+    present = enum.auto()
+    absent = enum.auto()
+
+
 class InstanceListItem(BaseModel):
 
     name: str
@@ -93,10 +100,7 @@ class Instance(Manifest):
             """Instance standby status"""
 
             demoted = enum.auto()
-            """demoted"""
-
             promoted = enum.auto()
-            """promoted"""
 
         for_: str = Field(
             alias="for",
@@ -266,10 +270,6 @@ class PostgresExporter(Manifest):
 class Role(Manifest):
     """PostgreSQL role"""
 
-    class State(AutoStrEnum):
-        present = enum.auto()
-        absent = enum.auto()
-
     name: str
     password: Optional[SecretStr] = Field(default=None, description="role password")
     pgpass: bool = Field(
@@ -294,21 +294,17 @@ class Role(Manifest):
         description="list of roles to which the new role will be added as a new member",
         cli={"name": "in-role"},
     )
-    state: State = Field(default=State.present, cli={"hide": True})
+    state: PresenceState = Field(default=PresenceState.present, cli={"hide": True})
 
 
 class Database(Manifest):
     """PostgreSQL database"""
 
-    class State(AutoStrEnum):
-        present = enum.auto()
-        absent = enum.auto()
-
     name: str
     owner: Optional[str] = Field(
         description="the role name of the user who will own the new database"
     )
-    state: State = Field(default=State.present, cli={"hide": True})
+    state: PresenceState = Field(default=PresenceState.present, cli={"hide": True})
 
 
 class Tablespace(BaseModel):
