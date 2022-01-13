@@ -2,7 +2,7 @@ import enum
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import IO, Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import psycopg
 import psycopg.conninfo
@@ -16,10 +16,18 @@ from pydantic import (
     root_validator,
     validator,
 )
-from typing_extensions import Literal
+from typing_extensions import Literal, TypedDict
 
 from .. import prometheus_default_port, settings
 from ..types import AutoStrEnum
+
+
+class CLIConfig(TypedDict, total=False):
+    """Configuration for CLI generation of a manifest field."""
+
+    name: str
+    hide: bool
+    choices: List[str]
 
 
 class InstanceState(AutoStrEnum):
@@ -76,6 +84,8 @@ T = TypeVar("T", bound=BaseModel)
 class Manifest(BaseModel):
     """Base class for manifest data classes."""
 
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {}
+
     class Config:
         extra = "forbid"
 
@@ -94,7 +104,18 @@ class Manifest(BaseModel):
 class Instance(Manifest):
     """PostgreSQL instance"""
 
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "status": {"hide": True},
+        "state": {
+            "choices": [InstanceState.started.value, InstanceState.stopped.value]
+        },
+        "ssl": {"hide": True},
+        "configuration": {"hide": True},
+    }
+
     class Standby(BaseModel):
+        _cli_config: ClassVar[Dict[str, CLIConfig]] = {"status": {"hide": True}}
+
         @enum.unique
         class State(AutoStrEnum):
             """Instance standby status"""
@@ -107,7 +128,6 @@ class Instance(Manifest):
             description="DSN of primary for streaming replication",
         )
         status: State = Field(
-            cli={"hide": True},
             default=State.demoted,
         )
         slot: Optional[str] = Field(description="replication slot name")
@@ -127,16 +147,13 @@ class Instance(Manifest):
     state: InstanceState = Field(
         default=InstanceState.started,
         description="Runtime state",
-        cli={"choices": [InstanceState.started.value, InstanceState.stopped.value]},
     )
     ssl: Union[bool, Tuple[Path, Path]] = Field(
         default=False,
-        cli={"hide": True},
         ansible={"spec": {"type": "bool", "required": False, "default": False}},
     )
     configuration: Dict[str, Any] = Field(
         default_factory=dict,
-        cli={"hide": True},
         ansible={"spec": {"type": "dict", "required": False}},
     )
     surole_password: Optional[SecretStr] = Field(
@@ -227,15 +244,15 @@ class PostgresExporter(Manifest):
         stopped = enum.auto()
         absent = enum.auto()
 
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "state": {"choices": [State.started.value, State.stopped.value]},
+    }
+
     name: str = Field(description="locally unique identifier of the service")
     dsn: str = Field(description="connection string of target instance")
     password: Optional[SecretStr] = Field(description="connection password")
     port: int = Field(description="TCP port for the web interface and telemetry")
-    state: State = Field(
-        default=State.started,
-        description="runtime state",
-        cli={"choices": [State.started.value, State.stopped.value]},
-    )
+    state: State = Field(default=State.started, description="runtime state")
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:
@@ -268,6 +285,11 @@ class PostgresExporter(Manifest):
 class Role(Manifest):
     """PostgreSQL role"""
 
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "in_roles": {"name": "in-role"},
+        "state": {"hide": True},
+    }
+
     name: str
     password: Optional[SecretStr] = Field(default=None, description="role password")
     pgpass: bool = Field(
@@ -289,19 +311,20 @@ class Role(Manifest):
     in_roles: List[str] = Field(
         default_factory=list,
         description="list of roles to which the new role will be added as a new member",
-        cli={"name": "in-role"},
     )
-    state: PresenceState = Field(default=PresenceState.present, cli={"hide": True})
+    state: PresenceState = Field(default=PresenceState.present)
 
 
 class Database(Manifest):
     """PostgreSQL database"""
 
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {"state": {"hide": True}}
+
     name: str
     owner: Optional[str] = Field(
         description="the role name of the user who will own the new database"
     )
-    state: PresenceState = Field(default=PresenceState.present, cli={"hide": True})
+    state: PresenceState = Field(default=PresenceState.present)
 
 
 class Tablespace(BaseModel):

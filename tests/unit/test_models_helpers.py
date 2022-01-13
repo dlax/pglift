@@ -2,7 +2,7 @@ import enum
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 import click
 import pytest
@@ -24,8 +24,14 @@ class Country(enum.Enum):
 
 
 class Address(BaseModel):
+    _cli_config: ClassVar[Dict[str, interface.CLIConfig]] = {
+        "building": {"hide": True},
+        "country": {"choices": [Country.France.value, Country.Belgium.value]},
+        "city": {"name": "town"},
+    }
+
     street: List[str] = Field(description="street lines")
-    building: Optional[str] = Field(cli={"hide": True}, ansible={"hide": True})
+    building: Optional[str] = Field(ansible={"hide": True})
     zip_code: int = Field(
         default=0,
         description="ZIP code",
@@ -34,10 +40,8 @@ class Address(BaseModel):
     city: str = Field(
         description="city",
         ansible={"spec": {"type": "str", "description": "the city"}},
-        cli={"name": "town"},
     )
     country: Country = Field(
-        cli={"choices": [Country.France.value, Country.Belgium.value]},
         ansible={"choices": [Country.France.value, Country.UnitedKindom.value]},
     )
     shared: bool = Field(description="is this a collocation?")

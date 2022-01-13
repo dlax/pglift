@@ -73,8 +73,10 @@ def _decorators_from_model(
             return DEFAULT
         return value
 
+    model_cli_config = getattr(model_type, "_cli_config", {})
+
     for field in model_type.__fields__.values():
-        cli_config = field.field_info.extra.get("cli", {})
+        cli_config = model_cli_config.get(field.name, {})
         if cli_config.get("hide", False):
             continue
         argname = cli_config.get("name", field.alias)
