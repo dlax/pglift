@@ -7,7 +7,6 @@ from typing import (
     Callable,
     Dict,
     Iterator,
-    List,
     Mapping,
     Sequence,
     Tuple,
@@ -18,7 +17,8 @@ from typing import (
 
 import pydantic
 from pydantic.utils import lenient_issubclass
-from typing_extensions import TypedDict
+
+from ..types import AnsibleArgSpec
 
 Callback = Callable[..., None]
 ModelType = Type[pydantic.BaseModel]
@@ -226,16 +226,7 @@ def parameters_from_model(
     return decorator
 
 
-class ArgSpec(TypedDict, total=False):
-    required: bool
-    type: str
-    default: Any
-    choices: List[str]
-    description: List[str]
-    no_log: bool
-
-
-PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], ArgSpec] = {
+PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], AnsibleArgSpec] = {
     bool: {"type": "bool"},
     int: {"type": "int"},
     str: {"type": "str"},
@@ -246,7 +237,7 @@ PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], ArgSpec] = {
 def argspec_from_model(
     model_type: ModelType,
     force_non_required: bool = False,
-) -> Dict[str, ArgSpec]:
+) -> Dict[str, AnsibleArgSpec]:
     """Return the Ansible module argument spec object corresponding to a
     pydantic model class.
 
@@ -268,9 +259,9 @@ def argspec_from_model(
         if ansible_config.get("hide", False):
             continue
         try:
-            arg_spec: ArgSpec = ansible_config["spec"]
+            arg_spec: AnsibleArgSpec = ansible_config["spec"]
         except KeyError:
-            arg_spec = ArgSpec()
+            arg_spec = AnsibleArgSpec()
             try:
                 arg_spec.update(PYDANTIC2ANSIBLE[ftype])
             except KeyError:

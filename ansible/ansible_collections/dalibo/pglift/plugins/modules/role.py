@@ -86,7 +86,7 @@ import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
-from pglift import roles
+from pglift import roles, types
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
 from pglift.pm import PluginManager
@@ -96,7 +96,7 @@ from pglift.task import Runner
 def run_module() -> None:
     model_type = interface.Role
     argspec = helpers.argspec_from_model(model_type)
-    argspec["instance"] = helpers.ArgSpec(required=True, type="str")
+    argspec["instance"] = types.AnsibleArgSpec(required=True, type="str")
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
     instance_id = module.params.pop("instance")

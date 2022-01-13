@@ -1,11 +1,11 @@
 import enum
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 import psycopg.errors
 from pgtoolkit import conf as pgconf
 from pydantic import SecretStr
-from typing_extensions import Protocol
+from typing_extensions import Protocol, TypedDict
 
 if TYPE_CHECKING:
     CompletedProcess = subprocess.CompletedProcess[str]
@@ -56,3 +56,12 @@ class AutoStrEnum(StrEnum):
 
     def _generate_next_value_(name, *args: Any) -> str:  # type: ignore[override]
         return name
+
+
+class AnsibleArgSpec(TypedDict, total=False):
+    required: bool
+    type: str
+    default: Any
+    choices: List[str]
+    description: List[str]
+    no_log: bool
