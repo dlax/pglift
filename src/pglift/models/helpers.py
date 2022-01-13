@@ -80,6 +80,7 @@ def _decorators_from_model(
         argname = cli_config.get("name", field.alias)
         if argname in exclude:
             continue
+        argname = argname.replace("_", "-")
         modelname = field.alias
         ftype = field.outer_type_
         if not _prefix and field.required:

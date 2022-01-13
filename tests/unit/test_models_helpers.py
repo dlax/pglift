@@ -29,7 +29,6 @@ class Address(BaseModel):
     zip_code: int = Field(
         default=0,
         description="ZIP code",
-        cli={"name": "zip-code"},
         ansible={"hide": True},
     )
     city: str = Field(

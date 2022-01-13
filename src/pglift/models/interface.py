@@ -142,12 +142,10 @@ class Instance(Manifest):
     surole_password: Optional[SecretStr] = Field(
         default=None,
         description="super-user role password",
-        cli={"name": "surole-password"},
     )
     replrole_password: Optional[SecretStr] = Field(
         default=None,
         description="replication role password",
-        cli={"name": "replrole-password"},
     )
 
     standby: Optional[Standby] = None
@@ -284,7 +282,6 @@ class Role(Manifest):
     replication: bool = Field(default=False, description="replication role")
     connection_limit: Optional[int] = Field(
         description="how many concurrent connections the role can make",
-        cli={"name": "connection-limit"},
     )
     validity: Optional[datetime] = Field(
         description="sets a date and time after which the role's password is no longer valid"
