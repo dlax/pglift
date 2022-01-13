@@ -159,7 +159,7 @@ class Instance(Manifest):
         default=InstanceState.started,
         description="Runtime state",
     )
-    ssl: Union[bool, Tuple[Path, Path]] = False
+    ssl: Union[bool, Tuple[Path, Path]] = Field(default=False, title="SSL")
     configuration: Dict[str, Any] = Field(default_factory=dict)
     surole_password: Optional[SecretStr] = Field(
         default=None,
