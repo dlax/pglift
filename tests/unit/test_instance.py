@@ -8,7 +8,7 @@ from pgtoolkit.conf import parse as parse_pgconf
 from pglift import instance as instance_mod
 from pglift import task
 from pglift.ctx import Context
-from pglift.exceptions import CommandError, InstanceStateError
+from pglift.exceptions import CommandError, InstanceStateError, InvalidVersion
 from pglift.models import interface
 from pglift.models.system import BaseInstance, Instance
 from pglift.settings import Settings
@@ -257,3 +257,11 @@ def test_env(ctx: Context, instance: Instance) -> None:
 def test_exists(ctx: Context, instance: Instance) -> None:
     assert instance_mod.exists(ctx, instance.name, instance.version)
     assert not instance_mod.exists(ctx, "doesnotexists", instance.version)
+
+
+def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
+    with pytest.raises(
+        InvalidVersion,
+        match=f"Could not upgrade {instance.version}/test using same name and same version",
+    ):
+        instance_mod.upgrade(ctx, instance, version=instance.version)

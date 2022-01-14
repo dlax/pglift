@@ -539,6 +539,10 @@ def upgrade(
     """Upgrade an instance using pg_upgrade"""
     if version is None:
         version = default_postgresql_version(ctx)
+    if (name is None or name == instance.name) and version == instance.version:
+        raise exceptions.InvalidVersion(
+            f"Could not upgrade {instance} using same name and same version"
+        )
     surole = ctx.settings.postgresql.surole
     surole_password = ctx.libpq_environ().get("PGPASSWORD")
     if not surole_password and ctx.settings.postgresql.auth.passfile:
