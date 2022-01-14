@@ -29,15 +29,17 @@ pglift: instances, roles, databases, etc. Each entry point has its own help:
       Initialize a PostgreSQL instance
 
     Options:
-      --version VERSION          Postgresql version.
-      --port PORT                Tcp port the postgresql instance will be
-                                 listening to.
-      --state [started|stopped]  Runtime state.
-      --standby-for FOR          Dsn of primary for streaming replication.
-      --standby-slot SLOT        Replication slot name.
-      --prometheus-port PORT     Tcp port for the web interface and telemetry of
-                                 prometheus.
-      --help                     Show this message and exit.
+      --version VERSION            Postgresql version.
+      --port PORT                  Tcp port the postgresql instance will be
+                                   listening to.
+      --state [started|stopped]    Runtime state.
+      --surole-password TEXT       Super-user role password.
+      --replication-password TEXT  Replication role password.
+      --standby-for FOR            Dsn of primary for streaming replication.
+      --standby-slot SLOT          Replication slot name.
+      --prometheus-port PORT       Tcp port for the web interface and telemetry of
+                                   prometheus.
+      --help                       Show this message and exit.
 
 Creating an instance:
 
