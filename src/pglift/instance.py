@@ -525,6 +525,7 @@ def promote(ctx: BaseContext, instance: Instance) -> None:
     )
 
 
+@task("upgrade PostgreSQL instance")
 def upgrade(
     ctx: BaseContext,
     instance: Instance,
