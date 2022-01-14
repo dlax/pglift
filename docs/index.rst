@@ -43,6 +43,7 @@ How to guides
     howto/instance-env
     howto/database-backup-restore
     howto/database-maintenance
+    howto/standby-setup
     dev
 
 

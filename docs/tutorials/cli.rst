@@ -48,7 +48,8 @@ Creating an instance:
     $ pglift instance init main --port=5455
 
 a standby instance can also be created by passing the
-``--standby-for=<primary dsn>`` option to ``instance init`` command.
+``--standby-for=<primary dsn>`` option to ``instance init`` command, see
+:doc:`/howto/standby-setup` for dedicated documentation.
 
 The instance actually consists of a PostgreSQL instance with a backup service (pgbackrest)
 and a monitoring service (Prometheus postgres_exporter) set up.
