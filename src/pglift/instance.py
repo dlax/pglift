@@ -516,6 +516,7 @@ def reload(
         systemd.reload(ctx, systemd_unit(instance))
 
 
+@task("promote PostgreSQL instance")
 def promote(ctx: BaseContext, instance: Instance) -> None:
     """Promote a standby instance"""
     pg_ctl = ctx.pg_ctl(instance.version)

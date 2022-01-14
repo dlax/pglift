@@ -503,6 +503,16 @@ def instance_alter(
         instance_mod.apply(ctx, altered)
 
 
+@instance.command("promote")
+@instance_identifier
+@pass_runner
+@pass_ctx
+def instance_promote(ctx: Context, runner: Runner, instance: Instance) -> None:
+    """Promote a standby PostgreSQL instance"""
+    with runner:
+        instance_mod.promote(ctx, instance)
+
+
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""

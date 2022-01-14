@@ -238,6 +238,18 @@ def test_instance_alter(
     assert result.exit_code == 0, result.output
 
 
+def test_instance_promote(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    result = runner.invoke(cli, ["instance", "promote", "notfound"], obj=obj)
+    assert result.exit_code == 2, result.stderr
+    assert "instance 'notfound' not found" in result.stderr
+    with patch.object(instance_mod, "promote") as promote:
+        result = runner.invoke(cli, ["instance", "promote", str(instance)], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    promote.assert_called_once_with(ctx, instance)
+
+
 def test_instance_schema(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, ["instance", "schema"], obj=obj)
     schema = json.loads(result.output)
