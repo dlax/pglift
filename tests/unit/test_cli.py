@@ -324,8 +324,9 @@ def test_instance_list(
     [
         ([], ["port = 999", "unix_socket_directories = '/socks'"]),
         (["port"], ["port = 999"]),
+        (["backslash_quote"], []),
     ],
-    ids=["param=<none>", "param=port"],
+    ids=["param=<none>", "param=port", "param=backslash_quote(commented)"],
 )
 def test_instance_config_show(
     runner: CliRunner,

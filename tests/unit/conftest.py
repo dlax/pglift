@@ -81,7 +81,13 @@ def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
     (instance.datadir / "postgresql.conf").write_text(
-        "\n".join(["port = 999", "unix_socket_directories = /socks"])
+        "\n".join(
+            [
+                "port = 999",
+                "unix_socket_directories = /socks",
+                "# backslash_quote = 'safe_encoding'",
+            ]
+        )
     )
 
     if prometheus:
