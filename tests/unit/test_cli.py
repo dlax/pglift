@@ -324,7 +324,7 @@ def test_instance_list(
     [
         ([], ["port = 999", "unix_socket_directories = '/socks'"]),
         (["port"], ["port = 999"]),
-        (["backslash_quote"], []),
+        (["backslash_quote"], ["# backslash_quote = 'safe_encoding'"]),
     ],
     ids=["param=<none>", "param=port", "param=backslash_quote(commented)"],
 )

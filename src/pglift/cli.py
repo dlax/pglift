@@ -579,12 +579,20 @@ def show_configuration_changes(
 def instance_configure_show(
     ctx: Context, instance: Instance, parameter: Tuple[str]
 ) -> None:
-    """Show configuration (all parameters or specified ones)."""
+    """Show configuration (all parameters or specified ones).
+
+    Only uncommented parameters are shown when no PARAMETER is specified. When
+    specific PARAMETERs are queried, commented values are also shown.
+    """
     config = instance.config()
     for entry in config.entries.values():
-        if parameter and entry.name not in parameter:
-            continue
-        if not entry.commented:
+        if parameter:
+            if entry.name in parameter:
+                if entry.commented:
+                    click.echo(f"# {entry.name} = {entry.serialize()}")
+                else:
+                    click.echo(f"{entry.name} = {entry.serialize()}")
+        elif not entry.commented:
             click.echo(f"{entry.name} = {entry.serialize()}")
 
 
