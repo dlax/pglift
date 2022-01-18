@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterator
+from typing import Any, Dict, Iterator, List
 from unittest.mock import MagicMock, patch
 
 import click
@@ -319,12 +319,32 @@ def test_instance_list(
     assert not result.output
 
 
-def test_instance_config_show(runner: CliRunner, obj: Obj, instance: Instance) -> None:
-    result = runner.invoke(cli, ["instance", "config", "show", str(instance)], obj=obj)
-    assert result.exit_code == 0, result.stderr
-    assert result.stdout.strip() == "\n".join(
-        ["port = 999", "unix_socket_directories = '/socks'"]
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        ([], ["port = 999", "unix_socket_directories = '/socks'"]),
+        (["port"], ["port = 999"]),
+    ],
+    ids=["param=<none>", "param=port"],
+)
+def test_instance_config_show(
+    runner: CliRunner,
+    obj: Obj,
+    instance: Instance,
+    params: List[str],
+    expected: List[str],
+) -> None:
+    result = runner.invoke(
+        cli, ["instance", "config", "show", str(instance)] + params, obj=obj
     )
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.strip() == "\n".join(expected)
+
+    result = runner.invoke(
+        cli, ["instance", "config", "show", str(instance), "port"], obj=obj
+    )
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.strip() == "\n".join(["port = 999"])
 
 
 def test_instance_config_set_validate(
