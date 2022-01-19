@@ -28,6 +28,7 @@ import psycopg
 import pydantic.json
 import rich.console
 import rich.logging
+import rich.prompt
 import rich.text
 import rich.tree
 from click.exceptions import Exit
@@ -480,6 +481,19 @@ def instance_init(ctx: Context, runner: Runner, instance: interface.Instance) ->
         instance_mod.apply(ctx, instance)
 
 
+def maybe_restart(ctx: Context, runner: Runner, r: instance_mod.ApplyResult) -> None:
+    if r is None:
+        return
+    instance, changes, needs_restart = r
+    if not needs_restart:
+        return
+    if rich.prompt.Confirm.ask(
+        "[cyan]Instance needs to be restarted.[/cyan]\n  Restart now?",
+    ):
+        with runner:
+            instance_mod.restart(ctx, instance)
+
+
 @instance.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @pass_runner
@@ -488,7 +502,8 @@ def instance_apply(ctx: Context, runner: Runner, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     instance = interface.Instance.parse_yaml(file)
     with runner:
-        instance_mod.apply(ctx, instance)
+        r = instance_mod.apply(ctx, instance)
+    maybe_restart(ctx, runner, r)
 
 
 @instance.command("alter")
@@ -510,7 +525,8 @@ def instance_alter(
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
     with runner:
-        instance_mod.apply(ctx, altered)
+        r = instance_mod.apply(ctx, altered)
+    maybe_restart(ctx, runner, r)
 
 
 @instance.command("promote")

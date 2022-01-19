@@ -192,12 +192,18 @@ def test_instance_apply(
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "test"})
     manifest.write_text(content)
-    with patch.object(instance_mod, "apply") as mock_method:
-        result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
+    mock_instance = object()
+    with patch.object(
+        instance_mod, "apply", return_value=(mock_instance, {}, False)
+    ) as apply, patch.object(instance_mod, "restart") as restart:
+        result = runner.invoke(
+            cli, ["instance", "apply", "-f", str(manifest)], obj=obj, input="y\n"
+        )
     assert result.exit_code == 0, (result, result.output)
-    mock_method.assert_called_once()
-    assert mock_method.call_args[0][0] == ctx
-    assert isinstance(mock_method.call_args[0][1], interface.Instance)
+    apply.assert_called_once()
+    assert apply.call_args[0][0] == ctx
+    assert isinstance(apply.call_args[0][1], interface.Instance)
+    assert not restart.called
 
 
 def test_instance_alter(
@@ -219,9 +225,13 @@ def test_instance_alter(
             "prometheus": {"port": 2121},
         }
     )
-    with patch.object(instance_mod, "apply") as apply, patch.object(
+    with patch.object(
+        instance_mod, "apply", return_value=(instance, {}, True)
+    ) as apply, patch.object(
         instance_mod, "describe", return_value=actual
-    ) as describe:
+    ) as describe, patch.object(
+        instance_mod, "restart"
+    ) as restart:
         result = runner.invoke(
             cli,
             [
@@ -232,9 +242,11 @@ def test_instance_alter(
                 "--prometheus-port=2121",
             ],
             obj=obj,
+            input="y\n",
         )
     describe.assert_called_once_with(ctx, instance.name, instance.version)
     apply.assert_called_once_with(ctx, altered)
+    restart.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0, result.output
 
 
