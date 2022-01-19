@@ -334,7 +334,9 @@ def test_standby(
             role=replrole,
         )
         assert not pg_replication_slots()
-        standby_instance, _ = instance_mod.apply(ctx, standby_manifest)  # type: ignore[misc]
+        r = instance_mod.apply(ctx, standby_manifest)
+        assert r is not None
+        standby_instance = r[0]
         if slot:
             assert pg_replication_slots() == [slot]
         else:
