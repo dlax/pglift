@@ -441,3 +441,12 @@ def test_instance_upgrade(
             assert databases.exists(ctx, newinstance, "present")
     finally:
         instance_mod.drop(ctx, newinstance)
+
+
+def test_server_settings(ctx: Context, instance: system.Instance) -> None:
+    with instance_mod.running(ctx, instance):
+        pgsettings = instance_mod.settings(ctx, instance)
+    port = next(p for p in pgsettings if p.name == "port")
+    assert port.setting == str(instance.port)
+    assert not port.pending_restart
+    assert port.context == "postmaster"

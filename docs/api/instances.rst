@@ -23,3 +23,4 @@ instances:
 .. autofunction:: stopped
 .. autofunction:: promote
 .. autofunction:: upgrade
+.. autofunction:: settings

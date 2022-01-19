@@ -379,6 +379,19 @@ class Privilege(Manifest):
     privileges: List[str]
 
 
+class PGSetting(Manifest):
+    """A column from pg_settings view."""
+
+    _query: ClassVar[
+        str
+    ] = "SELECT name, setting, context, pending_restart FROM pg_settings"
+
+    name: str
+    setting: str
+    context: str
+    pending_restart: bool
+
+
 def instance_surole(settings: settings.Settings, instance: Instance) -> Role:
     surole_settings = settings.postgresql.surole
     if instance.surole_password:

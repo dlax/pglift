@@ -5,8 +5,9 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
+import psycopg.rows
 from pgtoolkit import conf as pgconf
 from pgtoolkit import pgpass
 from pgtoolkit.ctl import Status as Status
@@ -784,3 +785,16 @@ def exists(ctx: BaseContext, name: str, version: Optional[str]) -> bool:
     except exceptions.InstanceNotFound:
         return False
     return True
+
+
+def settings(ctx: BaseContext, instance: Instance) -> List[interface.PGSetting]:
+    """Return the list of run-time parameters of the server, as available in
+    pg_settings view.
+
+    The instance must be running.
+    """
+    with db.superuser_connect(ctx, instance) as cnx, cnx.cursor(
+        row_factory=psycopg.rows.class_row(interface.PGSetting)
+    ) as cur:
+        cur.execute(interface.PGSetting._query)
+        return cur.fetchall()
