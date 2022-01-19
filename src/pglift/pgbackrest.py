@@ -185,12 +185,6 @@ def revert_setup(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 @task("initialize pgBackRest repository")
 def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
     settings = ctx.settings.pgbackrest
-    info_json = backup_info(ctx, instance)
-
-    # If the stanza already exists, don't do anything
-    if info_json and info_json[0]["status"]["code"] != 1:
-        return
-
     with instance_mod.running(ctx, instance):
         role = interface.Role(
             name=ctx.settings.postgresql.backuprole,
@@ -219,7 +213,11 @@ def instance_configure(
     if instance.standby:
         return
     setup(ctx, instance)
-    init(ctx, instance)
+
+    info_json = backup_info(ctx, instance)
+    # Only initialize if the stanza does not already exists.
+    if not info_json or info_json[0]["status"]["code"] == 1:
+        init(ctx, instance)
 
 
 @hookimpl  # type: ignore[misc]
