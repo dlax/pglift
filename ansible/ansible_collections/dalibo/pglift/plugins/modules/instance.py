@@ -108,6 +108,9 @@ instance:
 configuration_changes:
   description: Changes to PostgreSQL instance configuration
   type: dict
+needs_restart:
+  description: Whether the instance needs to be restarted or not
+  type: bool
 """
 
 from typing import Any, Dict
@@ -143,23 +146,25 @@ def run_module() -> None:
 
     try:
         with Runner():
-            instance_and_changes = instance_mod.apply(ctx, m)
+            apply_result = instance_mod.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
     if instance_exists:
-        if not instance_and_changes:  # Dropped
+        if not apply_result:  # Dropped
             result["changed"] = True
             instance = None
         else:
-            instance, changes = instance_and_changes
+            instance, changes, needs_restart = apply_result
             if changes:
                 result["changed"] = True
                 result["configuration_changes"] = changes
-    elif instance_and_changes:  # Created
-        instance, changes = instance_and_changes
+                result["needs_restart"] = needs_restart
+    elif apply_result:  # Created
+        instance, changes, needs_restart = apply_result
         result["changed"] = True
         result["configuration_changes"] = changes
+        result["needs_restart"] = needs_restart
     else:
         instance = None
 

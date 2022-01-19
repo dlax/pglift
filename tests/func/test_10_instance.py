@@ -203,6 +203,7 @@ def test_apply(
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
@@ -217,7 +218,7 @@ def test_apply(
     )
     r = instance_mod.apply(ctx, im)
     assert r is not None
-    i, changes = r
+    i, changes, needs_restart = r
     assert i is not None
     assert i.exists()
     assert i.port == port
@@ -230,15 +231,26 @@ def test_apply(
     im.state = interface.InstanceState.started
     r = instance_mod.apply(ctx, im)
     assert r is not None
-    i, changes = r
+    i, changes, needs_restart = r
     assert not changes
+    assert not needs_restart
     assert instance_mod.status(ctx, i) == Status.running
 
-    im.configuration["bonjour"] = False
-    r = instance_mod.apply(ctx, im)
+    im.configuration["listen_addresses"] = "*"  # requires restart
+    im.configuration["autovacuum"] = False  # requires reload
+    with caplog.at_level(logging.DEBUG, logger="pgflit"):
+        r = instance_mod.apply(ctx, im)
+    assert (
+        f"instance {i} needs restart due to parameter changes: listen_addresses"
+        in caplog.messages
+    )
     assert r is not None
-    i, changes = r
-    assert changes == {"bonjour": (None, False)}
+    i, changes, needs_restart = r
+    assert changes == {
+        "listen_addresses": (None, "*"),
+        "autovacuum": (None, False),
+    }
+    assert needs_restart
     assert instance_mod.status(ctx, i) == Status.running
 
     im.state = interface.InstanceState.stopped

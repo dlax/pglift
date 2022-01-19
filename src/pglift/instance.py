@@ -590,9 +590,10 @@ def upgrade(
     return newinstance
 
 
-def apply(
-    ctx: BaseContext, manifest: interface.Instance
-) -> Optional[Tuple[Instance, ConfigChanges]]:
+ApplyResult = Union[None, Tuple[Instance, ConfigChanges, bool]]
+
+
+def apply(ctx: BaseContext, manifest: interface.Instance) -> ApplyResult:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
@@ -602,8 +603,9 @@ def apply(
     :class:`~pglift.model.Instance` object along with configuration changes.
 
     If configuration changes are detected and the instance was previously
-    running, it will be reloaded. Note that some changes require a full
-    restart, this needs to be handled manually.
+    running, the third item of the return tuple will contain True if the
+    server needs to be restarted. If the server needs to be reloaded, this
+    will be done automatically.
     """
     States = interface.InstanceState
     state = manifest.state
@@ -627,15 +629,42 @@ def apply(
 
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     is_running = status(ctx, instance) == Status.running
+    needs_restart = "port" in changes
     if state == States.stopped:
         if is_running:
             stop(ctx, instance)
     elif state == States.started:
         if is_running:
-            if changes:
-                # This might fail because some changes require a restart but
-                # 'pg_ctl reload' does not inform us about that.
-                reload(ctx, instance)
+            # Check if a restart is needed, unless we're sure it is already
+            # (because of 'port' change) and querying for run-time settings
+            # would fail.
+            if changes and not needs_restart:
+                pending_restart = set()
+                pending_reload = set()
+                for p in settings(ctx, instance):
+                    pname = p.name
+                    if pname not in changes:
+                        continue
+                    if p.context == "postmaster":
+                        pending_restart.add(pname)
+                    elif p.context == "sighup":
+                        pending_reload.add(pname)
+
+                if pending_reload:
+                    logger.info(
+                        "instance %s needs reload due to parameter changes: %s",
+                        instance,
+                        ", ".join(sorted(pending_reload)),
+                    )
+                    reload(ctx, instance)
+
+                if pending_restart:
+                    logger.warning(
+                        "instance %s needs restart due to parameter changes: %s",
+                        instance,
+                        ", ".join(sorted(pending_restart)),
+                    )
+                    needs_restart = True
         else:
             start(ctx, instance)
     else:
@@ -650,7 +679,7 @@ def apply(
     ):
         promote(ctx, instance)
 
-    return instance, changes
+    return instance, changes, needs_restart
 
 
 def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.Instance:
