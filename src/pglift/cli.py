@@ -379,6 +379,12 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     help="Write log to LOGFILE",
 )
 @click.option(
+    "--quiet",
+    is_flag=True,
+    default=False,
+    help="Disable status output.",
+)
+@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -388,7 +394,10 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
 )
 @click.pass_context
 def cli(
-    context: click.Context, log_level: str, log_file: Optional[pathlib.Path]
+    context: click.Context,
+    log_level: str,
+    log_file: Optional[pathlib.Path],
+    quiet: bool,
 ) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
@@ -418,7 +427,8 @@ def cli(
 
     if not context.obj:
         context.obj = Obj(
-            Context(plugin_manager=pm.PluginManager.get()), LiveDisplayer()
+            Context(plugin_manager=pm.PluginManager.get()),
+            LiveDisplayer() if not quiet else None,
         )
     else:
         assert isinstance(context.obj, Obj), context.obj
