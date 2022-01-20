@@ -29,6 +29,50 @@ follows for an instance with ``13-main`` identifier:
     NEXT                         LEFT     LAST                         PASSED       UNIT                            ACTIVATES
     Sat 2021-08-07 00:00:00 CEST 10h left Fri 2021-08-06 12:21:07 CEST 1h 25min ago postgresql-backup@13-main.timer pglift-backup@13-main.service
 
+Overriding
+----------
+
+``systemd.service`` and ``systemd.timer`` shipped with pglift may be overriden
+using standard methods, as described in `systemd.unit(5)`_.
+
+Here is how to obtain the definition of built-in units (in `user` mode here):
+
+::
+
+    $ systemctl --user list-unit-files pglift-\*
+    UNIT FILE                         STATE    VENDOR PRESET
+    pglift-backup@.service            static   -
+    pglift-postgres_exporter@.service indirect enabled
+    pglift-postgresql@.service        indirect enabled
+    pglift-backup@.timer              indirect enabled
+
+::
+
+    $ systemctl --user cat pglift-postgresql@.service
+    [Unit]
+    Description=PostgreSQL %i database server
+    After=network.target
+
+    [Service]
+    Type=forking
+
+
+    # Disable OOM kill on the postmaster
+    OOMScoreAdjust=-1000
+    Environment=PG_OOM_ADJUST_FILE=/proc/self/oom_score_adj
+    Environment=PG_OOM_ADJUST_VALUE=0
+
+
+    ExecStart=/home/denis/src/dalibo/pglift/.venv/bin/python3 -m pglift.postgres %i
+    ExecReload=/bin/kill -HUP $MAINPID
+
+    PIDFile=/home/denis/.local/share/pglift/run/postgresql/postgresql-%i.pid
+
+    [Install]
+    WantedBy=multi-user.target
+
+
+.. _`systemd.unit(5)`: https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 
 `system` mode
 -------------
