@@ -19,7 +19,7 @@ from . import reconfigure_instance
 
 @pytest.fixture(autouse=True)
 def prometheus_available(ctx: Context) -> None:
-    if not prometheus.enabled(ctx):
+    if not prometheus.available(ctx):
         pytest.skip("prometheus not available")
 
 
@@ -207,3 +207,37 @@ def test_drop_exists(
     with caplog.at_level(logging.WARNING, logger="pglift"):
         prometheus.drop(ctx, "dropme")
     assert caplog.records[0].message == "no postgres_exporter service 'dropme' found"
+
+
+@pytest.fixture
+def instance_no_prometheus(
+    ctx: Context, tmp_port_factory: Iterator[int]
+) -> Iterator[system.Instance]:
+    im = interface.Instance.parse_obj(
+        {
+            "name": "noprom",
+            "port": next(tmp_port_factory),
+            "prometheus": None,
+        }
+    )
+    r = instance_mod.apply(ctx, im)
+    assert r is not None
+    instance = r[0]
+    yield instance
+    instance_mod.drop(ctx, instance)
+
+
+def test_instance_no_prometheus(
+    ctx: Context, instance_no_prometheus: system.Instance
+) -> None:
+    """Make sure we can create an instance without postgres_exporter and have
+    it running and restarted.
+    """
+    assert not prometheus.enabled(ctx, instance_no_prometheus.name)
+    assert (
+        instance_mod.status(ctx, instance_no_prometheus) == instance_mod.Status.running
+    )
+    instance_mod.restart(ctx, instance_no_prometheus)
+    assert (
+        instance_mod.status(ctx, instance_no_prometheus) == instance_mod.Status.running
+    )

@@ -25,7 +25,7 @@ from .task import task
 from .types import AutoStrEnum
 
 
-def enabled(ctx: BaseContext) -> bool:
+def available(ctx: BaseContext) -> bool:
     return ctx.settings.pgbackrest.execpath.exists()
 
 
@@ -206,7 +206,7 @@ def instance_configure(
     ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
 ) -> None:
     """Install pgBackRest for an instance when it gets configured."""
-    if not enabled(ctx):
+    if not available(ctx):
         logger.warning("pgbackrest not available, skipping backup configuration")
         return
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))

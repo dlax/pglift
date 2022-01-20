@@ -144,7 +144,7 @@ C = TypeVar("C", bound=Callable[..., Any])
 def require_component(mod: ModuleType, name: str, fn: C) -> C:
     @wraps(fn)
     def wrapper(ctx: Context, *args: Any, **kwargs: Any) -> None:
-        if not getattr(mod, "enabled")(ctx):
+        if not getattr(mod, "available")(ctx):
             click.echo(f"{name} not available", err=True)
             raise Exit(1)
         fn(ctx, *args, **kwargs)

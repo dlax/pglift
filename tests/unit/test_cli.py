@@ -90,12 +90,12 @@ def test_require_component(runner: CliRunner, ctx: Context) -> None:
     def command(ctx: click.Context, *args: Any) -> None:
         click.echo(f"ctx is {type(ctx)}")
 
-    mod.enabled.return_value = False
+    mod.available.return_value = False
     r = runner.invoke(command, obj=ctx)
     assert r.exit_code == 1
     assert r.stderr == "mymod not available\n"
 
-    mod.enabled.return_value = True
+    mod.available.return_value = True
     r = runner.invoke(command, obj=ctx)
     assert r.exit_code == 0
     assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
