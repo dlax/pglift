@@ -18,4 +18,13 @@ else:
     from importlib_metadata import version  # type: ignore[no-redef]
 
 
-__all__ = ["version"]
+if pyversion >= (3, 7):
+    from contextlib import nullcontext
+else:
+    from contextlib2 import nullcontext  # type: ignore[no-redef]
+
+
+__all__ = [
+    "nullcontext",
+    "version",
+]

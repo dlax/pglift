@@ -45,20 +45,20 @@ def test_task() -> None:
     assert neg.revert_action(-1) == 1
 
 
-def test_runner_state() -> None:
+def test_transaction_state() -> None:
     with pytest.raises(RuntimeError, match="inconsistent task state"):
-        with task.Runner():
-            with task.Runner():
+        with task.transaction():
+            with task.transaction():
                 pass
 
     with pytest.raises(ValueError, match="expected"):
-        with task.Runner():
+        with task.transaction():
             assert task.Task._calls is not None
             raise ValueError("expected")
     assert task.Task._calls is None
 
 
-def test_runner(caplog: pytest.LogCaptureFixture) -> None:
+def test_transaction(caplog: pytest.LogCaptureFixture) -> None:
     values = set()
 
     @task.task("add {x} to values")
@@ -72,7 +72,7 @@ def test_runner(caplog: pytest.LogCaptureFixture) -> None:
 
     displayer = SimpleDisplayer()
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(displayer):
+        with task.displayer_installed(displayer), displayer, task.transaction():
             add(2, fail=True)
     # no revert action
     assert values == {1, 2}
@@ -86,7 +86,7 @@ def test_runner(caplog: pytest.LogCaptureFixture) -> None:
             pass
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.Runner(displayer):
+        with task.displayer_installed(displayer), displayer, task.transaction():
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2}
@@ -103,7 +103,7 @@ def test_runner(caplog: pytest.LogCaptureFixture) -> None:
             raise ValueError("failed to fail")
 
     with pytest.raises(ValueError, match="failed to fail"):
-        with task.Runner():
+        with task.transaction():
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2, 3, 4}
@@ -114,6 +114,6 @@ def test_runner(caplog: pytest.LogCaptureFixture) -> None:
 
     caplog.clear()
     with pytest.raises(KeyboardInterrupt), caplog.at_level(logging.WARNING):
-        with task.Runner():
+        with task.transaction():
             intr()
     assert caplog.messages == [f"{intr} interrupted"]

@@ -114,45 +114,41 @@ def task(title: str) -> Callable[[A], Task[A]]:
     return mktask
 
 
-class Runner:
-    """Context manager handling possible revert of a chain to task calls."""
+@contextlib.contextmanager
+def displayer_installed(displayer: Optional[Displayer]) -> Iterator[None]:
+    if displayer is None:
+        yield
+        return
+    assert Task.displayer is None
+    Task.displayer = displayer
+    try:
+        yield
+    finally:
+        Task.displayer = None
 
-    def __init__(self, displayer: Optional[Displayer] = None):
-        self.displayer = displayer
 
-    def __enter__(self) -> None:
-        if Task._calls is not None:
-            raise RuntimeError("inconsistent task state")
-        Task._calls = collections.deque()
-
-        Task.displayer = self.displayer
-        if self.displayer is not None:
-            self.displayer.__enter__()
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> None:
-        try:
-            if exc_value is not None:
-                if exc_type is KeyboardInterrupt:
-                    if Task._calls:
-                        logger.warning("%s interrupted", Task._calls[-1][0])
-                else:
-                    logger.exception(str(exc_value))
-                assert Task._calls is not None
-                while True:
-                    try:
-                        t, args, kwargs = Task._calls.pop()
-                    except IndexError:
-                        break
-                    if t.revert_action:
-                        t.revert_action(*args, **kwargs)
-        finally:
-            Task._calls = None
-            Task.displayer = None
-
-            if self.displayer is not None:
-                self.displayer.__exit__(exc_type, exc_value, traceback)
+@contextlib.contextmanager
+def transaction() -> Iterator[None]:
+    """Context manager handling revert of run tasks, in case of failure."""
+    if Task._calls is not None:
+        raise RuntimeError("inconsistent task state")
+    Task._calls = collections.deque()
+    try:
+        yield
+    except BaseException as exc:
+        if isinstance(exc, KeyboardInterrupt):
+            if Task._calls:
+                logger.warning("%s interrupted", Task._calls[-1][0])
+        else:
+            logger.exception(str(exc))
+        assert Task._calls is not None
+        while True:
+            try:
+                t, args, kwargs = Task._calls.pop()
+            except IndexError:
+                break
+            if t.revert_action:
+                t.revert_action(*args, **kwargs)
+        raise exc
+    finally:
+        Task._calls = None

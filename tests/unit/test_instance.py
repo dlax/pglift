@@ -29,7 +29,7 @@ def test_init_lookup_failed(pg_version: str, settings: Settings, ctx: Context) -
     pg_version_file = i.datadir / "PG_VERSION"
     pg_version_file.write_text("7.1")
     with pytest.raises(Exception, match="version mismatch"):
-        with task.Runner():
+        with task.transaction():
             instance_mod.init(ctx, manifest)
     assert not pg_version_file.exists()  # per revert
 
@@ -43,7 +43,7 @@ def test_init_dirty(
     (i.datadir / "dirty").touch()
     calls = []
     with pytest.raises(CommandError):
-        with task.Runner():
+        with task.transaction():
             with monkeypatch.context() as m:
                 m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))
                 instance_mod.init(ctx, manifest)

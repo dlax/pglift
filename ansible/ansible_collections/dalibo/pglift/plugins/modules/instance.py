@@ -122,7 +122,6 @@ from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface
 from pglift.pm import PluginManager
-from pglift.task import Runner
 
 
 def run_module() -> None:
@@ -145,8 +144,7 @@ def run_module() -> None:
     instance_exists = instance_mod.exists(ctx, m.name, m.version)
 
     try:
-        with Runner():
-            apply_result = instance_mod.apply(ctx, m)
+        apply_result = instance_mod.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
