@@ -18,24 +18,24 @@ def available(ctx: BaseContext) -> bool:
     return ctx.settings.prometheus.execpath.exists()
 
 
-def enabled(ctx: BaseContext, name: str) -> bool:
-    return available(ctx) and _configpath(name, ctx.settings.prometheus).exists()
+def enabled(ctx: BaseContext, qualname: str) -> bool:
+    return available(ctx) and _configpath(qualname, ctx.settings.prometheus).exists()
 
 
-def _configpath(name: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.configpath).format(name=name))
+def _configpath(qualname: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.configpath).format(name=qualname))
 
 
-def _queriespath(name: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.queriespath).format(name=name))
+def _queriespath(qualname: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.queriespath).format(name=qualname))
 
 
-def _pidfile(name: str, settings: PrometheusSettings) -> Path:
-    return Path(str(settings.pid_file).format(name=name))
+def _pidfile(qualname: str, settings: PrometheusSettings) -> Path:
+    return Path(str(settings.pid_file).format(name=qualname))
 
 
-def systemd_unit(name: str) -> str:
-    return f"pglift-postgres_exporter@{name}.service"
+def systemd_unit(qualname: str) -> str:
+    return f"pglift-postgres_exporter@{qualname}.service"
 
 
 def port(ctx: BaseContext, name: str) -> int:
