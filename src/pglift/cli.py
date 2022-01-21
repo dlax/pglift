@@ -75,13 +75,18 @@ def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def pass_displayer(f: Callable[..., Any]) -> Callable[..., Any]:
-    """Command decorator passing 'displayer' bound to click.Context's object."""
+    """Command decorator passing 'displayer' bound to click.Context's object.
+
+    If we have the "foreground" option set, we cannot really use a displayer
+    because its __exit__() code would never be called as we use os.execv().
+    Thus we disable the displayer in those cases.
+    """
 
     @wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         context = click.get_current_context()
         displayer = context.obj.displayer
-        if displayer is None:
+        if displayer is None or kwargs.get("foreground", False):
             displayer = nullcontext()
         return context.invoke(f, displayer, *args, **kwargs)
 
