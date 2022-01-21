@@ -31,6 +31,10 @@ or through ``tox``:
 
     $ tox [-e tests]
 
+By default, tests will not use systemd as a service manager / scheduler. In
+order to run tests with systemd, pass the ``--systemd`` option to pytest
+command.
+
 Pre-commit hooks
 ~~~~~~~~~~~~~~~~
 

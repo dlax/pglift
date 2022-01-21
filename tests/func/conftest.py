@@ -24,6 +24,15 @@ from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from . import configure_instance, execute
 
 
+def pytest_addoption(parser: Any) -> None:
+    parser.addoption(
+        "--systemd",
+        action="store_true",
+        default=False,
+        help="Run tests with systemd as service manager/scheduler",
+    )
+
+
 @pytest.fixture(scope="session")
 def redhat() -> bool:
     return pathlib.Path("/etc/redhat-release").exists()
@@ -54,12 +63,17 @@ def systemd_available() -> bool:
     return True
 
 
+@pytest.fixture(scope="session")
+def systemd_requested(request: Any, systemd_available: bool) -> bool:
+    value = request.config.getoption("--systemd")
+    assert isinstance(value, bool)
+    if value and not systemd_available:
+        raise pytest.UsageError("systemd is not available on this system")
+    return value
+
+
 settings_by_id = {
     "defaults": {},
-    "systemd": {
-        "service_manager": "systemd",
-        "scheduler": "systemd",
-    },
     "postgresql_password_auth__surole_use_pgpass": {
         "postgresql": {
             "auth": {
@@ -91,7 +105,7 @@ ids = tuple(f"settings:{i}" for i in ids)
 def settings(
     request: Any,
     tmp_path_factory: pytest.TempPathFactory,
-    systemd_available: bool,
+    systemd_requested: bool,
 ) -> Settings:
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
     passfile.touch(mode=0o600)
@@ -100,6 +114,8 @@ def settings(
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
     obj = copy.deepcopy(request.param)
+    if systemd_requested:
+        obj.update({"service_manager": "systemd", "scheduler": "systemd"})
     assert "prefix" not in obj
     obj["prefix"] = str(prefix)
     pg_obj = obj.setdefault("postgresql", {})
