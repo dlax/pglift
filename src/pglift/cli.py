@@ -823,10 +823,12 @@ def instance_backup(
 )
 @click.option("--label", help="Label of backup to restore")
 @click.option("--date", type=click.DateTime(), help="Date of backup to restore")
+@pass_displayer
 @pass_ctx
 @require_pgbackrest
 def instance_restore(
     ctx: Context,
+    displayer: Displayer,
     instance: Instance,
     list_only: bool,
     label: Optional[str],
@@ -837,12 +839,13 @@ def instance_restore(
         backups = pgbackrest.iter_backups(ctx, instance)
         print_table_for(backups, title=f"Available backups for instance {instance}")
     else:
-        instance_mod.check_status(ctx, instance, Status.not_running)
-        if label is not None and date is not None:
-            raise click.BadArgumentUsage(
-                "--label and --date arguments are mutually exclusive"
-            )
-        pgbackrest.restore(ctx, instance, label=label, date=date)
+        with displayer:
+            instance_mod.check_status(ctx, instance, Status.not_running)
+            if label is not None and date is not None:
+                raise click.BadArgumentUsage(
+                    "--label and --date arguments are mutually exclusive"
+                )
+            pgbackrest.restore(ctx, instance, label=label, date=date)
 
 
 @instance.command("privileges")
