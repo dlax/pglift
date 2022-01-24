@@ -386,6 +386,7 @@ def restore_command(
     return make_cmd(instance, instance.settings.pgbackrest, *args)
 
 
+@task("restore instance with pgBackRest")
 def restore(
     ctx: BaseContext,
     instance: BaseInstance,
