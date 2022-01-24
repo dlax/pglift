@@ -81,7 +81,7 @@ def test_configure(
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open("w") as f:
-        f.write("bonjour_name = 'test'\n")
+        f.write("bonjour_name = 'overridden'\n")
 
     changes = instance_mod.configure(
         ctx,
@@ -97,6 +97,8 @@ def test_configure(
     assert old_shared_buffers is None
     assert new_shared_buffers is not None and new_shared_buffers != "10 %"
     assert changes == {
+        "bonjour": (True, None),
+        "bonjour_name": ("test", None),
         "effective_cache_size": (None, "5MB"),
         "max_connections": (None, 100),
         "port": (None, 5433),
@@ -121,7 +123,7 @@ def test_configure(
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
     assert config.port == 5433
-    assert config.bonjour_name == "test"
+    assert config.bonjour_name == "overridden"
     assert config.cluster_name == "test"
 
     changes = instance_mod.configure(

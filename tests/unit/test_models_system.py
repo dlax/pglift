@@ -103,7 +103,10 @@ def test_postgresqlinstance_config(instance: Instance) -> None:
     assert config.port == 999
     assert config.unix_socket_directories == "/socks"
 
-    assert not instance.config(managed_only=True).as_dict()
+    assert instance.config(managed_only=True).as_dict() == {
+        "bonjour": True,
+        "bonjour_name": "test",
+    }
 
 
 def test_postgresqlinstance_standby_for(ctx: Context, instance: Instance) -> None:

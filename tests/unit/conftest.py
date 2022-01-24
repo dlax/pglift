@@ -89,6 +89,9 @@ def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
             ]
         )
     )
+    confdir = instance.datadir / "conf.pglift.d"
+    confdir.mkdir()
+    (confdir / "user.conf").write_text("bonjour = on\nbonjour_name= 'test'\n")
 
     if prometheus:
         prometheus_config = prometheus_mod._configpath(
