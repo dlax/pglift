@@ -58,10 +58,15 @@ class LogDisplayer:
         logger.info(msg)
 
 
+class CLIContext(Context):
+    def confirm(self, message: str, default: bool) -> bool:
+        return rich.prompt.Confirm(console=console).ask(f"[yellow]>[/yellow] {message}")
+
+
 class Obj:
     """Object bound to click.Context"""
 
-    def __init__(self, context: Context, displayer: Optional[Displayer]) -> None:
+    def __init__(self, context: CLIContext, displayer: Optional[Displayer]) -> None:
         self.ctx = context
         self.displayer = displayer
 
@@ -385,7 +390,7 @@ def cli(
             settings = Settings.parse_file(settings_file)
         displayer = None if log_file else LogDisplayer()
         context.obj = Obj(
-            Context(plugin_manager=pm.PluginManager.get(), settings=settings),
+            CLIContext(plugin_manager=pm.PluginManager.get(), settings=settings),
             displayer,
         )
     else:
@@ -447,8 +452,8 @@ def maybe_restart(ctx: Context, r: instance_mod.ApplyResult) -> None:
     instance, changes, needs_restart = r
     if not needs_restart:
         return
-    if rich.prompt.Confirm.ask(
-        "[cyan]Instance needs to be restarted.[/cyan]\n  Restart now?",
+    if ctx.confirm(
+        "[cyan]Instance needs to be restarted.[/cyan]\n  Restart now?", False
     ):
         instance_mod.restart(ctx, instance)
 

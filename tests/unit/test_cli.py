@@ -16,7 +16,15 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, prometheus, roles
-from pglift.cli import Command, Obj, cli, get_instance, instance_init, require_component
+from pglift.cli import (
+    CLIContext,
+    Command,
+    Obj,
+    cli,
+    get_instance,
+    instance_init,
+    require_component,
+)
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -28,7 +36,12 @@ def runner() -> CliRunner:
 
 
 @pytest.fixture
-def obj(ctx: Context) -> Obj:
+def ctx(ctx: Context) -> CLIContext:
+    return CLIContext(plugin_manager=ctx.pm, settings=ctx.settings)
+
+
+@pytest.fixture
+def obj(ctx: CLIContext) -> Obj:
     return Obj(ctx, None)
 
 
@@ -98,7 +111,7 @@ def test_require_component(runner: CliRunner, ctx: Context) -> None:
     mod.available.return_value = True
     r = runner.invoke(command, obj=ctx)
     assert r.exit_code == 0
-    assert r.stdout == "ctx is <class 'pglift.ctx.Context'>\n"
+    assert r.stdout == "ctx is <class 'pglift.cli.CLIContext'>\n"
 
 
 def test_get_instance(ctx: Context, instance: Instance) -> None:
