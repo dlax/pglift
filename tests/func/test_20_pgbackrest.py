@@ -2,7 +2,7 @@ import shutil
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator
 
 import pytest
 
@@ -74,9 +74,9 @@ def test_configure(
         assert f"pg1-port = {new_port}" in config_after.splitlines()
 
 
+@pytest.mark.usefixtures("surole_password")
 def test_backup_restore(
     ctx: Context,
-    surole_password: Optional[str],
     instance: system.Instance,
     directory: Path,
     database_factory: DatabaseFactory,
