@@ -393,7 +393,7 @@ def test_instance_config_set(
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
     configure.assert_called_once_with(
-        ctx, manifest, cluster_name="unittests", foo="bar"
+        ctx, manifest, values=dict(cluster_name="unittests", foo="bar")
     )
     assert "foo: baz -> bar" in result.stderr
 
@@ -411,7 +411,7 @@ def test_instance_config_set(
         )
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, foo="bar")
+    configure.assert_called_once_with(ctx, manifest, values=dict(foo="bar"))
     assert "foo: baz -> bar" not in result.stderr
     assert "changes in 'foo' not applied" in result.stderr
     assert "\n hint:" in result.stderr
@@ -435,7 +435,7 @@ def test_instance_config_remove(
             obj=obj,
         )
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, cluster_name=None)
+    configure.assert_called_once_with(ctx, manifest, values=dict(cluster_name=None))
     assert result.exit_code == 0, result.stderr
     assert "cluster_name: blah -> None" in result.stderr
 

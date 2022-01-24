@@ -662,7 +662,7 @@ def instance_configure_set(
 ) -> None:
     """Set configuration items."""
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instance_mod.configure(ctx, manifest, **parameters)
+    changes = instance_mod.configure(ctx, manifest, values=parameters)
     show_configuration_changes(changes, parameters.keys())
 
 
@@ -676,7 +676,7 @@ def instance_configure_remove(
     """Remove configuration items."""
     confitems: Dict[str, Any] = {p: None for p in parameters}
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instance_mod.configure(ctx, manifest, **confitems)
+    changes = instance_mod.configure(ctx, manifest, values=confitems)
     show_configuration_changes(changes, parameters)
 
 

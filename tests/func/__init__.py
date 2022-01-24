@@ -21,7 +21,8 @@ def configure_instance(
 ) -> None:
     if port is None:
         port = manifest.port
-    instance_mod.configure(ctx, manifest, port=port, **confitems)
+    values = dict(confitems, port=port)
+    instance_mod.configure(ctx, manifest, values=values)
 
 
 @contextmanager

@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Tuple, Union
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
@@ -166,7 +166,7 @@ def configure(
     manifest: interface.Instance,
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
-    **confitems: Optional[pgconf.Value],
+    values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
@@ -174,6 +174,10 @@ def configure(
     If True, a self-signed certificate is generated. A tuple of two
     `~pathlib.Path` corresponding to the location of SSL cert file and key
     file to use may also be passed.
+
+    `values` defines configuration items to be set in managed configuration
+    file. This should be a *complete definition*: any item present in the
+    configuration file and absent from this mapping will be dropped.
 
     'shared_buffers' and 'effective_cache_size' setting, if defined and set to
     a percent-value, will be converted to proper memory value relative to the
@@ -188,6 +192,7 @@ def configure(
     site_conffile = confd / "site.conf"
     user_conffile = confd / "user.conf"
     pgconfig = pgconf.parse(str(postgresql_conf))
+    confitems = dict(values or {})
     if ssl:
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False) and ssl is True:
@@ -619,12 +624,12 @@ def apply(ctx: BaseContext, manifest: interface.Instance) -> ApplyResult:
         init(ctx, manifest)
 
     configure_options = manifest.configuration or {}
+    configure_options["port"] = manifest.port
     changes = configure(
         ctx,
         manifest,
         ssl=manifest.ssl,
-        port=manifest.port,
-        **configure_options,
+        values=configure_options,
     )
 
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))

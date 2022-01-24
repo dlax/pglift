@@ -86,10 +86,12 @@ def test_configure(
     changes = instance_mod.configure(
         ctx,
         instance_manifest,
-        port=5433,
-        max_connections=100,
-        shared_buffers="10 %",
-        effective_cache_size="5MB",
+        values=dict(
+            port=5433,
+            max_connections=100,
+            shared_buffers="10 %",
+            effective_cache_size="5MB",
+        ),
     )
     old_shared_buffers, new_shared_buffers = changes.pop("shared_buffers")
     assert old_shared_buffers is None
@@ -123,7 +125,10 @@ def test_configure(
     assert config.cluster_name == "test"
 
     changes = instance_mod.configure(
-        ctx, instance_manifest, listen_address="*", ssl=True, port=None
+        ctx,
+        instance_manifest,
+        ssl=True,
+        values=dict(port=None, listen_address="*"),
     )
     assert changes == {
         "effective_cache_size": ("5MB", None),
@@ -140,7 +145,7 @@ def test_configure(
         user_configfpath.stat().st_mtime,
     )
     changes = instance_mod.configure(
-        ctx, instance_manifest, listen_address="*", ssl=True
+        ctx, instance_manifest, values=dict(listen_address="*"), ssl=True
     )
     assert changes == {}
     mtime_after = (
