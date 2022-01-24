@@ -439,24 +439,26 @@ def test_instance_config_set(
 def test_instance_config_remove(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
+    result = runner.invoke(
+        cli,
+        ["instance", "config", "remove", str(instance), "fsync"],
+        obj=obj,
+    )
+    assert result.exit_code == 1
+    assert "'fsync' not found in managed configuration" in result.stderr
+
     with patch.object(
-        instance_mod, "configure", return_value={"cluster_name": ("blah", None)}
+        instance_mod, "configure", return_value={"bonjour_name": ("test", None)}
     ) as configure:
         result = runner.invoke(
             cli,
-            [
-                "instance",
-                "config",
-                "remove",
-                str(instance),
-                "cluster_name",
-            ],
+            ["instance", "config", "remove", str(instance), "bonjour_name"],
             obj=obj,
         )
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, values=dict(cluster_name=None))
+    configure.assert_called_once_with(ctx, manifest, values={"bonjour": True})
     assert result.exit_code == 0, result.stderr
-    assert "cluster_name: blah -> None" in result.stderr
+    assert "bonjour_name: test -> None" in result.stderr
 
 
 def test_instance_config_edit(

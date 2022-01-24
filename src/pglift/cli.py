@@ -676,9 +676,14 @@ def instance_configure_remove(
     ctx: Context, instance: Instance, parameters: Tuple[str]
 ) -> None:
     """Remove configuration items."""
-    confitems: Dict[str, Any] = {p: None for p in parameters}
+    values = instance.config(managed_only=True).as_dict()
+    for p in parameters:
+        try:
+            del values[p]
+        except KeyError:
+            raise click.ClickException(f"'{p}' not found in managed configuration")
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instance_mod.configure(ctx, manifest, values=confitems)
+    changes = instance_mod.configure(ctx, manifest, values=values)
     show_configuration_changes(changes, parameters)
 
 
