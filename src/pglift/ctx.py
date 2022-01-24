@@ -71,6 +71,15 @@ class BaseContext(ABC):
         """Execute a system command using chosen implementation."""
         ...
 
+    def confirm(self, message: str, default: bool) -> bool:
+        """Possible ask for confirmation of an action before running.
+
+        Interactive implementations should prompt for confirmation with
+        'message' and use the 'default' value as default. Non-interactive
+        implementations (this one), will always return the 'default' value.
+        """
+        return default
+
 
 class Context(BaseContext):
     """Default execution context."""
