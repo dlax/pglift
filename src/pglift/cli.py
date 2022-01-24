@@ -661,8 +661,10 @@ def instance_configure_set(
     ctx: Context, instance: Instance, parameters: Dict[str, Any]
 ) -> None:
     """Set configuration items."""
+    values = instance.config(managed_only=True).as_dict()
+    values.update(parameters)
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instance_mod.configure(ctx, manifest, values=parameters)
+    changes = instance_mod.configure(ctx, manifest, values=values)
     show_configuration_changes(changes, parameters.keys())
 
 

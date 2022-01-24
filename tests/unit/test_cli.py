@@ -393,11 +393,20 @@ def test_instance_config_set(
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
     configure.assert_called_once_with(
-        ctx, manifest, values=dict(cluster_name="unittests", foo="bar")
+        ctx,
+        manifest,
+        values=dict(
+            bonjour=True,
+            bonjour_name="test",
+            cluster_name="unittests",
+            foo="bar",
+        ),
     )
     assert "foo: baz -> bar" in result.stderr
 
-    with patch.object(instance_mod, "configure", return_value={}) as configure:
+    with patch.object(
+        instance_mod, "configure", return_value={"bonjour_name": ("test", "changed")}
+    ) as configure:
         result = runner.invoke(
             cli,
             [
@@ -406,12 +415,22 @@ def test_instance_config_set(
                 "set",
                 str(instance),
                 "foo=bar",
+                "bonjour_name=changed",
             ],
             obj=obj,
         )
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, values=dict(foo="bar"))
+    configure.assert_called_once_with(
+        ctx,
+        manifest,
+        values=dict(
+            bonjour=True,
+            bonjour_name="changed",
+            foo="bar",
+        ),
+    )
+    assert "bonjour_name: test -> changed" in result.stderr
     assert "foo: baz -> bar" not in result.stderr
     assert "changes in 'foo' not applied" in result.stderr
     assert "\n hint:" in result.stderr
