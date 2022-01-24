@@ -797,13 +797,18 @@ def instance_env(ctx: Context, instance: Instance) -> None:
     help="Backup type",
     callback=lambda ctx, param, value: pgbackrest.BackupType(value),
 )
+@pass_displayer
 @pass_ctx
 @require_pgbackrest
 def instance_backup(
-    ctx: Context, instance: Instance, backup_type: pgbackrest.BackupType
+    ctx: Context,
+    displayer: Displayer,
+    instance: Instance,
+    backup_type: pgbackrest.BackupType,
 ) -> None:
     """Back up a PostgreSQL instance"""
-    pgbackrest.backup(ctx, instance, type=backup_type)
+    with displayer:
+        pgbackrest.backup(ctx, instance, type=backup_type)
 
 
 @instance.command("restore")
