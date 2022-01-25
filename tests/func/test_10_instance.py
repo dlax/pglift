@@ -43,7 +43,7 @@ def test_init(
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
 
-    # Instance alread exists, no-op.
+    # Instance already exists, no-op.
     with monkeypatch.context() as m:
 
         def fail() -> NoReturn:

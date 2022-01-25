@@ -32,7 +32,7 @@ follows for an instance with ``13-main`` identifier:
 Overriding
 ----------
 
-``systemd.service`` and ``systemd.timer`` shipped with pglift may be overriden
+``systemd.service`` and ``systemd.timer`` shipped with pglift may be overridden
 using standard methods, as described in `systemd.unit(5)`_.
 
 Here is how to obtain the definition of built-in units (in `user` mode here):
