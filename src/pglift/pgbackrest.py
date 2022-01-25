@@ -400,10 +400,6 @@ def restore(
 
     Ref.: https://pgbackrest.org/command.html#command-restore
     """
-    assert (
-        instance_mod.status(ctx, instance) == instance_mod.Status.not_running
-    ), "instance must be stopped"
-
     cmd = restore_command(instance, date=date, backup_set=label)
 
     for dirpath in (instance.datadir, instance.waldir):
