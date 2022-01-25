@@ -73,6 +73,7 @@ def test_restore_command(
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
         f"--stanza={pg_version}-test",
         "--log-level-console=info",
+        "--delta",
         "--link-all",
         "--target-action=promote",
         "--type=time",

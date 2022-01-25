@@ -377,6 +377,9 @@ def restore_command(
     """
     args = [
         "--log-level-console=info",
+        # The delta option allows pgBackRest to handle instance data/wal
+        # directories itself, without the need to clean them up beforehand.
+        "--delta",
         "--link-all",
         "--target-action=promote",
     ]
@@ -407,9 +410,4 @@ def restore(
         raise exceptions.InstanceReadOnlyError(instance)
 
     cmd = restore_command(instance, date=date, backup_set=label)
-
-    for dirpath in (instance.datadir, instance.waldir):
-        shutil.rmtree(dirpath, ignore_errors=True)
-        dirpath.mkdir(exist_ok=True)
-
     ctx.run(cmd, check=True)
