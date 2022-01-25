@@ -444,6 +444,13 @@ def cli(
         assert isinstance(context.obj, Obj), context.obj
 
 
+@cli.command("site-settings", hidden=True)
+@pass_ctx
+def site_settings(ctx: Context) -> None:
+    """Show site settings."""
+    rich.print_json(ctx.settings.json())
+
+
 @cli.command(
     "site-configure",
     hidden=True,

@@ -400,8 +400,3 @@ class Settings(BaseSettings):
                 yaml_settings_source,
                 json_config_settings_source,
             )
-
-
-if __name__ == "__main__":
-    s = Settings()
-    print(s.json(indent=2))

@@ -131,6 +131,13 @@ def test_version(runner: CliRunner, obj: Obj) -> None:
     assert re.match(r"pglift version (\d\.).*", result.stdout)
 
 
+def test_site_settings(runner: CliRunner, ctx: Context, obj: Obj) -> None:
+    result = runner.invoke(cli, ["site-settings"], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    settings = json.loads(result.output)
+    assert settings == json.loads(ctx.settings.json())
+
+
 def test_site_configure(
     runner: CliRunner, ctx: Context, obj: Obj, tmp_path: Path
 ) -> None:

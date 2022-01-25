@@ -61,7 +61,7 @@ To view current settings, run:
 
 ::
 
-    $ python -m pglift.settings
+    $ pglift site-settings
 
 
 Site (or installation) settings are located alongside with pglift's Python
