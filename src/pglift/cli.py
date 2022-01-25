@@ -48,7 +48,7 @@ from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .task import Displayer
 from .types import ConfigChanges
 
@@ -395,6 +395,13 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     help="Disable status output.",
 )
 @click.option(
+    "--settings",
+    "settings_file",
+    type=click.Path(resolve_path=True, path_type=pathlib.Path),
+    hidden=True,
+    help="Settings file, overriding local site configuration.",
+)
+@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -408,6 +415,7 @@ def cli(
     log_level: str,
     log_file: Optional[pathlib.Path],
     quiet: bool,
+    settings_file: Optional[pathlib.Path],
 ) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
@@ -436,8 +444,11 @@ def cli(
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
+        settings = None
+        if settings_file is not None:
+            settings = Settings.parse_file(settings_file)
         context.obj = Obj(
-            Context(plugin_manager=pm.PluginManager.get()),
+            Context(plugin_manager=pm.PluginManager.get(), settings=settings),
             LiveDisplayer() if not quiet else None,
         )
     else:

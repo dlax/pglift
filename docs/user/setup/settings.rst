@@ -75,3 +75,9 @@ used. It accepts either a JSON-dumped value or a file path, prepended with
 
     $ SETTINGS='{"postgresql": {"root": "/srv/postgres"}}'
     $ SETTINGS=@/path/to/config.json
+
+Alternatively, an *hidden* ``--settings`` option is available:
+
+::
+
+    $ pglift --settings=/path/to/config.yaml <command>

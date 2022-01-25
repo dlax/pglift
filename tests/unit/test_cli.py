@@ -138,6 +138,18 @@ def test_site_settings(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     assert settings == json.loads(ctx.settings.json())
 
 
+def test_settings(runner: CliRunner, tmp_path: Path) -> None:
+    """Test --settings option."""
+    settings_path = tmp_path / "settings.json"
+    prefix = tmp_path
+    settings_path.write_text(json.dumps({"prefix": str(prefix)}))
+    result = runner.invoke(cli, ["--settings", str(settings_path), "site-settings"])
+    assert result.exit_code == 0, result.stderr
+    settings = json.loads(result.output)
+    assert settings["prefix"] == str(prefix)
+    assert settings["postgresql"]["root"] == str(prefix / "srv" / "pgsql")
+
+
 def test_site_configure(
     runner: CliRunner, ctx: Context, obj: Obj, tmp_path: Path
 ) -> None:
