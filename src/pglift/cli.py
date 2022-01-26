@@ -516,7 +516,7 @@ def instance_init(
     """Initialize a PostgreSQL instance"""
     if instance_mod.exists(ctx, instance.name, instance.version):
         raise click.ClickException("instance already exists")
-    with displayer:
+    with displayer, task.transaction():
         instance_mod.apply(ctx, instance)
 
 
@@ -958,7 +958,7 @@ def role_create(
     with instance_mod.running(ctx, instance):
         if roles.exists(ctx, instance, role.name):
             raise click.ClickException("role already exists")
-        with displayer:
+        with displayer, task.transaction():
             roles.apply(ctx, instance, role)
 
 
@@ -1065,7 +1065,7 @@ def database_create(
     with instance_mod.running(ctx, instance):
         if databases.exists(ctx, instance, database.name):
             raise click.ClickException("database already exists")
-        with displayer:
+        with displayer, task.transaction():
             databases.apply(ctx, instance, database)
 
 
@@ -1227,7 +1227,7 @@ def postgres_exporter_install(
     ctx: Context, displayer: Displayer, postgresexporter: interface.PostgresExporter
 ) -> None:
     """Install the service for a (non-local) instance."""
-    with displayer:
+    with displayer, task.transaction():
         prometheus.apply(ctx, postgresexporter)
 
 
