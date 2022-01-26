@@ -440,9 +440,9 @@ def start_postgresql(
         systemd.start(ctx, systemd_unit(instance))
 
 
-@task("get PostgreSQL instance status")
 def status(ctx: BaseContext, instance: BaseInstance) -> Status:
     """Return the status of an instance."""
+    logger.debug("get status of PostgreSQL instance %s", instance)
     return ctx.pg_ctl(instance.version).status(instance.datadir)
 
 
