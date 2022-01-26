@@ -39,7 +39,7 @@ class Displayer(Protocol):
         exc_type: Optional[Type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
-    ) -> None:
+    ) -> Optional[bool]:
         ...
 
     @contextlib.contextmanager
