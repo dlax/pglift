@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pathlib
+import tempfile
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -97,10 +98,19 @@ class Command(click.Command):
     def invoke(self, context: click.Context) -> Any:
         ctx = context.obj.ctx
         displayer = context.obj.displayer
-        logfile = ctx.settings.logpath / f"{time.time()}.log"
-        logfile.parent.mkdir(parents=True, exist_ok=True)
         logger = logging.getLogger(pkgname)
-        handler = logging.FileHandler(logfile)
+        logdir = ctx.settings.logpath
+        logdir.mkdir(parents=True, exist_ok=True)
+        logfilename = f"{time.time()}.log"
+        logfile = logdir / logfilename
+        try:
+            handler = logging.FileHandler(logfile)
+        except OSError:
+            # Might be, e.g. PermissionError, if log file path is not writable.
+            logfile = pathlib.Path(
+                tempfile.NamedTemporaryFile(prefix="pglift", suffix=logfilename).name
+            )
+            handler = logging.FileHandler(logfile)
         formatter = logging.Formatter(
             fmt="%(levelname)-8s - %(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
