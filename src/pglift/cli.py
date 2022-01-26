@@ -27,14 +27,13 @@ from typing import (
 import click
 import psycopg
 import pydantic.json
-import rich.console
 import rich.logging
 import rich.prompt
 import rich.text
 import rich.tree
 from click.exceptions import Exit
 from pydantic.utils import deep_update
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.highlighter import NullHighlighter
 from rich.live import Live
 from rich.table import Table
@@ -52,6 +51,8 @@ from .models.system import Instance
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .task import Displayer
 from .types import ConfigChanges
+
+console = Console()
 
 
 class Obj:
@@ -233,7 +234,8 @@ class LiveDisplayer(Live):
     """Render nested operations as a grid and live update their status.
 
     >>> from contextlib import suppress
-    >>> with LiveDisplayer(width=50) as d, suppress(ZeroDivisionError):
+    >>> with LiveDisplayer(console=Console(), width=50) as d, \
+                suppress(ZeroDivisionError):
     ...     with d.handle("compute something"):
     ...         x = 1 + 1
     ...         with d.handle("use the result in another computation"):
@@ -254,9 +256,9 @@ class LiveDisplayer(Live):
     intr = rich.text.Text("[INTR]")
     intr.stylize("yellow", 1, 5)
 
-    def __init__(self, width: Optional[int] = None) -> None:
+    def __init__(self, *, console: Console, width: Optional[int] = None) -> None:
         self.grid = Table.grid()
-        super().__init__(self.grid)
+        super().__init__(self.grid, console=console)
         self._level = 0
         self._width = width or self.console.size.width
 
@@ -285,7 +287,12 @@ class LiveDisplayer(Live):
 _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
-def print_table_for(items: Iterable[_M], title: Optional[str] = None) -> None:
+def print_table_for(
+    items: Iterable[_M],
+    title: Optional[str] = None,
+    *,
+    display: Callable[[RenderableType], None] = console.print,
+) -> None:
     """Render a list of items as a table.
 
     >>> class Address(pydantic.BaseModel):
@@ -297,7 +304,7 @@ def print_table_for(items: Iterable[_M], title: Optional[str] = None) -> None:
     ...     address: Address
     >>> items = [Person(name="bob",
     ...                 address=Address(street="main street", zip=31234, city="luz"))]
-    >>> print_table_for(items, title="address book")  # doctest: +NORMALIZE_WHITESPACE
+    >>> print_table_for(items, title="address book", display=rich.print)  # doctest: +NORMALIZE_WHITESPACE
                    address book
     ┏━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
     ┃      ┃ address     ┃ address ┃ address ┃
@@ -330,12 +337,11 @@ def print_table_for(items: Iterable[_M], title: Optional[str] = None) -> None:
     table = Table(*headers, title=title)
     for row in rows:
         table.add_row(*row)
-    console = Console()
-    console.print(table)
+    display(table)
 
 
 def print_json_for(
-    items: Iterable[_M], display: Callable[[str], None] = partial(click.echo, nl=False)
+    items: Iterable[_M], *, display: Callable[[str], None] = console.print_json
 ) -> None:
     """Render a list of items as JSON.
 
@@ -343,7 +349,7 @@ def print_json_for(
     ...     bar_: str = pydantic.Field(alias="bar")
     ...     baz: int
     >>> items = [Foo(bar="x", baz=1), Foo(bar="y", baz=3)]
-    >>> print_json_for(items, display=print)
+    >>> print_json_for(items, display=rich.print)
     [{"bar": "x", "baz": 1}, {"bar": "y", "baz": 3}]
     """
     display(
@@ -441,7 +447,7 @@ def cli(
     else:
         handler = rich.logging.RichHandler(
             level=log_level,
-            console=rich.console.Console(stderr=True),
+            console=Console(stderr=True),
             show_time=True,
             log_time_format="%X",
             omit_repeated_times=False,
@@ -459,7 +465,7 @@ def cli(
             settings = Settings.parse_file(settings_file)
         context.obj = Obj(
             Context(plugin_manager=pm.PluginManager.get(), settings=settings),
-            LiveDisplayer() if not quiet else None,
+            LiveDisplayer(console=console) if not quiet else None,
         )
     else:
         assert isinstance(context.obj, Obj), context.obj
@@ -583,7 +589,7 @@ def instance_promote(ctx: Context, displayer: Displayer, instance: Instance) -> 
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    click.echo(interface.Instance.schema_json(indent=2), nl=False)
+    console.print_json(interface.Instance.schema_json(indent=2))
 
 
 @instance.command("describe")
@@ -602,8 +608,11 @@ def instance_describe(ctx: Context, instance: Instance) -> None:
     help="Only list instances of specified version.",
 )
 @as_json_option
+@pass_displayer
 @pass_ctx
-def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
+def instance_list(
+    ctx: Context, displayer: Displayer, version: Optional[str], as_json: bool
+) -> None:
     """List the available instances"""
 
     instances = instance_mod.list(ctx, version=version)
@@ -983,7 +992,7 @@ def role_alter(
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
-    click.echo(interface.Role.schema_json(indent=2), nl=False)
+    console.print_json(interface.Role.schema_json(indent=2))
 
 
 @role.command("apply")
@@ -1090,7 +1099,7 @@ def database_alter(
 @database.command("schema")
 def database_schema() -> None:
     """Print the JSON schema of database model"""
-    click.echo(interface.Database.schema_json(indent=2), nl=False)
+    console.print_json(interface.Database.schema_json(indent=2))
 
 
 @database.command("apply")
@@ -1205,7 +1214,7 @@ def postgres_exporter(ctx: Context) -> None:
 @postgres_exporter.command("schema")
 def postgres_exporter_schema() -> None:
     """Print the JSON schema of database model"""
-    click.echo(interface.PostgresExporter.schema_json(indent=2), nl=False)
+    console.print_json(interface.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")
