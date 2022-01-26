@@ -24,3 +24,4 @@ instances:
 .. autofunction:: promote
 .. autofunction:: upgrade
 .. autofunction:: settings
+.. autofunction:: logs

@@ -832,3 +832,42 @@ def settings(ctx: BaseContext, instance: Instance) -> List[interface.PGSetting]:
     ) as cur:
         cur.execute(interface.PGSetting._query)
         return cur.fetchall()
+
+
+def logs(ctx: BaseContext, instance: Instance) -> Iterator[str]:
+    """Return the content of current log file as an iterator.
+
+    :raises ~exceptions.FileNotFoundError: if the current log file, matching
+        configured log_destination, is not found.
+    :raises ~exceptions.SystemError: if the current log file cannot be opened
+        for reading.
+    :raises ValueError: if no record matching configured log_destination is
+        found in current_logfiles (this indicates a misconfigured instance).
+    """
+    config = instance.config()
+    log_destination = config.get("log_destination", "stderr")
+    current_logfiles = instance.datadir / "current_logfiles"
+    if not current_logfiles.exists():
+        raise exceptions.FileNotFoundError(
+            f"file 'current_logfiles' for instance {instance} not found"
+        )
+    with current_logfiles.open() as f:
+        for line in f:
+            destination, logfilelocation = line.strip().split(None, maxsplit=1)
+            if destination == log_destination:
+                break
+        else:
+            raise ValueError(
+                f"no record matching '{log_destination}' log destination found for instance {instance}"
+            )
+
+    logfile = Path(logfilelocation)
+    if not logfile.is_absolute():
+        logfile = instance.datadir / logfile
+
+    logger.info("reading logs from instance '%s' from %s", instance, logfile)
+    try:
+        with logfile.open() as f:
+            yield from f
+    except OSError:
+        raise exceptions.SystemError(f"failed to read {logfile} on instance {instance}")

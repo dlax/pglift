@@ -462,3 +462,8 @@ def test_server_settings(ctx: Context, instance: system.Instance) -> None:
     assert port.setting == str(instance.port)
     assert not port.pending_restart
     assert port.context == "postmaster"
+
+
+def test_logs(ctx: Context, instance: system.Instance) -> None:
+    logs = list(instance_mod.logs(ctx, instance))
+    assert "database system is shut down" in logs[-1]

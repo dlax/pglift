@@ -272,3 +272,24 @@ def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
         match=f"Could not upgrade {instance.version}/test using same name and same version",
     ):
         instance_mod.upgrade(ctx, instance, version=instance.version)
+
+
+def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
+    with pytest.raises(
+        exceptions.FileNotFoundError,
+        match=r"file 'current_logfiles' for instance \d{2}/test not found",
+    ):
+        next(instance_mod.logs(ctx, instance))
+
+    current_logfiles = instance.datadir / "current_logfiles"
+    current_logfiles.write_text("csvlog log/postgresql.csv\n")
+    with pytest.raises(ValueError, match="no record matching 'stderr'"):
+        next(instance_mod.logs(ctx, instance))
+
+    stderr_logpath = tmp_path / "postgresql.log"
+    current_logfiles.write_text(f"stderr {stderr_logpath}\n")
+    with pytest.raises(exceptions.SystemError, match="failed to read"):
+        next(instance_mod.logs(ctx, instance))
+
+    stderr_logpath.write_text("line1\nline2\n")
+    assert list(instance_mod.logs(ctx, instance)) == ["line1\n", "line2\n"]
