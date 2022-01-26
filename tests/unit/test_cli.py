@@ -322,7 +322,7 @@ def test_instance_list(
     logfile = tmp_path / "logfile"
     result = runner.invoke(
         cli,
-        ["--log-level=info", f"--log-file={logfile}", "instance", "list", "--json"],
+        ["--log-level=debug", f"--log-file={logfile}", "instance", "list", "--json"],
         obj=obj,
     )
     assert result.exit_code == 0

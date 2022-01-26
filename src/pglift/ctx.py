@@ -80,5 +80,5 @@ class Context(BaseContext):
     ) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
         if log_command:
-            logger.info("%s", shlex_join(args))
+            logger.debug(shlex_join(args))
         return cmd.run(args, logger=logger, **kwargs)

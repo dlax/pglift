@@ -290,7 +290,7 @@ def start_program(
     if capture_output:
         stdout = stderr = subprocess.PIPE
     if logger:
-        logger.info("%s", shlex_join(cmd))
+        logger.debug("%s", shlex_join(cmd))
     proc = subprocess.Popen(  # nosec
         cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
     )
