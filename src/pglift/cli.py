@@ -831,6 +831,19 @@ def instance_env(ctx: Context, instance: Instance) -> None:
         click.echo(f"{key}={value}")
 
 
+@instance.command("logs")
+@instance_identifier
+@pass_ctx
+def instance_logs(ctx: Context, instance: Instance) -> None:
+    """Output instance logs
+
+    This assumes that the PostgreSQL instance is configured to use file-based
+    logging (i.e. log_destination amongst 'stderr' or 'csvlog').
+    """
+    for line in instance_mod.logs(ctx, instance):
+        click.echo(line, nl=False)
+
+
 @instance.command("backup")
 @instance_identifier
 @click.option(

@@ -581,6 +581,23 @@ def test_instance_env(
     )
 
 
+def test_instance_logs(runner: CliRunner, instance: Instance, obj: Obj) -> None:
+    result = runner.invoke(cli, ["instance", "logs", str(instance)], obj=obj)
+    assert result.exit_code == 1, result
+    assert (
+        result.stderr
+        == f"Error: file 'current_logfiles' for instance {instance} not found\n"
+    )
+
+    stderr_logpath = instance.datadir / "log" / "postgresql.log"
+    stderr_logpath.parent.mkdir()
+    stderr_logpath.write_text("log\nged\n")
+    (instance.datadir / "current_logfiles").write_text(f"stderr {stderr_logpath}\n")
+    result = runner.invoke(cli, ["instance", "logs", str(instance)], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.output == "log\nged\n"
+
+
 def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
