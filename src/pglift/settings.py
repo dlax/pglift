@@ -12,8 +12,7 @@ from pydantic.fields import ModelField
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
-from . import datapath
-from .util import xdg_data_home
+from .util import xdg_config_home, xdg_data_home
 
 try:
     from pydantic.env_settings import SettingsSourceCallable
@@ -304,9 +303,14 @@ class SystemdSettings(BaseSettings):
 
 
 def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
-    """Load settings values 'settings.yaml' file if found in data directory."""
-    fpath = datapath / "settings.yaml"
-    if not fpath.exists():
+    """Load settings values 'settings.yaml' file if found in user or system
+    config directory directory.
+    """
+    for basedir in (xdg_config_home(), Path("/etc")):
+        fpath = basedir / pkgname / "settings.yaml"
+        if fpath.exists():
+            break
+    else:
         return {}
     with fpath.open() as f:
         settings = yaml.safe_load(f)

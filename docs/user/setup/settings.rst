@@ -64,20 +64,30 @@ To view current settings, run:
     $ pglift site-settings
 
 
-Site (or installation) settings are located alongside with pglift's Python
-code in a ``settings.yaml`` file.
+Site (or installation) settings are looked up for at the following locations:
 
-To override installed settings, the ``SETTINGS`` environment variable can be
-used. It accepts either a JSON-dumped value or a file path, prepended with
-``@``:
+- ``$XDG_CONFIG_DIR/pglift/settings.yaml`` [#xdgconfighome]_, then,
+- ``/etc/pglift/settings.yaml``.
 
-::
+Once one of these files is found, processing stops.
 
-    $ SETTINGS='{"postgresql": {"root": "/srv/postgres"}}'
-    $ SETTINGS=@/path/to/config.json
+.. note::
 
-Alternatively, an *hidden* ``--settings`` option is available:
+    To temporarily override installed settings, the ``SETTINGS`` environment
+    variable can be used. It accepts either a JSON-dumped value or a file path,
+    prepended with ``@``:
 
-::
+    ::
 
-    $ pglift --settings=/path/to/config.yaml <command>
+        $ SETTINGS='{"postgresql": {"root": "/srv/postgres"}}'
+        $ SETTINGS=@/path/to/config.json
+
+    Alternatively, an *hidden* ``--settings`` option is available:
+
+    ::
+
+        $ pglift --settings=/path/to/config.yaml <command>
+
+.. [#xdgconfighome]
+   Where ``$XDG_CONFIG_DIR`` would be ``$HOME/.config`` unless configured
+   differently.
