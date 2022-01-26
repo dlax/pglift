@@ -41,6 +41,7 @@ How to guides
 
     howto/instance-shell
     howto/instance-env
+    howto/instance-logs
     howto/database-backup-restore
     howto/database-maintenance
     howto/standby-setup
