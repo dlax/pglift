@@ -5,10 +5,10 @@ from unittest.mock import patch
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import task
 from pglift.ctx import Context
-from pglift.exceptions import CommandError, InstanceStateError, InvalidVersion
 from pglift.models import interface
 from pglift.models.system import BaseInstance, Instance
 from pglift.settings import Settings
@@ -42,7 +42,7 @@ def test_init_dirty(
     i.datadir.mkdir(parents=True)
     (i.datadir / "dirty").touch()
     calls = []
-    with pytest.raises(CommandError):
+    with pytest.raises(exceptions.CommandError):
         with task.transaction():
             with monkeypatch.context() as m:
                 m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))
@@ -196,7 +196,7 @@ def test_configure(
 
 
 def test_check_status(ctx: Context, instance: Instance) -> None:
-    with pytest.raises(InstanceStateError, match="instance is not_running"):
+    with pytest.raises(exceptions.InstanceStateError, match="instance is not_running"):
         instance_mod.check_status(ctx, instance, instance_mod.Status.running)
     instance_mod.check_status(ctx, instance, instance_mod.Status.not_running)
 
@@ -268,7 +268,7 @@ def test_exists(ctx: Context, instance: Instance) -> None:
 
 def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
     with pytest.raises(
-        InvalidVersion,
+        exceptions.InvalidVersion,
         match=f"Could not upgrade {instance.version}/test using same name and same version",
     ):
         instance_mod.upgrade(ctx, instance, version=instance.version)
