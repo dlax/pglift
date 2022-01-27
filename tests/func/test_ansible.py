@@ -137,8 +137,12 @@ def test_ansible(
     socket.create_connection(("localhost", 9186), 1)
 
     # test connection with bob to the db database
-    with db.connect_dsn("host=/tmp user=bob password=s3kret dbname=db port=5433"):
-        pass
+    with db.connect_dsn(
+        "host=/tmp user=bob password=s3kret dbname=db port=5433"
+    ) as cnx:
+        row = cnx.execute("SHOW work_mem").fetchone()
+    assert row is not None
+    assert row["work_mem"] == "3MB"
 
     # check preprod cluster & postgres_exporter
     preprod_dsn = (

@@ -33,6 +33,8 @@
         instance: prod
         name: db
         owner: bob
+        settings:
+          work_mem: 3MB
 
     - name: pre-production instance
       dalibo.pglift.instance:

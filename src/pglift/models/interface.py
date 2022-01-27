@@ -7,6 +7,7 @@ from typing import IO, Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar
 import psycopg
 import psycopg.conninfo
 import yaml
+from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from pydantic import (
     BaseModel,
@@ -330,13 +331,23 @@ class Role(Manifest):
 class Database(Manifest):
     """PostgreSQL database"""
 
-    _cli_config: ClassVar[Dict[str, CLIConfig]] = {"state": {"hide": True}}
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "settings": {"hide": True},
+        "state": {"hide": True},
+    }
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
+        "settings": {"spec": {"type": "dict", "required": False}},
+    }
 
     name: str
     owner: Optional[str] = Field(
         description="the role name of the user who will own the new database"
     )
     state: PresenceState = Field(default=PresenceState.present)
+    settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
+        default=None,
+        description="Session defaults for a run-time configuration variables for the database",
+    )
 
 
 class Tablespace(BaseModel):

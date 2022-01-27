@@ -9,6 +9,10 @@
     ],
     "type": "str"
   },
+  "settings": {
+    "required": false,
+    "type": "dict"
+  },
   "state": {
     "choices": [
       "present",

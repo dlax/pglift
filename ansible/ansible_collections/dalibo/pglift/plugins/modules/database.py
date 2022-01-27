@@ -34,12 +34,18 @@ options:
     type: str
     description:
       - The role name of the user who will own the new database.
+  settings:
+    type: dict
+    description:
+      - Session defaults for run-time configuration variables for the database.
 """
 
 EXAMPLES = """
 - dalibo.pglift.database:
     instance: 12/main
     name: db
+    settings:
+      work_mem: 2MB
 """
 
 RETURN = """

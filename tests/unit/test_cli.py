@@ -1127,7 +1127,7 @@ def test_database_describe(
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     described = yaml.safe_load(result.stdout)
-    assert described == {"name": "present", "owner": "dba"}
+    assert described == {"name": "present", "owner": "dba", "settings": None}
 
 
 def test_database_list(

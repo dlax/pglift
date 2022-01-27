@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Sequence, Tuple
 
 import psycopg.rows
+from pgtoolkit import conf as pgconf
 from psycopg import sql
 
 from . import db, exceptions, logger, types
@@ -36,12 +37,17 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
     with db.superuser_connect(ctx, instance) as cnx:
-        with cnx.cursor(row_factory=psycopg.rows.class_row(interface.Database)) as cur:
-            row = cur.execute(
-                db.query("database_inspect"), {"datname": name}
-            ).fetchone()
+        row = cnx.execute(db.query("database_inspect"), {"datname": name}).fetchone()
         assert row is not None
-        return row
+        settings = row.pop("settings")
+        if settings is None:
+            row["settings"] = None
+        else:
+            row["settings"] = {}
+            for s in settings:
+                k, v = s.split("=", 1)
+                row["settings"][k.strip()] = pgconf.parse_value(v.strip())
+        return interface.Database.parse_obj(row)
 
 
 def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabase]:
@@ -110,6 +116,8 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
             ),
             args,
         )
+        if database.settings is not None:
+            alter(ctx, instance, database)
 
 
 @task("altering '{database.name}' database on instance {instance}")
@@ -133,12 +141,40 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
     with db.superuser_connect(ctx, instance) as cnx:
         cnx.execute(
             db.query(
-                "database_alter_owner",
+                "database_alter",
                 database=sql.Identifier(database.name),
                 options=options,
             ),
         )
         cnx.commit()
+
+    if database.settings is not None:
+        with db.superuser_connect(ctx, instance) as cnx:
+            if not database.settings:
+                # Empty input means reset all.
+                cnx.execute(
+                    db.query(
+                        "database_alter",
+                        database=sql.Identifier(database.name),
+                        options=sql.SQL("RESET ALL"),
+                    )
+                )
+            else:
+                for k, v in database.settings.items():
+                    if v is None:
+                        options = sql.SQL("RESET {}").format(sql.Identifier(k))
+                    else:
+                        options = sql.SQL("SET {} TO {}").format(
+                            sql.Identifier(k), sql.Literal(v)
+                        )
+                    cnx.execute(
+                        db.query(
+                            "database_alter",
+                            database=sql.Identifier(database.name),
+                            options=options,
+                        )
+                    )
+            cnx.commit()
 
 
 def run(

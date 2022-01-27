@@ -70,13 +70,17 @@ SELECT true FROM pg_database WHERE datname = %(database)s;
 -- name: database_create
 CREATE DATABASE {database} {options};
 
--- name: database_alter_owner
+-- name: database_alter
 ALTER DATABASE {database} {options};
 
 -- name: database_inspect
 SELECT
     db.datname AS name,
-    r.rolname AS owner
+    r.rolname AS owner,
+    (
+        SELECT s.setconfig FROM pg_db_role_setting s
+        WHERE s.setdatabase = db.oid AND s.setrole = 0
+    ) AS settings
 FROM
     pg_database db
     JOIN pg_authid r ON db.datdba = r.oid

@@ -57,10 +57,12 @@ def test_apply(
     database_factory: DatabaseFactory,
     role_factory: RoleFactory,
 ) -> None:
-    database = interface.Database(name="db2")
+    database = interface.Database(name="db2", settings={"work_mem": "1MB"})
     assert not databases.exists(ctx, instance, database.name)
     databases.apply(ctx, instance, database)
-    assert databases.exists(ctx, instance, database.name)
+    assert databases.describe(ctx, instance, database.name).settings == {
+        "work_mem": "1MB"
+    }
 
     database_factory("apply")
     database = interface.Database(name="apply")
@@ -88,8 +90,12 @@ def test_describe(
         databases.describe(ctx, instance, "absent")
 
     database_factory("describeme")
+    execute(
+        ctx, instance, "ALTER DATABASE describeme SET work_mem TO '3MB'", fetch=False
+    )
     database = databases.describe(ctx, instance, "describeme")
     assert database.name == "describeme"
+    assert database.settings == {"work_mem": "3MB"}
 
 
 def test_list(
@@ -118,20 +124,30 @@ def test_alter(
     database_factory: DatabaseFactory,
     role_factory: RoleFactory,
 ) -> None:
-    database = interface.Database(name="alterme")
+    database = interface.Database(name="alterme", owner="postgres")
     with pytest.raises(exceptions.DatabaseNotFound, match="alter"):
         databases.alter(ctx, instance, database)
 
     database_factory("alterme")
+    execute(ctx, instance, "ALTER DATABASE alterme SET work_mem TO '3MB'", fetch=False)
+    assert databases.describe(ctx, instance, "alterme") == database.copy(
+        update={"settings": {"work_mem": "3MB"}}
+    )
     role_factory("alterdba")
-    database = interface.Database(name="alterme", owner="alterdba")
-    databases.alter(ctx, instance, database)
-    assert databases.describe(ctx, instance, "alterme") == database
-
-    database = interface.Database(name="alterme")
+    database = interface.Database(
+        name="alterme",
+        owner="alterdba",
+        settings={"work_mem": None, "maintenance_work_mem": "9MB"},
+    )
     databases.alter(ctx, instance, database)
     assert databases.describe(ctx, instance, "alterme") == database.copy(
-        update={"owner": "postgres"}
+        update={"settings": {"maintenance_work_mem": "9MB"}}
+    )
+
+    database = interface.Database(name="alterme", settings={})
+    databases.alter(ctx, instance, database)
+    assert databases.describe(ctx, instance, "alterme") == database.copy(
+        update={"owner": "postgres", "settings": None}
     )
 
 
