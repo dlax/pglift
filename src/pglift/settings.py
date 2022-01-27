@@ -1,7 +1,7 @@
-import getpass
 import grp
 import json
 import os
+import pwd
 import shutil
 from pathlib import Path, PosixPath
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
@@ -41,9 +41,9 @@ def default_prefix(uid: int) -> Path:
 
 
 def default_sysuser() -> Tuple[str, str]:
-    user = getpass.getuser()
-    group = grp.getgrgid(os.getuid()).gr_name
-    return user, group
+    pwentry = pwd.getpwuid(os.getuid())
+    grentry = grp.getgrgid(pwentry.pw_gid)
+    return pwentry.pw_name, grentry.gr_name
 
 
 class PrefixedPath(PosixPath):
