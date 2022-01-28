@@ -274,6 +274,16 @@ def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
         instance_mod.upgrade(ctx, instance, version=instance.version)
 
 
+def test_standby_upgrade(ctx: Context, standby_instance: Instance) -> None:
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby instance$",
+    ):
+        instance_mod.upgrade(
+            ctx, standby_instance, version=str(int(standby_instance.version) + 1)
+        )
+
+
 def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
     with pytest.raises(
         exceptions.FileNotFoundError,

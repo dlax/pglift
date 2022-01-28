@@ -542,7 +542,9 @@ def upgrade(
     port: Optional[int] = None,
     jobs: Optional[int] = None,
 ) -> Instance:
-    """Upgrade an instance using pg_upgrade"""
+    """Upgrade a primary instance using pg_upgrade"""
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     if version is None:
         version = default_postgresql_version(ctx)
     if (name is None or name == instance.name) and version == instance.version:
