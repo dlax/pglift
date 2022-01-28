@@ -109,6 +109,8 @@ def drop(ctx: BaseContext, instance: PostgreSQLInstance, name: str) -> None:
 
     :raises ~pglift.exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
     with db.superuser_connect(ctx, instance) as cnx:
@@ -192,8 +194,10 @@ def create(
 ) -> None:
     """Create 'role' in 'instance'.
 
-    The instance should be running and the role should not exist already.
+    The instance should be a running primary and the role should not exist already.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     with db.superuser_connect(ctx, instance) as cnx:
         opts = options(cnx, role)
         cnx.execute(
@@ -206,8 +210,10 @@ def create(
 def alter(ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role) -> None:
     """Alter 'role' in 'instance'.
 
-    The instance should be running and the role should exist already.
+    The instance should be running primary and the role should exist already.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     actual_role = describe(ctx, instance, role.name)
     in_roles = {
         "grant": set(role.in_roles) - set(actual_role.in_roles),
@@ -243,7 +249,9 @@ def alter(ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role) 
 def set_password_for(
     ctx: BaseContext, instance: PostgreSQLInstance, role: Role
 ) -> None:
-    """Set password for a PostgreSQL role on instance."""
+    """Set password for a PostgreSQL role on a primary instance."""
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     if role.password is None:
         return
 

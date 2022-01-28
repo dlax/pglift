@@ -4,7 +4,7 @@ from typing import Optional
 import pytest
 from pydantic import SecretStr
 
-from pglift import roles
+from pglift import exceptions, roles
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -49,3 +49,38 @@ def test_set_pgpass_entry_for(
 ) -> None:
     roles.set_pgpass_entry_for(ctx, instance, role)
     assert passfile.read_text() == pgpass
+
+
+def test_standby_role_create(ctx: Context, standby_instance: Instance) -> None:
+    role = Role("alice")
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby instance$",
+    ):
+        roles.create(ctx, standby_instance, role)
+
+
+def test_standby_role_drop(ctx: Context, standby_instance: Instance) -> None:
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby instance$",
+    ):
+        roles.drop(ctx, standby_instance, "alice")
+
+
+def test_standby_role_alter(ctx: Context, standby_instance: Instance) -> None:
+    role = Role("alice")
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby instance$",
+    ):
+        roles.alter(ctx, standby_instance, role)
+
+
+def test_standby_set_password_for(ctx: Context, standby_instance: Instance) -> None:
+    role = Role("alice")
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby instance$",
+    ):
+        roles.set_password_for(ctx, standby_instance, role)
