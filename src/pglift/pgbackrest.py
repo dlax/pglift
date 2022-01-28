@@ -12,7 +12,7 @@ from dateutil.tz import gettz
 from pgtoolkit import conf as pgconf
 from typing_extensions import Literal
 
-from . import hookimpl
+from . import exceptions, hookimpl
 from . import instance as instance_mod
 from . import logger, roles, util
 from .conf import info as conf_info
@@ -268,7 +268,7 @@ def backup_command(
 @task("backup instance with pgBackRest")
 def backup(
     ctx: BaseContext,
-    instance: BaseInstance,
+    instance: PostgreSQLInstance,
     *,
     type: BackupType = BackupType.default(),
 ) -> None:
@@ -278,6 +278,9 @@ def backup(
 
     Ref.: https://pgbackrest.org/command.html#command-backup
     """
+    if instance.standby:
+        raise exceptions.InstanceStateError("backup should be done on primary instance")
+
     # Don't use ctx.libpq_environ() here since it applies to surole and we use
     # backuprole.
     env = os.environ.copy()
@@ -389,7 +392,7 @@ def restore_command(
 @task("restore instance with pgBackRest")
 def restore(
     ctx: BaseContext,
-    instance: BaseInstance,
+    instance: PostgreSQLInstance,
     *,
     label: Optional[str] = None,
     date: Optional[datetime.datetime] = None,
@@ -400,6 +403,9 @@ def restore(
 
     Ref.: https://pgbackrest.org/command.html#command-restore
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
+
     cmd = restore_command(instance, date=date, backup_set=label)
 
     for dirpath in (instance.datadir, instance.waldir):

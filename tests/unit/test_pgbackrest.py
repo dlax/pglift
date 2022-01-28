@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from pglift import pgbackrest
+import pytest
+
+from pglift import exceptions, pgbackrest
 from pglift.ctx import Context
 from pglift.models.system import Instance
 from pglift.settings import Settings
@@ -78,3 +80,19 @@ def test_restore_command(
         "--set=x",
         "restore",
     ]
+
+
+def test_standby_backup(ctx: Context, standby_instance: Instance) -> None:
+    with pytest.raises(
+        exceptions.InstanceStateError,
+        match="^backup should be done on primary instance",
+    ):
+        pgbackrest.backup(ctx, standby_instance)
+
+
+def test_standby_restore(ctx: Context, standby_instance: Instance) -> None:
+    with pytest.raises(
+        exceptions.InstanceReadOnlyError,
+        match=f"^{standby_instance.version}/standby is a read-only standby",
+    ):
+        pgbackrest.restore(ctx, standby_instance)
