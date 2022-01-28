@@ -525,6 +525,8 @@ def reload(
 @task("promote PostgreSQL instance")
 def promote(ctx: BaseContext, instance: Instance) -> None:
     """Promote a standby instance"""
+    if not instance.standby:
+        raise exceptions.InstanceStateError(f"{instance} is not a standby")
     pg_ctl = ctx.pg_ctl(instance.version)
     pg_ctl.run_command(
         [str(pg_ctl.pg_ctl), "promote", "-D", str(instance.datadir)],

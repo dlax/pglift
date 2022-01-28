@@ -284,6 +284,14 @@ def test_standby_upgrade(ctx: Context, standby_instance: Instance) -> None:
         )
 
 
+def test_non_standby_promote(ctx: Context, instance: Instance) -> None:
+    with pytest.raises(
+        exceptions.InstanceStateError,
+        match=f"^{instance.version}/test is not a standby$",
+    ):
+        instance_mod.promote(ctx, instance)
+
+
 def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
     with pytest.raises(
         exceptions.FileNotFoundError,
