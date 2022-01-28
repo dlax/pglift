@@ -57,10 +57,12 @@ def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabas
 
 @task("drop '{name}' database from instance {instance}")
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
-    """Drop a database from instance.
+    """Drop a database from a primary instance.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
     with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
@@ -94,8 +96,10 @@ def options_and_args(
 def create(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Create 'database' in 'instance'.
 
-    The instance should be running and the database should not exist already.
+    The instance should be a running primary and the database should not exist already.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
     options, args = options_and_args(database)
     with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
         cnx.execute(
@@ -112,8 +116,11 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
 def alter(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Alter 'database' in 'instance'.
 
-    The instance should be running and the database should exist already.
+    The instance should be a running primary and the database should exist already.
     """
+    if instance.standby:
+        raise exceptions.InstanceReadOnlyError(instance)
+
     if not exists(ctx, instance, database.name):
         raise exceptions.DatabaseNotFound(database.name)
 

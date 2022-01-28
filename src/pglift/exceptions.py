@@ -2,7 +2,10 @@ import abc
 import builtins
 import subprocess
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
+
+if TYPE_CHECKING:
+    from .models.system import PostgreSQLInstance
 
 
 class Error(Exception, metaclass=abc.ABCMeta):
@@ -77,6 +80,13 @@ class InvalidVersion(Error, ValueError):
 
 class InstanceStateError(Error, RuntimeError):
     """Unexpected instance state."""
+
+
+class InstanceReadOnlyError(Error, RuntimeError):
+    """Instance is a read-only standby."""
+
+    def __init__(self, instance: "PostgreSQLInstance"):
+        super().__init__(f"{instance} is a read-only standby instance")
 
 
 class ConfigurationError(Error, LookupError):
