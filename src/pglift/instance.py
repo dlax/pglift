@@ -599,6 +599,42 @@ def upgrade(
     return newinstance
 
 
+def get_data_checksums(ctx: BaseContext, instance: Instance) -> bool:
+    """Return True/False if data_checksums is enabled/disable on instance."""
+    if status(ctx, instance) == Status.running:
+        # Use SQL SHOW data_checksums since pg_checksums doesn't work if
+        # instance is running.
+        with db.superuser_connect(ctx, instance) as cnx:
+            value = cnx.execute("SHOW data_checksums").fetchall()[0]["data_checksums"]
+            assert value in ("on", "off"), value
+            return True if value == "on" else False
+    pg_checksums = str(ctx.pg_ctl(instance.version).bindir / "pg_checksums")
+    proc = ctx.run([pg_checksums, "--check", "--pgdata", str(instance.datadir)])
+    if proc.returncode == 0:
+        return True
+    elif proc.returncode == 1:
+        return False
+    raise exceptions.CommandError(proc.returncode, proc.args, proc.stdout, proc.stderr)
+
+
+def set_data_checksums(ctx: BaseContext, instance: Instance, enabled: bool) -> None:
+    """Enable/disable data checksums on instance."""
+    if status(ctx, instance) == Status.running:
+        raise exceptions.InstanceStateError(
+            "could not alter data_checksums on a running instance"
+        )
+    action = "enable" if enabled else "disable"
+    ctx.run(
+        [
+            str(ctx.pg_ctl(instance.version).bindir / "pg_checksums"),
+            f"--{action}",
+            "--pgdata",
+            str(instance.datadir),
+        ],
+        check=True,
+    )
+
+
 ApplyResult = Union[None, Tuple[Instance, ConfigChanges, bool]]
 
 
@@ -638,7 +674,18 @@ def apply(ctx: BaseContext, manifest: interface.Instance) -> ApplyResult:
 
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     is_running = status(ctx, instance) == Status.running
+
+    if manifest.data_checksums is not None:
+        actual_data_checksums = get_data_checksums(ctx, instance)
+        if actual_data_checksums != manifest.data_checksums:
+            set_data_checksums(ctx, instance, manifest.data_checksums)
+            changes["data_checksums"] = (
+                "enabled" if actual_data_checksums else "disabled",
+                "enabled" if manifest.data_checksums else "disabled",
+            )
+
     needs_restart = "port" in changes
+
     if state == States.stopped:
         if is_running:
             stop(ctx, instance)

@@ -455,3 +455,55 @@ def test_server_settings(ctx: Context, instance: system.Instance) -> None:
 def test_logs(ctx: Context, instance: system.Instance) -> None:
     logs = list(instance_mod.logs(ctx, instance))
     assert "database system is shut down" in logs[-1]
+
+
+def test_data_checksum(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    log_directory: Path,
+) -> None:
+    assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
+
+    # explicitly enabled
+    manifest = instance_manifest.copy(
+        update={
+            "data_checksums": True,
+            "state": interface.InstanceState.stopped,
+        }
+    )
+    result = instance_mod.apply(ctx, manifest)
+    assert result
+    _, changes, _ = result
+    assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
+    changes.pop("log_directory", None)  # XXX: this one seems flapping and is unexpected
+    assert changes == {
+        "data_checksums": ("disabled", "enabled"),
+    }
+
+    # not explicitly disabled so still enabled
+    manifest = manifest.copy(update={"data_checksums": None})
+    result = instance_mod.apply(ctx, manifest)
+    assert result
+    _, changes, _ = result
+    assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
+    assert changes == {}
+
+    # explicitly disabled
+    manifest = instance_manifest.copy(update={"data_checksums": False})
+    result = instance_mod.apply(ctx, manifest)
+    assert result
+    _, changes, _ = result
+    assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
+    assert changes == {
+        "data_checksums": ("enabled", "disabled"),
+    }
+
+    # re-enabled with instance running
+    with instance_mod.running(ctx, instance):
+        manifest = instance_manifest.copy(update={"data_checksums": True})
+        with pytest.raises(
+            exceptions.InstanceStateError,
+            match="could not alter data_checksums on a running instance",
+        ):
+            instance_mod.apply(ctx, manifest)
