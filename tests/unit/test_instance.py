@@ -63,6 +63,31 @@ def test_init_version_not_available(ctx: Context) -> None:
         instance_mod.init(ctx, manifest)
 
 
+@pytest.mark.parametrize("data_checksums", [True, False])
+def test_init_force_data_checksums(
+    ctx: Context, pg_version: str, data_checksums: bool
+) -> None:
+    assert ctx.settings.postgresql.initdb.data_checksums is False
+    manifest = interface.Instance(
+        name="checksums", version=pg_version, data_checksums=data_checksums
+    )
+    with patch("pgtoolkit.ctl.PGCtl.init") as init:
+        instance_mod.init(ctx, manifest)
+    instance = BaseInstance.get(manifest.name, manifest.version, ctx)
+    expected = {
+        "waldir": str(instance.waldir),
+        "username": "postgres",
+        "encoding": "UTF8",
+        "auth_local": "trust",
+        "auth_host": "reject",
+        "locale": "C",
+    }
+    if data_checksums:
+        init.assert_called_once_with(instance.datadir, data_checksums=True, **expected)
+    else:
+        init.assert_called_once_with(instance.datadir, **expected)
+
+
 def test_list_no_pgroot(ctx: Context) -> None:
     assert not ctx.settings.postgresql.root.exists()
     assert list(instance_mod.list(ctx)) == []

@@ -129,7 +129,9 @@ def init(ctx: BaseContext, manifest: interface.Instance) -> None:
     }
     if initdb_settings.locale:
         opts["locale"] = initdb_settings.locale
-    if initdb_settings.data_checksums:
+    if manifest.data_checksums or (
+        manifest.data_checksums is None and initdb_settings.data_checksums
+    ):
         opts["data_checksums"] = True
 
     pg_ctl.init(instance.datadir, **opts)

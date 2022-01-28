@@ -169,6 +169,13 @@ class Instance(Manifest):
         default=None,
         description="replication role password",
     )
+    data_checksums: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Enable or disable data checksums. "
+            "If None, fall back to site settings initdb.data_checksums."
+        ),
+    )
 
     standby: Optional[Standby] = None
 
