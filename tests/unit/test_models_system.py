@@ -109,12 +109,10 @@ def test_postgresqlinstance_config(instance: Instance) -> None:
     }
 
 
-def test_postgresqlinstance_standby_for(ctx: Context, instance: Instance) -> None:
-    (instance.datadir / "postgresql.auto.conf").write_text(
-        "primary_conninfo = host=/tmp port=4242 user=pg\n"
-    )
+def test_postgresqlinstance_standby_for(
+    ctx: Context, instance: Instance, standby_instance: Instance
+) -> None:
     assert not instance.standby
-    standbyfile = "standby.signal" if int(instance.version) >= 12 else "recovery.conf"
-    (instance.datadir / standbyfile).touch()
-    assert instance.standby
-    assert instance.standby.for_ == "host=/tmp port=4242 user=pg"
+    assert standby_instance.standby
+    assert standby_instance.standby.for_ == "host=/tmp port=4242 user=pg"
+    assert standby_instance.standby.slot == "aslot"

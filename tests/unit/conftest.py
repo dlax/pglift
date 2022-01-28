@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 from pgtoolkit.ctl import PGCtl
@@ -69,14 +69,15 @@ def instance_manifest(pg_version: str) -> interface.Instance:
     return interface.Instance(name="test", version=pg_version)
 
 
-@pytest.fixture(params=[True, False], ids=["prometheus=yes", "prometheus=no"])
-def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
-    prometheus = None
-    if request.param:
-        prometheus_port = 9817
-        prometheus = PrometheusService(port=prometheus_port)
+def _instance(
+    name: str,
+    version: str,
+    settings: Settings,
+    *,
+    prometheus: Optional[PrometheusService] = None,
+) -> Instance:
     instance = Instance(
-        name="test", version=pg_version, settings=settings, prometheus=prometheus
+        name=name, version=version, settings=settings, prometheus=prometheus
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
@@ -91,7 +92,7 @@ def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
     )
     confdir = instance.datadir / "conf.pglift.d"
     confdir.mkdir()
-    (confdir / "user.conf").write_text("bonjour = on\nbonjour_name= 'test'\n")
+    (confdir / "user.conf").write_text(f"bonjour = on\nbonjour_name= '{name}'\n")
 
     if prometheus:
         prometheus_config = prometheus_mod._configpath(
@@ -99,9 +100,32 @@ def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
         )
         prometheus_config.parent.mkdir(parents=True)
         prometheus_config.write_text(
-            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus_port}"
+            f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus.port}"
         )
 
+    return instance
+
+
+@pytest.fixture(params=[True, False], ids=["prometheus=yes", "prometheus=no"])
+def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
+    prometheus = None
+    if request.param:
+        prometheus_port = 9817
+        prometheus = PrometheusService(port=prometheus_port)
+    return _instance("test", pg_version, settings, prometheus=prometheus)
+
+
+@pytest.fixture
+def standby_instance(pg_version: str, settings: Settings) -> Instance:
+    instance = _instance("standby", pg_version, settings)
+    (
+        instance.datadir
+        / ("standby.signal" if int(pg_version) >= 12 else "recovery.conf")
+    ).write_text("")
+    (instance.datadir / "postgresql.auto.conf").write_text(
+        "primary_conninfo = 'host=/tmp port=4242 user=pg'\n"
+        "primary_slot_name = aslot\n"
+    )
     return instance
 
 
