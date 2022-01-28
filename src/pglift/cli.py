@@ -191,7 +191,6 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> Instance:
             except exceptions.InstanceNotFound:
                 logger.debug("instance '%s' not found in version %s", name, version)
             else:
-                logger.info("instance '%s' found in version %s", name, version)
                 if found:
                     raise click.BadParameter(
                         f"instance '{name}' exists in several PostgreSQL versions;"
