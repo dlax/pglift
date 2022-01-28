@@ -516,10 +516,8 @@ def reload(
 ) -> None:
     """Reload an instance."""
     logger.info("reloading instance %s", instance)
-    if ctx.settings.service_manager is None:
-        ctx.pg_ctl(instance.version).reload(instance.datadir)
-    elif ctx.settings.service_manager == "systemd":
-        systemd.reload(ctx, systemd_unit(instance))
+    with db.superuser_connect(ctx, instance) as cnx:
+        cnx.execute("SELECT pg_reload_conf()")
 
 
 @task("promote PostgreSQL instance")
