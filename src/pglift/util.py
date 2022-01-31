@@ -108,7 +108,7 @@ def parse_filesize(value: str) -> float:
     except ValueError:
         raise ValueError(f"invalid unit '{unit}'") from None
     assert isinstance(scale, int)
-    return (1024 ** scale) * float(val)  # type: ignore[no-any-return]
+    return (1024**scale) * float(val)  # type: ignore[no-any-return]
 
 
 def total_memory(path: Path = Path("/proc/meminfo")) -> float:

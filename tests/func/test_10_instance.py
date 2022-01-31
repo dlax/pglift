@@ -358,26 +358,20 @@ def test_standby(
         assert standby_instance.standby.slot == slot
         try:
             with instance_mod.running(ctx, standby_instance):
-                assert (
-                    execute(
-                        ctx,
-                        standby_instance,
-                        "SELECT * FROM pg_is_in_recovery()",
-                        role=replrole,
-                        dbname="template1",
-                    )
-                    == [{"pg_is_in_recovery": True}]
-                )
-                assert (
-                    execute(
-                        ctx,
-                        standby_instance,
-                        "SELECT * FROM t",
-                        role=replrole,
-                        dbname="test",
-                    )
-                    == [{"i": 1}]
-                )
+                assert execute(
+                    ctx,
+                    standby_instance,
+                    "SELECT * FROM pg_is_in_recovery()",
+                    role=replrole,
+                    dbname="template1",
+                ) == [{"pg_is_in_recovery": True}]
+                assert execute(
+                    ctx,
+                    standby_instance,
+                    "SELECT * FROM t",
+                    role=replrole,
+                    dbname="test",
+                ) == [{"i": 1}]
                 execute(
                     ctx,
                     instance,
@@ -393,31 +387,25 @@ def test_standby(
                     stop=stop_after_attempt(4),
                 )
                 def assert_replicated() -> None:
-                    assert (
-                        execute(
-                            ctx,
-                            standby_instance,
-                            "SELECT * FROM t",
-                            role=replrole,
-                            dbname="test",
-                        )
-                        == [{"i": 42}]
-                    )
+                    assert execute(
+                        ctx,
+                        standby_instance,
+                        "SELECT * FROM t",
+                        role=replrole,
+                        dbname="test",
+                    ) == [{"i": 42}]
 
                 assert_replicated()
 
                 instance_mod.promote(ctx, standby_instance)
                 assert not standby_instance.standby
-                assert (
-                    execute(
-                        ctx,
-                        standby_instance,
-                        "SELECT * FROM pg_is_in_recovery()",
-                        role=replrole,
-                        dbname="template1",
-                    )
-                    == [{"pg_is_in_recovery": False}]
-                )
+                assert execute(
+                    ctx,
+                    standby_instance,
+                    "SELECT * FROM pg_is_in_recovery()",
+                    role=replrole,
+                    dbname="template1",
+                ) == [{"pg_is_in_recovery": False}]
         finally:
             instance_mod.drop(ctx, standby_instance)
             if slot:

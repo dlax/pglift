@@ -61,7 +61,7 @@ setup(
     ],
     extras_require={
         "dev": [
-            "black >= 21.8b0",
+            "black >= 22.1.0",
             "check-manifest",
             "flake8",
             "isort",
