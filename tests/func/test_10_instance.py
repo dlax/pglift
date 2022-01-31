@@ -277,7 +277,7 @@ def test_describe(
         logdir = config.pop("log_directory")
         if not redhat:
             assert logdir == str(log_directory)
-    assert config == {}
+    assert config == {"logging_collector": False}
     assert im.state.name == "stopped"
 
 
@@ -452,7 +452,12 @@ def test_server_settings(ctx: Context, instance: system.Instance) -> None:
     assert port.context == "postmaster"
 
 
-def test_logs(ctx: Context, instance: system.Instance) -> None:
+def test_logs(
+    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+) -> None:
+    with reconfigure_instance(ctx, instance_manifest, logging_collector=True):
+        with instance_mod.running(ctx, instance):
+            pass
     logs = list(instance_mod.logs(ctx, instance))
     assert "database system is shut down" in logs[-1]
 

@@ -241,6 +241,10 @@ def instance_manifest(
             "name": "test",
             "version": pg_version,
             "port": port,
+            "configuration": {
+                # Keep logs to stderr in tests so that they are captured by pytest.
+                "logging_collector": False,
+            },
             "surole_password": surole_password,
             "replrole_password": replrole_password,
             "prometheus": {"port": prometheus_port},
