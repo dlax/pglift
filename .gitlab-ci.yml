@@ -3,7 +3,7 @@ variables:
   GIT_FETCH_EXTRA_FLAGS: --tags
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   DEBIAN_CI_IMAGE: "$CI_REGISTRY_IMAGE:debian"
-  CENTOS8_CI_IMAGE: "$CI_REGISTRY_IMAGE:centos8"
+  ROCKYLINUX8_CI_IMAGE: "$CI_REGISTRY_IMAGE:rockylinux8"
   DEBBUILD_CI_IMAGE: "$CI_REGISTRY_IMAGE:debbuild"
 
 cache:
@@ -35,7 +35,7 @@ tests:
     - tox -e tests
   parallel:
     matrix:
-      - dist: [debian, centos8]
+      - dist: [debian, rockylinux8]
 
 docs:
   stage: test
@@ -69,12 +69,12 @@ debian_ci_image:
     WORKSUBDIR: "testing"
     DOCKERFILE: "Dockerfile.debian"
 
-centos8_ci_image:
+rockylinux8_ci_image:
   extends: .ci_image
   variables:
-    IMAGE_TAG: "$CI_REGISTRY_IMAGE:centos8"
+    IMAGE_TAG: "$CI_REGISTRY_IMAGE:rockylinux8"
     WORKSUBDIR: "testing"
-    DOCKERFILE: "Dockerfile.centos8"
+    DOCKERFILE: "Dockerfile.rockylinux8"
 
 debbuild_ci_image:
   when: manual
