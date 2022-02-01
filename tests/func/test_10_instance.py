@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Iterator, List, NoReturn, Optional
+from typing import Iterator, List, NoReturn, Optional, Tuple
 from unittest.mock import patch
 
 import psycopg
@@ -457,16 +457,38 @@ def test_logs(ctx: Context, instance: system.Instance) -> None:
     assert "database system is shut down" in logs[-1]
 
 
+@pytest.fixture
+def datachecksums_instance(
+    ctx: Context,
+    pg_version: str,
+    tmp_port_factory: Iterator[int],
+    surole_password: Optional[str],
+) -> Iterator[Tuple[interface.Instance, system.Instance]]:
+    manifest = interface.Instance(
+        name="datachecksums",
+        version=pg_version,
+        port=next(tmp_port_factory),
+        prometheus=None,
+        state=interface.InstanceState.stopped,
+        surole_password=surole_password,
+    )
+    r = instance_mod.apply(ctx, manifest)
+    assert r
+    instance = r[0]
+    yield manifest, instance
+    instance_mod.drop(ctx, instance)
+
+
 def test_data_checksum(
     ctx: Context,
-    instance_manifest: interface.Instance,
-    instance: system.Instance,
-    log_directory: Path,
+    datachecksums_instance: Tuple[interface.Instance, system.Instance],
 ) -> None:
+    manifest, instance = datachecksums_instance
+
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
 
     # explicitly enabled
-    manifest = instance_manifest.copy(
+    manifest = manifest.copy(
         update={
             "data_checksums": True,
             "state": interface.InstanceState.stopped,
@@ -476,7 +498,6 @@ def test_data_checksum(
     assert result
     _, changes, _ = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
-    changes.pop("log_directory", None)  # XXX: this one seems flapping and is unexpected
     assert changes == {
         "data_checksums": ("disabled", "enabled"),
     }
@@ -490,7 +511,7 @@ def test_data_checksum(
     assert changes == {}
 
     # explicitly disabled
-    manifest = instance_manifest.copy(update={"data_checksums": False})
+    manifest = manifest.copy(update={"data_checksums": False})
     result = instance_mod.apply(ctx, manifest)
     assert result
     _, changes, _ = result
@@ -501,7 +522,7 @@ def test_data_checksum(
 
     # re-enabled with instance running
     with instance_mod.running(ctx, instance):
-        manifest = instance_manifest.copy(update={"data_checksums": True})
+        manifest = manifest.copy(update={"data_checksums": True})
         with pytest.raises(
             exceptions.InstanceStateError,
             match="could not alter data_checksums on a running instance",
