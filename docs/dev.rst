@@ -8,7 +8,14 @@ Contributing
 Setup
 ~~~~~
 
-Install the project in a Python3 virtualenv:
+Clone the git repository:
+
+::
+
+    $ git clone https://gitlab.com/dalibo/pglift.git
+    $ cd pglift
+
+Then, create a Python3 virtualenv and install the project:
 
 ::
 
