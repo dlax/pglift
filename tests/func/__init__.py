@@ -19,9 +19,9 @@ def configure_instance(
     port: Optional[int] = None,
     **confitems: Any,
 ) -> None:
-    if port is None:
-        port = manifest.port
-    values = dict(confitems, port=port)
+    values = manifest.configuration.copy()
+    values["port"] = port or manifest.port
+    values.update(confitems)
     instance_mod.configure(ctx, manifest, values=values)
 
 
