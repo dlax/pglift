@@ -479,7 +479,7 @@ def datachecksums_instance(
     instance_mod.drop(ctx, instance)
 
 
-def test_data_checksum(
+def test_data_checksums(
     ctx: Context,
     datachecksums_instance: Tuple[interface.Instance, system.Instance],
 ) -> None:
