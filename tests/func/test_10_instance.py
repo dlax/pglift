@@ -464,6 +464,8 @@ def datachecksums_instance(
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
+    if pg_version < "12":
+        pytest.skip("pg_checksums requires PostgreSQL 12")
     manifest = interface.Instance(
         name="datachecksums",
         version=pg_version,
