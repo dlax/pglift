@@ -254,7 +254,7 @@ def test_instance_port_changed(
     if surole.pgpass:
         assert role_in_pgpass(passfile, surole, port=port)
     newport = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, instance_manifest, port=newport):
+    with reconfigure_instance(ctx, instance_manifest, port=newport):
         assert not role_in_pgpass(passfile, role1, port=port)
         assert role_in_pgpass(passfile, role1, port=newport)
         assert not role_in_pgpass(passfile, role2, port=port)

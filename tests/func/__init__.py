@@ -27,17 +27,13 @@ def configure_instance(
 
 @contextmanager
 def reconfigure_instance(
-    ctx: BaseContext, i: Instance, manifest: interface.Instance, *, port: int
+    ctx: BaseContext, manifest: interface.Instance, **confitems: Any
 ) -> Iterator[None]:
-    config = i.config()
-    assert config is not None
-    initial_port = config.port
-    assert initial_port
-    configure_instance(ctx, manifest, port=port)
+    configure_instance(ctx, manifest, **confitems)
     try:
         yield
     finally:
-        configure_instance(ctx, manifest, port=initial_port)  # type: ignore[arg-type]
+        configure_instance(ctx, manifest)
 
 
 @overload

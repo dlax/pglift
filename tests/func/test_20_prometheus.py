@@ -54,7 +54,7 @@ def test_configure(
     assert queriespath.exists()
 
     new_port = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, instance_manifest, port=new_port):
+    with reconfigure_instance(ctx, instance_manifest, port=new_port):
         new_prometheus_config = config_dict(configpath)
         dsn = new_prometheus_config["DATA_SOURCE_NAME"]
         assert f"port={new_port}" in dsn

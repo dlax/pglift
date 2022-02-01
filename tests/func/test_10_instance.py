@@ -80,7 +80,7 @@ def test_pgpass(
     if instance_manifest.surole_password and ctx.settings.postgresql.surole.pgpass:
         assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
 
-        with reconfigure_instance(ctx, instance, instance_manifest, port=port + 1):
+        with reconfigure_instance(ctx, instance_manifest, port=port + 1):
             assert postgres_entry() == f"*:{port+1}:*:postgres:s3kret"
 
         assert postgres_entry() == f"*:{port}:*:postgres:s3kret"

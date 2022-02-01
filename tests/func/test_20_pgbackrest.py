@@ -68,7 +68,7 @@ def test_configure(
     # updated.
     config_before = configpath.read_text()
     new_port = next(tmp_port_factory)
-    with reconfigure_instance(ctx, instance, instance_manifest, port=new_port):
+    with reconfigure_instance(ctx, instance_manifest, port=new_port):
         config_after = configpath.read_text()
         assert config_after != config_before
         assert f"pg1-port = {new_port}" in config_after.splitlines()
