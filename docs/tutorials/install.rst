@@ -41,6 +41,17 @@ Once installed, the ``pglift`` command should be available:
       instance  Manipulate instances
       role      Manipulate roles
 
+Runtime dependencies
+--------------------
+
+pglift operates PostgreSQL and a number of satellite components, each
+available as independent software packages. Thus, the following packages would
+be needed in most common situations:
+
+- ``postgresql``
+- ``pgbackrest``
+- ``prometheus-postgres-exporter``
+
 
 Shell completion
 ----------------
