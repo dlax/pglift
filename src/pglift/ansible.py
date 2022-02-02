@@ -27,10 +27,11 @@ class AnsibleLoggingHandler(logging.Handler):
         super().__init__(*args, **kwargs)
 
     def emit(self, record: logging.LogRecord) -> None:
+        message = record.getMessage()
         if record.levelno == logging.DEBUG:
-            self._ansible_module.debug(record.message)
+            self._ansible_module.debug(message)
         else:
-            self._ansible_module.log(f"[record.levelname.lower()] {record.message}")
+            self._ansible_module.log(f"[record.levelname.lower()] {message}")
 
 
 class AnsibleContext(BaseContext):
