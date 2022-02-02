@@ -1296,3 +1296,14 @@ def postgres_exporter_stop(ctx: Context, displayer: Displayer, name: str) -> Non
     """
     with displayer:
         prometheus.stop(ctx, name)
+
+
+@cli.command("pgbackrest", hidden=True)
+@instance_identifier
+@click.argument("command", nargs=-1, type=click.UNPROCESSED)
+@pass_ctx
+@require_pgbackrest
+def pgbackrest(ctx: Context, instance: Instance, command: Tuple[str, ...]) -> None:
+    """Proxy to pgbackrest operations on an instance"""
+    cmd = pgbackrest_mod.make_cmd(instance, ctx.settings.pgbackrest, *command)
+    ctx.run(cmd, redirect_output=True, check=True)

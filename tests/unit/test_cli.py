@@ -1286,3 +1286,23 @@ def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) 
         )
     assert result.exit_code == 0
     drop.assert_called_once_with(ctx, "123-exp")
+
+
+def test_pgbackrest(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    with patch.object(ctx, "run") as run:
+        result = runner.invoke(cli, ["pgbackrest", str(instance), "help"], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    prefix = ctx.settings.prefix
+    stanza = f"{instance.version}-{instance.name}"
+    run.assert_called_once_with(
+        [
+            "/usr/bin/pgbackrest",
+            f"--config={prefix}/etc/pgbackrest/pgbackrest-{stanza}.conf",
+            f"--stanza={stanza}",
+            "help",
+        ],
+        redirect_output=True,
+        check=True,
+    )
