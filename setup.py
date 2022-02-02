@@ -48,7 +48,7 @@ setup(
         "contextlib2; python_version < '3.7'",
         "humanize",
         "importlib_metadata; python_version < '3.8'",
-        "pgtoolkit >= 0.17.0",
+        "pgtoolkit >= 0.18.0",
         "pluggy",
         "psycopg",
         "pydantic",
