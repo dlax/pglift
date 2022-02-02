@@ -42,7 +42,9 @@ from typing_extensions import Literal
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
-from . import logger, pgbackrest, pm, privileges, prometheus, roles, task, version
+from . import logger
+from . import pgbackrest as pgbackrest_mod
+from . import pm, privileges, prometheus, roles, task, version
 from ._compat import nullcontext
 from .ctx import Context
 from .instance import Status
@@ -173,7 +175,7 @@ def require_component(mod: ModuleType, name: str, fn: C) -> C:
     return cast(C, wrapper)
 
 
-require_pgbackrest = partial(require_component, pgbackrest, "pgbackrest")
+require_pgbackrest = partial(require_component, pgbackrest_mod, "pgbackrest")
 require_prometheus = partial(
     require_component, prometheus, "Prometheus postgres_exporter"
 )
@@ -849,10 +851,10 @@ def instance_logs(ctx: Context, instance: Instance) -> None:
 @click.option(
     "--type",
     "backup_type",
-    type=click.Choice([t.name for t in pgbackrest.BackupType]),
-    default=pgbackrest.BackupType.default().name,
+    type=click.Choice([t.name for t in pgbackrest_mod.BackupType]),
+    default=pgbackrest_mod.BackupType.default().name,
     help="Backup type",
-    callback=lambda ctx, param, value: pgbackrest.BackupType(value),
+    callback=lambda ctx, param, value: pgbackrest_mod.BackupType(value),
 )
 @pass_displayer
 @pass_ctx
@@ -861,11 +863,11 @@ def instance_backup(
     ctx: Context,
     displayer: Displayer,
     instance: Instance,
-    backup_type: pgbackrest.BackupType,
+    backup_type: pgbackrest_mod.BackupType,
 ) -> None:
     """Back up a PostgreSQL instance"""
     with displayer:
-        pgbackrest.backup(ctx, instance, type=backup_type)
+        pgbackrest_mod.backup(ctx, instance, type=backup_type)
 
 
 @instance.command("restore")
@@ -893,7 +895,7 @@ def instance_restore(
 ) -> None:
     """Restore a PostgreSQL instance"""
     if list_only:
-        backups = pgbackrest.iter_backups(ctx, instance)
+        backups = pgbackrest_mod.iter_backups(ctx, instance)
         print_table_for(backups, title=f"Available backups for instance {instance}")
     else:
         with displayer:
@@ -902,7 +904,7 @@ def instance_restore(
                 raise click.BadArgumentUsage(
                     "--label and --date arguments are mutually exclusive"
                 )
-            pgbackrest.restore(ctx, instance, label=label, date=date)
+            pgbackrest_mod.restore(ctx, instance, label=label, date=date)
 
 
 @instance.command("privileges")
