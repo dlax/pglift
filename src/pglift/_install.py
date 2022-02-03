@@ -46,7 +46,7 @@ def executeas(settings: Settings) -> str:
     return "\n".join([f"User={user}", f"Group={group}"])
 
 
-@task("install systemd template unit for PostgreSQL")
+@task("installing systemd template unit for PostgreSQL")
 def postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
@@ -69,7 +69,7 @@ def postgresql_systemd_unit_template(
 
 
 @postgresql_systemd_unit_template.revert(
-    "uninstall systemd template unit for PostgreSQL"
+    "uninstalling systemd template unit for PostgreSQL"
 )
 def revert_postgresql_systemd_unit_template(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
@@ -79,7 +79,7 @@ def revert_postgresql_systemd_unit_template(
     )
 
 
-@task("install systemd template unit for Prometheus postgres_exporter")
+@task("installing systemd template unit for Prometheus postgres_exporter")
 def postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
 ) -> None:
@@ -99,7 +99,7 @@ def postgres_exporter_systemd_unit_template(
 
 
 @postgres_exporter_systemd_unit_template.revert(
-    "uninstall systemd template unit for Prometheus postgres_exporter"
+    "uninstalling systemd template unit for Prometheus postgres_exporter"
 )
 def revert_postgres_exporter_systemd_unit_template(
     ctx: BaseContext, *, header: str = ""
@@ -109,7 +109,7 @@ def revert_postgres_exporter_systemd_unit_template(
     )
 
 
-@task("install systemd template unit and timer for PostgreSQL backups")
+@task("installing systemd template unit and timer for PostgreSQL backups")
 def postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""
 ) -> None:
@@ -140,7 +140,7 @@ def postgresql_backup_systemd_templates(
 
 
 @postgresql_backup_systemd_templates.revert(
-    "uninstall systemd template unit and timer for PostgreSQL backups"
+    "uninstalling systemd template unit and timer for PostgreSQL backups"
 )
 def revert_postgresql_backup_systemd_templates(
     ctx: BaseContext, *, env: Optional[str] = None, header: str = ""

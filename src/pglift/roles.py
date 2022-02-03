@@ -103,7 +103,7 @@ def describe(
     return role
 
 
-@task("drop role '{name}' from instance {instance}")
+@task("dropping role '{name}' from instance {instance}")
 def drop(ctx: BaseContext, instance: PostgreSQLInstance, name: str) -> None:
     """Drop a role from instance.
 
@@ -188,7 +188,7 @@ def options(
     return sql.SQL(" ").join(opts)
 
 
-@task("create role '{role.name}' on instance {instance}")
+@task("creating role '{role.name}' on instance {instance}")
 def create(
     ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role
 ) -> None:
@@ -206,7 +206,7 @@ def create(
         cnx.commit()
 
 
-@task("alter role '{role.name}' on instance {instance}")
+@task("altering role '{role.name}' on instance {instance}")
 def alter(ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role) -> None:
     """Alter 'role' in 'instance'.
 
@@ -245,7 +245,7 @@ def alter(ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role) 
         cnx.commit()
 
 
-@task("set password for '{role.name}' role")
+@task("setting password for '{role.name}' role")
 def set_password_for(
     ctx: BaseContext, instance: PostgreSQLInstance, role: Role
 ) -> None:
@@ -272,7 +272,7 @@ def in_pgpass(ctx: BaseContext, instance: PostgreSQLInstance, name: str) -> bool
     return any(entry.matches(username=name, port=port) for entry in passfile)
 
 
-@task("edit password file entry for '{role.name}' role")
+@task("editing password file entry for '{role.name}' role")
 def set_pgpass_entry_for(
     ctx: BaseContext, instance: PostgreSQLInstance, role: interface.Role
 ) -> None:

@@ -55,7 +55,7 @@ def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabas
             return cur.fetchall()
 
 
-@task("drop '{name}' database from instance {instance}")
+@task("dropping '{name}' database from instance {instance}")
 def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
     """Drop a database from a primary instance.
 
@@ -92,7 +92,7 @@ def options_and_args(
     return sql.SQL(" ").join(opts), args
 
 
-@task("create '{database.name}' database on instance {instance}")
+@task("creating '{database.name}' database on instance {instance}")
 def create(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Create 'database' in 'instance'.
 
@@ -112,7 +112,7 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
         )
 
 
-@task("alter '{database.name}' database on instance {instance}")
+@task("altering '{database.name}' database on instance {instance}")
 def alter(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
     """Alter 'database' in 'instance'.
 

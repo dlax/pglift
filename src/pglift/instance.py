@@ -96,7 +96,7 @@ def init_replication(
         shutil.rmtree(instance.datadir / "conf.pglift.d", ignore_errors=True)
 
 
-@task("initialize PostgreSQL instance")
+@task("initializing PostgreSQL instance")
 def init(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Initialize a PostgreSQL instance."""
     settings = ctx.settings.postgresql
@@ -144,7 +144,7 @@ def init(ctx: BaseContext, manifest: interface.Instance) -> None:
     return None
 
 
-@init.revert("delete PostgreSQL instance")
+@init.revert("deleting PostgreSQL instance")
 def revert_init(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Un-initialize a PostgreSQL instance."""
     instance = BaseInstance.get(manifest.name, manifest.version, ctx)
@@ -419,7 +419,7 @@ def start(
         ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
 
 
-@task("start PostgreSQL instance")
+@task("starting PostgreSQL instance")
 def start_postgresql(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -481,7 +481,7 @@ def stop(
         ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
 
 
-@task("stop PostgreSQL instance")
+@task("stopping PostgreSQL instance")
 def stop_postgresql(
     ctx: BaseContext,
     instance: Union[PostgreSQLInstance, Instance],
@@ -495,7 +495,7 @@ def stop_postgresql(
         systemd.stop(ctx, systemd_unit(instance))
 
 
-@task("restart PostgreSQL instance")
+@task("restarting PostgreSQL instance")
 def restart(
     ctx: BaseContext,
     instance: Instance,
@@ -511,7 +511,7 @@ def restart(
         systemd.restart(ctx, systemd_unit(instance))
 
 
-@task("reload PostgreSQL instance")
+@task("reloading PostgreSQL instance")
 def reload(
     ctx: BaseContext,
     instance: Instance,
@@ -522,7 +522,7 @@ def reload(
         cnx.execute("SELECT pg_reload_conf()")
 
 
-@task("promote PostgreSQL instance")
+@task("promoting PostgreSQL instance")
 def promote(ctx: BaseContext, instance: Instance) -> None:
     """Promote a standby instance"""
     if not instance.standby:
@@ -534,7 +534,7 @@ def promote(ctx: BaseContext, instance: Instance) -> None:
     )
 
 
-@task("upgrade PostgreSQL instance")
+@task("upgrading PostgreSQL instance")
 def upgrade(
     ctx: BaseContext,
     instance: Instance,
@@ -767,7 +767,7 @@ def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.I
     )
 
 
-@task("drop PostgreSQL instance")
+@task("dropping PostgreSQL instance")
 def drop(ctx: BaseContext, instance: Instance) -> None:
     """Drop an instance."""
     stop(ctx, instance, run_hooks=True)
