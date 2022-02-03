@@ -936,8 +936,14 @@ def instance_privileges(
 
 @instance.command("upgrade")
 @instance_identifier
-@click.argument("newversion", required=False, type=click.STRING)
-@click.argument("newname", required=False, type=click.STRING)
+@click.option(
+    "--version",
+    "newversion",
+    help="PostgreSQL version of the new instance (default to site-configured value).",
+)
+@click.option(
+    "--name", "newname", help="Name of the new instance (default to old instance name)."
+)
 @click.option("--port", required=False, type=click.INT)
 @click.option(
     "--jobs",
