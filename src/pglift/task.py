@@ -3,7 +3,6 @@ import contextlib
 import functools
 import inspect
 import logging
-from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -14,7 +13,6 @@ from typing import (
     Iterator,
     Optional,
     Tuple,
-    Type,
     TypeVar,
     cast,
 )
@@ -31,19 +29,7 @@ logger = logging.getLogger(pkgname)
 
 
 class Displayer(Protocol):
-    def __enter__(self) -> Any:
-        ...
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> Optional[bool]:
-        ...
-
-    @contextlib.contextmanager
-    def handle(self, msg: str) -> Iterator[None]:
+    def handle(self, msg: str) -> None:
         ...
 
 
@@ -54,7 +40,7 @@ class Task(Generic[A]):
 
     def __init__(self, title: str, action: A) -> None:
         assert title, "expecting a non-empty title"
-        self.title = title[0].upper() + title[1:]
+        self.title = title
         self.action = action
         self.revert_action: Optional[A] = None
         functools.update_wrapper(self, action)
@@ -68,19 +54,14 @@ class Task(Generic[A]):
         s = inspect.signature(self.action)
         b = s.bind(*args, **kwargs)
         b.apply_defaults()
-        with self.display(self.title.format(**b.arguments)):
-            return self.action(*args, **kwargs)
+        self.display(self.title.format(**b.arguments))
+        return self.action(*args, **kwargs)
 
     __call__ = cast(A, _call)
 
-    @contextlib.contextmanager
-    def display(self, title: str) -> Iterator[None]:
-        if self.displayer is None:
-            yield None
-            return
-
-        with self.displayer.handle(title):
-            yield None
+    def display(self, title: str) -> None:
+        if self.displayer is not None:
+            self.displayer.handle(title)
 
     def revert(self, title: str) -> Callable[[A], A]:
         """Decorator to register a 'revert' callback function.
@@ -88,7 +69,6 @@ class Task(Generic[A]):
         The revert function must accept the same arguments than its respective
         action.
         """
-        title = title[0].upper() + title[1:]
 
         def decorator(revertfn: A) -> A:
             s = inspect.signature(revertfn)
@@ -97,8 +77,8 @@ class Task(Generic[A]):
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 b = s.bind(*args, **kwargs)
                 b.apply_defaults()
-                with self.display(title.format(**b.arguments)):
-                    return revertfn(*args, **kwargs)
+                self.display(title.format(**b.arguments))
+                return revertfn(*args, **kwargs)
 
             w = cast(A, wrapper)
             self.revert_action = w

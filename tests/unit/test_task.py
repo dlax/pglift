@@ -1,7 +1,6 @@
-import contextlib
 import logging
 import re
-from typing import Any, Iterator, List, Tuple
+from typing import List
 
 import pytest
 
@@ -9,22 +8,14 @@ from pglift import task
 
 
 class SimpleDisplayer:
-    def __enter__(self) -> "SimpleDisplayer":
-        self.records: List[Tuple[str, bool]] = []
-        return self
+    def __init__(self) -> None:
+        self.records: List[str] = []
 
-    def __exit__(self, *args: Any) -> None:
-        pass
+    def clear(self) -> None:
+        self.records.clear()
 
-    @contextlib.contextmanager
-    def handle(self, msg: str) -> Iterator[None]:
-        try:
-            yield None
-        except Exception:
-            self.records.append((msg, False))
-            raise
-        else:
-            self.records.append((msg, True))
+    def handle(self, msg: str) -> None:
+        self.records.append(msg)
 
 
 def test_task() -> None:
@@ -72,11 +63,13 @@ def test_transaction(caplog: pytest.LogCaptureFixture) -> None:
 
     displayer = SimpleDisplayer()
     with pytest.raises(RuntimeError, match="oups"):
-        with task.displayer_installed(displayer), displayer, task.transaction():
+        with task.displayer_installed(displayer), task.transaction():
             add(2, fail=True)
     # no revert action
     assert values == {1, 2}
-    assert displayer.records == [("Add 2 to values", False)]
+    assert displayer.records == ["add 2 to values"]
+
+    displayer.clear()
 
     @add.revert("remove {x} from values (fail={fail})")
     def remove(x: int, fail: bool = False) -> None:
@@ -86,16 +79,18 @@ def test_transaction(caplog: pytest.LogCaptureFixture) -> None:
             pass
 
     with pytest.raises(RuntimeError, match="oups"):
-        with task.displayer_installed(displayer), displayer, task.transaction():
+        with task.displayer_installed(displayer), task.transaction():
             add(3, fail=False)
             add(4, fail=True)
     assert values == {1, 2}
     assert displayer.records == [
-        ("Add 3 to values", True),
-        ("Add 4 to values", False),
-        ("Remove 4 from values (fail=True)", True),
-        ("Remove 3 from values (fail=False)", True),
+        "add 3 to values",
+        "add 4 to values",
+        "remove 4 from values (fail=True)",
+        "remove 3 from values (fail=False)",
     ]
+
+    displayer.clear()
 
     @add.revert("remove numbers, failed")
     def remove_fail(x: int, fail: bool = False) -> None:
