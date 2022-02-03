@@ -708,6 +708,32 @@ def test_instance_privileges(
     ]
 
 
+def test_instance_upgrade(
+    ctx: Context, obj: Obj, instance: Instance, runner: CliRunner
+) -> None:
+    new_instance = MagicMock()
+    with patch.object(
+        instance_mod, "upgrade", return_value=new_instance
+    ) as upgrade, patch.object(instance_mod, "start") as start:
+        result = runner.invoke(
+            cli,
+            [
+                "instance",
+                "upgrade",
+                str(instance),
+                "--name=new",
+                "--port=12",
+                "--jobs=3",
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0, result.stdout
+    upgrade.assert_called_once_with(
+        ctx, instance, version=None, name="new", port=12, jobs=3
+    )
+    start.assert_called_once_with(ctx, new_instance)
+
+
 def test_role_create(
     ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
 ) -> None:
