@@ -78,6 +78,10 @@ class InvalidVersion(Error, ValueError):
     """Invalid PostgreSQL version."""
 
 
+class InstanceAlreadyExists(Error, ValueError):
+    """Instance with Name and version already exists"""
+
+
 class InstanceStateError(Error, RuntimeError):
     """Unexpected instance state."""
 

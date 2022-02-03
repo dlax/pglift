@@ -553,6 +553,12 @@ def upgrade(
         raise exceptions.InvalidVersion(
             f"Could not upgrade {instance} using same name and same version"
         )
+    # check if target name/version already exists
+    if exists(ctx, name=(instance.name if name is None else name), version=version):
+        raise exceptions.InstanceAlreadyExists(
+            f"Could not upgrade {instance}: target name/version instance already exists"
+        )
+
     surole = ctx.settings.postgresql.surole
     surole_password = ctx.libpq_environ().get("PGPASSWORD")
     if not surole_password and ctx.settings.postgresql.auth.passfile:

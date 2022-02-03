@@ -2,6 +2,7 @@ import pathlib
 import re
 from unittest.mock import patch
 
+import attr
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 
@@ -297,6 +298,14 @@ def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
         match=f"Could not upgrade {instance.version}/test using same name and same version",
     ):
         instance_mod.upgrade(ctx, instance, version=instance.version)
+
+
+def test_upgrade_target_instance_exists(ctx: Context, instance: Instance) -> None:
+    orig_instance = attr.evolve(instance, name="old")
+    with pytest.raises(exceptions.InstanceAlreadyExists):
+        instance_mod.upgrade(
+            ctx, orig_instance, version=instance.version, name=instance.name
+        )
 
 
 def test_standby_upgrade(ctx: Context, standby_instance: Instance) -> None:
