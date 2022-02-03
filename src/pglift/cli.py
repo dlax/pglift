@@ -944,12 +944,14 @@ def instance_privileges(
 @click.option(
     "--name", "newname", help="Name of the new instance (default to old instance name)."
 )
-@click.option("--port", required=False, type=click.INT)
+@click.option(
+    "--port", required=False, type=click.INT, help="Port of the new instance."
+)
 @click.option(
     "--jobs",
     required=False,
     type=click.INT,
-    help="number of simultaneous processes or threads to use (from pg_upgrade)",
+    help="Number of simultaneous processes or threads to use (from pg_upgrade).",
 )
 @pass_displayer
 @pass_ctx
@@ -962,7 +964,7 @@ def instance_upgrade(
     port: Optional[int],
     jobs: Optional[int],
 ) -> None:
-    """Upgrade an instance using pg_upgrade"""
+    """Upgrade an instance using pg_upgrade and configure respective satellite components"""
     instance_mod.check_status(ctx, instance, Status.not_running)
     with displayer:
         new_instance = instance_mod.upgrade(
