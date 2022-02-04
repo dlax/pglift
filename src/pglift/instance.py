@@ -163,6 +163,7 @@ def revert_init(ctx: BaseContext, manifest: interface.Instance) -> None:
             pgroot.rmdir()
 
 
+@task("configuring PostgreSQL instance")
 def configure(
     ctx: BaseContext,
     manifest: interface.Instance,
@@ -359,6 +360,7 @@ def instance_configure(
     This is a no-op if if pg_hba.conf's content matches the initial
     configuration.
     """
+    logger.info("configuring PostgreSQL authentication")
     surole = interface.instance_surole(ctx.settings, manifest)
     replrole = interface.instance_replrole(ctx.settings, manifest)
     auth_settings = ctx.settings.postgresql.auth
