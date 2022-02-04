@@ -28,13 +28,12 @@ options:
   state:
     choices: [ present, absent ]
     default: present
+    description:
+      - Should the database be present or absent?
   owner:
     type: str
     description:
       - The role name of the user who will own the new database.
-
-author:
-- Dalibo (@dalibo)
 """
 
 EXAMPLES = """

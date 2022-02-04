@@ -28,6 +28,8 @@ options:
   state:
     choices: [ present, absent ]
     default: present
+    description:
+      - Should the role be present or absent?
   password:
     type: str
     required: false
@@ -65,16 +67,25 @@ options:
     required: false
     description:
       - Sets a date and time after which the role's password is no longer valid.
-
-author:
-- Dalibo (@dalibo)
+  replication:
+    type: bool
+    required: false
+    description:
+      - Replication role.
+  superuser:
+    type: bool
+    required: false
+    description:
+      - Super-user role.
 """
 
 EXAMPLES = """
 - dalibo.pglift.role:
     instance: 12/main
     name: admin
-    pgpass: true
+    login: true
+    superuser: true
+    validity: '2023-01-01T00:00'
 """
 
 RETURN = """
