@@ -44,7 +44,7 @@ list privileges for specified database (resp. role):
 
 .. code-block:: console
 
-    $ pglift database privileges 13/main myapp
+    $ pglift database -i 13/main privileges myapp
     database    schema    role    object_type    privileges
     ----------  --------  ------  -------------  -----------------------------------------------------------------------------
     myapp       public    manuel  TABLE          ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']

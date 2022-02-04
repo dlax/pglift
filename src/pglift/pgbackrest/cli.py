@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Tuple
 import click
 
 from ..cli.instance import pass_pgbackrest_settings
-from ..cli.util import Command, instance_identifier, pass_ctx
+from ..cli.util import Command, instance_identifier_option, pass_ctx
 from .impl import make_cmd
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @click.command("pgbackrest", hidden=True, cls=Command)
-@instance_identifier
+@instance_identifier_option
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @pass_pgbackrest_settings
 @pass_ctx

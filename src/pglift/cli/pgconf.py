@@ -7,11 +7,12 @@ from .. import instance as instance_mod
 from ..ctx import Context
 from ..models import interface, system
 from ..types import ConfigChanges
-from .util import Group, instance_identifier, pass_ctx
+from .util import Group, instance_identifier_option, pass_ctx, pass_instance
 
 
 @click.group(cls=Group)
-def cli() -> None:
+@instance_identifier_option
+def cli(instance: system.Instance) -> None:
     """Manage configuration of a PostgreSQL instance."""
 
 
@@ -37,8 +38,8 @@ def show_configuration_changes(
 
 
 @cli.command("show")
-@instance_identifier
 @click.argument("parameter", nargs=-1)
+@pass_instance
 @pass_ctx
 def pgconf_show(ctx: Context, instance: system.Instance, parameter: Tuple[str]) -> None:
     """Show configuration (all parameters or specified ones).
@@ -72,7 +73,6 @@ def validate_configuration_parameters(
 
 
 @cli.command("set")
-@instance_identifier
 @click.argument(
     "parameters",
     metavar="<PARAMETER>=<VALUE>...",
@@ -80,6 +80,7 @@ def validate_configuration_parameters(
     callback=validate_configuration_parameters,
     required=True,
 )
+@pass_instance
 @pass_ctx
 def pgconf_set(
     ctx: Context, instance: system.Instance, parameters: Dict[str, Any]
@@ -93,8 +94,8 @@ def pgconf_set(
 
 
 @cli.command("remove")
-@instance_identifier
 @click.argument("parameters", nargs=-1, required=True)
+@pass_instance
 @pass_ctx
 def pgconf_remove(
     ctx: Context, instance: system.Instance, parameters: Tuple[str]
@@ -112,7 +113,7 @@ def pgconf_remove(
 
 
 @cli.command("edit")
-@instance_identifier
+@pass_instance
 @pass_ctx
 def pgconf_edit(ctx: Context, instance: system.Instance) -> None:
     """Edit managed configuration."""

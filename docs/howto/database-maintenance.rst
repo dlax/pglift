@@ -8,13 +8,13 @@ Examples:
 
 .. code-block:: console
 
-    $ pglift database run -d myapp 13/main "ANALYZE VERBOSE"
+    $ pglift database -i 13/main run -d myapp "ANALYZE VERBOSE"
 
 would run ``ANALYZE VERBOSE`` on database "myapp" of instance `13/main`.
 
 .. code-block:: console
 
-    $ pglift database run -x test 13/main "VACUUM FULL VERBOSE"
+    $ pglift database -i 13/main run -x test "VACUUM FULL VERBOSE"
 
 would run ``VACUUM FULL VERBOSE`` on all databases of instance `13/main`
 except the one named "test".

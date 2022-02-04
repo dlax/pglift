@@ -274,7 +274,7 @@ def test_instance_promote(
 
 
 def test_instance_schema(runner: CliRunner, obj: Obj) -> None:
-    result = runner.invoke(cli, ["instance", "schema"], obj=obj)
+    result = runner.invoke(cli, ["instance", "--schema"], obj=obj)
     schema = json.loads(result.output)
     assert schema["title"] == "Instance"
     assert schema["description"] == "PostgreSQL instance"
@@ -599,11 +599,15 @@ def test_pgconf_show(
     params: List[str],
     expected: List[str],
 ) -> None:
-    result = runner.invoke(cli, ["pgconf", "show", str(instance)] + params, obj=obj)
+    result = runner.invoke(
+        cli, ["pgconf", "-i", str(instance), "show"] + params, obj=obj
+    )
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(expected)
 
-    result = runner.invoke(cli, ["pgconf", "show", str(instance), "port"], obj=obj)
+    result = runner.invoke(
+        cli, ["pgconf", "-i", str(instance), "show", "port"], obj=obj
+    )
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(["port = 999"])
 
@@ -611,7 +615,7 @@ def test_pgconf_show(
 def test_pgconf_set_validate(runner: CliRunner, obj: Obj, instance: Instance) -> None:
     result = runner.invoke(
         cli,
-        ["pgconf", "set", str(instance), "invalid"],
+        ["pgconf", "-i", str(instance), "set", "invalid"],
         obj=obj,
     )
     assert result.exit_code == 2
@@ -628,8 +632,9 @@ def test_pgconf_set(
             cli,
             [
                 "pgconf",
-                "set",
+                "-i",
                 str(instance),
+                "set",
                 "cluster_name=unittests",
                 "foo=bar",
             ],
@@ -656,8 +661,9 @@ def test_pgconf_set(
             cli,
             [
                 "pgconf",
-                "set",
+                "-i",
                 str(instance),
+                "set",
                 "foo=bar",
                 "bonjour_name=changed",
             ],
@@ -685,7 +691,7 @@ def test_pgconf_remove(
 ) -> None:
     result = runner.invoke(
         cli,
-        ["pgconf", "remove", str(instance), "fsync"],
+        ["pgconf", "-i", str(instance), "remove", "fsync"],
         obj=obj,
     )
     assert result.exit_code == 1
@@ -696,7 +702,7 @@ def test_pgconf_remove(
     ) as configure:
         result = runner.invoke(
             cli,
-            ["pgconf", "remove", str(instance), "bonjour_name"],
+            ["pgconf", f"--instance={instance}", "remove", "bonjour_name"],
             obj=obj,
         )
     manifest = interface.Instance(name=instance.name, version=instance.version)
@@ -711,7 +717,7 @@ def test_pgconf_edit(
     with patch("click.edit") as edit:
         result = runner.invoke(
             cli,
-            ["pgconf", "edit", str(instance)],
+            ["pgconf", f"--instance={instance}", "edit"],
             obj=obj,
         )
     assert result.exit_code == 0, result.stderr
@@ -730,8 +736,8 @@ def test_role_create(
             cli,
             [
                 "role",
+                f"--instance={instance.version}/{instance.name}",
                 "create",
-                f"{instance.version}/{instance.name}",
                 "rob",
                 "--password=ert",
                 "--pgpass",
@@ -762,8 +768,8 @@ def test_role_create(
             cli,
             [
                 "role",
+                f"--instance={instance.version}/{instance.name}",
                 "create",
-                f"{instance.version}/{instance.name}",
                 "bob",
             ],
             obj=obj,
@@ -794,8 +800,9 @@ def test_role_alter(
             cli,
             [
                 "role",
-                "alter",
+                "-i",
                 str(instance),
+                "alter",
                 "alterme",
                 "--connection-limit=30",
                 "--pgpass",
@@ -811,7 +818,7 @@ def test_role_alter(
 
 
 def test_role_schema(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["role", "schema"])
+    result = runner.invoke(cli, ["role", "--schema"])
     schema = json.loads(result.output)
     assert schema["title"] == "Role"
     assert schema["description"] == "PostgreSQL role"
@@ -831,7 +838,7 @@ def test_role_apply(
     with patch.object(roles, "apply") as apply:
         result = runner.invoke(
             cli,
-            ["role", "apply", str(instance), "-f", str(manifest)],
+            ["role", "-i", str(instance), "apply", "-f", str(manifest)],
             obj=obj,
         )
     assert result.exit_code == 0
@@ -852,7 +859,7 @@ def test_role_describe(
     ) as describe:
         result = runner.invoke(
             cli,
-            ["role", "describe", str(instance), "absent"],
+            ["role", "-i", str(instance), "describe", "absent"],
             obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
@@ -879,7 +886,7 @@ def test_role_describe(
     ) as describe:
         result = runner.invoke(
             cli,
-            ["role", "describe", instance.name, "present"],
+            ["role", "-i", instance.name, "describe", "present"],
             obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "present")
@@ -908,7 +915,7 @@ def test_role_drop(
     ) as drop:
         result = runner.invoke(
             cli,
-            ["role", "drop", str(instance), "foo"],
+            ["role", f"--instance={instance}", "drop", "foo"],
             obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
@@ -921,7 +928,7 @@ def test_role_drop(
     with patch.object(roles, "drop") as drop:
         result = runner.invoke(
             cli,
-            ["role", "drop", str(instance), "foo"],
+            ["role", "-i", str(instance), "drop", "foo"],
             obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
@@ -948,8 +955,9 @@ def test_role_privileges(
             cli,
             [
                 "role",
-                "privileges",
+                "-i",
                 str(instance),
+                "privileges",
                 "rol2",
                 "--json",
                 "-d",
@@ -983,8 +991,8 @@ def test_database_create(
             cli,
             [
                 "database",
+                f"--instance={instance.version}/{instance.name}",
                 "create",
-                f"{instance.version}/{instance.name}",
                 "db_test1",
             ],
             obj=obj,
@@ -1002,8 +1010,8 @@ def test_database_create(
             cli,
             [
                 "database",
+                f"--instance={instance.version}/{instance.name}",
                 "create",
-                f"{instance.version}/{instance.name}",
                 "db_test2",
             ],
             obj=obj,
@@ -1027,8 +1035,8 @@ def test_database_alter(
             cli,
             [
                 "database",
+                f"--instance={instance}",
                 "alter",
-                str(instance),
                 "alterme",
                 "--owner=dba",
             ],
@@ -1040,7 +1048,7 @@ def test_database_alter(
 
 
 def test_database_schema(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["database", "schema"])
+    result = runner.invoke(cli, ["database", "--schema"])
     schema = json.loads(result.output)
     assert schema["title"] == "Database"
     assert schema["description"] == "PostgreSQL database"
@@ -1060,7 +1068,7 @@ def test_database_apply(
     with patch.object(databases, "apply") as apply:
         result = runner.invoke(
             cli,
-            ["database", "apply", str(instance), "-f", str(manifest)],
+            ["database", "-i", str(instance), "apply", "-f", str(manifest)],
             obj=obj,
         )
     assert result.exit_code == 0
@@ -1081,7 +1089,7 @@ def test_database_describe(
     ) as describe:
         result = runner.invoke(
             cli,
-            ["database", "describe", str(instance), "absent"],
+            ["database", "-i", str(instance), "describe", "absent"],
             obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "absent")
@@ -1098,7 +1106,7 @@ def test_database_describe(
     ) as describe:
         result = runner.invoke(
             cli,
-            ["database", "describe", instance.name, "present"],
+            ["database", "-i", instance.name, "describe", "present"],
             obj=obj,
         )
     describe.assert_called_once_with(ctx, instance, "present")
@@ -1132,7 +1140,7 @@ def test_database_list(
     ) as list_:
         result = runner.invoke(
             cli,
-            ["database", "list", instance.name, "--json"],
+            ["database", "-i", instance.name, "list", "--json"],
             obj=obj,
         )
     list_.assert_called_once_with(ctx, instance)
@@ -1162,7 +1170,7 @@ def test_database_drop(
     ) as drop:
         result = runner.invoke(
             cli,
-            ["database", "drop", str(instance), "foo"],
+            ["database", "-i", str(instance), "drop", "foo"],
             obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
@@ -1175,7 +1183,7 @@ def test_database_drop(
     with patch.object(databases, "drop") as drop:
         result = runner.invoke(
             cli,
-            ["database", "drop", str(instance), "foo"],
+            ["database", "-i", str(instance), "drop", "foo"],
             obj=obj,
         )
     drop.assert_called_once_with(ctx, instance, "foo")
@@ -1191,8 +1199,9 @@ def test_database_run(
             cli,
             [
                 "database",
-                "run",
+                "-i",
                 str(instance),
+                "run",
                 "--json",
                 "-d",
                 "db",
@@ -1228,8 +1237,9 @@ def test_database_privileges(
             cli,
             [
                 "database",
-                "privileges",
+                "-i",
                 str(instance),
+                "privileges",
                 "db2",
                 "--json",
                 "-r",
@@ -1280,7 +1290,7 @@ def test_postgres_exporter_start_stop(
 
 @pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_schema(runner: CliRunner, obj: Obj) -> None:
-    result = runner.invoke(postgres_exporter_cli, ["schema"], obj=obj)
+    result = runner.invoke(postgres_exporter_cli, ["--schema"], obj=obj)
     schema = json.loads(result.output)
     assert schema["title"] == "PostgresExporter"
     assert schema["description"] == "Prometheus postgres_exporter service."
@@ -1340,7 +1350,7 @@ def test_pgbackrest(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(ctx, "run") as run:
-        result = runner.invoke(pgbackrest_cli, [str(instance), "help"], obj=obj)
+        result = runner.invoke(pgbackrest_cli, ["-i", str(instance), "help"], obj=obj)
     assert result.exit_code == 0, result.stderr
     prefix = ctx.settings.prefix
     stanza = f"{instance.version}-{instance.name}"

@@ -17,6 +17,7 @@ from typing_extensions import Literal
 from .. import __name__ as pkgname
 from .. import _install, version
 from ..ctx import Context
+from ..models import system
 from ..settings import Settings
 from ..task import Displayer
 from . import database, instance, pgconf, role
@@ -50,6 +51,9 @@ class Obj:
         self.ctx = context
         self.displayer = displayer
         self.console = CONSOLE
+        # Set in commands taking a -i/--instance option through
+        # instance_identifier_option decorator's callback.
+        self.instance: Optional[system.Instance] = None
 
 
 class CLIGroup(Group):

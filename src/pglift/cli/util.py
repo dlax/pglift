@@ -6,7 +6,18 @@ import tempfile
 import time
 from functools import wraps
 from types import ModuleType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 import click
 import psycopg
@@ -103,6 +114,21 @@ def print_json_for(
 C = TypeVar("C", bound=Callable[..., Any])
 
 
+def print_schema(
+    context: click.Context,
+    param: click.Parameter,
+    value: bool,
+    *,
+    model: Type[pydantic.BaseModel],
+) -> None:
+    """Callback for --schema flag."""
+    if value:
+        console = context.obj.console
+        assert isinstance(console, Console)
+        console.print_json(model.schema_json(indent=2))
+        context.exit()
+
+
 def pass_ctx(f: C) -> C:
     """Command decorator passing 'Context' bound to click.Context's object."""
 
@@ -125,6 +151,19 @@ def pass_console(f: C) -> C:
         console = context.obj.console
         assert isinstance(console, Console), console
         return context.invoke(f, console, *args, **kwargs)
+
+    return cast(C, wrapper)
+
+
+def pass_instance(f: C) -> C:
+    """Command decorator passing 'instance' bound to click.Context's object."""
+
+    @wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        context = click.get_current_context()
+        instance = context.obj.instance
+        assert isinstance(instance, system.Instance), instance
+        return context.invoke(f, instance, *args, **kwargs)
 
     return cast(C, wrapper)
 
@@ -189,6 +228,30 @@ def instance_lookup(
     return get_instance(ctx, name, version)
 
 
+def instance_bind_context(
+    context: click.Context, param: click.Parameter, value: Optional[str]
+) -> system.Instance:
+    """Bind instance specified as -i/--instance to context's object, possibly
+    guessing from available instance if there is only one.
+    """
+    version: Optional[str]
+    if value is None:
+        try:
+            (i,) = instance_mod.list(context.obj.ctx)
+        except ValueError:
+            raise click.UsageError(
+                f"option {param.get_error_hint(context)} is required."
+            )
+        name, version = i.name, i.version
+    else:
+        name, version = nameversion_from_id(value)
+    obj = context.obj
+    ctx = obj.ctx
+    instance = get_instance(ctx, name, version)
+    obj.instance = instance
+    return instance
+
+
 def _list_instances(
     context: click.Context, param: click.Parameter, incomplete: str
 ) -> List[CompletionItem]:
@@ -211,11 +274,18 @@ def _list_instances(
     return out
 
 
-instance_identifier = click.argument(
+instance_identifier_option = click.option(
+    "-i",
+    "--instance",
     "instance",
     metavar="<version>/<name>",
-    callback=instance_lookup,
+    callback=instance_bind_context,
     shell_complete=_list_instances,
+    help=(
+        "Instance identifier; the <version>/ prefix may be omitted if "
+        "there's only one instance matching <name>. "
+        "Required if there is more than one instance on system."
+    ),
 )
 
 

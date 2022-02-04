@@ -12,10 +12,17 @@ manage PostgreSQL roles of an instance.
     $ pglift role --help
     Usage: pglift role [OPTIONS] COMMAND [ARGS]...
 
-      Manipulate roles
+      Manage roles.
 
     Options:
-      --help  Show this message and exit.
+      -i, --instance <version>/<name>
+                                      Instance identifier; the <version>/ prefix
+                                      may be omitted if there's only one instance
+                                      matching <name>. Required if there is more
+                                      than one instance on system.
+      --schema                        Print the JSON schema of role model and
+                                      exit.
+      --help                          Show this message and exit.
 
     Commands:
       alter       Alter a role in a PostgreSQL instance
@@ -24,7 +31,6 @@ manage PostgreSQL roles of an instance.
       describe    Describe a role
       drop        Drop a role
       privileges  List default privileges of a role.
-      schema      Print the JSON schema of role model
 
 Ansible module
 --------------

@@ -41,6 +41,10 @@ pglift: instances, roles, databases, pgconf, etc. Each entry point has its own h
                                    prometheus.
       --help                       Show this message and exit.
 
+Most top-level commands like ``database`` or ``role`` operate on a particular
+instance which needs to be specified through ``-i``/``--instance`` option;
+the option is *required* unless there is only one existing instance.
+
 Creating an instance:
 
 ::
@@ -100,22 +104,22 @@ Getting instance information:
     <pgconf>`. A few quick examples:
     ::
 
-        $ pglift pgconf show main log_connections
+        $ pglift pgconf -i main show log_connections
         log_connections = off
-        $ pglift pgconf set main log_connections=on
+        $ pglift pgconf -i main set log_connections=on
         log_connections: off -> on
 
 Adding and manipulating instance objects:
 
 ::
 
-    $ pglift role create 13/main dba --password --login
+    $ pglift role -i 13/main create dba --password --login
     Password:
     Repeat for confirmation:
 
 ::
 
-    $ pglift role describe 13/main dba
+    $ pglift role -i 13/main describe dba
     name: dba
     password: '**********'
     pgpass: false
@@ -127,11 +131,11 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift role alter 13/main dba --connection-limit=10 --in-role=pg_monitor --inherit
+    $ pglift role -i 13/main alter dba --connection-limit=10 --in-role=pg_monitor --inherit
 
 ::
 
-    $ pglift role describe 13/main dba
+    $ pglift role -i 13/main describe dba
     name: dba
     password: '**********'
     pgpass: false
@@ -144,21 +148,21 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift database create 13/main myapp
+    $ pglift database -i 13/main create myapp
 
 ::
 
-    $ pglift database alter 13/main myapp --owner dba
+    $ pglift database -i 13/main alter myapp --owner dba
 
 ::
 
-    $ pglift database describe 13/main myapp
+    $ pglift database -i 13/main describe myapp
     name: myapp
     owner: dba
 
 ::
 
-    $ pglift database list 13/main
+    $ pglift database -i 13/main list
     name       owner     encoding    collation    ctype    acls                                         size  description                                 tablespace    tablespace      tablespace
                                                                                                                                                           name          location              size
     ---------  --------  ----------  -----------  -------  ----------------------------------------  -------  ------------------------------------------  ------------  ------------  ------------
@@ -168,4 +172,4 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift database drop 13/main myapp
+    $ pglift database -i 13/main drop myapp

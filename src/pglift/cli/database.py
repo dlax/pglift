@@ -1,3 +1,4 @@
+import functools
 from typing import IO, Any, Sequence
 
 import click
@@ -12,22 +13,33 @@ from ..models import helpers, interface, system
 from .util import (
     Group,
     as_json_option,
-    instance_identifier,
+    instance_identifier_option,
     pass_console,
     pass_ctx,
+    pass_instance,
     print_json_for,
+    print_schema,
     print_table_for,
 )
 
 
 @click.group("database", cls=Group)
-def cli() -> None:
+@instance_identifier_option
+@click.option(
+    "--schema",
+    is_flag=True,
+    callback=functools.partial(print_schema, model=interface.Database),
+    expose_value=False,
+    is_eager=True,
+    help="Print the JSON schema of database model and exit.",
+)
+def cli(instance: system.Instance) -> None:
     """Manage databases."""
 
 
 @cli.command("create")
-@instance_identifier
 @helpers.parameters_from_model(interface.Database)
+@pass_instance
 @pass_ctx
 def database_create(
     ctx: Context, instance: system.Instance, database: interface.Database
@@ -41,8 +53,8 @@ def database_create(
 
 
 @cli.command("alter")
-@instance_identifier
 @helpers.parameters_from_model(interface.Database, parse_model=False)
+@pass_instance
 @pass_ctx
 def database_alter(
     ctx: Context, instance: system.Instance, name: str, **changes: Any
@@ -56,16 +68,9 @@ def database_alter(
         databases.apply(ctx, instance, altered)
 
 
-@cli.command("schema")
-@pass_console
-def database_schema(console: Console) -> None:
-    """Print the JSON schema of database model"""
-    console.print_json(interface.Database.schema_json(indent=2))
-
-
 @cli.command("apply")
-@instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_instance
 @pass_ctx
 def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
     """Apply manifest as a database"""
@@ -75,8 +80,8 @@ def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> No
 
 
 @cli.command("describe")
-@instance_identifier
 @click.argument("name")
+@pass_instance
 @pass_ctx
 def database_describe(ctx: Context, instance: system.Instance, name: str) -> None:
     """Describe a database"""
@@ -86,8 +91,8 @@ def database_describe(ctx: Context, instance: system.Instance, name: str) -> Non
 
 
 @cli.command("list")
-@instance_identifier
 @as_json_option
+@pass_instance
 @pass_console
 @pass_ctx
 def database_list(
@@ -103,8 +108,8 @@ def database_list(
 
 
 @cli.command("drop")
-@instance_identifier
 @click.argument("name")
+@pass_instance
 @pass_ctx
 def database_drop(ctx: Context, instance: system.Instance, name: str) -> None:
     """Drop a database"""
@@ -113,10 +118,10 @@ def database_drop(ctx: Context, instance: system.Instance, name: str) -> None:
 
 
 @cli.command("privileges")
-@instance_identifier
 @click.argument("name")
 @click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
 @as_json_option
+@pass_instance
 @pass_ctx
 def database_privileges(
     ctx: Context,
@@ -139,7 +144,6 @@ def database_privileges(
 
 
 @cli.command("run")
-@instance_identifier
 @click.argument("sql_command")
 @click.option(
     "-d", "--database", "dbnames", multiple=True, help="Database to run command on"
@@ -152,6 +156,7 @@ def database_privileges(
     help="Database to not run command on",
 )
 @as_json_option
+@pass_instance
 @pass_ctx
 def database_run(
     ctx: Context,

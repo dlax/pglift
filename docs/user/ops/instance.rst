@@ -13,10 +13,11 @@ modification, deletion as well as status management (start, stop, restart).
     $ pglift instance --help
     Usage: pglift instance [OPTIONS] COMMAND [ARGS]...
 
-      Manipulate instances
+      Manage instances.
 
     Options:
-      --help  Show this message and exit.
+      --schema  Print the JSON schema of instance model and exit.
+      --help    Show this message and exit.
 
     Commands:
       alter       Alter a PostgreSQL instance

@@ -12,10 +12,17 @@ manage PostgreSQL databases of an instance.
     $ pglift database --help
     Usage: pglift database [OPTIONS] COMMAND [ARGS]...
 
-      Manipulate databases
+      Manage databases.
 
     Options:
-      --help  Show this message and exit.
+      -i, --instance <version>/<name>
+                                      Instance identifier; the <version>/ prefix
+                                      may be omitted if there's only one instance
+                                      matching <name>. Required if there is more
+                                      than one instance on system.
+      --schema                        Print the JSON schema of database model and
+                                      exit.
+      --help                          Show this message and exit.
 
     Commands:
       alter       Alter a database in a PostgreSQL instance
@@ -26,7 +33,7 @@ manage PostgreSQL databases of an instance.
       list        List databases
       privileges  List default privileges on a database.
       run         Run given command on databases of a PostgreSQL instance
-      schema      Print the JSON schema of database model
+
 
 Ansible module
 --------------

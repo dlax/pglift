@@ -2,15 +2,14 @@ from functools import partial
 from typing import IO, TYPE_CHECKING
 
 import click
-from rich.console import Console
 
 from .. import prometheus, task
 from ..cli.util import (
     Group,
     foreground_option,
     pass_component_settings,
-    pass_console,
     pass_ctx,
+    print_schema,
 )
 from ..models import helpers
 from . import impl, models
@@ -25,16 +24,17 @@ pass_prometheus_settings = partial(
 
 
 @click.group("postgres_exporter", cls=Group)
+@click.option(
+    "--schema",
+    is_flag=True,
+    callback=partial(print_schema, model=models.PostgresExporter),
+    expose_value=False,
+    is_eager=True,
+    help="Print the JSON schema of postgres_exporter model and exit.",
+)
 @pass_ctx
 def postgres_exporter(ctx: "Context") -> None:
     """Handle Prometheus postgres_exporter"""
-
-
-@postgres_exporter.command("schema")
-@pass_console
-def postgres_exporter_schema(console: Console) -> None:
-    """Print the JSON schema of database model"""
-    console.print_json(models.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")

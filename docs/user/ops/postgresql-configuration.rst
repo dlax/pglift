@@ -14,7 +14,12 @@ configuration of a PostgreSQL instance.
       Manage configuration of a PostgreSQL instance.
 
     Options:
-      --help  Show this message and exit.
+      -i, --instance <version>/<name>
+                                      Instance identifier; the <version>/ prefix
+                                      may be omitted if there's only one instance
+                                      matching <name>. Required if there is more
+                                      than one instance on system.
+      --help                          Show this message and exit.
 
     Commands:
       edit    Edit managed configuration.
@@ -38,14 +43,14 @@ View specific parameter:
 
 .. code-block:: console
 
-    $ pglift pgconf show main log_connections
+    $ pglift pgconf -i main show log_connections
     log_connections = off
 
 View multiple parameters:
 
 .. code-block:: console
 
-    $ pglift pgconf show main log_connections log_disconnections
+    $ pglift pgconf -i main show log_connections log_disconnections
     log_connections = off
     log_disconnections = off
 
@@ -53,7 +58,7 @@ View all parameters:
 
 .. code-block:: console
 
-    $ pglift pgconf show main
+    $ pglift pgconf -i main show
     archive_command = '/usr/bin/pgbackrest --config=/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p'
     archive_mode = on
     max_wal_senders = 3
@@ -85,14 +90,14 @@ Set one parameter:
 
 .. code-block:: console
 
-    $ pglift pgconf set main log_connections=on
+    $ pglift pgconf -i main set log_connections=on
     log_connections: off -> on
 
 Set multiple parameters:
 
 .. code-block:: console
 
-    $ pglift pgconf set main log_connections=on log_disconnections=on
+    $ pglift pgconf -i main set log_connections=on log_disconnections=on
     log_connections: off -> on
     log_disconnections: off -> on
 
@@ -101,7 +106,7 @@ Set multiple parameters:
 
     .. code-block:: console
 
-        $ pglift pgconf edit main
+        $ pglift pgconf -i main edit
 
     this will open your text editor with the *user* configuration.
 
@@ -112,13 +117,13 @@ Remove specific parameter:
 
 .. code-block:: console
 
-  $ pglift pgconf remove main log_connections
+  $ pglift pgconf -i main remove log_connections
   log_connections: on -> None
 
 Remove multiple parameters:
 
 .. code-block:: console
 
-  $ pglift pgconf remove main log_connections log_disconnections
+  $ pglift pgconf -i main remove log_connections log_disconnections
   log_connections: on -> None
   log_disconnections: on -> None

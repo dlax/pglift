@@ -1,3 +1,4 @@
+import functools
 from typing import IO, Any, Sequence
 
 import click
@@ -11,22 +12,33 @@ from ..models import helpers, interface, system
 from .util import (
     Group,
     as_json_option,
-    instance_identifier,
+    instance_identifier_option,
     pass_console,
     pass_ctx,
+    pass_instance,
     print_json_for,
+    print_schema,
     print_table_for,
 )
 
 
 @click.group("role", cls=Group)
-def cli() -> None:
+@instance_identifier_option
+@click.option(
+    "--schema",
+    is_flag=True,
+    callback=functools.partial(print_schema, model=interface.Role),
+    expose_value=False,
+    is_eager=True,
+    help="Print the JSON schema of role model and exit.",
+)
+def cli(instance: system.Instance) -> None:
     """Manage roles."""
 
 
 @cli.command("create")
-@instance_identifier
 @helpers.parameters_from_model(interface.Role)
+@pass_instance
 @pass_ctx
 def role_create(ctx: Context, instance: system.Instance, role: interface.Role) -> None:
     """Create a role in a PostgreSQL instance"""
@@ -38,8 +50,8 @@ def role_create(ctx: Context, instance: system.Instance, role: interface.Role) -
 
 
 @cli.command("alter")
-@instance_identifier
 @helpers.parameters_from_model(interface.Role, parse_model=False)
+@pass_instance
 @pass_ctx
 def role_alter(
     ctx: Context, instance: system.Instance, name: str, **changes: Any
@@ -53,16 +65,9 @@ def role_alter(
         roles.apply(ctx, instance, altered)
 
 
-@cli.command("schema")
-@pass_console
-def role_schema(console: Console) -> None:
-    """Print the JSON schema of role model"""
-    console.print_json(interface.Role.schema_json(indent=2))
-
-
 @cli.command("apply")
-@instance_identifier
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_instance
 @pass_ctx
 def role_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
     """Apply manifest as a role"""
@@ -72,8 +77,8 @@ def role_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
 
 
 @cli.command("describe")
-@instance_identifier
 @click.argument("name")
+@pass_instance
 @pass_ctx
 def role_describe(ctx: Context, instance: system.Instance, name: str) -> None:
     """Describe a role"""
@@ -83,8 +88,8 @@ def role_describe(ctx: Context, instance: system.Instance, name: str) -> None:
 
 
 @cli.command("drop")
-@instance_identifier
 @click.argument("name")
+@pass_instance
 @pass_ctx
 def role_drop(ctx: Context, instance: system.Instance, name: str) -> None:
     """Drop a role"""
@@ -93,12 +98,12 @@ def role_drop(ctx: Context, instance: system.Instance, name: str) -> None:
 
 
 @cli.command("privileges")
-@instance_identifier
 @click.argument("name")
 @click.option(
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
 @as_json_option
+@pass_instance
 @pass_console
 @pass_ctx
 def role_privileges(

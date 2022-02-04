@@ -16,18 +16,27 @@ from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, PgBackRestSettings
 from .util import (
     Command,
     Group,
+    _list_instances,
     as_json_option,
     foreground_option,
-    instance_identifier,
+    instance_lookup,
     pass_component_settings,
     pass_console,
     pass_ctx,
     print_json_for,
+    print_schema,
     print_table_for,
 )
 
 Callback = Callable[..., Any]
 CommandFactory = Callable[[Type[interface.Instance]], Callback]
+
+instance_identifier = click.argument(
+    "instance",
+    metavar="<version>/<name>",
+    callback=instance_lookup,
+    shell_complete=_list_instances,
+)
 
 
 class InstanceCommands(Group):
@@ -67,7 +76,23 @@ class InstanceCommands(Group):
             return click.command(cls=Command)(f)
 
 
+def print_instance_schema(
+    context: click.Context, param: click.Parameter, value: bool
+) -> None:
+    return print_schema(
+        context, param, value, model=interface.Instance.composite(context.obj.ctx.pm)
+    )
+
+
 @click.group(cls=InstanceCommands)
+@click.option(
+    "--schema",
+    is_flag=True,
+    callback=print_instance_schema,
+    expose_value=False,
+    is_eager=True,
+    help="Print the JSON schema of instance model and exit.",
+)
 def cli() -> None:
     """Manage instances."""
 
@@ -108,18 +133,6 @@ def _instance_alter(
         values = deep_update(values, changes)
         altered = composite_instance_model.parse_obj(values)
         instance_mod.apply(ctx, altered)
-
-    return command
-
-
-@cli.command_with_composite_instance("schema")
-def _instance_schema(
-    composite_instance_model: Type[interface.Instance],
-) -> Callback:
-    @pass_console
-    def command(console: Console) -> None:
-        """Print the JSON schema of PostgreSQL instance model"""
-        console.print_json(composite_instance_model.schema_json(indent=2))
 
     return command
 

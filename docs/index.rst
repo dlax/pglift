@@ -49,14 +49,14 @@ Create some objects:
 
 .. code-block:: console
 
-    $ pglift role create main dba --validity="2023-01-01T00:00:00" --login --password
+    $ pglift role -i main create dba --validity="2023-01-01T00:00:00" --login --password
     Role password:
     Repeat for confirmation:
     INFO     creating role 'dba' on instance 14/main
 
 .. code-block:: console
 
-    $ pglift database create main myapp --owner=dba
+    $ pglift database -i main create myapp --owner=dba
     INFO     creating 'myapp' database on instance 14/main
 
 And eventually drop the instance:
