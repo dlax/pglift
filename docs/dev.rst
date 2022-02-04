@@ -95,6 +95,14 @@ Alternatively, keep the following command running:
 to get the documentation rebuilt and along with a live-reloaded Web browser
 (the reason for ``sphinx-autobuild`` dependency above).
 
+Contributing changes
+~~~~~~~~~~~~~~~~~~~~
+
+* Make sure that lint, typing checks pass as well as at least unit tests.
+* When committing changes with git, write one commit per logical change and
+  try to follow pre-existing style and write a meaningful commit message (see
+  https://commit.style/ for a quick guide).
+
 Release workflow
 ~~~~~~~~~~~~~~~~
 
