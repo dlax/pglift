@@ -42,6 +42,20 @@ By default, tests will not use systemd as a service manager / scheduler. In
 order to run tests with systemd, pass the ``--systemd`` option to pytest
 command.
 
+The test suite is quite extensive and can take long to run, especially if
+several PostgreSQL versions are available on the system. It is split into
+*functional* tests and more *unit* ones, the former require a real PostgreSQL
+instance (which will be set up automatically) while the latter do not.
+
+When working on a simple fix or changes that would be covered by
+non-functional tests, one can run the following part of the test suite
+quickly:
+
+::
+
+    (.venv) $ pytest src tests/unit
+
+
 Pre-commit hooks
 ~~~~~~~~~~~~~~~~
 
