@@ -23,10 +23,10 @@ for more details.
 # Getting Started
 
 * walk through the [documentation][] for installation and tutorials
-* see also how to set up a [development environment][]
+* see also the [development and contributing guide][]
 
 [documentation]: https://pglift.readthedocs.io/
-[development environment]: https://pglift.readthedocs.io/en/latest/dev.html
+[development and contributing guide]: https://pglift.readthedocs.io/en/latest/dev.html
 
 # Documentation
 
