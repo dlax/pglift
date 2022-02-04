@@ -6,7 +6,7 @@ import secrets
 import socket
 import string
 import subprocess
-from typing import Callable, Iterator
+from typing import Callable, Dict, Iterator
 
 import dateutil.tz
 import psycopg
@@ -25,11 +25,19 @@ def generate_secret(length: int) -> str:
 
 
 @pytest.fixture
-def call_playbook(tmp_path: pathlib.Path) -> Iterator[Callable[[pathlib.Path], None]]:
-    env = os.environ.copy()
+def ansible_env() -> Dict[str, str]:
+    env = dict(os.environ)
     env["ANSIBLE_COLLECTIONS_PATH"] = str(
         pathlib.Path(__file__).parent.parent.parent / "ansible"
     )
+    return env
+
+
+@pytest.fixture
+def call_playbook(
+    tmp_path: pathlib.Path, ansible_env: Dict[str, str]
+) -> Iterator[Callable[[pathlib.Path], None]]:
+    env = ansible_env.copy()
     env["ANSIBLE_VERBOSITY"] = "3"
     settings = {
         "prefix": str(tmp_path),
@@ -83,6 +91,11 @@ def cluster_name(dsn: str) -> str:
         name = row["setting"]
         assert isinstance(name, str), name
         return name
+
+
+@pytest.mark.parametrize("module", ["instance", "role", "database"])
+def test_doc(module: str, ansible_env: Dict[str, str]) -> None:
+    subprocess.check_call(["ansible-doc", f"dalibo.pglift.{module}"], env=ansible_env)
 
 
 def test_ansible(
