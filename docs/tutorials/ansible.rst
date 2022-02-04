@@ -3,7 +3,26 @@ Using Ansible modules
 
 .. highlight:: console
 
-This tutorial illustrates the use of the `pglift.instance` Ansible module.
+This tutorial illustrates the use of the Ansible modules shipped with pglift:
+``dalibo.pglift.instance``, ``dalibo.pglift.database`` and
+``dalibo.pglift.role``.
+
+.. note:: Documentation for each module can be obtained by using ``ansible-doc
+   <modulename>`` (possibly after setting ``ANSIBLE_COLLECTIONS_PATHS`` as
+   described below); e.g.:
+
+   ::
+
+       $ ansible-doc dalibo.pglift.role
+       > DALIBO.PGLIFT.ROLE
+       (.../ansible/ansible_collections/dalibo/pglift/plugins/modules/role.py)
+
+       Manage roles of a PostgreSQL server instance
+
+       OPTIONS (= is mandatory):
+
+       [...]
+
 
 First, ``ansible`` needs to be installed in the :ref:`development environment
 <devenv>`:
