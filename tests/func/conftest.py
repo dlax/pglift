@@ -253,9 +253,8 @@ def instance_manifest(
 
 
 @pytest.fixture(scope="session")
-@pytest.mark.usefixtures("installed")
 def instance_initialized(
-    ctx: Context, instance_manifest: interface.Instance
+    ctx: Context, installed: None, instance_manifest: interface.Instance
 ) -> system.PostgreSQLInstance:
     assert instance_manifest.version is not None
     instance = system.BaseInstance.get(
