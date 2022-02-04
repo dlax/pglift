@@ -166,5 +166,10 @@ def run(
             ctx, instance, dbname=database.name, autocommit=True
         ) as cnx:
             cnx.add_notice_handler(notice_handler)
-            logger.info("run %s on database %s of %s", sql_command, database, instance)
+            logger.info(
+                'running "%s" on %s database of %s',
+                sql_command,
+                database.name,
+                instance,
+            )
             cnx.execute(sql_command)
