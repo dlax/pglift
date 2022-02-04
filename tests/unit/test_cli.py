@@ -381,15 +381,11 @@ def test_instance_config_show(
     params: List[str],
     expected: List[str],
 ) -> None:
-    result = runner.invoke(
-        cli, ["instance", "config", "show", str(instance)] + params, obj=obj
-    )
+    result = runner.invoke(cli, ["pgconf", "show", str(instance)] + params, obj=obj)
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(expected)
 
-    result = runner.invoke(
-        cli, ["instance", "config", "show", str(instance), "port"], obj=obj
-    )
+    result = runner.invoke(cli, ["pgconf", "show", str(instance), "port"], obj=obj)
     assert result.exit_code == 0, result.stderr
     assert result.stdout.strip() == "\n".join(["port = 999"])
 
@@ -399,7 +395,7 @@ def test_instance_config_set_validate(
 ) -> None:
     result = runner.invoke(
         cli,
-        ["instance", "config", "set", str(instance), "invalid"],
+        ["pgconf", "set", str(instance), "invalid"],
         obj=obj,
     )
     assert result.exit_code == 2
@@ -415,8 +411,7 @@ def test_instance_config_set(
         result = runner.invoke(
             cli,
             [
-                "instance",
-                "config",
+                "pgconf",
                 "set",
                 str(instance),
                 "cluster_name=unittests",
@@ -444,8 +439,7 @@ def test_instance_config_set(
         result = runner.invoke(
             cli,
             [
-                "instance",
-                "config",
+                "pgconf",
                 "set",
                 str(instance),
                 "foo=bar",
@@ -475,7 +469,7 @@ def test_instance_config_remove(
 ) -> None:
     result = runner.invoke(
         cli,
-        ["instance", "config", "remove", str(instance), "fsync"],
+        ["pgconf", "remove", str(instance), "fsync"],
         obj=obj,
     )
     assert result.exit_code == 1
@@ -486,7 +480,7 @@ def test_instance_config_remove(
     ) as configure:
         result = runner.invoke(
             cli,
-            ["instance", "config", "remove", str(instance), "bonjour_name"],
+            ["pgconf", "remove", str(instance), "bonjour_name"],
             obj=obj,
         )
     manifest = interface.Instance(name=instance.name, version=instance.version)
@@ -501,7 +495,7 @@ def test_instance_config_edit(
     with patch("click.edit") as edit:
         result = runner.invoke(
             cli,
-            ["instance", "config", "edit", str(instance)],
+            ["pgconf", "edit", str(instance)],
             obj=obj,
         )
     assert result.exit_code == 0, result.stderr

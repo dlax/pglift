@@ -518,8 +518,8 @@ def instance_list(ctx: Context, version: Optional[str], as_json: bool) -> None:
         print_table_for(instances)
 
 
-@instance.group("config")
-def instance_configure() -> None:
+@cli.group("pgconf")
+def pgconf() -> None:
     """Manage configuration of a PostgreSQL instance."""
 
 
@@ -544,13 +544,11 @@ def show_configuration_changes(
         )
 
 
-@instance_configure.command("show")
+@pgconf.command("show")
 @instance_identifier
 @click.argument("parameter", nargs=-1)
 @pass_ctx
-def instance_configure_show(
-    ctx: Context, instance: Instance, parameter: Tuple[str]
-) -> None:
+def pgconf_show(ctx: Context, instance: Instance, parameter: Tuple[str]) -> None:
     """Show configuration (all parameters or specified ones).
 
     Only uncommented parameters are shown when no PARAMETER is specified. When
@@ -581,7 +579,7 @@ def validate_configuration_parameters(
     return items
 
 
-@instance_configure.command("set")
+@pgconf.command("set")
 @instance_identifier
 @click.argument(
     "parameters",
@@ -590,9 +588,7 @@ def validate_configuration_parameters(
     callback=validate_configuration_parameters,
 )
 @pass_ctx
-def instance_configure_set(
-    ctx: Context, instance: Instance, parameters: Dict[str, Any]
-) -> None:
+def pgconf_set(ctx: Context, instance: Instance, parameters: Dict[str, Any]) -> None:
     """Set configuration items."""
     values = instance.config(managed_only=True).as_dict()
     values.update(parameters)
@@ -601,13 +597,11 @@ def instance_configure_set(
     show_configuration_changes(changes, parameters.keys())
 
 
-@instance_configure.command("remove")
+@pgconf.command("remove")
 @instance_identifier
 @click.argument("parameters", nargs=-1)
 @pass_ctx
-def instance_configure_remove(
-    ctx: Context, instance: Instance, parameters: Tuple[str]
-) -> None:
+def pgconf_remove(ctx: Context, instance: Instance, parameters: Tuple[str]) -> None:
     """Remove configuration items."""
     values = instance.config(managed_only=True).as_dict()
     for p in parameters:
@@ -620,10 +614,10 @@ def instance_configure_remove(
     show_configuration_changes(changes, parameters)
 
 
-@instance_configure.command("edit")
+@pgconf.command("edit")
 @instance_identifier
 @pass_ctx
-def instance_configure_edit(ctx: Context, instance: Instance) -> None:
+def pgconf_edit(ctx: Context, instance: Instance) -> None:
     """Edit managed configuration."""
     confd = conf.info(instance.datadir)[0]
     click.edit(filename=str(confd / "user.conf"))
