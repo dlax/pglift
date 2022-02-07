@@ -7,11 +7,31 @@ from typing import Callable, List
 from . import exceptions, logger
 from . import template as _template
 from .ctx import BaseContext
-from .settings import SystemdSettings
+from .settings import Settings, SystemdSettings
 
 
 def template(name: str) -> str:
     return _template("systemd", name)
+
+
+def executeas(settings: Settings) -> str:
+    """Return User/Group options for systemd unit depending on settings.
+
+    When systemd.user is set, return an empty string:
+    >>> s = Settings.parse_obj({"systemd": {"user": True}})
+    >>> executeas(s)
+    ''
+
+    Otherwise, user sysuser setting:
+    >>> s = Settings.parse_obj({"systemd": {"user": False}, "sysuser": ["postgres", "pgsql"]})
+    >>> print(executeas(s))
+    User=postgres
+    Group=pgsql
+    """
+    if settings.systemd.user:
+        return ""
+    user, group = settings.sysuser
+    return "\n".join([f"User={user}", f"Group={group}"])
 
 
 def systemctl(settings: SystemdSettings, *args: str) -> List[str]:
