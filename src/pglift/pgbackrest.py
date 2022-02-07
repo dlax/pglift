@@ -202,9 +202,7 @@ def init(ctx: BaseContext, instance: PostgreSQLInstance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(
-    ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
-) -> None:
+def instance_configure(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     if not available(ctx):
         logger.warning("pgbackrest not available, skipping backup configuration")

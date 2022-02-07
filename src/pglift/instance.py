@@ -350,9 +350,7 @@ def stopped(
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(
-    ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
-) -> None:
+def instance_configure(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Configure authentication for the PostgreSQL instance by setting
     super-user role's password, if any, and installing templated pg_hba.conf
     and pg_ident.conf.

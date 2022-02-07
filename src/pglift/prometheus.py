@@ -1,6 +1,6 @@
 import shlex
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from pgtoolkit.conf import Configuration
 
@@ -229,7 +229,7 @@ def setup_local(
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: BaseContext, manifest: interface.Instance, config: Configuration, **kwargs: Any
+    ctx: BaseContext, manifest: interface.Instance, config: Configuration
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not available(ctx):

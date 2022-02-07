@@ -1,5 +1,3 @@
-from typing import Any
-
 from . import exceptions, hookimpl, systemd
 from .ctx import BaseContext, Context
 from .models import interface
@@ -12,9 +10,7 @@ def systemd_timer(instance: BaseInstance) -> str:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(
-    ctx: BaseContext, manifest: interface.Instance, **kwargs: Any
-) -> None:
+def instance_configure(ctx: BaseContext, manifest: interface.Instance) -> None:
     """Enable scheduled backup job for configured instance."""
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if ctx.settings.scheduler == "systemd":
