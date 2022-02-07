@@ -40,7 +40,9 @@ def test_backup_info(
 def test_backup_command(
     pg_version: str, settings: Settings, instance: Instance
 ) -> None:
-    assert pgbackrest.backup_command(instance, type=pgbackrest.BackupType.full) == [
+    assert pgbackrest.backup_command(
+        instance, settings.pgbackrest, type=pgbackrest.BackupType.full
+    ) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
         f"--stanza={pg_version}-test",
@@ -54,7 +56,7 @@ def test_backup_command(
 def test_expire_command(
     pg_version: str, settings: Settings, instance: Instance
 ) -> None:
-    assert pgbackrest.expire_command(instance) == [
+    assert pgbackrest.expire_command(instance, settings.pgbackrest) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
         f"--stanza={pg_version}-test",
@@ -67,7 +69,10 @@ def test_restore_command(
     pg_version: str, settings: Settings, instance: Instance
 ) -> None:
     assert pgbackrest.restore_command(
-        instance, date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc), backup_set="x"
+        instance,
+        settings.pgbackrest,
+        date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc),
+        backup_set="x",
     ) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",

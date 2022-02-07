@@ -319,7 +319,7 @@ def test_standby(
     pg_version: str,
     slot: str,
 ) -> None:
-    socket_directory = instance.settings.postgresql.socket_directory
+    socket_directory = settings.postgresql.socket_directory
     replrole = interface.instance_replrole(settings, instance_manifest)
     standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
     if replrole.password:

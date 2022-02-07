@@ -12,6 +12,7 @@ from psycopg import sql
 if TYPE_CHECKING:  # pragma: nocover
     from .ctx import BaseContext
     from .models.system import PostgreSQLInstance
+    from .settings import PostgreSQLSettings
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
 
@@ -33,7 +34,9 @@ def queries() -> Iterator[Tuple[str, str]]:
         yield qname.strip(), query.strip()
 
 
-def dsn(instance: "PostgreSQLInstance", **kwargs: Any) -> str:
+def dsn(
+    instance: "PostgreSQLInstance", settings: "PostgreSQLSettings", **kwargs: Any
+) -> str:
     for badarg in ("port", "passfile", "host"):
         if badarg in kwargs:
             raise TypeError(f"unexpected '{badarg}' argument")
@@ -42,7 +45,7 @@ def dsn(instance: "PostgreSQLInstance", **kwargs: Any) -> str:
     config = instance.config()
     if config.unix_socket_directories:
         kwargs["host"] = config.unix_socket_directories
-    passfile = instance.settings.postgresql.auth.passfile
+    passfile = settings.auth.passfile
     if passfile.exists():
         kwargs["passfile"] = str(passfile)
 
@@ -67,13 +70,14 @@ def connect_dsn(
 
 def connect(
     instance: "PostgreSQLInstance",
+    settings: "PostgreSQLSettings",
     *,
     dbname: str = "postgres",
     autocommit: bool = False,
     **kwargs: Any,
 ) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to specified database of `instance` with `role`."""
-    conninfo = dsn(instance, dbname=dbname, **kwargs)
+    conninfo = dsn(instance, settings, dbname=dbname, **kwargs)
     return connect_dsn(conninfo, autocommit=autocommit)
 
 
@@ -82,10 +86,10 @@ def superuser_connect(
 ) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
     if "user" in kwargs:
         raise TypeError("unexpected 'user' argument")
-    kwargs["user"] = instance.settings.postgresql.surole.name
+    kwargs["user"] = ctx.settings.postgresql.surole.name
     if "password" not in kwargs:
         kwargs["password"] = ctx.libpq_environ().get("PGPASSWORD")
-    return connect(instance, **kwargs)
+    return connect(instance, ctx.settings.postgresql, **kwargs)
 
 
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:

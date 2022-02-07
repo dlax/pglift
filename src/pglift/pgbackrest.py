@@ -243,6 +243,7 @@ class BackupType(AutoStrEnum):
 
 def backup_command(
     instance: BaseInstance,
+    settings: PgBackRestSettings,
     *,
     type: BackupType = BackupType.default(),
     start_fast: bool = True,
@@ -260,7 +261,7 @@ def backup_command(
     ]
     if start_fast:
         args.insert(-1, "--start-fast")
-    return make_cmd(instance, instance.settings.pgbackrest, *args)
+    return make_cmd(instance, settings, *args)
 
 
 @task("backing up instance with pgBackRest")
@@ -283,17 +284,19 @@ def backup(
     # backuprole.
     env = os.environ.copy()
     env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
-    ctx.run(backup_command(instance, type=type), check=True, env=env)
+    ctx.run(
+        backup_command(instance, ctx.settings.pgbackrest, type=type),
+        check=True,
+        env=env,
+    )
 
 
-def expire_command(instance: BaseInstance) -> List[str]:
+def expire_command(instance: BaseInstance, settings: PgBackRestSettings) -> List[str]:
     """Return the full pgbackrest command to expire backups for ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    return make_cmd(
-        instance, instance.settings.pgbackrest, "--log-level-console=info", "expire"
-    )
+    return make_cmd(instance, settings, "--log-level-console=info", "expire")
 
 
 @task("expiring pgBackRest backups")
@@ -302,7 +305,7 @@ def expire(ctx: BaseContext, instance: BaseInstance) -> None:
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    ctx.run(expire_command(instance), check=True)
+    ctx.run(expire_command(instance, ctx.settings.pgbackrest), check=True)
 
 
 def _parse_backup_databases(info: str) -> List[str]:
@@ -365,6 +368,7 @@ def iter_backups(ctx: BaseContext, instance: BaseInstance) -> Iterator[InstanceB
 
 def restore_command(
     instance: BaseInstance,
+    settings: PgBackRestSettings,
     *,
     date: Optional[datetime.datetime] = None,
     backup_set: Optional[str] = None,
@@ -387,7 +391,7 @@ def restore_command(
     if backup_set is not None:
         args.append(f"--set={backup_set}")
     args.append("restore")
-    return make_cmd(instance, instance.settings.pgbackrest, *args)
+    return make_cmd(instance, settings, *args)
 
 
 @task("restoring instance with pgBackRest")
@@ -407,5 +411,7 @@ def restore(
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
 
-    cmd = restore_command(instance, date=date, backup_set=label)
+    cmd = restore_command(
+        instance, ctx.settings.pgbackrest, date=date, backup_set=label
+    )
     ctx.run(cmd, check=True)

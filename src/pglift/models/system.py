@@ -27,7 +27,8 @@ class BaseInstance:
 
     name: str
     version: str = attr.ib(validator=known_postgresql_version)
-    settings: Settings = attr.ib(validator=instance_of(Settings))
+
+    _settings: Settings = attr.ib(validator=instance_of(Settings))
 
     T = TypeVar("T", bound="BaseInstance")
 
@@ -42,18 +43,18 @@ class BaseInstance:
     @property
     def path(self) -> Path:
         """Base directory path for this instance."""
-        pg_settings = self.settings.postgresql
+        pg_settings = self._settings.postgresql
         return pg_settings.root / self.version / self.name
 
     @property
     def datadir(self) -> Path:
         """Path to data directory for this instance."""
-        return self.path / self.settings.postgresql.datadir
+        return self.path / self._settings.postgresql.datadir
 
     @property
     def waldir(self) -> Path:
         """Path to WAL directory for this instance."""
-        return self.path / self.settings.postgresql.waldir
+        return self.path / self._settings.postgresql.waldir
 
     def exists(self) -> bool:
         """Return True if the instance exists based on system lookup.
@@ -75,7 +76,10 @@ class BaseInstance:
 
     @classmethod
     def get(cls: Type[T], name: str, version: Optional[str], ctx: BaseContext) -> T:
-        return cls(name, version or default_postgresql_version(ctx), ctx.settings)
+        # attrs strip leading underscores at init for private attributes.
+        return cls(
+            name, version or default_postgresql_version(ctx), settings=ctx.settings
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -197,6 +201,8 @@ class Instance(PostgreSQLInstance):
     ) -> T:
         pg_instance = PostgreSQLInstance.system_lookup(ctx, value)
         values = attr.asdict(pg_instance)
+        # attrs strip leading underscores at init for private attributes.
+        values["settings"] = values.pop("_settings")
         if ctx.pm.has_plugin("pglift.prometheus"):
             from .. import prometheus
 

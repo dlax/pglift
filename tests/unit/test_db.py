@@ -53,18 +53,20 @@ def test_dsn(
     settings: Settings, instance: Instance, connargs: Dict[str, str], expected: str
 ) -> None:
     passfile = settings.postgresql.auth.passfile
-    conninfo = db.dsn(instance, dbname="mydb", sslmode="off", **connargs)
+    conninfo = db.dsn(
+        instance, settings.postgresql, dbname="mydb", sslmode="off", **connargs
+    )
     assert conninfo == expected.format(passfile=passfile)
 
 
-def test_dsn_badarg(instance: Instance) -> None:
+def test_dsn_badarg(settings: Settings, instance: Instance) -> None:
     with pytest.raises(TypeError, match="unexpected 'port' argument"):
-        db.dsn(instance, port=123)
+        db.dsn(instance, settings.postgresql, port=123)
 
 
 def test_connect(instance: Instance, settings: Settings) -> None:
     with patch("psycopg.connect") as connect:
-        cnx = db.connect(instance, user="dba")
+        cnx = db.connect(instance, settings.postgresql, user="dba")
         assert not connect.called
         with cnx:
             pass

@@ -75,10 +75,13 @@ def execute(
         connect = partial(db.superuser_connect, ctx)
     elif role.password:
         connect = partial(
-            db.connect, user=role.name, password=role.password.get_secret_value()
+            db.connect,
+            settings=ctx.settings.postgresql,
+            user=role.name,
+            password=role.password.get_secret_value(),
         )
     else:
-        connect = partial(db.connect, user=role.name)
+        connect = partial(db.connect, settings=ctx.settings.postgresql, user=role.name)
     with instance_mod.running(ctx, instance):
         with connect(instance, autocommit=autocommit, **kwargs) as conn:
             cur = conn.execute(query)

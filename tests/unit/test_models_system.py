@@ -54,9 +54,7 @@ def test_baseinstance_get(ctx: Context) -> None:
 
 def test_postgresqlinstance_system_lookup(ctx: Context, instance: Instance) -> None:
     i = system.PostgreSQLInstance.system_lookup(ctx, instance)
-    expected = system.PostgreSQLInstance(
-        instance.name, instance.version, instance.settings
-    )
+    expected = system.PostgreSQLInstance(instance.name, instance.version, ctx.settings)
     assert i == expected
 
     i = system.PostgreSQLInstance.system_lookup(ctx, (instance.name, instance.version))
