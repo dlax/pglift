@@ -209,7 +209,7 @@ class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
     prometheus: Optional[PrometheusService] = attr.ib(
-        validator=instance_of((type(None), PrometheusService))
+        default=None, validator=instance_of((type(None), PrometheusService))
     )
 
     T = TypeVar("T", bound="Instance")
@@ -222,5 +222,6 @@ class Instance(PostgreSQLInstance):
     ) -> T:
         pg_instance = PostgreSQLInstance.system_lookup(ctx, value)
         values = attr.asdict(pg_instance)
-        values["prometheus"] = PrometheusService.system_lookup(ctx, pg_instance)
+        if ctx.pm.has_plugin("pglift.prometheus"):
+            values["prometheus"] = PrometheusService.system_lookup(ctx, pg_instance)
         return cls(**values)
