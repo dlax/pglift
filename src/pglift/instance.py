@@ -779,6 +779,9 @@ def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.I
 @task("dropping PostgreSQL instance")
 def drop(ctx: BaseContext, instance: Instance) -> None:
     """Drop an instance."""
+    if not ctx.confirm(f"Confirm complete deletion of instance {instance}?", True):
+        raise exceptions.Cancelled(f"deletion of instance {instance} cancelled")
+
     stop(ctx, instance, run_hooks=True)
 
     ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)

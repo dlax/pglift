@@ -236,6 +236,17 @@ def test_start_foreground(ctx: Context, instance: Instance) -> None:
     )
 
 
+def test_drop(
+    ctx: Context, instance: Instance, caplog: pytest.LogCaptureFixture
+) -> None:
+    with patch.object(ctx, "confirm", return_value=False) as confirm:
+        with pytest.raises(exceptions.Cancelled):
+            instance_mod.drop(ctx, instance)
+    confirm.assert_called_once_with(
+        f"Confirm complete deletion of instance {instance}?", True
+    )
+
+
 def test_env_for(ctx: Context, instance: Instance) -> None:
     assert instance_mod.env_for(ctx, instance) == {
         "PGDATA": str(instance.datadir),
