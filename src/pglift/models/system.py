@@ -1,15 +1,18 @@
 from pathlib import Path
-from typing import Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
 from pgtoolkit.conf import Configuration
 
-from .. import conf, exceptions, logger
+from .. import conf, exceptions
 from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
 from ..validators import known_postgresql_version
+
+if TYPE_CHECKING:
+    from ..prometheus import Service as PrometheusService
 
 
 def default_postgresql_version(ctx: BaseContext) -> str:
@@ -17,32 +20,6 @@ def default_postgresql_version(ctx: BaseContext) -> str:
     if version is None:
         version = short_version(ctx.pg_ctl(None).version)
     return version
-
-
-@attr.s(auto_attribs=True, frozen=True, slots=True)
-class PrometheusService:
-    """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
-
-    port: int
-    """TCP port for the web interface and telemetry."""
-
-    T = TypeVar("T", bound="PrometheusService")
-
-    @classmethod
-    def system_lookup(
-        cls: Type[T], ctx: BaseContext, instance: "BaseInstance"
-    ) -> Optional[T]:
-        from .. import prometheus
-
-        try:
-            port = prometheus.port(ctx, instance.qualname)
-        except exceptions.FileNotFoundError as exc:
-            logger.debug(
-                "failed to read postgres_exporter port for %s: %s", instance, exc
-            )
-            return None
-        else:
-            return cls(port)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -208,9 +185,7 @@ class PostgreSQLInstance(BaseInstance):
 class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
-    prometheus: Optional[PrometheusService] = attr.ib(
-        default=None, validator=instance_of((type(None), PrometheusService))
-    )
+    prometheus: Optional["PrometheusService"] = None
 
     T = TypeVar("T", bound="Instance")
 
@@ -223,5 +198,7 @@ class Instance(PostgreSQLInstance):
         pg_instance = PostgreSQLInstance.system_lookup(ctx, value)
         values = attr.asdict(pg_instance)
         if ctx.pm.has_plugin("pglift.prometheus"):
-            values["prometheus"] = PrometheusService.system_lookup(ctx, pg_instance)
+            from .. import prometheus
+
+            values["prometheus"] = prometheus.Service.system_lookup(ctx, pg_instance)
         return cls(**values)

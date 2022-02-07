@@ -1,7 +1,8 @@
 import shlex
 from pathlib import Path
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar
 
+import attr
 from pgtoolkit.conf import Configuration
 
 from . import cmd, exceptions, hookimpl, logger
@@ -12,6 +13,33 @@ from .models import interface
 from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
+
+if TYPE_CHECKING:
+    from .models.system import BaseInstance
+
+
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class Service:
+    """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
+
+    port: int
+    """TCP port for the web interface and telemetry."""
+
+    T = TypeVar("T", bound="Service")
+
+    @classmethod
+    def system_lookup(
+        cls: Type[T], ctx: BaseContext, instance: "BaseInstance"
+    ) -> Optional[T]:
+        try:
+            p = port(ctx, instance.qualname)
+        except exceptions.FileNotFoundError as exc:
+            logger.debug(
+                "failed to read postgres_exporter port for %s: %s", instance, exc
+            )
+            return None
+        else:
+            return cls(p)
 
 
 def available(ctx: BaseContext) -> bool:

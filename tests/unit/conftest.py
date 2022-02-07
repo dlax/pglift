@@ -8,7 +8,7 @@ from pglift import pm
 from pglift import prometheus as prometheus_mod
 from pglift.ctx import Context
 from pglift.models import interface
-from pglift.models.system import Instance, PrometheusService
+from pglift.models.system import Instance
 from pglift.settings import Settings
 from pglift.util import short_version
 
@@ -74,7 +74,7 @@ def _instance(
     version: str,
     settings: Settings,
     *,
-    prometheus: Optional[PrometheusService] = None,
+    prometheus: Optional[prometheus_mod.Service] = None,
 ) -> Instance:
     instance = Instance(
         name=name, version=version, settings=settings, prometheus=prometheus
@@ -111,7 +111,7 @@ def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
     prometheus = None
     if request.param:
         prometheus_port = 9817
-        prometheus = PrometheusService(port=prometheus_port)
+        prometheus = prometheus_mod.Service(port=prometheus_port)
     return _instance("test", pg_version, settings, prometheus=prometheus)
 
 
