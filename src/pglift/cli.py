@@ -52,6 +52,8 @@ from .types import ConfigChanges
 
 console = Console()
 
+C = TypeVar("C", bound=Callable[..., Any])
+
 
 class LogDisplayer:
     def handle(self, msg: str) -> None:
@@ -71,7 +73,7 @@ class Obj:
         self.displayer = displayer
 
 
-def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
+def pass_ctx(f: C) -> C:
     """Command decorator passing 'Context' bound to click.Context's object."""
 
     @wraps(f)
@@ -81,7 +83,7 @@ def pass_ctx(f: Callable[..., Any]) -> Callable[..., Any]:
         assert isinstance(ctx, Context), ctx
         return context.invoke(f, ctx, *args, **kwargs)
 
-    return wrapper
+    return cast(C, wrapper)
 
 
 class Command(click.Command):
@@ -149,9 +151,6 @@ class Command(click.Command):
 class Group(click.Group):
     command_class = Command
     group_class = type
-
-
-C = TypeVar("C", bound=Callable[..., Any])
 
 
 def require_component(mod: ModuleType, name: str, fn: C) -> C:
