@@ -572,16 +572,14 @@ def upgrade(
                 if entry.matches(port=instance.port, username=surole.name):
                     surole_password = entry.password
     new_manifest = interface.Instance.parse_obj(
-        {
-            "name": name or instance.name,
-            "version": version,
-            "port": port or instance.port,
-            "state": interface.InstanceState.stopped,
-            "prometheus": (
-                {"port": instance.prometheus.port} if instance.prometheus else None
-            ),
-            "surole_password": SecretStr(surole_password) if surole_password else None,
-        }
+        dict(
+            _describe(ctx, instance),
+            name=name or instance.name,
+            version=version,
+            port=port or instance.port,
+            state=interface.InstanceState.stopped,
+            surole_password=SecretStr(surole_password) if surole_password else None,
+        )
     )
     init(ctx, new_manifest)
     newinstance = Instance.system_lookup(ctx, (new_manifest.name, new_manifest.version))
@@ -756,6 +754,10 @@ def apply(ctx: BaseContext, manifest: interface.Instance) -> ApplyResult:
 def describe(ctx: BaseContext, name: str, version: Optional[str]) -> interface.Instance:
     """Return an instance described as a manifest."""
     instance = Instance.system_lookup(ctx, (name, version))
+    return _describe(ctx, instance)
+
+
+def _describe(ctx: BaseContext, instance: Instance) -> interface.Instance:
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
