@@ -19,7 +19,7 @@ class BaseContext(ABC):
         self,
         *,
         plugin_manager: PluginManager,
-        settings: Optional[Settings] = None,
+        settings: Settings,
     ) -> None:
         if settings is None:
             settings = Settings()

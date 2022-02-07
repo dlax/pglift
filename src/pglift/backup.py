@@ -3,6 +3,7 @@ from .ctx import BaseContext, Context
 from .models import interface
 from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .pgbackrest import BackupType, backup
+from .settings import Settings
 
 
 def systemd_timer(instance: BaseInstance) -> str:
@@ -63,7 +64,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    ctx = Context(plugin_manager=PluginManager.get())
+    ctx = Context(plugin_manager=PluginManager.get(), settings=Settings())
     try:
         instance = PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:

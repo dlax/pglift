@@ -388,9 +388,10 @@ def cli(
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
-        settings = None
         if settings_file is not None:
             settings = Settings.parse_file(settings_file)
+        else:
+            settings = Settings()
         displayer = None if log_file else LogDisplayer()
         context.obj = Obj(
             CLIContext(plugin_manager=pm.PluginManager.get(), settings=settings),
