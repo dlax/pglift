@@ -18,6 +18,20 @@ def xdg_data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 
+def with_header(content: str, header: str) -> str:
+    """Possibly insert `header` on top of `content`.
+
+    >>> print(with_header("blah", "% head"))
+    % head
+    blah
+    >>> with_header("content", "")
+    'content'
+    """
+    if header:
+        content = "\n".join([header, content])
+    return content
+
+
 def generate_certificate(
     configdir: Path, *, run_command: CommandRunner = cmd.run
 ) -> None:

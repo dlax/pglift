@@ -1,7 +1,7 @@
 import sys
 from typing import Optional
 
-from . import logger, systemd
+from . import logger, systemd, util
 from .ctx import BaseContext
 from .task import task
 
@@ -9,20 +9,6 @@ POSTGRESQL_SERVICE_NAME = "pglift-postgresql@.service"
 POSTGRES_EXPORTER_SERVICE_NAME = "pglift-postgres_exporter@.service"
 BACKUP_SERVICE_NAME = "pglift-backup@.service"
 BACKUP_TIMER_NAME = "pglift-backup@.timer"
-
-
-def with_header(content: str, header: str) -> str:
-    """Possibly insert `header` on top of `content`.
-
-    >>> print(with_header("blah", "% head"))
-    % head
-    blah
-    >>> with_header("content", "")
-    'content'
-    """
-    if header:
-        content = "\n".join([header, content])
-    return content
 
 
 @task("installing systemd template unit for PostgreSQL")
@@ -41,7 +27,7 @@ def postgresql_systemd_unit_template(
     )
     systemd.install(
         POSTGRESQL_SERVICE_NAME,
-        with_header(content, header),
+        util.with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=logger,
     )
@@ -71,7 +57,7 @@ def postgres_exporter_systemd_unit_template(
     )
     systemd.install(
         POSTGRES_EXPORTER_SERVICE_NAME,
-        with_header(content, header),
+        util.with_header(content, header),
         ctx.settings.systemd.unit_path,
         logger=logger,
     )
@@ -102,7 +88,7 @@ def postgresql_backup_systemd_templates(
     )
     systemd.install(
         BACKUP_SERVICE_NAME,
-        with_header(service_content, header),
+        util.with_header(service_content, header),
         ctx.settings.systemd.unit_path,
         logger=logger,
     )
@@ -112,7 +98,7 @@ def postgresql_backup_systemd_templates(
     )
     systemd.install(
         BACKUP_TIMER_NAME,
-        with_header(timer_content, header),
+        util.with_header(timer_content, header),
         ctx.settings.systemd.unit_path,
         logger=logger,
     )
