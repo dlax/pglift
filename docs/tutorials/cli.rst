@@ -87,25 +87,17 @@ Getting instance information:
     prometheus:
       port: 9187
 
-Managing instance configuration:
+.. note::
 
-See :doc:`/user/ops/postgresql-configuration` for dedicated documentation.
+    PostgreSQL instance configuration can be managed using the ``pgconf``
+    command, as described in more details in :ref:`the dedicated section
+    <pgconf>`. A few quick examples:
+    ::
 
-For example,
-
-To show the log_connections parameter of an instance
-
-::
-
-    $ pglift pgconf show main log_connections
-    log_connections = off
-
-To edit the log_connections parameter of an instance
-
-::
-
-    $ pglift pgconf set main log_connections=on
-    log_connections: off -> on
+        $ pglift pgconf show main log_connections
+        log_connections = off
+        $ pglift pgconf set main log_connections=on
+        log_connections: off -> on
 
 Adding and manipulating instance objects:
 
