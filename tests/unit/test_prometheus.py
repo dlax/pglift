@@ -15,6 +15,23 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     )
 
 
+def test_install_systemd_unit_template(ctx: Context) -> None:
+    prometheus.install_systemd_unit_template(ctx)
+    unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
+    assert unit.exists()
+    lines = unit.read_text().splitlines()
+    assert (
+        f"EnvironmentFile=-{ctx.settings.prefix}/etc/prometheus/postgres_exporter-%i.conf"
+        in lines
+    )
+    assert (
+        "ExecStart=/usr/bin/prometheus-postgres-exporter $POSTGRES_EXPORTER_OPTS"
+        in lines
+    )
+    prometheus.uninstall_systemd_unit_template(ctx)
+    assert not unit.exists()
+
+
 def test_port(ctx: Context, instance: Instance) -> None:
     if instance.prometheus:
         port = prometheus.port(ctx, instance.qualname)

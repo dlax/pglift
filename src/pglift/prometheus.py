@@ -6,7 +6,7 @@ from pgtoolkit.conf import Configuration
 
 from . import cmd, exceptions, hookimpl, logger
 from . import prometheus_default_port as default_port
-from . import systemd
+from . import systemd, util
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance, PostgreSQLInstance
@@ -34,8 +34,37 @@ def _pidfile(qualname: str, settings: PrometheusSettings) -> Path:
     return Path(str(settings.pid_file).format(name=qualname))
 
 
+SYSTEMD_SERVICE_NAME = "pglift-postgres_exporter@.service"
+
+
 def systemd_unit(qualname: str) -> str:
     return f"pglift-postgres_exporter@{qualname}.service"
+
+
+@hookimpl  # type: ignore[misc]
+def install_systemd_unit_template(ctx: BaseContext, header: str = "") -> None:
+    logger.info("installing systemd template unit for Prometheus postgres_exporter")
+    settings = ctx.settings.prometheus
+    configpath = str(settings.configpath).replace("{name}", "%i")
+    content = systemd.template(SYSTEMD_SERVICE_NAME).format(
+        executeas=systemd.executeas(ctx.settings),
+        configpath=configpath,
+        execpath=settings.execpath,
+    )
+    systemd.install(
+        SYSTEMD_SERVICE_NAME,
+        util.with_header(content, header),
+        ctx.settings.systemd.unit_path,
+        logger=logger,
+    )
+
+
+@hookimpl  # type: ignore[misc]
+def uninstall_systemd_unit_template(ctx: BaseContext) -> None:
+    logger.info("uninstalling systemd template unit for Prometheus postgres_exporter")
+    systemd.uninstall(
+        SYSTEMD_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=logger
+    )
 
 
 def port(ctx: BaseContext, name: str) -> int:

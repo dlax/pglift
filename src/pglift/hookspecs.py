@@ -11,6 +11,16 @@ hookspec = pluggy.HookspecMarker(pkgname)
 
 
 @hookspec  # type: ignore[misc]
+def install_systemd_unit_template(ctx: BaseContext, header: str = "") -> None:
+    """Install systemd unit templates."""
+
+
+@hookspec  # type: ignore[misc]
+def uninstall_systemd_unit_template(ctx: BaseContext) -> None:
+    """Uninstall systemd unit templates."""
+
+
+@hookspec  # type: ignore[misc]
 def instance_configure(
     ctx: BaseContext,
     manifest: interface.Instance,

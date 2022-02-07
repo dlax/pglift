@@ -25,23 +25,6 @@ def test_postgresql_systemd_unit_template(ctx: Context) -> None:
     assert not unit.exists()
 
 
-def test_postgres_exporter_systemd_unit_template(ctx: Context) -> None:
-    _install.postgres_exporter_systemd_unit_template(ctx)
-    unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
-    assert unit.exists()
-    lines = unit.read_text().splitlines()
-    assert (
-        f"EnvironmentFile=-{ctx.settings.prefix}/etc/prometheus/postgres_exporter-%i.conf"
-        in lines
-    )
-    assert (
-        "ExecStart=/usr/bin/prometheus-postgres-exporter $POSTGRES_EXPORTER_OPTS"
-        in lines
-    )
-    _install.revert_postgres_exporter_systemd_unit_template(ctx)
-    assert not unit.exists()
-
-
 def test_postgresql_backup_systemd_templates(ctx: Context) -> None:
     _install.postgresql_backup_systemd_templates(ctx, env="X-DEBUG=no")
     service_unit = ctx.settings.systemd.unit_path / "pglift-backup@.service"

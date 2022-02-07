@@ -6,7 +6,6 @@ from .ctx import BaseContext
 from .task import task
 
 POSTGRESQL_SERVICE_NAME = "pglift-postgresql@.service"
-POSTGRES_EXPORTER_SERVICE_NAME = "pglift-postgres_exporter@.service"
 BACKUP_SERVICE_NAME = "pglift-backup@.service"
 BACKUP_TIMER_NAME = "pglift-backup@.timer"
 
@@ -41,36 +40,6 @@ def revert_postgresql_systemd_unit_template(
 ) -> None:
     systemd.uninstall(
         POSTGRESQL_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=logger
-    )
-
-
-@task("installing systemd template unit for Prometheus postgres_exporter")
-def postgres_exporter_systemd_unit_template(
-    ctx: BaseContext, *, header: str = ""
-) -> None:
-    settings = ctx.settings.prometheus
-    configpath = str(settings.configpath).replace("{name}", "%i")
-    content = systemd.template(POSTGRES_EXPORTER_SERVICE_NAME).format(
-        executeas=systemd.executeas(ctx.settings),
-        configpath=configpath,
-        execpath=settings.execpath,
-    )
-    systemd.install(
-        POSTGRES_EXPORTER_SERVICE_NAME,
-        util.with_header(content, header),
-        ctx.settings.systemd.unit_path,
-        logger=logger,
-    )
-
-
-@postgres_exporter_systemd_unit_template.revert(
-    "uninstalling systemd template unit for Prometheus postgres_exporter"
-)
-def revert_postgres_exporter_systemd_unit_template(
-    ctx: BaseContext, *, header: str = ""
-) -> None:
-    systemd.uninstall(
-        POSTGRES_EXPORTER_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=logger
     )
 
 
@@ -121,7 +90,7 @@ def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
         logger.warning("not using systemd as 'service_manager', skipping installation")
         return
     postgresql_systemd_unit_template(ctx, env=env, header=header)
-    postgres_exporter_systemd_unit_template(ctx, header=header)
+    ctx.pm.install_systemd_unit_template(ctx=ctx, header=header)
     postgresql_backup_systemd_templates(ctx, env=env, header=header)
     systemd.daemon_reload(ctx)
 
@@ -133,6 +102,6 @@ def undo(ctx: BaseContext) -> None:
         )
         return
     revert_postgresql_backup_systemd_templates(ctx)
-    revert_postgres_exporter_systemd_unit_template(ctx)
+    ctx.pm.uninstall_systemd_unit_template(ctx=ctx)
     revert_postgresql_systemd_unit_template(ctx)
     systemd.daemon_reload(ctx)
