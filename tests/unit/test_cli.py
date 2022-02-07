@@ -58,6 +58,8 @@ def running(ctx: Context, instance: Instance) -> Iterator[MagicMock]:
 def cmd(ctx: click.Context, error: str) -> None:
     if error == "error":
         raise exceptions.CommandError(1, ["bad", "cmd"], "output", "errs")
+    if error == "cancel":
+        raise exceptions.Cancelled("flop")
     if error == "runtimeerror":
         raise RuntimeError("oups")
     if error == "exit":
@@ -71,6 +73,14 @@ def test_command_error(runner: CliRunner, obj: Obj) -> None:
         result.stderr
         == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\noutput\n"
     )
+    logpath = obj.ctx.settings.logpath
+    assert not list(logpath.glob("*.log"))
+
+
+def test_command_cancelled(runner: CliRunner, obj: Obj) -> None:
+    result = runner.invoke(cmd, ["cancel"], obj=obj)
+    assert result.exit_code == 1
+    assert result.stderr == "Aborted!\n"
     logpath = obj.ctx.settings.logpath
     assert not list(logpath.glob("*.log"))
 

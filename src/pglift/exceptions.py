@@ -15,6 +15,10 @@ class Error(Exception, metaclass=abc.ABCMeta):
         super().__init__(message)
 
 
+class Cancelled(Error):
+    """Action cancelled."""
+
+
 class NotFound(Error, metaclass=abc.ABCMeta):
     """Base class for errors when an object with `name` is not found."""
 

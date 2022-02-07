@@ -308,6 +308,16 @@ def test_upgrade_target_instance_exists(ctx: Context, instance: Instance) -> Non
         )
 
 
+def test_upgrade_confirm(ctx: Context, instance: Instance, pg_version: str) -> None:
+    with patch.object(ctx, "confirm", return_value=False) as confirm:
+        with pytest.raises(exceptions.Cancelled):
+            instance_mod.upgrade(ctx, instance, name="new")
+    confirm.assert_called_once_with(
+        f"Confirm upgrade of instance {instance} to version {pg_version}?",
+        True,
+    )
+
+
 def test_standby_upgrade(ctx: Context, standby_instance: Instance) -> None:
     with pytest.raises(
         exceptions.InstanceReadOnlyError,

@@ -559,6 +559,11 @@ def upgrade(
             f"Could not upgrade {instance}: target name/version instance already exists"
         )
 
+    if not ctx.confirm(
+        f"Confirm upgrade of instance {instance} to version {version}?", True
+    ):
+        raise exceptions.Cancelled(f"upgrade of instance {instance} cancelled")
+
     surole = ctx.settings.postgresql.surole
     surole_password = ctx.libpq_environ().get("PGPASSWORD")
     if not surole_password and ctx.settings.postgresql.auth.passfile:

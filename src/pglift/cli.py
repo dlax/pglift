@@ -112,6 +112,9 @@ class Command(click.Command):
             try:
                 with task.displayer_installed(displayer):
                     return super().invoke(context)
+            except exceptions.Cancelled as e:
+                logger.warning(str(e))
+                raise click.Abort
             except exceptions.Error as e:
                 logger.debug("an internal error occurred", exc_info=True)
                 msg = str(e)
