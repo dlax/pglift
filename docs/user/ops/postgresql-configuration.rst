@@ -3,12 +3,8 @@
 PostgreSQL configuration
 ========================
 
-The ``pglift pgconf`` command line entry point exposes commands to
-manage configuration of a PostgreSQL instance.
-
-It operates only on configuration files and does not assume that the
-instance is started. To make changes effective, the user may need to
-restart or reload the instance, see :doc:`/user/ops/instance`.
+The ``pglift pgconf`` command line entry point exposes commands to manage
+configuration of a PostgreSQL instance.
 
 .. code-block:: console
 
@@ -26,17 +22,26 @@ restart or reload the instance, see :doc:`/user/ops/instance`.
       set     Set configuration items.
       show    Show configuration (all parameters or specified ones).
 
+It operates only on configuration files and does not assume that the instance
+is started. To make changes effective, the user may need to restart or reload
+the instance, see :doc:`/user/ops/instance`.
+
+.. warning:: Some configuration settings should not be modified through this
+   command as they may be needed for other satellite services to work.
+   Typically, the ``port`` setting is one of them. Similarly, the selected
+   backup system may assume that some parameter are set to particular values.
+
 Show the configuration
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- View specific parameter
+View specific parameter:
 
 .. code-block:: console
 
     $ pglift pgconf show main log_connections
     log_connections = off
 
-- View multiple parameters
+View multiple parameters:
 
 .. code-block:: console
 
@@ -44,19 +49,19 @@ Show the configuration
     log_connections = off
     log_disconnections = off
 
-- View all parameters
+View all parameters:
 
 .. code-block:: console
 
     $ pglift pgconf show main
-    archive_command = '/usr/bin/pgbackrest --config=~/.local/share/pglift/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p'
+    archive_command = '/usr/bin/pgbackrest --config=/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p'
     archive_mode = on
     max_wal_senders = 3
     wal_level = 'replica'
     cluster_name = 'main'
     shared_buffers = '128MB'
     effective_cache_size = '5 GB'
-    unix_socket_directories = '~/.local/share/pglift/run/postgresql'
+    unix_socket_directories = '/var/run/postgresql'
     log_destination = 'stderr'
     logging_collector = on
     port = 5454
@@ -76,20 +81,14 @@ Show the configuration
 Change the configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Open the ``user.conf`` file to edit it
-
-.. code-block:: console
-
-    $ pglift pgconf edit main
-
-- Set one parameter
+Set one parameter:
 
 .. code-block:: console
 
     $ pglift pgconf set main log_connections=on
     log_connections: off -> on
 
-- Set multiple parameters
+Set multiple parameters:
 
 .. code-block:: console
 
@@ -97,17 +96,26 @@ Change the configuration
     log_connections: off -> on
     log_disconnections: off -> on
 
+.. note::
+    To directly edit the configuration file, use:
+
+    .. code-block:: console
+
+        $ pglift pgconf edit main
+
+    this will open your text editor with the *user* configuration.
+
 Remove parameters configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Remove specific parameter
+Remove specific parameter:
 
 .. code-block:: console
 
   $ pglift pgconf remove main log_connections
   log_connections: on -> None
 
-- Remove multiple parameters
+Remove multiple parameters:
 
 .. code-block:: console
 
