@@ -228,15 +228,12 @@ def test_instance_apply(
     mock_instance = object()
     with patch.object(
         instance_mod, "apply", return_value=(mock_instance, {}, False)
-    ) as apply, patch.object(instance_mod, "restart") as restart:
-        result = runner.invoke(
-            cli, ["instance", "apply", "-f", str(manifest)], obj=obj, input="y\n"
-        )
+    ) as apply:
+        result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     apply.assert_called_once()
     assert apply.call_args[0][0] == ctx
     assert isinstance(apply.call_args[0][1], interface.Instance)
-    assert not restart.called
 
 
 def test_instance_alter(
@@ -260,11 +257,7 @@ def test_instance_alter(
     )
     with patch.object(
         instance_mod, "apply", return_value=(instance, {}, True)
-    ) as apply, patch.object(
-        instance_mod, "describe", return_value=actual
-    ) as describe, patch.object(
-        instance_mod, "restart"
-    ) as restart:
+    ) as apply, patch.object(instance_mod, "describe", return_value=actual) as describe:
         result = runner.invoke(
             cli,
             [
@@ -275,11 +268,9 @@ def test_instance_alter(
                 "--prometheus-port=2121",
             ],
             obj=obj,
-            input="y\n",
         )
     describe.assert_called_once_with(ctx, instance.name, instance.version)
     apply.assert_called_once_with(ctx, altered)
-    restart.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0, result.output
 
 

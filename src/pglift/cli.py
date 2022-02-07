@@ -446,26 +446,13 @@ def instance_init(ctx: Context, instance: interface.Instance) -> None:
         instance_mod.apply(ctx, instance)
 
 
-def maybe_restart(ctx: Context, r: instance_mod.ApplyResult) -> None:
-    if r is None:
-        return
-    instance, changes, needs_restart = r
-    if not needs_restart:
-        return
-    if ctx.confirm(
-        "[cyan]Instance needs to be restarted.[/cyan]\n  Restart now?", False
-    ):
-        instance_mod.restart(ctx, instance)
-
-
 @instance.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @pass_ctx
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     instance = interface.Instance.parse_yaml(file)
-    r = instance_mod.apply(ctx, instance)
-    maybe_restart(ctx, r)
+    instance_mod.apply(ctx, instance)
 
 
 @instance.command("alter")
@@ -484,8 +471,7 @@ def instance_alter(
     values = instance_mod.describe(ctx, instance.name, instance.version).dict()
     values = deep_update(values, changes)
     altered = interface.Instance.parse_obj(values)
-    r = instance_mod.apply(ctx, altered)
-    maybe_restart(ctx, r)
+    instance_mod.apply(ctx, altered)
 
 
 @instance.command("promote")
