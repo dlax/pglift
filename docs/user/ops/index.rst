@@ -8,6 +8,7 @@ interfaces (command-line, Ansible, Python).
     :maxdepth: 2
 
     instance
+    postgresql-configuration
     roles
     databases
     privileges

@@ -22,7 +22,6 @@ modification, deletion as well as status management (start, stop, restart).
       alter       Alter a PostgreSQL instance
       apply       Apply manifest as a PostgreSQL instance
       backup      Back up a PostgreSQL instance
-      config      Manage configuration of a PostgreSQL instance.
       describe    Describe a PostgreSQL instance
       drop        Drop a PostgreSQL instance
       env         Output environment variables suitable to connect to a...

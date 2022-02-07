@@ -45,3 +45,5 @@ PostgreSQL configuration would have its file there.
 Since the include directive is located on top of ``postgresql.conf`` file, any
 setting defined in that file (and kept after the include directive) will take
 precedence over the managed configuration.
+
+.. seealso:: The ``pgconf`` command to manage :ref:`PostgreSQL configuration <pgconf>`.

@@ -19,7 +19,7 @@ pglift provides a CLI that can be used as follows:
       ...
 
 There are several entry points corresponding to main objects handled by
-pglift: instances, roles, databases, etc. Each entry point has its own help:
+pglift: instances, roles, databases, pgconf, etc. Each entry point has its own help:
 
 ::
 
@@ -86,6 +86,26 @@ Getting instance information:
     standby: null
     prometheus:
       port: 9187
+
+Managing instance configuration:
+
+See :doc:`/user/ops/postgresql-configuration` for dedicated documentation.
+
+For example,
+
+To show the log_connections parameter of an instance
+
+::
+
+    $ pglift pgconf show main log_connections
+    log_connections = off
+
+To edit the log_connections parameter of an instance
+
+::
+
+    $ pglift pgconf set main log_connections=on
+    log_connections: off -> on
 
 Adding and manipulating instance objects:
 
