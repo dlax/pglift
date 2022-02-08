@@ -393,7 +393,7 @@ def cli(
 @pass_ctx
 def site_settings(ctx: Context) -> None:
     """Show site settings."""
-    rich.print_json(ctx.settings.json())
+    CONSOLE.print_json(ctx.settings.json())
 
 
 @cli.command(
