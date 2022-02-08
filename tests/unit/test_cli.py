@@ -378,16 +378,14 @@ def test_pgconf_show(
     assert result.stdout.strip() == "\n".join(["port = 999"])
 
 
-def test_pgconf_set_validate(
-    runner: CliRunner, obj: Obj, instance: Instance
-) -> None:
+def test_pgconf_set_validate(runner: CliRunner, obj: Obj, instance: Instance) -> None:
     result = runner.invoke(
         cli,
         ["pgconf", "set", str(instance), "invalid"],
         obj=obj,
     )
     assert result.exit_code == 2
-    assert "Error: Invalid value for '<PARAMETER>=<VALUE>': invalid" in result.stderr
+    assert "Error: Invalid value for '<PARAMETER>=<VALUE>...': invalid" in result.stderr
 
 
 def test_pgconf_set(

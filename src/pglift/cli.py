@@ -573,9 +573,10 @@ def validate_configuration_parameters(
 @instance_identifier
 @click.argument(
     "parameters",
-    metavar="<PARAMETER>=<VALUE>",
+    metavar="<PARAMETER>=<VALUE>...",
     nargs=-1,
     callback=validate_configuration_parameters,
+    required=True,
 )
 @pass_ctx
 def pgconf_set(ctx: Context, instance: Instance, parameters: Dict[str, Any]) -> None:
@@ -589,7 +590,7 @@ def pgconf_set(ctx: Context, instance: Instance, parameters: Dict[str, Any]) -> 
 
 @pgconf.command("remove")
 @instance_identifier
-@click.argument("parameters", nargs=-1)
+@click.argument("parameters", nargs=-1, required=True)
 @pass_ctx
 def pgconf_remove(ctx: Context, instance: Instance, parameters: Tuple[str]) -> None:
     """Remove configuration items."""
