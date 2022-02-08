@@ -51,6 +51,7 @@ from .task import Displayer
 from .types import ConfigChanges
 
 CONSOLE = Console()
+SETTINGS = Settings()
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -341,13 +342,6 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     help="Write logs to LOGFILE, instead of stderr.",
 )
 @click.option(
-    "--settings",
-    "settings_file",
-    type=click.Path(resolve_path=True, path_type=pathlib.Path),
-    hidden=True,
-    help="Settings file, overriding local site configuration.",
-)
-@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -360,7 +354,6 @@ def cli(
     context: click.Context,
     log_level: Optional[str],
     log_file: Optional[pathlib.Path],
-    settings_file: Optional[pathlib.Path],
 ) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
@@ -387,13 +380,9 @@ def cli(
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
-        if settings_file is not None:
-            settings = Settings.parse_file(settings_file)
-        else:
-            settings = Settings()
         displayer = None if log_file else LogDisplayer()
         context.obj = Obj(
-            CLIContext(plugin_manager=pm.PluginManager.get(), settings=settings),
+            CLIContext(plugin_manager=pm.PluginManager.get(), settings=SETTINGS),
             displayer,
         )
     else:

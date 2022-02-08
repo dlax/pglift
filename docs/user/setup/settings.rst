@@ -82,12 +82,6 @@ Once one of these files is found, processing stops.
         $ SETTINGS='{"postgresql": {"root": "/srv/postgres"}}'
         $ SETTINGS=@/path/to/config.json
 
-    Alternatively, an *hidden* ``--settings`` option is available:
-
-    ::
-
-        $ pglift --settings=/path/to/config.yaml <command>
-
 .. [#xdgconfighome]
    Where ``$XDG_CONFIG_DIR`` would be ``$HOME/.config`` unless configured
    differently.
