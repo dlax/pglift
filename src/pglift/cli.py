@@ -74,19 +74,6 @@ class Obj:
         self.displayer = displayer
 
 
-def pass_ctx(f: C) -> C:
-    """Command decorator passing 'Context' bound to click.Context's object."""
-
-    @wraps(f)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        context = click.get_current_context()
-        ctx = context.obj.ctx
-        assert isinstance(ctx, Context), ctx
-        return context.invoke(f, ctx, *args, **kwargs)
-
-    return cast(C, wrapper)
-
-
 class Command(click.Command):
     def invoke(self, context: click.Context) -> Any:
         ctx = context.obj.ctx
@@ -152,6 +139,19 @@ class Command(click.Command):
 class Group(click.Group):
     command_class = Command
     group_class = type
+
+
+def pass_ctx(f: C) -> C:
+    """Command decorator passing 'Context' bound to click.Context's object."""
+
+    @wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        context = click.get_current_context()
+        ctx = context.obj.ctx
+        assert isinstance(ctx, Context), ctx
+        return context.invoke(f, ctx, *args, **kwargs)
+
+    return cast(C, wrapper)
 
 
 def require_component(mod: ModuleType, name: str, fn: C) -> C:
