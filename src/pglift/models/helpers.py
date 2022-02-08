@@ -102,7 +102,8 @@ def _decorators_from_model(
                 argname = argname.replace("-", "_")
             description = None
             if field.field_info.description:
-                description = field.field_info.description.capitalize()
+                description = field.field_info.description
+                description = description[0].upper() + description[1:]
             attrs: Dict[str, Any] = {}
             origin_type = get_origin(field.outer_type_)
             if lenient_issubclass(ftype, enum.Enum):

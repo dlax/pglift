@@ -106,7 +106,7 @@ def test_parameters_from_model() -> None:
         "  --gender [M|F]\n"
         "  --age AGE                       Age.\n"
         "  --address-street STREET         Street lines.\n"
-        "  --address-zip-code ZIP-CODE     Zip code.\n"
+        "  --address-zip-code ZIP-CODE     ZIP code.\n"
         "  --address-town TOWN             City.\n"
         "  --address-country [fr|be]\n"
         "  --address-shared / --no-address-shared\n"
