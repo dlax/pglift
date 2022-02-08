@@ -362,7 +362,7 @@ def test_instance_list(
     ],
     ids=["param=<none>", "param=port", "param=backslash_quote(commented)"],
 )
-def test_instance_config_show(
+def test_pgconf_show(
     runner: CliRunner,
     obj: Obj,
     instance: Instance,
@@ -378,7 +378,7 @@ def test_instance_config_show(
     assert result.stdout.strip() == "\n".join(["port = 999"])
 
 
-def test_instance_config_set_validate(
+def test_pgconf_set_validate(
     runner: CliRunner, obj: Obj, instance: Instance
 ) -> None:
     result = runner.invoke(
@@ -390,7 +390,7 @@ def test_instance_config_set_validate(
     assert "Error: Invalid value for '<PARAMETER>=<VALUE>': invalid" in result.stderr
 
 
-def test_instance_config_set(
+def test_pgconf_set(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(
@@ -452,7 +452,7 @@ def test_instance_config_set(
     assert "\n hint:" in result.stderr
 
 
-def test_instance_config_remove(
+def test_pgconf_remove(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     result = runner.invoke(
@@ -477,7 +477,7 @@ def test_instance_config_remove(
     assert "bonjour_name: test -> None" in result.stderr
 
 
-def test_instance_config_edit(
+def test_pgconf_edit(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch("click.edit") as edit:
