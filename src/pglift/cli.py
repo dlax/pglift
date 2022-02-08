@@ -53,8 +53,6 @@ from .types import ConfigChanges
 CONSOLE = Console()
 SETTINGS = Settings()
 
-C = TypeVar("C", bound=Callable[..., Any])
-
 
 class LogDisplayer:
     def handle(self, msg: str) -> None:
@@ -139,6 +137,9 @@ class Command(click.Command):
 class Group(click.Group):
     command_class = Command
     group_class = type
+
+
+C = TypeVar("C", bound=Callable[..., Any])
 
 
 def pass_ctx(f: C) -> C:
