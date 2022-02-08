@@ -90,7 +90,7 @@ def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
         logger.warning("not using systemd as 'service_manager', skipping installation")
         return
     postgresql_systemd_unit_template(ctx, env=env, header=header)
-    ctx.pm.install_systemd_unit_template(ctx=ctx, header=header)
+    ctx.pm.hook.install_systemd_unit_template(ctx=ctx, header=header)
     postgresql_backup_systemd_templates(ctx, env=env, header=header)
     systemd.daemon_reload(ctx)
 
@@ -102,6 +102,6 @@ def undo(ctx: BaseContext) -> None:
         )
         return
     revert_postgresql_backup_systemd_templates(ctx)
-    ctx.pm.uninstall_systemd_unit_template(ctx=ctx)
+    ctx.pm.hook.uninstall_systemd_unit_template(ctx=ctx)
     revert_postgresql_systemd_unit_template(ctx)
     systemd.daemon_reload(ctx)
