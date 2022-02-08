@@ -50,7 +50,7 @@ from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .task import Displayer
 from .types import ConfigChanges
 
-console = Console()
+CONSOLE = Console()
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -62,7 +62,7 @@ class LogDisplayer:
 
 class CLIContext(Context):
     def confirm(self, message: str, default: bool) -> bool:
-        return rich.prompt.Confirm(console=console).ask(f"[yellow]>[/yellow] {message}")
+        return rich.prompt.Confirm(console=CONSOLE).ask(f"[yellow]>[/yellow] {message}")
 
 
 class Obj:
@@ -227,7 +227,7 @@ def print_table_for(
     items: Iterable[_M],
     title: Optional[str] = None,
     *,
-    display: Callable[[RenderableType], None] = console.print,
+    display: Callable[[RenderableType], None] = CONSOLE.print,
 ) -> None:
     """Render a list of items as a table.
 
@@ -277,7 +277,7 @@ def print_table_for(
 
 
 def print_json_for(
-    items: Iterable[_M], *, display: Callable[[str], None] = console.print_json
+    items: Iterable[_M], *, display: Callable[[str], None] = CONSOLE.print_json
 ) -> None:
     """Render a list of items as JSON.
 
@@ -488,7 +488,7 @@ def instance_promote(ctx: Context, instance: Instance) -> None:
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    console.print_json(interface.Instance.schema_json(indent=2))
+    CONSOLE.print_json(interface.Instance.schema_json(indent=2))
 
 
 @instance.command("describe")
@@ -871,7 +871,7 @@ def role_alter(ctx: Context, instance: Instance, name: str, **changes: Any) -> N
 @role.command("schema")
 def role_schema() -> None:
     """Print the JSON schema of role model"""
-    console.print_json(interface.Role.schema_json(indent=2))
+    CONSOLE.print_json(interface.Role.schema_json(indent=2))
 
 
 @role.command("apply")
@@ -967,7 +967,7 @@ def database_alter(ctx: Context, instance: Instance, name: str, **changes: Any) 
 @database.command("schema")
 def database_schema() -> None:
     """Print the JSON schema of database model"""
-    console.print_json(interface.Database.schema_json(indent=2))
+    CONSOLE.print_json(interface.Database.schema_json(indent=2))
 
 
 @database.command("apply")
@@ -1076,7 +1076,7 @@ def postgres_exporter(ctx: Context) -> None:
 @postgres_exporter.command("schema")
 def postgres_exporter_schema() -> None:
     """Print the JSON schema of database model"""
-    console.print_json(interface.PostgresExporter.schema_json(indent=2))
+    CONSOLE.print_json(interface.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")
