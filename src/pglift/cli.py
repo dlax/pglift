@@ -40,7 +40,7 @@ from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest as pgbackrest_mod
-from . import pm, privileges, prometheus, roles, task, version
+from . import privileges, prometheus, roles, task, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
@@ -381,7 +381,7 @@ def cli(
 
     if not context.obj:
         displayer = None if log_file else LogDisplayer()
-        context.obj = Obj(CLIContext(plugin_manager=pm.PluginManager.get()), displayer)
+        context.obj = Obj(CLIContext(), displayer)
     else:
         assert isinstance(context.obj, Obj), context.obj
 

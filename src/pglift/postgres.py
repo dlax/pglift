@@ -6,7 +6,6 @@ from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
 from .models.system import PostgreSQLInstance
-from .pm import PluginManager
 
 parser = argparse.ArgumentParser(description="Start postgres for specified instance")
 parser.add_argument(
@@ -22,7 +21,7 @@ def main(
 ) -> int:
     args = parser.parse_args(argv)
     if ctx is None:
-        ctx = Context(plugin_manager=PluginManager.get())
+        ctx = Context()
 
     try:
         instance = PostgreSQLInstance.from_stanza(ctx, args.instance)

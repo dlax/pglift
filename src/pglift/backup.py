@@ -48,7 +48,6 @@ def main() -> None:
     import argparse
 
     from .ctx import Context
-    from .pm import PluginManager
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -68,7 +67,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    ctx = Context(plugin_manager=PluginManager.get())
+    ctx = Context()
     try:
         instance = PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:

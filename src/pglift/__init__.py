@@ -1,7 +1,7 @@
 import pluggy
 from typing_extensions import Final
 
-from . import _compat, settings
+from . import _compat, pm, settings
 
 __all__ = ["hookimpl"]
 
@@ -15,3 +15,4 @@ def version() -> str:
 
 
 SETTINGS: Final = settings.Settings()
+PLUGIN_MANAGER: Final = pm.PluginManager.get()
