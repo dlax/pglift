@@ -23,8 +23,8 @@ pglift: instances, roles, databases, pgconf, etc. Each entry point has its own h
 
 ::
 
-    $ pglift instance init --help
-    Usage: pglift instance init [OPTIONS] NAME
+    $ pglift instance create --help
+    Usage: pglift instance create [OPTIONS] NAME
 
       Initialize a PostgreSQL instance
 
@@ -45,10 +45,10 @@ Creating an instance:
 
 ::
 
-    $ pglift instance init main --port=5455
+    $ pglift instance create main --port=5455
 
 a standby instance can also be created by passing the
-``--standby-for=<primary dsn>`` option to ``instance init`` command, see
+``--standby-for=<primary dsn>`` option to ``instance create`` command, see
 :doc:`/howto/standby-setup` for dedicated documentation.
 
 The instance actually consists of a PostgreSQL instance with a backup service (pgbackrest)

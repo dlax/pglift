@@ -133,4 +133,4 @@ e.g.:
 .. code-block:: console
 
     $ env SETTINGS=$(pwd)/config.json \
-        pglift instance init --port=5455 main
+        pglift instance create --port=5455 main

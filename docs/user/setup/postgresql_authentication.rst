@@ -26,7 +26,7 @@ super-user role.
 
 At instance creation, one can define a password for the super-user role
 (``postgres`` by default), using ``--surole-password`` option to ``pglift
-instance init`` or via a yaml manifest:
+instance create`` or via a yaml manifest:
 
 .. code-block:: yaml
     :caption: my-instance.yaml

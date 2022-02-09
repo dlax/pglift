@@ -424,10 +424,10 @@ def instance() -> None:
     """Manipulate instances"""
 
 
-@instance.command("init")
+@instance.command("create")
 @helpers.parameters_from_model(interface.Instance)
 @pass_ctx
-def instance_init(ctx: Context, instance: interface.Instance) -> None:
+def instance_create(ctx: Context, instance: interface.Instance) -> None:
     """Initialize a PostgreSQL instance"""
     if instance_mod.exists(ctx, instance.name, instance.version):
         raise click.ClickException("instance already exists")

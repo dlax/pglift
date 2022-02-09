@@ -5,7 +5,7 @@ Creating a standby instance:
 
 ::
 
-    $ pglift instance init standby --standby-for <primary dsn>
+    $ pglift instance create standby --standby-for <primary dsn>
 
 
 If the primary is also a pglift instance, you must use the dedicated

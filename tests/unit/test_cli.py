@@ -22,7 +22,7 @@ from pglift.cli import (
     Obj,
     cli,
     get_instance,
-    instance_init,
+    instance_create,
     require_component,
 )
 from pglift.ctx import Context
@@ -177,10 +177,10 @@ def test_site_configure(
     undo_install.assert_called_once_with(ctx)
 
 
-def test_instance_init(
+def test_instance_create(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
-    assert [p.name for p in instance_init.params] == [
+    assert [p.name for p in instance_create.params] == [
         "name",
         "version",
         "port",
@@ -196,7 +196,7 @@ def test_instance_init(
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
             cli,
-            ["instance", "init", instance.name, f"--version={instance.version}"],
+            ["instance", "create", instance.name, f"--version={instance.version}"],
             obj=obj,
         )
     assert not apply.call_count
@@ -206,7 +206,7 @@ def test_instance_init(
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
             cli,
-            ["instance", "init", "new", "--port=1234"],
+            ["instance", "create", "new", "--port=1234"],
             obj=obj,
         )
     apply.assert_called_once_with(ctx, interface.Instance(name="new", port=1234))
