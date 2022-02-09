@@ -2,15 +2,17 @@ import functools
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence
 
 from pgtoolkit import ctl
-from pluggy import PluginManager
 
 from . import SETTINGS, cmd, exceptions, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
+
+if TYPE_CHECKING:
+    from .pm import PluginManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class BaseContext(ABC):
     def __init__(
         self,
         *,
-        plugin_manager: PluginManager,
+        plugin_manager: "PluginManager",
         settings: Settings = SETTINGS,
     ) -> None:
         self.settings = settings
