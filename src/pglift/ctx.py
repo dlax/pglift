@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Sequence
 from pgtoolkit import ctl
 from pluggy import PluginManager
 
-from . import cmd, exceptions, logger, util
+from . import SETTINGS, cmd, exceptions, logger, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
@@ -19,7 +19,7 @@ class BaseContext(ABC):
         self,
         *,
         plugin_manager: PluginManager,
-        settings: Settings,
+        settings: Settings = SETTINGS,
     ) -> None:
         self.settings = settings
         self.pm = plugin_manager

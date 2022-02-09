@@ -46,12 +46,11 @@ from .ctx import Context
 from .instance import Status
 from .models import helpers, interface
 from .models.system import Instance
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import Displayer
 from .types import ConfigChanges
 
 CONSOLE = Console()
-SETTINGS = Settings()
 
 
 class LogDisplayer:
@@ -382,10 +381,7 @@ def cli(
 
     if not context.obj:
         displayer = None if log_file else LogDisplayer()
-        context.obj = Obj(
-            CLIContext(plugin_manager=pm.PluginManager.get(), settings=SETTINGS),
-            displayer,
-        )
+        context.obj = Obj(CLIContext(plugin_manager=pm.PluginManager.get()), displayer)
     else:
         assert isinstance(context.obj, Obj), context.obj
 

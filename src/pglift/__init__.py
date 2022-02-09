@@ -4,7 +4,7 @@ import pathlib
 import pluggy
 from typing_extensions import Final
 
-from . import _compat
+from . import _compat, settings
 
 __all__ = ["hookimpl"]
 
@@ -23,3 +23,6 @@ def template(*args: str) -> str:
 
 def version() -> str:
     return _compat.version(__name__)
+
+
+SETTINGS: Final = settings.Settings()

@@ -62,7 +62,6 @@ from pglift import types
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
 from pglift.pm import PluginManager
-from pglift.settings import Settings
 
 
 def run_module() -> None:
@@ -82,9 +81,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(
-        module, plugin_manager=PluginManager.get(), settings=Settings()
-    )
+    ctx = AnsibleContext(module, plugin_manager=PluginManager.get())
 
     result: Dict[str, str] = {}
 
