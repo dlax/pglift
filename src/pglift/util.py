@@ -9,6 +9,12 @@ import humanize
 from . import cmd, exceptions
 from .types import CommandRunner
 
+datapath = Path(__file__).parent / "data"
+
+
+def template(*args: str) -> str:
+    return datapath.joinpath(*args).read_text()
+
 
 def xdg_config_home() -> Path:
     return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))

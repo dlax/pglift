@@ -5,8 +5,7 @@ from logging import Logger
 from pathlib import Path
 from typing import Callable, List
 
-from . import exceptions
-from . import template as _template
+from . import exceptions, util
 from .ctx import BaseContext
 from .settings import Settings, SystemdSettings
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def template(name: str) -> str:
-    return _template("systemd", name)
+    return util.template("systemd", name)
 
 
 def executeas(settings: Settings) -> str:

@@ -15,18 +15,7 @@ from pgtoolkit.ctl import Status as Status
 from pydantic import SecretStr
 from typing_extensions import Literal
 
-from . import (
-    cmd,
-    conf,
-    datapath,
-    db,
-    exceptions,
-    hookimpl,
-    roles,
-    systemd,
-    template,
-    util,
-)
+from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
 from .ctx import BaseContext
 from .models import interface
 from .models.system import (
@@ -216,7 +205,7 @@ def configure(
             f.write(original_content)
 
     site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": instance.name}
-    site_config_template = datapath / "postgresql" / "site.conf"
+    site_config_template = util.datapath / "postgresql" / "site.conf"
     if site_config_template.exists():
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
@@ -366,7 +355,7 @@ def instance_configure(ctx: BaseContext, manifest: interface.Instance) -> None:
     auth_settings = ctx.settings.postgresql.auth
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
-    hba = template("postgresql", "pg_hba.conf").format(
+    hba = util.template("postgresql", "pg_hba.conf").format(
         surole=surole.name,
         replrole=replrole.name,
         auth_local=auth_settings.local,
@@ -385,7 +374,7 @@ def instance_configure(ctx: BaseContext, manifest: interface.Instance) -> None:
     hba_path.write_text(hba)
 
     ident_path = instance.datadir / "pg_ident.conf"
-    ident = template("postgresql", "pg_ident.conf")
+    ident = util.template("postgresql", "pg_ident.conf")
     ident_path.write_text(ident)
 
 
