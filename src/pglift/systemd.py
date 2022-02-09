@@ -3,11 +3,13 @@ import logging
 import subprocess
 from logging import Logger
 from pathlib import Path
-from typing import Callable, List
+from typing import TYPE_CHECKING, Callable, List
 
 from . import exceptions, util
-from .ctx import BaseContext
 from .settings import Settings, SystemdSettings
+
+if TYPE_CHECKING:
+    from .ctx import BaseContext
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +63,11 @@ def uninstall(name: str, unit_path: Path, *, logger: Logger) -> None:
         logger.info("removed %s systemd unit (%s)", name, path)
 
 
-def daemon_reload(ctx: BaseContext) -> None:
+def daemon_reload(ctx: "BaseContext") -> None:
     ctx.run(systemctl(ctx.settings.systemd, "daemon-reload"), check=True)
 
 
-def is_enabled(ctx: BaseContext, unit: str) -> bool:
+def is_enabled(ctx: "BaseContext", unit: str) -> bool:
     r = ctx.run(
         systemctl(ctx.settings.systemd, "--quiet", "is-enabled", unit),
         check=False,
@@ -73,7 +75,7 @@ def is_enabled(ctx: BaseContext, unit: str) -> bool:
     return r.returncode == 0
 
 
-def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
+def enable(ctx: "BaseContext", unit: str, *, now: bool = False) -> None:
     if is_enabled(ctx, unit):
         logger.debug("systemd unit %s already enabled, 'enable' action skipped", unit)
         return
@@ -83,7 +85,7 @@ def enable(ctx: BaseContext, unit: str, *, now: bool = False) -> None:
     ctx.run(cmd, check=True)
 
 
-def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
+def disable(ctx: "BaseContext", unit: str, *, now: bool = True) -> None:
     if not is_enabled(ctx, unit):
         logger.debug("systemd unit %s not enabled, 'disable' action skipped", unit)
         return
@@ -93,12 +95,12 @@ def disable(ctx: BaseContext, unit: str, *, now: bool = True) -> None:
     ctx.run(cmd, check=True)
 
 
-F = Callable[[BaseContext, str], None]
+F = Callable[["BaseContext", str], None]
 
 
 def log_status(fn: F) -> F:
     @functools.wraps(fn)
-    def wrapper(ctx: BaseContext, unit: str) -> None:
+    def wrapper(ctx: "BaseContext", unit: str) -> None:
         try:
             return fn(ctx, unit)
         except (subprocess.CalledProcessError, SystemExit):
@@ -109,7 +111,7 @@ def log_status(fn: F) -> F:
     return wrapper
 
 
-def status(ctx: BaseContext, unit: str) -> str:
+def status(ctx: "BaseContext", unit: str) -> str:
     proc = ctx.run(
         systemctl(ctx.settings.systemd, "--full", "--lines=100", "status", unit),
         check=False,
@@ -123,26 +125,26 @@ def status(ctx: BaseContext, unit: str) -> str:
 
 
 @log_status
-def start(ctx: BaseContext, unit: str) -> None:
+def start(ctx: "BaseContext", unit: str) -> None:
     ctx.run(systemctl(ctx.settings.systemd, "start", unit), check=True)
 
 
 @log_status
-def stop(ctx: BaseContext, unit: str) -> None:
+def stop(ctx: "BaseContext", unit: str) -> None:
     ctx.run(systemctl(ctx.settings.systemd, "stop", unit), check=True)
 
 
 @log_status
-def reload(ctx: BaseContext, unit: str) -> None:
+def reload(ctx: "BaseContext", unit: str) -> None:
     ctx.run(systemctl(ctx.settings.systemd, "reload", unit), check=True)
 
 
 @log_status
-def restart(ctx: BaseContext, unit: str) -> None:
+def restart(ctx: "BaseContext", unit: str) -> None:
     ctx.run(systemctl(ctx.settings.systemd, "restart", unit), check=True)
 
 
-def is_active(ctx: BaseContext, unit: str) -> bool:
+def is_active(ctx: "BaseContext", unit: str) -> bool:
     r = ctx.run(
         systemctl(ctx.settings.systemd, "--quiet", "--user", "is-active", unit),
         check=False,

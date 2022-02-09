@@ -9,13 +9,13 @@ from pgtoolkit.conf import Configuration
 from . import cmd, exceptions, hookimpl
 from . import prometheus_default_port as default_port
 from . import systemd, util
-from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
 
 if TYPE_CHECKING:
+    from .ctx import BaseContext
     from .models.system import BaseInstance
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class Service:
 
     @classmethod
     def system_lookup(
-        cls: Type[T], ctx: BaseContext, instance: "BaseInstance"
+        cls: Type[T], ctx: "BaseContext", instance: "BaseInstance"
     ) -> Optional[T]:
         try:
             p = port(ctx, instance.qualname)
@@ -45,11 +45,11 @@ class Service:
             return cls(p)
 
 
-def available(ctx: BaseContext) -> bool:
+def available(ctx: "BaseContext") -> bool:
     return ctx.settings.prometheus.execpath.exists()
 
 
-def enabled(ctx: BaseContext, qualname: str) -> bool:
+def enabled(ctx: "BaseContext", qualname: str) -> bool:
     return available(ctx) and _configpath(qualname, ctx.settings.prometheus).exists()
 
 
@@ -73,7 +73,7 @@ def systemd_unit(qualname: str) -> str:
 
 
 @hookimpl  # type: ignore[misc]
-def install_systemd_unit_template(ctx: BaseContext, header: str = "") -> None:
+def install_systemd_unit_template(ctx: "BaseContext", header: str = "") -> None:
     logger.info("installing systemd template unit for Prometheus postgres_exporter")
     settings = ctx.settings.prometheus
     configpath = str(settings.configpath).replace("{name}", "%i")
@@ -91,14 +91,14 @@ def install_systemd_unit_template(ctx: BaseContext, header: str = "") -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def uninstall_systemd_unit_template(ctx: BaseContext) -> None:
+def uninstall_systemd_unit_template(ctx: "BaseContext") -> None:
     logger.info("uninstalling systemd template unit for Prometheus postgres_exporter")
     systemd.uninstall(
         SYSTEMD_SERVICE_NAME, ctx.settings.systemd.unit_path, logger=logger
     )
 
 
-def port(ctx: BaseContext, name: str) -> int:
+def port(ctx: "BaseContext", name: str) -> int:
     """Return postgres_exporter port read from configuration file.
 
     :param name: the name for the service.
@@ -130,7 +130,7 @@ def port(ctx: BaseContext, name: str) -> int:
 
 @task("setting up Prometheus postgres_exporter service")
 def setup(
-    ctx: BaseContext,
+    ctx: "BaseContext",
     name: str,
     *,
     dsn: str = "",
@@ -183,7 +183,7 @@ def setup(
 
 @setup.revert("deconfiguring postgres_exporter service")
 def revert_setup(
-    ctx: BaseContext,
+    ctx: "BaseContext",
     name: str,
     *,
     dsn: str = "",
@@ -206,7 +206,7 @@ def revert_setup(
 
 
 @task("checking existence of postgres_exporter service locally")
-def exists(ctx: BaseContext, name: str) -> bool:
+def exists(ctx: "BaseContext", name: str) -> bool:
     """Return True if a postgres_exporter with `name` exists locally."""
     try:
         port(ctx, name)
@@ -215,7 +215,7 @@ def exists(ctx: BaseContext, name: str) -> bool:
     return True
 
 
-def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
+def apply(ctx: "BaseContext", manifest: interface.PostgresExporter) -> None:
     """Apply state described by specified manifest as a postgres_exporter
     service for a non-local instance.
 
@@ -248,7 +248,7 @@ def apply(ctx: BaseContext, manifest: interface.PostgresExporter) -> None:
 
 
 @task("dropping postgres_exporter service")
-def drop(ctx: BaseContext, name: str) -> None:
+def drop(ctx: "BaseContext", name: str) -> None:
     """Remove a postgres_exporter service."""
     if not exists(ctx, name):
         logger.warning("no postgres_exporter service '%s' found", name)
@@ -259,7 +259,7 @@ def drop(ctx: BaseContext, name: str) -> None:
 
 
 def setup_local(
-    ctx: BaseContext, manifest: interface.Instance, instance_config: Configuration
+    ctx: "BaseContext", manifest: interface.Instance, instance_config: Configuration
 ) -> None:
     """Setup Prometheus postgres_exporter for a local instance."""
     if manifest.prometheus is None:
@@ -289,7 +289,7 @@ def setup_local(
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: BaseContext, manifest: interface.Instance, config: Configuration
+    ctx: "BaseContext", manifest: interface.Instance, config: Configuration
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not available(ctx):
@@ -301,7 +301,7 @@ def instance_configure(
 
 
 @task("starting postgres_exporter service")
-def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
+def start(ctx: "BaseContext", name: str, *, foreground: bool = False) -> None:
     """Start postgres_exporter for `instance`.
 
     :param name: the name for the service.
@@ -332,7 +332,7 @@ def start(ctx: BaseContext, name: str, *, foreground: bool = False) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_start(ctx: BaseContext, instance: Instance) -> None:
+def instance_start(ctx: "BaseContext", instance: Instance) -> None:
     """Start postgres_exporter service."""
     if not enabled(ctx, instance.qualname):
         return
@@ -340,7 +340,7 @@ def instance_start(ctx: BaseContext, instance: Instance) -> None:
 
 
 @task("stopping postgres_exporter service")
-def stop(ctx: BaseContext, name: str) -> None:
+def stop(ctx: "BaseContext", name: str) -> None:
     """Stop postgres_exporter service."""
     if ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(name))
@@ -353,7 +353,7 @@ def stop(ctx: BaseContext, name: str) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_stop(ctx: BaseContext, instance: Instance) -> None:
+def instance_stop(ctx: "BaseContext", instance: Instance) -> None:
     """Stop postgres_exporter service."""
     if not enabled(ctx, instance.qualname):
         return
@@ -361,6 +361,6 @@ def instance_stop(ctx: BaseContext, instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_drop(ctx: BaseContext, instance: Instance) -> None:
+def instance_drop(ctx: "BaseContext", instance: Instance) -> None:
     """Uninstall postgres_exporter from an instance being dropped."""
     revert_setup(ctx, instance.qualname)

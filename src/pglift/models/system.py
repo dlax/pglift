@@ -6,16 +6,16 @@ from attr.validators import instance_of
 from pgtoolkit.conf import Configuration
 
 from .. import conf, exceptions
-from ..ctx import BaseContext
 from ..settings import Settings
 from ..util import short_version
 from ..validators import known_postgresql_version
 
 if TYPE_CHECKING:
+    from ..ctx import BaseContext
     from ..prometheus import Service as PrometheusService
 
 
-def default_postgresql_version(ctx: BaseContext) -> str:
+def default_postgresql_version(ctx: "BaseContext") -> str:
     version = ctx.settings.postgresql.default_version
     if version is None:
         version = short_version(ctx.pg_ctl(None).version)
@@ -75,7 +75,7 @@ class BaseInstance:
         return True
 
     @classmethod
-    def get(cls: Type[T], name: str, version: Optional[str], ctx: BaseContext) -> T:
+    def get(cls: Type[T], name: str, version: Optional[str], ctx: "BaseContext") -> T:
         # attrs strip leading underscores at init for private attributes.
         return cls(
             name, version or default_postgresql_version(ctx), settings=ctx.settings
@@ -116,7 +116,7 @@ class PostgreSQLInstance(BaseInstance):
     @classmethod
     def system_lookup(
         cls: Type[T],
-        ctx: BaseContext,
+        ctx: "BaseContext",
         value: Union[BaseInstance, Tuple[str, Optional[str]]],
     ) -> T:
         """Build a (real) instance by system lookup.
@@ -145,7 +145,7 @@ class PostgreSQLInstance(BaseInstance):
         return Standby.system_lookup(self)
 
     @classmethod
-    def from_stanza(cls: Type[T], ctx: BaseContext, stanza: str) -> T:
+    def from_stanza(cls: Type[T], ctx: "BaseContext", stanza: str) -> T:
         """Build an Instance from a '<version>-<name>' string."""
         try:
             version, name = stanza.split("-", 1)
@@ -196,7 +196,7 @@ class Instance(PostgreSQLInstance):
     @classmethod
     def system_lookup(
         cls: Type[T],
-        ctx: BaseContext,
+        ctx: "BaseContext",
         value: Union[BaseInstance, Tuple[str, Optional[str]]],
     ) -> T:
         pg_instance = PostgreSQLInstance.system_lookup(ctx, value)
