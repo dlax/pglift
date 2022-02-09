@@ -1,22 +1,22 @@
+import importlib
 from types import ModuleType
 from typing import List, Sequence
 
 import pluggy
 
 from . import __name__ as pkgname
-from . import backup, hookspecs, instance, pgbackrest, prometheus, roles
-
-hook_modules = (backup, instance, pgbackrest, prometheus, roles)
+from . import hookspecs
 
 
 class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
     @classmethod
     def get(cls, no_register: Sequence[str] = ()) -> "PluginManager":
+        hook_modules = ("instance", "roles", "backup", "pgbackrest", "prometheus")
         self = cls(pkgname)
-        no_register = tuple(f"{pkgname}.{n}" for n in no_register)
         self.add_hookspecs(hookspecs)
-        for hm in hook_modules:
-            if hm.__name__ not in no_register:
+        for hname in hook_modules:
+            if hname not in no_register:
+                hm = importlib.import_module(f"{pkgname}.{hname}")
                 self.register(hm)
         return self
 
