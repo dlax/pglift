@@ -3,9 +3,10 @@ from typing import Any, Mapping, Optional, Sequence, Tuple
 
 from typing_extensions import Protocol
 
-from . import logger
 from .ctx import BaseContext
 from .types import CompletedProcess
+
+logger = logging.getLogger(__name__)
 
 
 class _AnsibleModule(Protocol):

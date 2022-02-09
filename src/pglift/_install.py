@@ -1,10 +1,12 @@
+import logging
 import sys
 from typing import Optional
 
-from . import logger, systemd, util
+from . import systemd, util
 from .ctx import BaseContext
 from .task import task
 
+logger = logging.getLogger(__name__)
 POSTGRESQL_SERVICE_NAME = "pglift-postgresql@.service"
 BACKUP_SERVICE_NAME = "pglift-backup@.service"
 BACKUP_TIMER_NAME = "pglift-backup@.timer"

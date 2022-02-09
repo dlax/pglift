@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import logging
 import os
 import shutil
 import tempfile
@@ -21,7 +22,6 @@ from . import (
     db,
     exceptions,
     hookimpl,
-    logger,
     roles,
     systemd,
     template,
@@ -37,6 +37,8 @@ from .models.system import (
 )
 from .task import task
 from .types import ConfigChanges
+
+logger = logging.getLogger(__name__)
 
 
 def systemd_unit(instance: BaseInstance) -> str:

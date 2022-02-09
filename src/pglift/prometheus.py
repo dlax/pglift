@@ -1,3 +1,4 @@
+import logging
 import shlex
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar
@@ -5,7 +6,7 @@ from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar
 import attr
 from pgtoolkit.conf import Configuration
 
-from . import cmd, exceptions, hookimpl, logger
+from . import cmd, exceptions, hookimpl
 from . import prometheus_default_port as default_port
 from . import systemd, util
 from .ctx import BaseContext
@@ -16,6 +17,8 @@ from .task import task
 
 if TYPE_CHECKING:
     from .models.system import BaseInstance
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)

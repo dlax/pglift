@@ -39,7 +39,6 @@ from typing_extensions import Literal
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
-from . import logger
 from . import pgbackrest as pgbackrest_mod
 from . import pm, privileges, prometheus, roles, task, version
 from .ctx import Context
@@ -50,6 +49,7 @@ from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import Displayer
 from .types import ConfigChanges
 
+logger = logging.getLogger(__name__)
 CONSOLE = Console()
 
 

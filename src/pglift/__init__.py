@@ -1,4 +1,3 @@
-import logging
 import pathlib
 
 import pluggy
@@ -9,8 +8,6 @@ from . import _compat, settings
 __all__ = ["hookimpl"]
 
 hookimpl = pluggy.HookimplMarker(__name__)
-
-logger = logging.getLogger(__name__)
 
 datapath = pathlib.Path(__file__).parent / "data"
 

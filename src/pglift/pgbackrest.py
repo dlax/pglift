@@ -2,6 +2,7 @@ import configparser
 import datetime
 import enum
 import json
+import logging
 import os
 import re
 import shutil
@@ -14,7 +15,7 @@ from typing_extensions import Literal
 
 from . import exceptions, hookimpl
 from . import instance as instance_mod
-from . import logger, roles, util
+from . import roles, util
 from .conf import info as conf_info
 from .ctx import BaseContext
 from .models import interface
@@ -23,6 +24,8 @@ from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .settings import PgBackRestSettings
 from .task import task
 from .types import AutoStrEnum
+
+logger = logging.getLogger(__name__)
 
 
 def available(ctx: BaseContext) -> bool:

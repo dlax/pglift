@@ -1,14 +1,17 @@
+import logging
 from typing import Any, Dict, List, Sequence, Tuple
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
 from psycopg import sql
 
-from . import db, exceptions, logger, types
+from . import db, exceptions, types
 from .ctx import BaseContext
 from .models import interface
 from .models.system import Instance
 from .task import task
+
+logger = logging.getLogger(__name__)
 
 
 def apply(

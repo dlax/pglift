@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Sequence
@@ -6,10 +7,12 @@ from typing import Any, Dict, Optional, Sequence
 from pgtoolkit import ctl
 from pluggy import PluginManager
 
-from . import SETTINGS, cmd, exceptions, logger, util
+from . import SETTINGS, cmd, exceptions, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
+
+logger = logging.getLogger(__name__)
 
 
 class BaseContext(ABC):
