@@ -34,6 +34,9 @@ def instance_configure(
         old_port, port = changes["port"]
     except KeyError:
         old_port = port = config.get("port", 5432)
+    else:
+        if port is None:
+            port = config.get("port", 5432)
     assert isinstance(port, int), port
 
     surole = interface.instance_surole(ctx.settings, manifest)
