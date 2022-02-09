@@ -21,8 +21,6 @@ class BaseContext(ABC):
         plugin_manager: PluginManager,
         settings: Settings,
     ) -> None:
-        if settings is None:
-            settings = Settings()
         self.settings = settings
         self.pm = plugin_manager
 
