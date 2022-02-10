@@ -33,9 +33,8 @@ options:
   state:
     choices: [ present, absent ]
     default: present
-
-author:
-- Dalibo (@dalibo)
+    description:
+      - Should the service be present or absent?
 """
 
 EXAMPLES = """

@@ -93,7 +93,9 @@ def cluster_name(dsn: str) -> str:
         return name
 
 
-@pytest.mark.parametrize("module", ["instance", "role", "database"])
+@pytest.mark.parametrize(
+    "module", ["instance", "role", "database", "postgres_exporter"]
+)
 def test_doc(module: str, ansible_env: Dict[str, str]) -> None:
     subprocess.check_call(["ansible-doc", f"dalibo.pglift.{module}"], env=ansible_env)
 
