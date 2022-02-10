@@ -36,6 +36,7 @@ from rich.highlighter import NullHighlighter
 from rich.table import Table
 from typing_extensions import Literal
 
+from . import CompositeInstance
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
@@ -424,9 +425,9 @@ def instance() -> None:
 
 
 @instance.command("create")
-@helpers.parameters_from_model(interface.Instance)
+@helpers.parameters_from_model(CompositeInstance)
 @pass_ctx
-def instance_create(ctx: Context, instance: interface.Instance) -> None:
+def instance_create(ctx: Context, instance: CompositeInstance) -> None:
     """Initialize a PostgreSQL instance"""
     if instance_mod.exists(ctx, instance.name, instance.version):
         raise click.ClickException("instance already exists")
@@ -446,7 +447,7 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
 @instance.command("alter")
 @instance_identifier
 @helpers.parameters_from_model(
-    interface.Instance, exclude=["name", "version"], parse_model=False
+    CompositeInstance, exclude=["name", "version"], parse_model=False
 )
 @pass_ctx
 def instance_alter(
@@ -455,10 +456,10 @@ def instance_alter(
     **changes: Any,
 ) -> None:
     """Alter a PostgreSQL instance"""
-    changes = helpers.unnest(interface.Instance, changes)
+    changes = helpers.unnest(CompositeInstance, changes)
     values = instance_mod.describe(ctx, instance.name, instance.version).dict()
     values = deep_update(values, changes)
-    altered = interface.Instance.parse_obj(values)
+    altered = CompositeInstance.parse_obj(values)
     instance_mod.apply(ctx, altered)
 
 
@@ -473,7 +474,7 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 @instance.command("schema")
 def instance_schema() -> None:
     """Print the JSON schema of PostgreSQL instance model"""
-    CONSOLE.print_json(interface.Instance.schema_json(indent=2))
+    CONSOLE.print_json(CompositeInstance.schema_json(indent=2))
 
 
 @instance.command("describe")

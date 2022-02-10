@@ -2,7 +2,7 @@ import enum
 import logging
 import shlex
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, ClassVar, Dict, Optional, Type
 
 import attr
 import psycopg
@@ -52,6 +52,11 @@ def system_lookup(
         return None
     else:
         return Service(port=p)
+
+
+@hookimpl  # type: ignore[misc]
+def interface_model() -> Type[ServiceManifest]:
+    return ServiceManifest
 
 
 @hookimpl  # type: ignore[misc]
@@ -331,7 +336,8 @@ def setup_local(
     ctx: "BaseContext", manifest: "interface.Instance", instance_config: Configuration
 ) -> None:
     """Setup Prometheus postgres_exporter for a local instance."""
-    if manifest.prometheus is None:
+    service = manifest.service(ServiceManifest)
+    if service is None:
         return
     role = manifest.surole(ctx.settings)
     dsn = []
@@ -354,7 +360,7 @@ def setup_local(
         instance.qualname,
         dsn=" ".join(dsn),
         password=password,
-        port=manifest.prometheus.port,
+        port=service.port,
     )
 
 

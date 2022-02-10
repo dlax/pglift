@@ -8,7 +8,7 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import exceptions
+from pglift import CompositeInstance, exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
 from pglift.ctx import Context
@@ -213,7 +213,7 @@ def test_drop_exists(
 def instance_no_prometheus(
     ctx: Context, tmp_port_factory: Iterator[int]
 ) -> Iterator[system.Instance]:
-    im = interface.Instance.parse_obj(
+    im = CompositeInstance.parse_obj(
         {
             "name": "noprom",
             "port": next(tmp_port_factory),

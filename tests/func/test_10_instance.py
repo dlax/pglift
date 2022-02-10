@@ -11,7 +11,7 @@ from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import databases, exceptions
+from pglift import CompositeInstance, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import systemd
 from pglift.ctx import Context
@@ -207,7 +207,7 @@ def test_apply(
 ) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
-    im = interface.Instance(
+    im = CompositeInstance(
         name="test_apply",
         port=port,
         ssl=True,
@@ -324,7 +324,7 @@ def test_standby(
     standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
     if replrole.password:
         standby_for += f" password={replrole.password.get_secret_value()}"
-    standby_manifest = interface.Instance(
+    standby_manifest = CompositeInstance(
         name="standby",
         version=pg_version,
         port=next(tmp_port_factory),
@@ -471,11 +471,10 @@ def datachecksums_instance(
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
     if pg_version < "12":
         pytest.skip("pg_checksums requires PostgreSQL 12")
-    manifest = interface.Instance(
+    manifest = CompositeInstance(
         name="datachecksums",
         version=pg_version,
         port=next(tmp_port_factory),
-        prometheus=None,
         state=interface.InstanceState.stopped,
         surole_password=surole_password,
     )

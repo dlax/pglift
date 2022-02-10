@@ -1,7 +1,18 @@
 import enum
 from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
@@ -10,14 +21,17 @@ from pydantic import (
     DirectoryPath,
     Field,
     SecretStr,
+    create_model,
     root_validator,
     validator,
 )
 from typing_extensions import Literal
 
 from .. import settings
-from ..prometheus import ServiceManifest as Prometheus
-from ..types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
+from ..types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest, ServiceManifest
+
+if TYPE_CHECKING:
+    from ..pm import PluginManager
 
 
 class InstanceState(AutoStrEnum):
@@ -71,6 +85,12 @@ class InstanceListItem(BaseModel):
 class Instance(Manifest):
     """PostgreSQL instance"""
 
+    class Config(Manifest.Config):
+        # Allow extra fields to permit plugins to populate an object with
+        # their specific data, following (hopefully) what's defined by
+        # the "composite" model (see composite()).
+        extra = "allow"
+
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {
         "status": {"hide": True},
         "state": {
@@ -83,6 +103,25 @@ class Instance(Manifest):
         "ssl": {"spec": {"type": "bool", "required": False, "default": False}},
         "configuration": {"spec": {"type": "dict", "required": False}},
     }
+
+    _T = TypeVar("_T", bound="Instance")
+
+    @classmethod
+    def composite(cls: Type[_T], pm: "PluginManager") -> Type[_T]:
+        """Create a model class, based on this one, with extra fields based on
+        interface models for satellite components defined in plugins.
+        """
+        fields = {}
+        for m in pm.hook.interface_model():
+            sname = m.__service__
+            if sname in fields:
+                raise ValueError(f"duplicated '{sname}' service")
+            fields[sname] = Optional[m], Field(default_factory=m)
+        # XXX Spurious 'type: ignore' below.
+        m = create_model(cls.__name__, __base__=cls, __module__=__name__, **fields)  # type: ignore[call-overload]
+        # pydantic.create_model() uses type(), so this will confuse mypy which
+        # cannot handle dynamic base class; hence the 'type: ignore'.
+        return m  # type: ignore[no-any-return]
 
     class Standby(BaseModel):
         _cli_config: ClassVar[Dict[str, CLIConfig]] = {"status": {"hide": True}}
@@ -132,8 +171,6 @@ class Instance(Manifest):
     )
 
     standby: Optional[Standby] = None
-
-    prometheus: Optional[Prometheus] = Prometheus()
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:
@@ -189,6 +226,25 @@ class Instance(Manifest):
         if "port" in values.get("configuration", {}):
             raise ValueError("port should not be specified in configuration field")
         return values
+
+    _S = TypeVar("_S", bound=ServiceManifest)
+
+    def service(self, stype: Type[_S]) -> Optional[_S]:
+        """Return satellite service manifest attached to this instance.
+
+        :raises ValueError: if not found.
+        """
+        fname = stype.__service__
+        try:
+            s = getattr(self, fname)
+        except AttributeError:
+            raise ValueError(fname)
+        if s is None:
+            return None
+        assert isinstance(
+            s, stype
+        ), f"expecting field {fname} to have type {stype} (got {type(s)})"
+        return s
 
     def surole(self, settings: settings.Settings) -> "Role":
         s = settings.postgresql.surole

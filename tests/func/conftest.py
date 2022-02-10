@@ -14,7 +14,7 @@ import pytest
 from pgtoolkit.ctl import Status
 from typing_extensions import Protocol
 
-from pglift import _install
+from pglift import CompositeInstance, _install
 from pglift import instance as instance_mod
 from pglift import pm
 from pglift.ctx import Context
@@ -228,15 +228,15 @@ def replrole_password(settings: Settings) -> Optional[str]:
 
 @pytest.fixture(scope="session")
 def instance_manifest(
+    ctx: Context,
     pg_version: str,
-    settings: Settings,
     surole_password: Optional[str],
     replrole_password: Optional[str],
     tmp_port_factory: Iterator[int],
 ) -> interface.Instance:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
-    return interface.Instance.parse_obj(
+    return CompositeInstance.parse_obj(
         {
             "name": "test",
             "version": pg_version,

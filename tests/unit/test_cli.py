@@ -13,7 +13,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
-from pglift import _install, databases, exceptions
+from pglift import CompositeInstance, _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, pm, prometheus, roles
 from pglift.cli import (
@@ -209,7 +209,7 @@ def test_instance_create(
             ["instance", "create", "new", "--port=1234"],
             obj=obj,
         )
-    apply.assert_called_once_with(ctx, interface.Instance(name="new", port=1234))
+    apply.assert_called_once_with(ctx, CompositeInstance(name="new", port=1234))
     assert result.exit_code == 0, result
 
 
@@ -243,10 +243,10 @@ def test_instance_alter(
     assert result.exit_code == 2, result.stderr
     assert "instance '11/notfound' not found" in result.stderr
 
-    actual = interface.Instance.parse_obj(
+    actual = CompositeInstance.parse_obj(
         {"name": instance.name, "prometheus": {"port": 1212}}
     )
-    altered = interface.Instance.parse_obj(
+    altered = CompositeInstance.parse_obj(
         {
             "name": instance.name,
             "state": "stopped",

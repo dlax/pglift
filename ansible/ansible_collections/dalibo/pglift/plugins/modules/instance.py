@@ -118,13 +118,14 @@ from typing import Any, Dict
 import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
+from pglift import CompositeInstance
 from pglift import instance as instance_mod
 from pglift.ansible import AnsibleContext
-from pglift.models import helpers, interface
+from pglift.models import helpers
 
 
 def run_module() -> None:
-    model_type = interface.Instance
+    model_type = CompositeInstance
     argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 

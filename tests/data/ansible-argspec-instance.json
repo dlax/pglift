@@ -23,7 +23,6 @@
     "type": "int"
   },
   "prometheus_port": {
-    "default": 9187,
     "description": [
       "TCP port for the web interface and telemetry of Prometheus"
     ],

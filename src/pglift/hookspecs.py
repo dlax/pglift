@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 import pluggy
 from pgtoolkit.conf import Configuration
@@ -32,6 +32,11 @@ def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Any]
 @hookspec  # type: ignore[misc]
 def describe(ctx: "BaseContext", instance: "Instance") -> Optional["ServiceManifest"]:
     """Describe the satellite service bound to specified instance."""
+
+
+@hookspec  # type: ignore[misc]
+def interface_model() -> Type["ServiceManifest"]:
+    """The interface model for satellite component provided plugin."""
 
 
 @hookspec  # type: ignore[misc]
