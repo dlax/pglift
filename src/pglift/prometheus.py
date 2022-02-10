@@ -13,13 +13,13 @@ from pydantic import Field, SecretStr, validator
 from . import cmd, exceptions, hookimpl
 from . import prometheus_default_port as default_port
 from . import systemd, types, util
-from .models import interface
 from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
+    from .models import interface
     from .models.system import BaseInstance
 
 logger = logging.getLogger(__name__)
@@ -311,7 +311,7 @@ def drop(ctx: "BaseContext", name: str) -> None:
 
 
 def setup_local(
-    ctx: "BaseContext", manifest: interface.Instance, instance_config: Configuration
+    ctx: "BaseContext", manifest: "interface.Instance", instance_config: Configuration
 ) -> None:
     """Setup Prometheus postgres_exporter for a local instance."""
     if manifest.prometheus is None:
@@ -341,7 +341,7 @@ def setup_local(
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: "BaseContext", manifest: interface.Instance, config: Configuration
+    ctx: "BaseContext", manifest: "interface.Instance", config: Configuration
 ) -> None:
     """Install postgres_exporter for an instance when it gets configured."""
     if not available(ctx):

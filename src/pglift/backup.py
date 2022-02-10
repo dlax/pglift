@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
 from . import exceptions, hookimpl, systemd
-from .models import interface
 from .models.system import BaseInstance, Instance, PostgreSQLInstance
 from .pgbackrest import BackupType, backup
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
+    from .models import interface
 
 
 def systemd_timer(instance: BaseInstance) -> str:
@@ -14,7 +14,7 @@ def systemd_timer(instance: BaseInstance) -> str:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None:
+def instance_configure(ctx: "BaseContext", manifest: "interface.Instance") -> None:
     """Enable scheduled backup job for configured instance."""
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if ctx.settings.scheduler == "systemd":
