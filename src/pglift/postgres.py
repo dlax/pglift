@@ -5,7 +5,7 @@ from . import exceptions
 from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
-from .models.system import PostgreSQLInstance
+from .models import system
 
 parser = argparse.ArgumentParser(description="Start postgres for specified instance")
 parser.add_argument(
@@ -24,7 +24,7 @@ def main(
         ctx = Context()
 
     try:
-        instance = PostgreSQLInstance.from_stanza(ctx, args.instance)
+        instance = system.PostgreSQLInstance.from_stanza(ctx, args.instance)
     except ValueError as e:
         parser.error(str(e))
     except InstanceNotFound as e:

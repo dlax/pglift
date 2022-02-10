@@ -26,13 +26,7 @@ from pydantic import SecretStr
 from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
-from .models import interface
-from .models.system import (
-    BaseInstance,
-    Instance,
-    PostgreSQLInstance,
-    default_postgresql_version,
-)
+from .models import interface, system
 from .task import task
 from .types import ConfigChanges
 
@@ -42,12 +36,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def systemd_unit(instance: BaseInstance) -> str:
+def systemd_unit(instance: system.BaseInstance) -> str:
     return f"pglift-postgresql@{instance.version}-{instance.name}.service"
 
 
 def init_replication(
-    ctx: "BaseContext", instance: BaseInstance, standby_for: str, slot: Optional[str]
+    ctx: "BaseContext",
+    instance: system.BaseInstance,
+    standby_for: str,
+    slot: Optional[str],
 ) -> None:
     with tempfile.TemporaryDirectory() as _tmpdir:
         tmpdir = Path(_tmpdir)
@@ -109,7 +106,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     if exists(ctx, manifest.name, manifest.version):
         return None
 
-    instance = BaseInstance.get(manifest.name, manifest.version, ctx)
+    instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
 
     # Would raise SystemError if requested postgresql binaries are not
     # available or if versions mismatch.
@@ -150,7 +147,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
 @init.revert("deleting PostgreSQL instance")
 def revert_init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     """Un-initialize a PostgreSQL instance."""
-    instance = BaseInstance.get(manifest.name, manifest.version, ctx)
+    instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
     if ctx.settings.service_manager == "systemd":
         systemd.disable(ctx, systemd_unit(instance), now=True)
 
@@ -189,7 +186,9 @@ def configure(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
-    instance = PostgreSQLInstance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.PostgreSQLInstance.system_lookup(
+        ctx, (manifest.name, manifest.version)
+    )
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     confd, include = conf.info(configdir)
@@ -267,7 +266,7 @@ def configure(
     make_config(site_conffile, site_confitems)
     changes = make_config(user_conffile, confitems)
 
-    i = PostgreSQLInstance.system_lookup(ctx, instance)
+    i = system.PostgreSQLInstance.system_lookup(ctx, instance)
     i_config = i.config()
     ctx.hook.instance_configure(
         ctx=ctx, manifest=manifest, config=i_config, changes=changes
@@ -283,7 +282,7 @@ def configure(
 @contextlib.contextmanager
 def running(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     *,
     timeout: int = 10,
     run_hooks: bool = False,
@@ -300,7 +299,7 @@ def running(
         yield
         return
 
-    if run_hooks and not isinstance(instance, Instance):
+    if run_hooks and not isinstance(instance, system.Instance):
         raise TypeError("expecting a full instance")
 
     start(ctx, instance, run_hooks=run_hooks)
@@ -319,7 +318,7 @@ def running(
 @contextlib.contextmanager
 def stopped(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     *,
     timeout: int = 10,
     run_hooks: bool = False,
@@ -336,7 +335,7 @@ def stopped(
         yield
         return
 
-    if run_hooks and not isinstance(instance, Instance):
+    if run_hooks and not isinstance(instance, system.Instance):
         raise TypeError("expecting a full instance")
 
     stop(ctx, instance, run_hooks=run_hooks)
@@ -365,7 +364,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     surole = manifest.surole(ctx.settings)
     replrole = manifest.replrole(ctx.settings)
     auth_settings = ctx.settings.postgresql.auth
-    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
     hba = util.template("postgresql", "pg_hba.conf").format(
         surole=surole.name,
@@ -392,7 +391,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
 
 def start(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
@@ -408,7 +407,7 @@ def start(
     .. note:: When starting in "foreground", hooks will not be triggered and
         `wait` and `logfile` parameters have no effect.
     """
-    if run_hooks and not isinstance(instance, Instance):
+    if run_hooks and not isinstance(instance, system.Instance):
         raise TypeError("expecting a full instance")
 
     logger.info("starting instance %s", instance)
@@ -425,7 +424,7 @@ def start(
 @task("starting PostgreSQL instance")
 def start_postgresql(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
@@ -445,13 +444,15 @@ def start_postgresql(
         systemd.start(ctx, systemd_unit(instance))
 
 
-def status(ctx: "BaseContext", instance: BaseInstance) -> Status:
+def status(ctx: "BaseContext", instance: system.BaseInstance) -> Status:
     """Return the status of an instance."""
     logger.debug("get status of PostgreSQL instance %s", instance)
     return ctx.pg_ctl(instance.version).status(instance.datadir)
 
 
-def check_status(ctx: "BaseContext", instance: BaseInstance, expected: Status) -> None:
+def check_status(
+    ctx: "BaseContext", instance: system.BaseInstance, expected: Status
+) -> None:
     """Check actual instance status with respected to `expected` one.
 
     :raises ~exceptions.InstanceStateError: in case the actual status is not expected.
@@ -463,7 +464,7 @@ def check_status(ctx: "BaseContext", instance: BaseInstance, expected: Status) -
 
 def stop(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     *,
     mode: str = "fast",
     wait: bool = True,
@@ -473,7 +474,7 @@ def stop(
 
     :param run_hooks: controls whether stop hook will be triggered or not.
     """
-    if run_hooks and not isinstance(instance, Instance):
+    if run_hooks and not isinstance(instance, system.Instance):
         raise TypeError("expecting a full instance")
 
     if status(ctx, instance) == Status.not_running:
@@ -487,7 +488,7 @@ def stop(
 @task("stopping PostgreSQL instance")
 def stop_postgresql(
     ctx: "BaseContext",
-    instance: Union[PostgreSQLInstance, Instance],
+    instance: Union[system.PostgreSQLInstance, system.Instance],
     mode: str = "fast",
     wait: bool = True,
 ) -> None:
@@ -501,7 +502,7 @@ def stop_postgresql(
 @task("restarting PostgreSQL instance")
 def restart(
     ctx: "BaseContext",
-    instance: Instance,
+    instance: system.Instance,
     *,
     mode: str = "fast",
     wait: bool = True,
@@ -517,7 +518,7 @@ def restart(
 @task("reloading PostgreSQL instance")
 def reload(
     ctx: "BaseContext",
-    instance: Instance,
+    instance: system.Instance,
 ) -> None:
     """Reload an instance."""
     logger.info("reloading instance %s", instance)
@@ -526,7 +527,7 @@ def reload(
 
 
 @task("promoting PostgreSQL instance")
-def promote(ctx: "BaseContext", instance: Instance) -> None:
+def promote(ctx: "BaseContext", instance: system.Instance) -> None:
     """Promote a standby instance"""
     if not instance.standby:
         raise exceptions.InstanceStateError(f"{instance} is not a standby")
@@ -540,18 +541,18 @@ def promote(ctx: "BaseContext", instance: Instance) -> None:
 @task("upgrading PostgreSQL instance")
 def upgrade(
     ctx: "BaseContext",
-    instance: Instance,
+    instance: system.Instance,
     *,
     version: Optional[str] = None,
     name: Optional[str] = None,
     port: Optional[int] = None,
     jobs: Optional[int] = None,
-) -> Instance:
+) -> system.Instance:
     """Upgrade a primary instance using pg_upgrade"""
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
     if version is None:
-        version = default_postgresql_version(ctx)
+        version = system.default_postgresql_version(ctx)
     if (name is None or name == instance.name) and version == instance.version:
         raise exceptions.InvalidVersion(
             f"Could not upgrade {instance} using same name and same version"
@@ -585,7 +586,9 @@ def upgrade(
         )
     )
     init(ctx, new_manifest)
-    newinstance = Instance.system_lookup(ctx, (new_manifest.name, new_manifest.version))
+    newinstance = system.Instance.system_lookup(
+        ctx, (new_manifest.name, new_manifest.version)
+    )
     bindir = ctx.pg_ctl(version).bindir
     pg_upgrade = str(bindir / "pg_upgrade")
     cmd = [
@@ -611,7 +614,7 @@ def upgrade(
     return newinstance
 
 
-def get_data_checksums(ctx: "BaseContext", instance: Instance) -> bool:
+def get_data_checksums(ctx: "BaseContext", instance: system.Instance) -> bool:
     """Return True/False if data_checksums is enabled/disable on instance."""
     if status(ctx, instance) == Status.running:
         # Use SQL SHOW data_checksums since pg_checksums doesn't work if
@@ -629,7 +632,9 @@ def get_data_checksums(ctx: "BaseContext", instance: Instance) -> bool:
     raise exceptions.CommandError(proc.returncode, proc.args, proc.stdout, proc.stderr)
 
 
-def set_data_checksums(ctx: "BaseContext", instance: Instance, enabled: bool) -> None:
+def set_data_checksums(
+    ctx: "BaseContext", instance: system.Instance, enabled: bool
+) -> None:
     """Enable/disable data checksums on instance."""
     if status(ctx, instance) == Status.running:
         raise exceptions.InstanceStateError(
@@ -647,7 +652,7 @@ def set_data_checksums(ctx: "BaseContext", instance: Instance, enabled: bool) ->
     )
 
 
-ApplyResult = Union[None, Tuple[Instance, ConfigChanges, bool]]
+ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges, bool]]
 
 
 def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
@@ -669,7 +674,10 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
 
     if state == States.absent:
         if exists(ctx, manifest.name, manifest.version):
-            drop(ctx, Instance.system_lookup(ctx, (manifest.name, manifest.version)))
+            drop(
+                ctx,
+                system.Instance.system_lookup(ctx, (manifest.name, manifest.version)),
+            )
         return None
 
     if not exists(ctx, manifest.name, manifest.version):
@@ -684,7 +692,7 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
         values=configure_options,
     )
 
-    instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     is_running = status(ctx, instance) == Status.running
 
     if manifest.data_checksums is not None:
@@ -758,11 +766,11 @@ def describe(
     ctx: "BaseContext", name: str, version: Optional[str]
 ) -> interface.Instance:
     """Return an instance described as a manifest."""
-    instance = Instance.system_lookup(ctx, (name, version))
+    instance = system.Instance.system_lookup(ctx, (name, version))
     return _describe(ctx, instance)
 
 
-def _describe(ctx: "BaseContext", instance: Instance) -> interface.Instance:
+def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
@@ -784,7 +792,7 @@ def _describe(ctx: "BaseContext", instance: Instance) -> interface.Instance:
 
 
 @task("dropping PostgreSQL instance")
-def drop(ctx: "BaseContext", instance: Instance) -> None:
+def drop(ctx: "BaseContext", instance: system.Instance) -> None:
     """Drop an instance."""
     if not ctx.confirm(f"Confirm complete deletion of instance {instance}?", True):
         raise exceptions.Cancelled(f"deletion of instance {instance} cancelled")
@@ -822,7 +830,7 @@ def list(
             if not d.is_dir():
                 continue
             try:
-                instance = Instance.system_lookup(ctx, (d.name, ver))
+                instance = system.Instance.system_lookup(ctx, (d.name, ver))
             except exceptions.InstanceNotFound:
                 continue
 
@@ -836,7 +844,7 @@ def list(
 
 
 def env_for(
-    ctx: "BaseContext", instance: Instance, *, path: bool = False
+    ctx: "BaseContext", instance: system.Instance, *, path: bool = False
 ) -> Dict[str, str]:
     """Return libpq environment variables suitable to connect to `instance`.
 
@@ -864,7 +872,9 @@ def env_for(
     return env
 
 
-def exec(ctx: "BaseContext", instance: Instance, command: Tuple[str, ...]) -> None:
+def exec(
+    ctx: "BaseContext", instance: system.Instance, command: Tuple[str, ...]
+) -> None:
     """Execute given PostgreSQL command in the libpq environment for `instance`.
 
     The command to be executed is looked up for in PostgreSQL binaries directory.
@@ -879,7 +889,7 @@ def exec(ctx: "BaseContext", instance: Instance, command: Tuple[str, ...]) -> No
         raise exceptions.FileNotFoundError(str(e))
 
 
-def env(ctx: "BaseContext", instance: Instance) -> str:
+def env(ctx: "BaseContext", instance: system.Instance) -> str:
     return "\n".join(
         [
             f"export {key}={value}"
@@ -891,13 +901,15 @@ def env(ctx: "BaseContext", instance: Instance) -> str:
 def exists(ctx: "BaseContext", name: str, version: Optional[str]) -> bool:
     """Return true when instance exists"""
     try:
-        PostgreSQLInstance.system_lookup(ctx, (name, version))
+        system.PostgreSQLInstance.system_lookup(ctx, (name, version))
     except exceptions.InstanceNotFound:
         return False
     return True
 
 
-def settings(ctx: "BaseContext", instance: Instance) -> List[interface.PGSetting]:
+def settings(
+    ctx: "BaseContext", instance: system.Instance
+) -> List[interface.PGSetting]:
     """Return the list of run-time parameters of the server, as available in
     pg_settings view.
 
@@ -910,7 +922,7 @@ def settings(ctx: "BaseContext", instance: Instance) -> List[interface.PGSetting
         return cur.fetchall()
 
 
-def logs(ctx: "BaseContext", instance: Instance) -> Iterator[str]:
+def logs(ctx: "BaseContext", instance: system.Instance) -> Iterator[str]:
     """Return the content of current log file as an iterator.
 
     :raises ~exceptions.FileNotFoundError: if the current log file, matching

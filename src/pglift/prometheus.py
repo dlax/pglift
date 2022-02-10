@@ -12,14 +12,13 @@ from pydantic import Field, SecretStr, validator
 from typing_extensions import Final
 
 from . import cmd, exceptions, hookimpl, systemd, types, util
-from .models.system import Instance, PostgreSQLInstance
+from .models import system
 from .settings import PrometheusSettings
 from .task import task
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
     from .models import interface
-    from .models.system import BaseInstance
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,9 @@ class ServiceManifest(types.ServiceManifest, service_name="prometheus"):
 
 
 @hookimpl  # type: ignore[misc]
-def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Service]:
+def system_lookup(
+    ctx: "BaseContext", instance: system.BaseInstance
+) -> Optional[Service]:
     try:
         p = port(ctx, instance.qualname)
     except exceptions.FileNotFoundError as exc:
@@ -54,7 +55,9 @@ def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Serv
 
 
 @hookimpl  # type: ignore[misc]
-def describe(ctx: "BaseContext", instance: Instance) -> Optional[ServiceManifest]:
+def describe(
+    ctx: "BaseContext", instance: system.Instance
+) -> Optional[ServiceManifest]:
     try:
         s = instance.service(Service)
     except ValueError:
@@ -288,7 +291,7 @@ def apply(ctx: "BaseContext", manifest: PostgresExporter) -> None:
     :raises exceptions.InstanceStateError: if the target instance exists on system.
     """
     try:
-        PostgreSQLInstance.from_stanza(ctx, manifest.name)
+        system.PostgreSQLInstance.from_stanza(ctx, manifest.name)
     except (ValueError, exceptions.InstanceNotFound):
         pass
     else:
@@ -343,7 +346,9 @@ def setup_local(
     password = None
     if role.password:
         password = role.password.get_secret_value()
-    instance = PostgreSQLInstance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.PostgreSQLInstance.system_lookup(
+        ctx, (manifest.name, manifest.version)
+    )
     setup(
         ctx,
         instance.qualname,
@@ -398,7 +403,7 @@ def start(ctx: "BaseContext", name: str, *, foreground: bool = False) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_start(ctx: "BaseContext", instance: Instance) -> None:
+def instance_start(ctx: "BaseContext", instance: system.Instance) -> None:
     """Start postgres_exporter service."""
     if not enabled(ctx, instance.qualname):
         return
@@ -419,7 +424,7 @@ def stop(ctx: "BaseContext", name: str) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_stop(ctx: "BaseContext", instance: Instance) -> None:
+def instance_stop(ctx: "BaseContext", instance: system.Instance) -> None:
     """Stop postgres_exporter service."""
     if not enabled(ctx, instance.qualname):
         return
@@ -427,6 +432,6 @@ def instance_stop(ctx: "BaseContext", instance: Instance) -> None:
 
 
 @hookimpl  # type: ignore[misc]
-def instance_drop(ctx: "BaseContext", instance: Instance) -> None:
+def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
     """Uninstall postgres_exporter from an instance being dropped."""
     revert_setup(ctx, instance.qualname)
