@@ -362,8 +362,8 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     configuration.
     """
     logger.info("configuring PostgreSQL authentication")
-    surole = interface.instance_surole(ctx.settings, manifest)
-    replrole = interface.instance_replrole(ctx.settings, manifest)
+    surole = manifest.surole(ctx.settings)
+    replrole = manifest.replrole(ctx.settings)
     auth_settings = ctx.settings.postgresql.auth
     instance = Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"

@@ -17,7 +17,7 @@ def test_pgpass(
 ) -> None:
     config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
-    surole = interface.instance_surole(ctx.settings, instance_manifest)
+    surole = instance_manifest.surole(ctx.settings)
     if surole.pgpass and surole.password:
         port = config.port
         pgpass_entries = passfile.read_text().splitlines()

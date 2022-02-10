@@ -41,7 +41,7 @@ def instance_configure(
             port = config.get("port", 5432)
     assert isinstance(port, int), port
 
-    surole = interface.instance_surole(ctx.settings, manifest)
+    surole = manifest.surole(ctx.settings)
     with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
         surole_entry = None
         if old_port is not None:

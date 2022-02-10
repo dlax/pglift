@@ -171,7 +171,7 @@ def test_describe(
 
     postgres = roles.describe(ctx, instance, "postgres")
     assert postgres is not None
-    surole = interface.instance_surole(ctx.settings, instance_manifest)
+    surole = instance_manifest.surole(ctx.settings)
     assert postgres.name == "postgres"
     if surole.password:
         assert postgres.password is not None
@@ -242,7 +242,7 @@ def test_instance_port_changed(
         interface.Role(name="r2", password="2", pgpass=True),
         interface.Role(name="r3", pgpass=False),
     )
-    surole = interface.instance_surole(ctx.settings, instance_manifest)
+    surole = instance_manifest.surole(ctx.settings)
     roles.apply(ctx, instance, role1)
     roles.apply(ctx, instance, role2)
     roles.apply(ctx, instance, role3)

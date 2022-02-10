@@ -316,7 +316,7 @@ def setup_local(
     """Setup Prometheus postgres_exporter for a local instance."""
     if manifest.prometheus is None:
         return
-    role = interface.instance_surole(ctx.settings, manifest)
+    role = manifest.surole(ctx.settings)
     dsn = []
     if "port" in instance_config:
         dsn.append(f"port={instance_config.port}")

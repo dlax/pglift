@@ -195,6 +195,33 @@ class Instance(Manifest):
             raise ValueError("port should not be specified in configuration field")
         return values
 
+    def surole(self, settings: settings.Settings) -> "Role":
+        s = settings.postgresql.surole
+        if self.surole_password:
+            return Role(
+                name=s.name,
+                password=self.surole_password,
+                pgpass=s.pgpass,
+            )
+        else:
+            return Role(name=s.name)
+
+    def replrole(self, settings: settings.Settings) -> "Role":
+        name = settings.postgresql.replrole
+        if self.replrole_password:
+            return Role(
+                name=name,
+                password=self.replrole_password,
+                login=True,
+                replication=True,
+            )
+        else:
+            return Role(
+                name=name,
+                login=True,
+                replication=True,
+            )
+
 
 class InstanceBackup(Manifest):
     label: str
@@ -318,32 +345,3 @@ class PGSetting(Manifest):
     setting: str
     context: str
     pending_restart: bool
-
-
-def instance_surole(settings: settings.Settings, instance: Instance) -> Role:
-    surole_settings = settings.postgresql.surole
-    if instance.surole_password:
-        return Role(
-            name=surole_settings.name,
-            password=instance.surole_password,
-            pgpass=surole_settings.pgpass,
-        )
-    else:
-        return Role(name=surole_settings.name)
-
-
-def instance_replrole(settings: settings.Settings, instance: Instance) -> Role:
-    replrole_settings = settings.postgresql.replrole
-    if instance.replrole_password:
-        return Role(
-            name=replrole_settings,
-            password=instance.replrole_password,
-            login=True,
-            replication=True,
-        )
-    else:
-        return Role(
-            name=replrole_settings,
-            login=True,
-            replication=True,
-        )

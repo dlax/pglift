@@ -70,7 +70,7 @@ def postgres_exporter(
     """Setup a postgres_exporter service for 'instance' using another port."""
     port = next(tmp_port_factory)
     name = "123-fo-o"
-    role = interface.instance_surole(ctx.settings, instance_manifest)
+    role = instance_manifest.surole(ctx.settings)
     dsn = f"dbname=postgres port={instance.port} user={role.name} sslmode=disable"
     host = instance.config().get("unix_socket_directories")
     if host:

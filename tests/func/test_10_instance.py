@@ -90,7 +90,7 @@ def test_connect(
     ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
 ) -> None:
     i = instance
-    surole = interface.instance_surole(ctx.settings, instance_manifest)
+    surole = instance_manifest.surole(ctx.settings)
     port = i.port
     connargs = {
         "host": str(i.config().unix_socket_directories),
@@ -320,7 +320,7 @@ def test_standby(
     slot: str,
 ) -> None:
     socket_directory = settings.postgresql.socket_directory
-    replrole = interface.instance_replrole(settings, instance_manifest)
+    replrole = instance_manifest.replrole(settings)
     standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
     if replrole.password:
         standby_for += f" password={replrole.password.get_secret_value()}"
