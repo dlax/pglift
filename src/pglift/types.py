@@ -1,10 +1,24 @@
 import enum
+import json
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import psycopg.errors
+import yaml
 from pgtoolkit import conf as pgconf
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from typing_extensions import Protocol, TypedDict
 
 if TYPE_CHECKING:
@@ -65,3 +79,40 @@ class AnsibleArgSpec(TypedDict, total=False):
     choices: List[str]
     description: List[str]
     no_log: bool
+
+
+class CLIConfig(TypedDict, total=False):
+    """Configuration for CLI generation of a manifest field."""
+
+    name: str
+    hide: bool
+    choices: List[str]
+
+
+class AnsibleConfig(TypedDict, total=False):
+    hide: bool
+    choices: List[str]
+    spec: AnsibleArgSpec
+
+
+class Manifest(BaseModel):
+    """Base class for manifest data classes."""
+
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {}
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {}
+
+    class Config:
+        extra = "forbid"
+
+    _M = TypeVar("_M", bound="Manifest")
+
+    @classmethod
+    def parse_yaml(cls: Type[_M], stream: IO[str]) -> _M:
+        """Parse from a YAML stream."""
+        data = yaml.safe_load(stream)
+        return cls.parse_obj(data)
+
+    def yaml(self, **kwargs: Any) -> str:
+        """Return a YAML serialization of this manifest."""
+        data = json.loads(self.json(**kwargs))
+        return yaml.dump(data, sort_keys=False)  # type: ignore[no-any-return]

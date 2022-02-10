@@ -1,12 +1,10 @@
 import enum
-import json
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import psycopg
 import psycopg.conninfo
-import yaml
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from pydantic import (
@@ -17,24 +15,10 @@ from pydantic import (
     root_validator,
     validator,
 )
-from typing_extensions import Literal, TypedDict
+from typing_extensions import Literal
 
 from .. import prometheus_default_port, settings
-from ..types import AnsibleArgSpec, AutoStrEnum
-
-
-class CLIConfig(TypedDict, total=False):
-    """Configuration for CLI generation of a manifest field."""
-
-    name: str
-    hide: bool
-    choices: List[str]
-
-
-class AnsibleConfig(TypedDict, total=False):
-    hide: bool
-    choices: List[str]
-    spec: AnsibleArgSpec
+from ..types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
 
 
 class InstanceState(AutoStrEnum):
@@ -83,30 +67,6 @@ class InstanceListItem(BaseModel):
     port: int
     path: DirectoryPath
     status: str
-
-
-T = TypeVar("T", bound=BaseModel)
-
-
-class Manifest(BaseModel):
-    """Base class for manifest data classes."""
-
-    _cli_config: ClassVar[Dict[str, CLIConfig]] = {}
-    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {}
-
-    class Config:
-        extra = "forbid"
-
-    @classmethod
-    def parse_yaml(cls: Type[T], stream: IO[str]) -> T:
-        """Parse from a YAML stream."""
-        data = yaml.safe_load(stream)
-        return cls.parse_obj(data)
-
-    def yaml(self, **kwargs: Any) -> str:
-        """Return a YAML serialization of this manifest."""
-        data = json.loads(self.json(**kwargs))
-        return yaml.dump(data, sort_keys=False)  # type: ignore[no-any-return]
 
 
 class Instance(Manifest):

@@ -10,6 +10,7 @@ from click.testing import CliRunner
 from pydantic import BaseModel, Field, SecretStr
 
 from pglift.models import helpers, interface
+from pglift.types import AnsibleConfig, CLIConfig, Manifest
 
 
 class Gender(enum.Enum):
@@ -24,12 +25,12 @@ class Country(enum.Enum):
 
 
 class Address(BaseModel):
-    _cli_config: ClassVar[Dict[str, interface.CLIConfig]] = {
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
         "building": {"hide": True},
         "country": {"choices": [Country.France.value, Country.Belgium.value]},
         "city": {"name": "town"},
     }
-    _ansible_config: ClassVar[Dict[str, interface.AnsibleConfig]] = {
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
         "building": {"hide": True},
         "zip_code": {"hide": True},
         "city": {"spec": {"type": "str", "description": ["the city"]}},
@@ -344,7 +345,7 @@ def test_argspec_from_model_keep_default() -> None:
     ],
 )
 def test_argspec_from_model_manifest(
-    datadir: Path, regen_test_data: bool, manifest_type: Type[interface.Manifest]
+    datadir: Path, regen_test_data: bool, manifest_type: Type[Manifest]
 ) -> None:
     actual = helpers.argspec_from_model(manifest_type)
     fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
