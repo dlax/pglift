@@ -2,17 +2,16 @@ import enum
 import logging
 import shlex
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Dict, Optional
 
 import attr
 import psycopg
 import psycopg.conninfo
 from pgtoolkit.conf import Configuration
 from pydantic import Field, SecretStr, validator
+from typing_extensions import Final
 
-from . import cmd, exceptions, hookimpl
-from . import prometheus_default_port as default_port
-from . import systemd, types, util
+from . import cmd, exceptions, hookimpl, systemd, types, util
 from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
 from .task import task
@@ -25,6 +24,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+default_port: Final = 9187
+
+
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class Service:
     """A Prometheus postgres_exporter service bound to a PostgreSQL instance."""
@@ -32,21 +34,33 @@ class Service:
     port: int
     """TCP port for the web interface and telemetry."""
 
-    T = TypeVar("T", bound="Service")
 
-    @classmethod
-    def system_lookup(
-        cls: Type[T], ctx: "BaseContext", instance: "BaseInstance"
-    ) -> Optional[T]:
-        try:
-            p = port(ctx, instance.qualname)
-        except exceptions.FileNotFoundError as exc:
-            logger.debug(
-                "failed to read postgres_exporter port for %s: %s", instance, exc
-            )
-            return None
-        else:
-            return cls(p)
+class ServiceManifest(types.ServiceManifest, service_name="prometheus"):
+    port: int = Field(
+        default=default_port,
+        description="TCP port for the web interface and telemetry of Prometheus",
+    )
+
+
+@hookimpl  # type: ignore[misc]
+def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Service]:
+    try:
+        p = port(ctx, instance.qualname)
+    except exceptions.FileNotFoundError as exc:
+        logger.debug("failed to read postgres_exporter port for %s: %s", instance, exc)
+        return None
+    else:
+        return Service(port=p)
+
+
+@hookimpl  # type: ignore[misc]
+def describe(ctx: "BaseContext", instance: Instance) -> Optional[ServiceManifest]:
+    try:
+        s = instance.service(Service)
+    except ValueError:
+        return None
+    else:
+        return ServiceManifest(port=s.port)
 
 
 def available(ctx: "BaseContext") -> bool:

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 import pluggy
 from pgtoolkit.conf import Configuration
@@ -8,8 +8,8 @@ from . import __name__ as pkgname
 if TYPE_CHECKING:
     from .ctx import BaseContext
     from .models import interface
-    from .models.system import Instance
-    from .types import ConfigChanges
+    from .models.system import BaseInstance, Instance
+    from .types import ConfigChanges, ServiceManifest
 
 hookspec = pluggy.HookspecMarker(pkgname)
 
@@ -22,6 +22,16 @@ def install_systemd_unit_template(ctx: "BaseContext", header: str = "") -> None:
 @hookspec  # type: ignore[misc]
 def uninstall_systemd_unit_template(ctx: "BaseContext") -> None:
     """Uninstall systemd unit templates."""
+
+
+@hookspec  # type: ignore[misc]
+def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Any]:
+    """Look up for the satellite service object on system that matches specified instance."""
+
+
+@hookspec  # type: ignore[misc]
+def describe(ctx: "BaseContext", instance: "Instance") -> Optional["ServiceManifest"]:
+    """Describe the satellite service bound to specified instance."""
 
 
 @hookspec  # type: ignore[misc]

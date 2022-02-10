@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from attr.validators import instance_of
@@ -12,7 +12,6 @@ from ..validators import known_postgresql_version
 
 if TYPE_CHECKING:
     from ..ctx import BaseContext
-    from ..prometheus import Service as PrometheusService
 
 
 def default_postgresql_version(ctx: "BaseContext") -> str:
@@ -189,7 +188,12 @@ class PostgreSQLInstance(BaseInstance):
 class Instance(PostgreSQLInstance):
     """A PostgreSQL instance with satellite services."""
 
-    prometheus: Optional["PrometheusService"] = None
+    services: List[Any] = attr.ib()
+
+    @services.validator
+    def _validate_services(self, attribute: Any, value: List[Any]) -> None:
+        if len(set(map(type, value))) != len(value):
+            raise ValueError("values for 'services' field must be of distinct types")
 
     T = TypeVar("T", bound="Instance")
 
@@ -203,8 +207,22 @@ class Instance(PostgreSQLInstance):
         values = attr.asdict(pg_instance)
         # attrs strip leading underscores at init for private attributes.
         values["settings"] = values.pop("_settings")
-        if ctx.pm.has_plugin("pglift.prometheus"):
-            from .. import prometheus
-
-            values["prometheus"] = prometheus.Service.system_lookup(ctx, pg_instance)
+        assert "services" not in values
+        values["services"] = [
+            s
+            for s in ctx.pm.hook.system_lookup(ctx=ctx, instance=pg_instance)
+            if s is not None
+        ]
         return cls(**values)
+
+    S = TypeVar("S")
+
+    def service(self, stype: Type[S]) -> S:
+        """Return bound satellite service object matching requested type.
+
+        :raises ValueError: if not found.
+        """
+        for s in self.services:
+            if isinstance(s, stype):
+                return s
+        raise ValueError(stype)

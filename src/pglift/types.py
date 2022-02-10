@@ -116,3 +116,19 @@ class Manifest(BaseModel):
         """Return a YAML serialization of this manifest."""
         data = json.loads(self.json(**kwargs))
         return yaml.dump(data, sort_keys=False)  # type: ignore[no-any-return]
+
+
+class ServiceManifest(Manifest):
+    __service__: ClassVar[str]
+
+    def __init_subclass__(cls, *, service_name: str, **kwargs: Any) -> None:
+        """Set a __name__ to subclasses.
+
+        >>> class MyS(ServiceManifest, service_name="my"):
+        ...     x: str
+        >>> s = MyS(x=1)
+        >>> s.__class__.__service__
+        'my'
+        """
+        super().__init_subclass__(**kwargs)
+        cls.__service__ = service_name

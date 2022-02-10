@@ -37,7 +37,7 @@ def test_configure(
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
-    assert instance.prometheus is not None
+    service = instance.service(prometheus.Service)
     prometheus_settings = ctx.settings.prometheus
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
@@ -47,7 +47,7 @@ def test_configure(
     dsn = prometheus_config["DATA_SOURCE_NAME"]
     assert "user=postgres" in dsn
     assert f"port={instance.port}" in dsn
-    port = instance.prometheus.port
+    port = service.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
     queriespath = Path(str(prometheus_settings.queriespath).format(name=name))
@@ -109,8 +109,8 @@ def request_metrics(port: int) -> requests.Response:
 
 
 def test_start_stop(ctx: Context, instance: system.Instance) -> None:
-    assert instance.prometheus
-    port = instance.prometheus.port
+    service = instance.service(prometheus.Service)
+    port = service.port
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance.qualname))

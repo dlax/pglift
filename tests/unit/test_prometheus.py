@@ -33,7 +33,11 @@ def test_install_systemd_unit_template(ctx: Context) -> None:
 
 
 def test_port(ctx: Context, instance: Instance) -> None:
-    if instance.prometheus:
+    try:
+        prometheus_service = instance.service(prometheus.Service)
+    except ValueError:
+        prometheus_service = None
+    if prometheus_service:
         port = prometheus.port(ctx, instance.qualname)
         assert port == 9817
     else:
@@ -44,7 +48,7 @@ def test_port(ctx: Context, instance: Instance) -> None:
         str(ctx.settings.prometheus.configpath).format(name=instance.qualname)
     )
     original_content = None
-    if instance.prometheus:
+    if prometheus_service:
         original_content = configpath.read_text()
     else:
         configpath.parent.mkdir(parents=True)  # exists not ok

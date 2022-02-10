@@ -767,11 +767,11 @@ def _describe(ctx: "BaseContext", instance: Instance) -> interface.Instance:
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
     state = interface.InstanceState.from_pg_status(status(ctx, instance))
-    prometheus = (
-        interface.Instance.Prometheus(port=instance.prometheus.port)
-        if instance.prometheus
-        else None
-    )
+    services = {
+        s.__class__.__service__: s
+        for s in ctx.pm.hook.describe(ctx=ctx, instance=instance)
+        if s is not None
+    }
     return interface.Instance(
         name=instance.name,
         version=instance.version,
@@ -779,7 +779,7 @@ def _describe(ctx: "BaseContext", instance: Instance) -> interface.Instance:
         state=state,
         ssl=config.ssl,
         configuration=managed_config,
-        prometheus=prometheus,
+        **services,
     )
 
 

@@ -64,6 +64,32 @@ def test_postgresqlinstance_system_lookup(ctx: Context, instance: Instance) -> N
         system.PostgreSQLInstance.system_lookup(ctx, ("nameonly",))  # type: ignore[arg-type]
 
 
+def test_instance_validate(settings: Settings, pg_version: str) -> None:
+    class Service:
+        pass
+
+    with pytest.raises(
+        ValueError, match="values for 'services' field must be of distinct types"
+    ):
+        system.Instance(
+            name="invalid",
+            version=pg_version,
+            settings=settings,
+            services=[Service(), Service()],
+        )
+
+    class Service2:
+        pass
+
+    i = system.Instance(
+        name="valid",
+        version=pg_version,
+        settings=settings,
+        services=[Service(), Service2()],
+    )
+    assert i.services
+
+
 def test_instance_system_lookup(ctx: Context, instance: Instance) -> None:
     i = system.Instance.system_lookup(ctx, instance)
     assert i == instance

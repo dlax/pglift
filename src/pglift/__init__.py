@@ -7,8 +7,6 @@ __all__ = ["hookimpl"]
 
 hookimpl = pluggy.HookimplMarker(__name__)
 
-prometheus_default_port: Final = 9187
-
 
 def version() -> str:
     return _compat.version(__name__)

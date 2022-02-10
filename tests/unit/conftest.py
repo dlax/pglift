@@ -77,7 +77,10 @@ def _instance(
     prometheus: Optional[prometheus_mod.Service] = None,
 ) -> Instance:
     instance = Instance(
-        name=name, version=version, settings=settings, prometheus=prometheus
+        name=name,
+        version=version,
+        settings=settings,
+        services=[prometheus] if prometheus is not None else [],
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)

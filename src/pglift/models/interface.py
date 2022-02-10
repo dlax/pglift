@@ -15,7 +15,8 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-from .. import prometheus_default_port, settings
+from .. import settings
+from ..prometheus import ServiceManifest as Prometheus
 from ..types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
 
 
@@ -101,12 +102,6 @@ class Instance(Manifest):
             default=State.demoted,
         )
         slot: Optional[str] = Field(description="replication slot name")
-
-    class Prometheus(BaseModel):
-        port: int = Field(
-            default=prometheus_default_port,
-            description="TCP port for the web interface and telemetry of Prometheus",
-        )
 
     name: str
     version: Optional[str] = Field(default=None, description="PostgreSQL version")
