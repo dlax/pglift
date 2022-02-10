@@ -1,15 +1,20 @@
-from typing import List, Sequence
+from typing import TYPE_CHECKING, List, Sequence
 
 from psycopg import sql
 
 from . import db
 from .ctx import BaseContext
 from .models import interface
-from .models.system import Instance
+
+if TYPE_CHECKING:
+    from .models import system
 
 
 def inspect_default_acl(
-    ctx: BaseContext, instance: Instance, database: str, roles: Sequence[str] = ()
+    ctx: BaseContext,
+    instance: "system.Instance",
+    database: str,
+    roles: Sequence[str] = (),
 ) -> List[interface.Privilege]:
     args = {}
     where_clause = sql.SQL("")
@@ -26,7 +31,7 @@ def inspect_default_acl(
 
 def get(
     ctx: BaseContext,
-    instance: Instance,
+    instance: "system.Instance",
     *,
     databases: Sequence[str] = (),
     roles: Sequence[str] = (),

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
@@ -8,14 +8,16 @@ from psycopg import sql
 from . import db, exceptions, types
 from .ctx import BaseContext
 from .models import interface
-from .models.system import Instance
 from .task import task
+
+if TYPE_CHECKING:
+    from .models import system
 
 logger = logging.getLogger(__name__)
 
 
 def apply(
-    ctx: BaseContext, instance: Instance, database_manifest: interface.Database
+    ctx: BaseContext, instance: "system.Instance", database_manifest: interface.Database
 ) -> None:
     """Apply state described by specified database manifest as a PostgreSQL instance.
 
@@ -32,7 +34,9 @@ def apply(
         alter(ctx, instance, database_manifest)
 
 
-def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Database:
+def describe(
+    ctx: BaseContext, instance: "system.Instance", name: str
+) -> interface.Database:
     """Return a database described as a manifest.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
@@ -53,7 +57,9 @@ def describe(ctx: BaseContext, instance: Instance, name: str) -> interface.Datab
         return interface.Database.parse_obj(row)
 
 
-def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabase]:
+def list(
+    ctx: BaseContext, instance: "system.Instance"
+) -> List[interface.DetailedDatabase]:
     """List all databases in instance."""
 
     with db.superuser_connect(ctx, instance) as cnx:
@@ -65,7 +71,7 @@ def list(ctx: BaseContext, instance: Instance) -> List[interface.DetailedDatabas
 
 
 @task("dropping '{name}' database from instance {instance}")
-def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
+def drop(ctx: BaseContext, instance: "system.Instance", name: str) -> None:
     """Drop a database from a primary instance.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
@@ -78,7 +84,7 @@ def drop(ctx: BaseContext, instance: Instance, name: str) -> None:
         cnx.execute(db.query("database_drop", database=sql.Identifier(name)))
 
 
-def exists(ctx: BaseContext, instance: Instance, name: str) -> bool:
+def exists(ctx: BaseContext, instance: "system.Instance", name: str) -> bool:
     """Return True if named database exists in 'instance'.
 
     The instance should be running.
@@ -102,7 +108,9 @@ def options_and_args(
 
 
 @task("creating '{database.name}' database on instance {instance}")
-def create(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
+def create(
+    ctx: BaseContext, instance: "system.Instance", database: interface.Database
+) -> None:
     """Create 'database' in 'instance'.
 
     The instance should be a running primary and the database should not exist already.
@@ -124,7 +132,9 @@ def create(ctx: BaseContext, instance: Instance, database: interface.Database) -
 
 
 @task("altering '{database.name}' database on instance {instance}")
-def alter(ctx: BaseContext, instance: Instance, database: interface.Database) -> None:
+def alter(
+    ctx: BaseContext, instance: "system.Instance", database: interface.Database
+) -> None:
     """Alter 'database' in 'instance'.
 
     The instance should be a running primary and the database should exist already.
@@ -182,7 +192,7 @@ def alter(ctx: BaseContext, instance: Instance, database: interface.Database) ->
 
 def run(
     ctx: BaseContext,
-    instance: Instance,
+    instance: "system.Instance",
     sql_command: str,
     *,
     dbnames: Sequence[str] = (),

@@ -7,16 +7,18 @@ from psycopg import sql
 
 from . import db, exceptions
 from .models import interface
-from .models.system import PostgreSQLInstance
 from .task import task
 from .types import Role
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
+    from .models import system
 
 
 def apply(
-    ctx: "BaseContext", instance: PostgreSQLInstance, role_manifest: interface.Role
+    ctx: "BaseContext",
+    instance: "system.PostgreSQLInstance",
+    role_manifest: interface.Role,
 ) -> None:
     """Apply state described by specified role manifest as a PostgreSQL instance.
 
@@ -35,7 +37,7 @@ def apply(
 
 
 def describe(
-    ctx: "BaseContext", instance: PostgreSQLInstance, name: str
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
 ) -> interface.Role:
     """Return a role described as a manifest.
 
@@ -54,7 +56,7 @@ def describe(
 
 
 @task("dropping role '{name}' from instance {instance}")
-def drop(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> None:
+def drop(ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str) -> None:
     """Drop a role from instance.
 
     :raises ~pglift.exceptions.RoleNotFound: if no role with specified 'name' exists.
@@ -70,7 +72,9 @@ def drop(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> None:
     set_pgpass_entry_for(ctx, instance, role)
 
 
-def exists(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> bool:
+def exists(
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
+) -> bool:
     """Return True if named role exists in 'instance'.
 
     The instance should be running.
@@ -80,7 +84,9 @@ def exists(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> bool:
         return cur.rowcount == 1
 
 
-def has_password(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> bool:
+def has_password(
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
+) -> bool:
     """Return True if the role has a password set."""
     with db.superuser_connect(ctx, instance) as cnx:
         cur = cnx.execute(db.query("role_has_password"), {"username": name})
@@ -140,7 +146,7 @@ def options(
 
 @task("creating role '{role.name}' on instance {instance}")
 def create(
-    ctx: "BaseContext", instance: PostgreSQLInstance, role: interface.Role
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
 ) -> None:
     """Create 'role' in 'instance'.
 
@@ -158,7 +164,7 @@ def create(
 
 @task("altering role '{role.name}' on instance {instance}")
 def alter(
-    ctx: "BaseContext", instance: PostgreSQLInstance, role: interface.Role
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
 ) -> None:
     """Alter 'role' in 'instance'.
 
@@ -199,7 +205,7 @@ def alter(
 
 @task("setting password for '{role.name}' role")
 def set_password_for(
-    ctx: "BaseContext", instance: PostgreSQLInstance, role: Role
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: Role
 ) -> None:
     """Set password for a PostgreSQL role on a primary instance."""
     if instance.standby:
@@ -215,7 +221,9 @@ def set_password_for(
         )
 
 
-def in_pgpass(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> bool:
+def in_pgpass(
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
+) -> bool:
     """Return True if a role with 'name' is present in password file for
     'instance'.
     """
@@ -226,7 +234,7 @@ def in_pgpass(ctx: "BaseContext", instance: PostgreSQLInstance, name: str) -> bo
 
 @task("editing password file entry for '{role.name}' role")
 def set_pgpass_entry_for(
-    ctx: "BaseContext", instance: PostgreSQLInstance, role: interface.Role
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
 ) -> None:
     """Add, update or remove a password file entry for 'role' of 'instance'."""
 
