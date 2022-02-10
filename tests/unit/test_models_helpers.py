@@ -9,6 +9,7 @@ import pytest
 from click.testing import CliRunner
 from pydantic import BaseModel, Field, SecretStr
 
+from pglift import prometheus
 from pglift.models import helpers, interface
 from pglift.types import AnsibleConfig, CLIConfig, Manifest
 
@@ -339,7 +340,7 @@ def test_argspec_from_model_keep_default() -> None:
     "manifest_type",
     [
         interface.Instance,
-        interface.PostgresExporter,
+        prometheus.PostgresExporter,
         interface.Role,
         interface.Database,
     ],

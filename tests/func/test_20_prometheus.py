@@ -168,7 +168,7 @@ def test_start_stop_nonlocal(
 
 def test_apply(ctx: Context, tmp_port_factory: Iterator[int]) -> None:
     port = next(tmp_port_factory)
-    m = interface.PostgresExporter(name="test", dsn="dbname=test", port=port)
+    m = prometheus.PostgresExporter(name="test", dsn="dbname=test", port=port)
     prometheus.apply(ctx, m)
 
     prometheus_settings = ctx.settings.prometheus
@@ -186,7 +186,7 @@ def test_apply(ctx: Context, tmp_port_factory: Iterator[int]) -> None:
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port1}"
 
     prometheus.apply(
-        ctx, interface.PostgresExporter(name="test", dsn="", port=port, state="absent")
+        ctx, prometheus.PostgresExporter(name="test", dsn="", port=port, state="absent")
     )
     assert not configpath.exists()
     assert not queriespath.exists()

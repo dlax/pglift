@@ -1,14 +1,18 @@
+import enum
 import logging
 import shlex
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Dict, Optional, Type, TypeVar
 
 import attr
+import psycopg
+import psycopg.conninfo
 from pgtoolkit.conf import Configuration
+from pydantic import Field, SecretStr, validator
 
 from . import cmd, exceptions, hookimpl
 from . import prometheus_default_port as default_port
-from . import systemd, util
+from . import systemd, types, util
 from .models import interface
 from .models.system import Instance, PostgreSQLInstance
 from .settings import PrometheusSettings
@@ -215,7 +219,55 @@ def exists(ctx: "BaseContext", name: str) -> bool:
     return True
 
 
-def apply(ctx: "BaseContext", manifest: interface.PostgresExporter) -> None:
+class PostgresExporter(types.Manifest):
+    """Prometheus postgres_exporter service."""
+
+    class State(types.AutoStrEnum):
+        """Runtime state"""
+
+        started = enum.auto()
+        stopped = enum.auto()
+        absent = enum.auto()
+
+    _cli_config: ClassVar[Dict[str, types.CLIConfig]] = {
+        "state": {"choices": [State.started.value, State.stopped.value]},
+    }
+
+    name: str = Field(description="locally unique identifier of the service")
+    dsn: str = Field(description="connection string of target instance")
+    password: Optional[SecretStr] = Field(description="connection password")
+    port: int = Field(description="TCP port for the web interface and telemetry")
+    state: State = Field(default=State.started, description="runtime state")
+
+    @validator("name")
+    def __validate_name_(cls, v: str) -> str:
+        """Validate 'name' field.
+
+        >>> PostgresExporter(name='without-slash', dsn="", port=12)  # doctest: +ELLIPSIS
+        PostgresExporter(name='without-slash', ...)
+        >>> PostgresExporter(name='with/slash', dsn="", port=12)
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for PostgresExporter
+        name
+          must not contain slashes (type=value_error)
+        """
+        # Avoid slash as this will break file paths during settings templating
+        # (configpath, etc.)
+        if "/" in v:
+            raise ValueError("must not contain slashes")
+        return v
+
+    @validator("dsn")
+    def __validate_dsn_(cls, value: str) -> str:
+        try:
+            psycopg.conninfo.conninfo_to_dict(value)
+        except psycopg.ProgrammingError as e:
+            raise ValueError(str(e)) from e
+        return value
+
+
+def apply(ctx: "BaseContext", manifest: PostgresExporter) -> None:
     """Apply state described by specified manifest as a postgres_exporter
     service for a non-local instance.
 
@@ -230,7 +282,7 @@ def apply(ctx: "BaseContext", manifest: interface.PostgresExporter) -> None:
             f"instance '{manifest.name}' exists locally"
         )
 
-    if manifest.state == interface.PostgresExporter.State.absent:
+    if manifest.state == PostgresExporter.State.absent:
         drop(ctx, manifest.name)
     else:
         # TODO: detect if setup() actually need to be called by comparing
@@ -241,9 +293,9 @@ def apply(ctx: "BaseContext", manifest: interface.PostgresExporter) -> None:
         setup(
             ctx, manifest.name, dsn=manifest.dsn, password=password, port=manifest.port
         )
-        if manifest.state == interface.PostgresExporter.State.started:
+        if manifest.state == PostgresExporter.State.started:
             start(ctx, manifest.name)
-        elif manifest.state == interface.PostgresExporter.State.stopped:
+        elif manifest.state == PostgresExporter.State.stopped:
             stop(ctx, manifest.name)
 
 

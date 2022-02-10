@@ -3,8 +3,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
-import psycopg
-import psycopg.conninfo
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from pydantic import (
@@ -205,54 +203,6 @@ class InstanceBackup(Manifest):
     datetime: datetime
     type: Literal["incr", "diff", "full"]
     databases: str
-
-
-class PostgresExporter(Manifest):
-    """Prometheus postgres_exporter service."""
-
-    class State(AutoStrEnum):
-        """Runtime state"""
-
-        started = enum.auto()
-        stopped = enum.auto()
-        absent = enum.auto()
-
-    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
-        "state": {"choices": [State.started.value, State.stopped.value]},
-    }
-
-    name: str = Field(description="locally unique identifier of the service")
-    dsn: str = Field(description="connection string of target instance")
-    password: Optional[SecretStr] = Field(description="connection password")
-    port: int = Field(description="TCP port for the web interface and telemetry")
-    state: State = Field(default=State.started, description="runtime state")
-
-    @validator("name")
-    def __validate_name_(cls, v: str) -> str:
-        """Validate 'name' field.
-
-        >>> PostgresExporter(name='without-slash', dsn="", port=12)  # doctest: +ELLIPSIS
-        PostgresExporter(name='without-slash', ...)
-        >>> PostgresExporter(name='with/slash', dsn="", port=12)
-        Traceback (most recent call last):
-            ...
-        pydantic.error_wrappers.ValidationError: 1 validation error for PostgresExporter
-        name
-          must not contain slashes (type=value_error)
-        """
-        # Avoid slash as this will break file paths during settings templating
-        # (configpath, etc.)
-        if "/" in v:
-            raise ValueError("must not contain slashes")
-        return v
-
-    @validator("dsn")
-    def __validate_dsn_(cls, value: str) -> str:
-        try:
-            psycopg.conninfo.conninfo_to_dict(value)
-        except psycopg.ProgrammingError as e:
-            raise ValueError(str(e)) from e
-        return value
 
 
 class Role(Manifest):

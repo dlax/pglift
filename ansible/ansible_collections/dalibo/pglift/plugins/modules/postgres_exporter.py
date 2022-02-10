@@ -55,11 +55,11 @@ from ansible.module_utils.basic import AnsibleModule
 
 from pglift import prometheus
 from pglift.ansible import AnsibleContext
-from pglift.models import helpers, interface
+from pglift.models import helpers
 
 
 def run_module() -> None:
-    model_type = interface.PostgresExporter
+    model_type = prometheus.PostgresExporter
     argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 

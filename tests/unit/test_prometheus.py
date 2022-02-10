@@ -1,10 +1,10 @@
 import pathlib
 
+import pydantic
 import pytest
 
 from pglift import exceptions, prometheus
 from pglift.ctx import Context
-from pglift.models import interface
 from pglift.models.system import Instance
 
 
@@ -65,7 +65,14 @@ def test_port(ctx: Context, instance: Instance) -> None:
             configpath.write_text(original_content)
 
 
+def test_postgresexporter() -> None:
+    m = prometheus.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
+    assert m.dsn == "dbname=postgres"
+    with pytest.raises(pydantic.ValidationError):
+        prometheus.PostgresExporter(dsn="x=y", port=9876)
+
+
 def test_apply(ctx: Context, instance: Instance) -> None:
-    m = interface.PostgresExporter(name=instance.qualname, dsn="", port=123)
+    m = prometheus.PostgresExporter(name=instance.qualname, dsn="", port=123)
     with pytest.raises(exceptions.InstanceStateError, match="exists locally"):
         prometheus.apply(ctx, m)

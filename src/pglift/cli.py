@@ -1063,7 +1063,7 @@ def postgres_exporter(ctx: Context) -> None:
 @postgres_exporter.command("schema")
 def postgres_exporter_schema() -> None:
     """Print the JSON schema of database model"""
-    CONSOLE.print_json(interface.PostgresExporter.schema_json(indent=2))
+    CONSOLE.print_json(prometheus.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")
@@ -1071,15 +1071,15 @@ def postgres_exporter_schema() -> None:
 @pass_ctx
 def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a Prometheus postgres_exporter."""
-    exporter = interface.PostgresExporter.parse_yaml(file)
+    exporter = prometheus.PostgresExporter.parse_yaml(file)
     prometheus.apply(ctx, exporter)
 
 
 @postgres_exporter.command("install")
-@helpers.parameters_from_model(interface.PostgresExporter)
+@helpers.parameters_from_model(prometheus.PostgresExporter)
 @pass_ctx
 def postgres_exporter_install(
-    ctx: Context, postgresexporter: interface.PostgresExporter
+    ctx: Context, postgresexporter: prometheus.PostgresExporter
 ) -> None:
     """Install the service for a (non-local) instance."""
     with task.transaction():

@@ -1279,7 +1279,7 @@ def test_postgres_exporter_apply(
     assert result.exit_code == 0
     apply.assert_called_once_with(
         ctx,
-        interface.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+        prometheus.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
     )
 
 
@@ -1293,7 +1293,7 @@ def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) ->
     assert result.exit_code == 0
     apply.assert_called_once_with(
         ctx,
-        interface.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+        prometheus.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
     )
 
 
