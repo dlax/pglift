@@ -6,8 +6,8 @@ def test_pluginmanager_get() -> None:
     assert {name for name, _ in p.list_name_plugin()} == {
         "pglift.backup",
         "pglift.instance",
+        "pglift.passfile",
         "pglift.pgbackrest",
-        "pglift.roles",
     }
 
 
