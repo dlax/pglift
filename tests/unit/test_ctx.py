@@ -19,7 +19,6 @@ def test_libpq_environ_password_command(tmp_path: Path, ctx: Context) -> None:
         f.write("#!/bin/sh\necho foo")
     passcmd.chmod(0o755)
     ctx = Context(
-        plugin_manager=ctx.pm,
         settings=Settings.parse_obj(
             {
                 "prefix": ctx.settings.prefix,

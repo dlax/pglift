@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 import pytest
 from pgtoolkit.ctl import PGCtl
@@ -59,9 +59,21 @@ def pg_version() -> str:
 
 
 @pytest.fixture
-def ctx(settings: Settings) -> Context:
-    p = pm.PluginManager.get()
-    return Context(plugin_manager=p, settings=settings)
+def plugin_manager(settings: Settings) -> pm.PluginManager:
+    return pm.PluginManager.get()
+
+
+@pytest.fixture
+def nohook(plugin_manager: pm.PluginManager) -> Iterator[None]:
+    unregistered = plugin_manager.unregister_all()
+    yield
+    for plugin in unregistered:
+        plugin_manager.register(plugin)
+
+
+@pytest.fixture
+def ctx(settings: Settings, plugin_manager: pm.PluginManager) -> Context:
+    return Context(plugin_manager=plugin_manager, settings=settings)
 
 
 @pytest.fixture

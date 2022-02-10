@@ -15,7 +15,7 @@ from pgtoolkit.ctl import Status
 
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
-from pglift import pgbackrest, prometheus, roles
+from pglift import pgbackrest, pm, prometheus, roles
 from pglift.cli import (
     CLIContext,
     Command,
@@ -36,8 +36,8 @@ def runner() -> CliRunner:
 
 
 @pytest.fixture
-def ctx(ctx: Context) -> CLIContext:
-    return CLIContext(plugin_manager=ctx.pm, settings=ctx.settings)
+def ctx(ctx: Context, plugin_manager: pm.PluginManager) -> CLIContext:
+    return CLIContext(plugin_manager=plugin_manager, settings=ctx.settings)
 
 
 @pytest.fixture

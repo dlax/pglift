@@ -210,7 +210,7 @@ class Instance(PostgreSQLInstance):
         assert "services" not in values
         values["services"] = [
             s
-            for s in ctx.pm.hook.system_lookup(ctx=ctx, instance=pg_instance)
+            for s in ctx.hook.system_lookup(ctx=ctx, instance=pg_instance)
             if s is not None
         ]
         return cls(**values)

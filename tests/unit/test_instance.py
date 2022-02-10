@@ -94,16 +94,10 @@ def test_list_no_pgroot(ctx: Context) -> None:
     assert list(instance_mod.list(ctx)) == []
 
 
-@pytest.fixture
-def ctx_nohook(ctx: Context) -> Context:
-    ctx.pm.unregister_all()
-    return ctx
-
-
+@pytest.mark.usefixtures("nohook")
 def test_configure(
-    ctx_nohook: Context, instance: Instance, instance_manifest: interface.Instance
+    ctx: Context, instance: Instance, instance_manifest: interface.Instance
 ) -> None:
-    ctx = ctx_nohook
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open("w") as f:

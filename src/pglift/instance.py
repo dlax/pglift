@@ -269,7 +269,7 @@ def configure(
 
     i = PostgreSQLInstance.system_lookup(ctx, instance)
     i_config = i.config()
-    ctx.pm.hook.instance_configure(
+    ctx.hook.instance_configure(
         ctx=ctx, manifest=manifest, config=i_config, changes=changes
     )
 
@@ -419,7 +419,7 @@ def start(
     start_postgresql(ctx, instance, wait=wait, logfile=logfile, foreground=foreground)
 
     if run_hooks and wait:
-        ctx.pm.hook.instance_start(ctx=ctx, instance=instance)
+        ctx.hook.instance_start(ctx=ctx, instance=instance)
 
 
 @task("starting PostgreSQL instance")
@@ -481,7 +481,7 @@ def stop(
     else:
         stop_postgresql(ctx, instance, mode=mode, wait=wait)
     if run_hooks and wait:
-        ctx.pm.hook.instance_stop(ctx=ctx, instance=instance)
+        ctx.hook.instance_stop(ctx=ctx, instance=instance)
 
 
 @task("stopping PostgreSQL instance")
@@ -769,7 +769,7 @@ def _describe(ctx: "BaseContext", instance: Instance) -> interface.Instance:
     state = interface.InstanceState.from_pg_status(status(ctx, instance))
     services = {
         s.__class__.__service__: s
-        for s in ctx.pm.hook.describe(ctx=ctx, instance=instance)
+        for s in ctx.hook.describe(ctx=ctx, instance=instance)
         if s is not None
     }
     return interface.Instance(
@@ -791,7 +791,7 @@ def drop(ctx: "BaseContext", instance: Instance) -> None:
 
     stop(ctx, instance, run_hooks=True)
 
-    ctx.pm.hook.instance_drop(ctx=ctx, instance=instance)
+    ctx.hook.instance_drop(ctx=ctx, instance=instance)
     manifest = interface.Instance(name=instance.name, version=instance.version)
     revert_init(ctx, manifest)
 
