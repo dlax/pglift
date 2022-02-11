@@ -20,7 +20,7 @@ from pydantic.utils import lenient_issubclass
 
 from ..types import AnsibleArgSpec
 
-Callback = Callable[..., None]
+Callback = Callable[..., Any]
 ModelType = Type[pydantic.BaseModel]
 T = TypeVar("T", bound=pydantic.BaseModel)
 
@@ -205,7 +205,7 @@ def parameters_from_model(
                 raise type_error
 
             @functools.wraps(f)
-            def callback(**kwargs: Any) -> None:
+            def callback(**kwargs: Any) -> Any:
                 args = params_to_modelargs(kwargs)
                 model = parse_params_as(model_type, args)
                 kwargs[model_argname] = model
@@ -214,7 +214,7 @@ def parameters_from_model(
         else:
 
             @functools.wraps(f)
-            def callback(**kwargs: Any) -> None:
+            def callback(**kwargs: Any) -> Any:
                 args = params_to_modelargs(kwargs)
                 kwargs.update(args)
                 return f(**kwargs)
