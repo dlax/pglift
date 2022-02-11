@@ -30,6 +30,7 @@ import rich.prompt
 import rich.text
 import rich.tree
 from click.exceptions import Exit
+from click.shell_completion import CompletionItem
 from pydantic.utils import deep_update
 from rich.console import Console, RenderableType
 from rich.highlighter import NullHighlighter
@@ -216,8 +217,33 @@ def instance_lookup(
     return get_instance(ctx, name, version)
 
 
+def _list_instances(
+    context: click.Context, param: click.Parameter, incomplete: str
+) -> List[CompletionItem]:
+    """Shell completion function for instance identifier <name> or <version>/<name>."""
+    out = []
+    iname, iversion = nameversion_from_id(incomplete)
+    ctx = Context()
+    for i in instance_mod.list(ctx):
+        if iversion is not None and i.version.startswith(iversion):
+            if i.name.startswith(iname):
+                out.append(
+                    CompletionItem(f"{i.version}/{i.name}", help=f"port={i.port}")
+                )
+            else:
+                out.append(CompletionItem(i.version))
+        else:
+            out.append(
+                CompletionItem(i.name, help=f"{i.version}/{i.name} port={i.port}")
+            )
+    return out
+
+
 instance_identifier = click.argument(
-    "instance", metavar="<version>/<name>", callback=instance_lookup
+    "instance",
+    metavar="<version>/<name>",
+    callback=instance_lookup,
+    shell_complete=_list_instances,
 )
 
 
