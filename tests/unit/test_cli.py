@@ -16,7 +16,14 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, pm, prometheus, roles
-from pglift.cli import CLIContext, Command, Obj, cli, get_instance, require_component
+from pglift.cli import (
+    CLIContext,
+    Command,
+    Obj,
+    cli,
+    get_instance,
+    pass_component_settings,
+)
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -96,24 +103,24 @@ def test_command_internal_error(runner: CliRunner, obj: Obj) -> None:
     assert "RuntimeError: oups" in logcontent
 
 
-def test_require_component(runner: CliRunner, ctx: Context) -> None:
+def test_pass_component_settings(runner: CliRunner, obj: Obj) -> None:
     mod = MagicMock()
 
     @click.command("command")
-    @click.pass_obj
-    @functools.partial(require_component, mod, "mymod")
-    def command(ctx: click.Context, *args: Any) -> None:
-        click.echo(f"ctx is {type(ctx)}")
+    @functools.partial(pass_component_settings, mod, "mymod")
+    def command(settings: Any, *args: Any) -> None:
+        click.echo(f"settings is {settings.id}")
 
-    mod.available.return_value = False
-    r = runner.invoke(command, obj=ctx)
+    mod.available.return_value = None
+    r = runner.invoke(command, obj=obj)
     assert r.exit_code == 1
     assert r.stderr == "mymod not available\n"
 
-    mod.available.return_value = True
-    r = runner.invoke(command, obj=ctx)
+    rv = MagicMock(id="123")
+    mod.available.return_value = rv
+    r = runner.invoke(command, obj=obj)
     assert r.exit_code == 0
-    assert r.stdout == "ctx is <class 'pglift.cli.CLIContext'>\n"
+    assert r.stdout == "settings is 123\n"
 
 
 def test_get_instance(ctx: Context, instance: Instance) -> None:
@@ -186,30 +193,15 @@ def test_instance_create(
     assert result.exit_code == 1
     assert "instance already exists" in result.stderr
 
+    cmd = ["instance", "create", "new", "--port=1234", "--data-checksums"]
+    if ctx.settings.prometheus is not None:
+        cmd.append("--prometheus-port=1212")
     with patch.object(instance_mod, "apply") as apply:
-        result = runner.invoke(
-            cli,
-            [
-                "instance",
-                "create",
-                "new",
-                "--port=1234",
-                "--data-checksums",
-                "--prometheus-port=1212",
-            ],
-            obj=obj,
-        )
-    apply.assert_called_once_with(
-        ctx,
-        composite_instance_model.parse_obj(
-            {
-                "name": "new",
-                "port": 1234,
-                "data_checksums": True,
-                "prometheus": {"port": 1212},
-            }
-        ),
-    )
+        result = runner.invoke(cli, cmd, obj=obj)
+    expected = {"name": "new", "port": 1234, "data_checksums": True}
+    if ctx.settings.prometheus is not None:
+        expected["prometheus"] = {"port": 1212}
+    apply.assert_called_once_with(ctx, composite_instance_model.parse_obj(expected))
     assert result.exit_code == 0, result
 
 
@@ -224,7 +216,9 @@ def test_instance_apply(
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.stderr
 
-    m = {"name": "test", "prometheus": {"port": 1212}}
+    m: Dict[str, Any] = {"name": "test"}
+    if ctx.settings.prometheus is not None:
+        m["prometheus"] = {"port": 1212}
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump(m)
     manifest.write_text(content)
@@ -250,30 +244,19 @@ def test_instance_alter(
     assert result.exit_code == 2, result.stderr
     assert "instance '11/notfound' not found" in result.stderr
 
-    actual = composite_instance_model.parse_obj(
-        {"name": instance.name, "prometheus": {"port": 1212}}
-    )
-    altered = composite_instance_model.parse_obj(
-        {
-            "name": instance.name,
-            "state": "stopped",
-            "prometheus": {"port": 2121},
-        }
-    )
+    actual_obj: Dict[str, Any] = {"name": instance.name}
+    altered_obj: Dict[str, Any] = {"name": instance.name, "state": "stopped"}
+    cmd = ["instance", "alter", str(instance), "--state=stopped"]
+    if ctx.settings.prometheus is not None:
+        actual_obj["prometheus"] = {"port": 1212}
+        altered_obj["prometheus"] = {"port": 2121}
+        cmd.append("--prometheus-port=2121")
+    actual = composite_instance_model.parse_obj(actual_obj)
+    altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(
         instance_mod, "apply", return_value=(instance, {}, True)
     ) as apply, patch.object(instance_mod, "describe", return_value=actual) as describe:
-        result = runner.invoke(
-            cli,
-            [
-                "instance",
-                "alter",
-                str(instance),
-                "--state=stopped",
-                "--prometheus-port=2121",
-            ],
-            obj=obj,
-        )
+        result = runner.invoke(cli, cmd, obj=obj)
     describe.assert_called_once_with(ctx, instance.name, instance.version)
     apply.assert_called_once_with(ctx, altered)
     assert result.exit_code == 0, result.output
@@ -600,6 +583,7 @@ def test_instance_logs(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     assert result.output == "log\nged\n"
 
 
+@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
@@ -612,6 +596,7 @@ def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> Non
     assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
 
 
+@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     bck = interface.InstanceBackup(
         label="foo",
@@ -642,6 +627,7 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
     ]
 
 
+@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_restore(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
@@ -1242,6 +1228,7 @@ def test_database_privileges(
     ]
 
 
+@pytest.mark.usefixtures("need_prometheus")
 @pytest.mark.parametrize(
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
@@ -1260,10 +1247,13 @@ def test_postgres_exporter_start_stop(
             ["postgres_exporter", action, instance.qualname],
             obj=obj,
         )
-    patched.assert_called_once_with(ctx, instance.qualname, **kwargs)
+    patched.assert_called_once_with(
+        ctx, instance.qualname, ctx.settings.prometheus, **kwargs
+    )
     assert result.exit_code == 0, result
 
 
+@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_schema(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["postgres_exporter", "schema"])
     schema = json.loads(result.output)
@@ -1271,6 +1261,7 @@ def test_postgres_exporter_schema(runner: CliRunner) -> None:
     assert schema["description"] == "Prometheus postgres_exporter service."
 
 
+@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_apply(
     runner: CliRunner, tmp_path: Path, ctx: Context, obj: Obj
 ) -> None:
@@ -1287,9 +1278,11 @@ def test_postgres_exporter_apply(
     apply.assert_called_once_with(
         ctx,
         prometheus.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+        ctx.settings.prometheus,
     )
 
 
+@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "apply") as apply:
         result = runner.invoke(
@@ -1301,9 +1294,11 @@ def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) ->
     apply.assert_called_once_with(
         ctx,
         prometheus.PostgresExporter(name="123-exp", dsn="dbname=monitoring", port=123),
+        ctx.settings.prometheus,
     )
 
 
+@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "drop") as drop:
         result = runner.invoke(
@@ -1315,6 +1310,7 @@ def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) 
     drop.assert_called_once_with(ctx, "123-exp")
 
 
+@pytest.mark.usefixtures("need_pgbackrest")
 def test_pgbackrest(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:

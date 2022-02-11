@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import Any, Iterator, Optional, Type
+from typing import Any, Iterator, Type
 
 import pytest
 from pgtoolkit.ctl import PGCtl
 
+import pglift
 from pglift import pm
 from pglift import prometheus as prometheus_mod
 from pglift.ctx import Context
@@ -29,8 +30,30 @@ def regen_test_data(request: Any) -> bool:
     return value
 
 
+@pytest.fixture(params=[True, False], ids=["pgbackrest:yes", "pgbackrest:no"])
+def pgbackrest(request: Any) -> bool:
+    return request.param  # type: ignore[no-any-return]
+
+
 @pytest.fixture
-def settings(tmp_path: Path) -> Settings:
+def need_pgbackrest(pgbackrest: bool) -> None:
+    if not pgbackrest:
+        pytest.skip("needs pgbackrest")
+
+
+@pytest.fixture(params=[True, False], ids=["prometheus:yes", "prometheus:no"])
+def prometheus(request: Any) -> bool:
+    return request.param  # type: ignore[no-any-return]
+
+
+@pytest.fixture
+def need_prometheus(prometheus: bool) -> None:
+    if not prometheus:
+        pytest.skip("needs prometheus")
+
+
+@pytest.fixture
+def settings(tmp_path: Path, pgbackrest: bool, prometheus: bool) -> Settings:
     passfile = tmp_path / "pgass"
     passfile.touch()
     return Settings.parse_obj(
@@ -38,6 +61,8 @@ def settings(tmp_path: Path) -> Settings:
             "prefix": str(tmp_path),
             "postgresql": {"auth": {"passfile": str(passfile)}},
             "systemd": {"unit_path": str(tmp_path / "systemd")},
+            "pgbackrest": {} if pgbackrest else None,
+            "prometheus": {} if prometheus else None,
         }
     )
 
@@ -60,7 +85,7 @@ def pg_version() -> str:
 
 @pytest.fixture
 def plugin_manager(settings: Settings) -> pm.PluginManager:
-    return pm.PluginManager.get()
+    return pglift.plugin_manager(settings)
 
 
 @pytest.fixture
@@ -90,13 +115,12 @@ def instance_manifest(
     return composite_instance_model(name="test", version=pg_version)
 
 
-def _instance(
-    name: str,
-    version: str,
-    settings: Settings,
-    *,
-    prometheus: Optional[prometheus_mod.Service] = None,
-) -> Instance:
+def _instance(name: str, version: str, settings: Settings) -> Instance:
+    prometheus = None
+    if settings.prometheus is not None:
+        prometheus_port = 9817
+        prometheus = prometheus_mod.Service(port=prometheus_port)
+
     instance = Instance(
         name=name,
         version=version,
@@ -119,10 +143,11 @@ def _instance(
     (confdir / "user.conf").write_text(f"bonjour = on\nbonjour_name= '{name}'\n")
 
     if prometheus:
+        assert settings.prometheus is not None
         prometheus_config = prometheus_mod._configpath(
             instance.qualname, settings.prometheus
         )
-        prometheus_config.parent.mkdir(parents=True)
+        prometheus_config.parent.mkdir(parents=True, exist_ok=True)
         prometheus_config.write_text(
             f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus.port}"
         )
@@ -130,13 +155,9 @@ def _instance(
     return instance
 
 
-@pytest.fixture(params=[True, False], ids=["prometheus=yes", "prometheus=no"])
+@pytest.fixture
 def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
-    prometheus = None
-    if request.param:
-        prometheus_port = 9817
-        prometheus = prometheus_mod.Service(port=prometheus_port)
-    return _instance("test", pg_version, settings, prometheus=prometheus)
+    return _instance("test", pg_version, settings)
 
 
 @pytest.fixture

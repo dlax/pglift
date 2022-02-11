@@ -336,10 +336,14 @@ def test_argspec_from_model_keep_default() -> None:
     }
 
 
+# Composite instance model will all plugins enabled, for Ansible argspec tests.
+composite_instance_model = interface.Instance.composite(pm.PluginManager.get())
+
+
 @pytest.mark.parametrize(
     "manifest_type",
     [
-        interface.Instance.composite(pm.PluginManager.get()),
+        composite_instance_model,
         prometheus.PostgresExporter,
         interface.Role,
         interface.Database,

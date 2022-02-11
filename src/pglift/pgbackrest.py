@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def available(ctx: "BaseContext") -> bool:
-    return ctx.settings.pgbackrest.execpath.exists()
+def available(ctx: "BaseContext") -> Optional[PgBackRestSettings]:
+    return ctx.settings.pgbackrest
 
 
 def make_cmd(
@@ -57,6 +57,7 @@ def _stanza(instance: system.BaseInstance) -> str:
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
+    settings: PgBackRestSettings,
     *,
     backup_set: Optional[str] = None,
     output_json: Literal[False],
@@ -68,6 +69,7 @@ def backup_info(
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
+    settings: PgBackRestSettings,
     *,
     backup_set: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
@@ -77,6 +79,7 @@ def backup_info(
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
+    settings: PgBackRestSettings,
     *,
     backup_set: Optional[str] = None,
     output_json: bool = True,
@@ -91,16 +94,19 @@ def backup_info(
     if output_json:
         args.append("--output=json")
     args.append("info")
-    r = ctx.run(make_cmd(instance, ctx.settings.pgbackrest, *args), check=True)
+    r = ctx.run(make_cmd(instance, settings, *args), check=True)
     if not output_json:
         return r.stdout
     return json.loads(r.stdout)  # type: ignore[no-any-return]
 
 
 @task("setting up pgBackRest")
-def setup(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
+def setup(
+    ctx: "BaseContext",
+    instance: system.PostgreSQLInstance,
+    settings: PgBackRestSettings,
+) -> None:
     """Setup pgBackRest"""
-    settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
     directory = Path(str(settings.directory).format(instance=instance))
@@ -168,9 +174,12 @@ def setup(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
 
 
 @setup.revert("deconfiguring pgBackRest")
-def revert_setup(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
+def revert_setup(
+    ctx: "BaseContext",
+    instance: system.PostgreSQLInstance,
+    settings: PgBackRestSettings,
+) -> None:
     """Un-setup pgBackRest"""
-    settings = ctx.settings.pgbackrest
     configpath = _configpath(instance, settings)
     directory = Path(str(settings.directory).format(instance=instance))
 
@@ -190,8 +199,11 @@ def revert_setup(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> Non
 
 
 @task("initializing pgBackRest repository")
-def init(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
-    settings = ctx.settings.pgbackrest
+def init(
+    ctx: "BaseContext",
+    instance: system.PostgreSQLInstance,
+    settings: PgBackRestSettings,
+) -> None:
     with instance_mod.running(ctx, instance):
         role = interface.Role(
             name=ctx.settings.postgresql.backuprole,
@@ -211,26 +223,30 @@ def init(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
 @hookimpl  # type: ignore[misc]
 def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None:
     """Install pgBackRest for an instance when it gets configured."""
-    if not available(ctx):
+    settings = available(ctx)
+    if not settings:
         logger.warning("pgbackrest not available, skipping backup configuration")
         return
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if instance.standby:
         return
-    setup(ctx, instance)
+    setup(ctx, instance, settings)
 
-    info_json = backup_info(ctx, instance)
+    info_json = backup_info(ctx, instance, settings)
     # Only initialize if the stanza does not already exists.
     if not info_json or info_json[0]["status"]["code"] == 1:
-        init(ctx, instance)
+        init(ctx, instance, settings)
 
 
 @hookimpl  # type: ignore[misc]
 def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
     """Uninstall pgBackRest from an instance being dropped."""
+    settings = available(ctx)
+    if not settings:
+        return
     if instance.standby:
         return
-    revert_setup(ctx, instance)
+    revert_setup(ctx, instance, settings)
 
 
 class BackupType(AutoStrEnum):
@@ -275,6 +291,7 @@ def backup_command(
 def backup(
     ctx: "BaseContext",
     instance: system.PostgreSQLInstance,
+    settings: PgBackRestSettings,
     *,
     type: BackupType = BackupType.default(),
 ) -> None:
@@ -292,7 +309,7 @@ def backup(
     env = os.environ.copy()
     env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
     ctx.run(
-        backup_command(instance, ctx.settings.pgbackrest, type=type),
+        backup_command(instance, settings, type=type),
         check=True,
         env=env,
     )
@@ -309,12 +326,14 @@ def expire_command(
 
 
 @task("expiring pgBackRest backups")
-def expire(ctx: "BaseContext", instance: system.BaseInstance) -> None:
+def expire(
+    ctx: "BaseContext", instance: system.BaseInstance, settings: PgBackRestSettings
+) -> None:
     """Expire a backup of ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    ctx.run(expire_command(instance, ctx.settings.pgbackrest), check=True)
+    ctx.run(expire_command(instance, settings), check=True)
 
 
 def _parse_backup_databases(info: str) -> List[str]:
@@ -355,17 +374,17 @@ def _parse_backup_databases(info: str) -> List[str]:
 
 
 def iter_backups(
-    ctx: "BaseContext", instance: system.BaseInstance
+    ctx: "BaseContext", instance: system.BaseInstance, settings: PgBackRestSettings
 ) -> Iterator[InstanceBackup]:
     """Yield information about backups on an instance."""
-    backups = backup_info(ctx, instance)[0]["backup"]
+    backups = backup_info(ctx, instance, settings)[0]["backup"]
 
     def started_at(entry: Any) -> float:
         return entry["timestamp"]["start"]  # type: ignore[no-any-return]
 
     for backup in sorted(backups, key=started_at, reverse=True):
         info_set = backup_info(
-            ctx, instance, backup_set=backup["label"], output_json=False
+            ctx, instance, settings, backup_set=backup["label"], output_json=False
         )
         databases = _parse_backup_databases(info_set)
         dt = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
@@ -411,6 +430,7 @@ def restore_command(
 def restore(
     ctx: "BaseContext",
     instance: system.PostgreSQLInstance,
+    settings: PgBackRestSettings,
     *,
     label: Optional[str] = None,
     date: Optional[datetime.datetime] = None,
@@ -424,7 +444,5 @@ def restore(
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
 
-    cmd = restore_command(
-        instance, ctx.settings.pgbackrest, date=date, backup_set=label
-    )
+    cmd = restore_command(instance, settings, date=date, backup_set=label)
     ctx.run(cmd, check=True)

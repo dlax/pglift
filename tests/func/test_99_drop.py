@@ -1,5 +1,4 @@
 import pathlib
-import shutil
 
 import pytest
 import requests
@@ -8,6 +7,7 @@ from pgtoolkit.conf import Configuration
 from pglift import backup, exceptions, prometheus, systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.settings import PgBackRestSettings, PrometheusSettings
 
 
 def test_pgpass(
@@ -39,13 +39,12 @@ def test_systemd_backup_job(
     assert not systemd.is_enabled(ctx, backup.systemd_timer(instance))
 
 
-@pytest.mark.skipif(
-    shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
-)
 def test_pgbackrest_teardown(
-    ctx: Context, instance: system.Instance, instance_dropped: Configuration
+    ctx: Context,
+    pgbackrest_settings: PgBackRestSettings,
+    instance: system.Instance,
+    instance_dropped: Configuration,
 ) -> None:
-    pgbackrest_settings = ctx.settings.pgbackrest
     configpath = pathlib.Path(
         str(pgbackrest_settings.configpath).format(instance=instance)
     )
@@ -57,9 +56,11 @@ def test_pgbackrest_teardown(
 
 
 def test_prometheus_teardown(
-    ctx: Context, instance: system.Instance, instance_dropped: Configuration
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    instance: system.Instance,
+    instance_dropped: Configuration,
 ) -> None:
-    prometheus_settings = ctx.settings.prometheus
     configpath = pathlib.Path(
         str(prometheus_settings.configpath).format(name=instance.qualname)
     )

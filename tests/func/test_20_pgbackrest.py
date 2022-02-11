@@ -11,6 +11,7 @@ from pglift import pgbackrest
 from pglift.conf import info as conf_info
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.settings import PgBackRestSettings
 
 from . import execute, reconfigure_instance
 from .conftest import DatabaseFactory
@@ -21,13 +22,15 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture
-def directory(ctx: Context, instance: system.Instance) -> Path:
-    pgbackrest_settings = ctx.settings.pgbackrest
+def directory(
+    pgbackrest_settings: PgBackRestSettings, instance: system.Instance
+) -> Path:
     return Path(str(pgbackrest_settings.directory).format(instance=instance))
 
 
 def test_configure(
     ctx: Context,
+    pgbackrest_settings: PgBackRestSettings,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     tmp_path: Path,
@@ -37,7 +40,6 @@ def test_configure(
     instance_config = instance.config()
     assert instance_config
     instance_port = instance_config.port
-    pgbackrest_settings = ctx.settings.pgbackrest
 
     configpath = Path(str(pgbackrest_settings.configpath).format(instance=instance))
     assert configpath.exists()
@@ -60,7 +62,7 @@ def test_configure(
 
     # Calling setup an other time doesn't overwrite configuration
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
-    pgbackrest.setup(ctx, instance)
+    pgbackrest.setup(ctx, instance, pgbackrest_settings)
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     assert mtime_before == mtime_after
 
@@ -77,6 +79,7 @@ def test_configure(
 @pytest.mark.usefixtures("surole_password")
 def test_backup_restore(
     ctx: Context,
+    pgbackrest_settings: PgBackRestSettings,
     instance: system.Instance,
     directory: Path,
     database_factory: DatabaseFactory,
@@ -102,10 +105,11 @@ def test_backup_restore(
         pgbackrest.backup(
             ctx,
             instance,
+            pgbackrest_settings,
             type=pgbackrest.BackupType.full,
         )
         assert latest_backup.exists() and latest_backup.is_symlink()
-        pgbackrest.expire(ctx, instance)
+        pgbackrest.expire(ctx, instance, pgbackrest_settings)
         # TODO: check some result from 'expire' command here.
 
         time.sleep(1)
@@ -114,12 +118,12 @@ def test_backup_restore(
 
         execute(ctx, instance, "DROP DATABASE backrest", autocommit=True, fetch=False)
 
-    (backup1,) = list(pgbackrest.iter_backups(ctx, instance))
+    (backup1,) = list(pgbackrest.iter_backups(ctx, instance, pgbackrest_settings))
     assert backup1.type == "full"
     assert backup1.databases == "backrest, postgres"
     assert backup1.datetime.replace(tzinfo=None) > before
 
-    pgbackrest.restore(ctx, instance, date=before_drop)
+    pgbackrest.restore(ctx, instance, pgbackrest_settings, date=before_drop)
     with instance_mod.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
         assert "backrest" in [r["datname"] for r in rows]

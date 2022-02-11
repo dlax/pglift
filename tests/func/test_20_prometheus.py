@@ -13,14 +13,9 @@ from pglift import instance as instance_mod
 from pglift import prometheus, systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.settings import PrometheusSettings
 
 from . import reconfigure_instance
-
-
-@pytest.fixture(autouse=True)
-def prometheus_available(ctx: Context) -> None:
-    if not prometheus.available(ctx):
-        pytest.skip("prometheus not available")
 
 
 def config_dict(configpath: Path) -> Dict[str, str]:
@@ -33,12 +28,12 @@ def config_dict(configpath: Path) -> Dict[str, str]:
 
 def test_configure(
     ctx: Context,
+    prometheus_settings: PrometheusSettings,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
     service = instance.service(prometheus.Service)
-    prometheus_settings = ctx.settings.prometheus
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
@@ -63,6 +58,7 @@ def test_configure(
 @pytest.fixture
 def postgres_exporter(
     ctx: Context,
+    prometheus_settings: PrometheusSettings,
     instance_manifest: interface.Instance,
     instance: system.Instance,
     tmp_port_factory: Iterator[int],
@@ -78,8 +74,9 @@ def postgres_exporter(
     password = None
     if role.password:
         password = role.password.get_secret_value()
-    prometheus.setup(ctx, name, dsn=dsn, password=password, port=port)
-    prometheus_settings = ctx.settings.prometheus
+    prometheus.setup(
+        ctx, name, prometheus_settings, dsn=dsn, password=password, port=port
+    )
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
     queriespath = Path(str(prometheus_settings.queriespath).format(name=name))
@@ -87,16 +84,19 @@ def postgres_exporter(
 
     yield name, dsn, port
 
-    prometheus.revert_setup(ctx, name)
+    prometheus.revert_setup(ctx, name, prometheus_settings)
     assert not configpath.exists()
     assert not queriespath.exists()
 
 
 def test_setup(
-    ctx: Context, instance: system.Instance, postgres_exporter: Tuple[str, str, int]
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    instance: system.Instance,
+    postgres_exporter: Tuple[str, str, int],
 ) -> None:
     name, dsn, port = postgres_exporter
-    configpath = Path(str(ctx.settings.prometheus.configpath).format(name=name))
+    configpath = Path(str(prometheus_settings.configpath).format(name=name))
 
     prometheus_config = config_dict(configpath)
     assert f"port={instance.port}" in prometheus_config["DATA_SOURCE_NAME"]
@@ -108,6 +108,7 @@ def request_metrics(port: int) -> requests.Response:
     return requests.get(f"http://0.0.0.0:{port}/metrics")
 
 
+@pytest.mark.usefixtures("prometheus_available")
 def test_start_stop(ctx: Context, instance: system.Instance) -> None:
     service = instance.service(prometheus.Service)
     port = service.port
@@ -137,7 +138,10 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
 
 
 def test_start_stop_nonlocal(
-    ctx: Context, instance: system.Instance, postgres_exporter: Tuple[str, str, int]
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    instance: system.Instance,
+    postgres_exporter: Tuple[str, str, int],
 ) -> None:
     name, dsn, port = postgres_exporter
 
@@ -145,7 +149,7 @@ def test_start_stop_nonlocal(
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(name))
 
     with instance_mod.running(ctx, instance, run_hooks=False):
-        prometheus.start(ctx, name)
+        prometheus.start(ctx, name, prometheus_settings)
         try:
             if ctx.settings.service_manager == "systemd":
                 assert systemd.is_active(ctx, prometheus.systemd_unit(name))
@@ -158,7 +162,7 @@ def test_start_stop_nonlocal(
             output = r.text
             assert "pg_up 1" in output.splitlines()
         finally:
-            prometheus.stop(ctx, name)
+            prometheus.stop(ctx, name, prometheus_settings)
 
         if ctx.settings.service_manager == "systemd":
             assert not systemd.is_active(ctx, prometheus.systemd_unit(name))
@@ -166,12 +170,15 @@ def test_start_stop_nonlocal(
             request_metrics(port)
 
 
-def test_apply(ctx: Context, tmp_port_factory: Iterator[int]) -> None:
+def test_apply(
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    tmp_port_factory: Iterator[int],
+) -> None:
     port = next(tmp_port_factory)
     m = prometheus.PostgresExporter(name="test", dsn="dbname=test", port=port)
-    prometheus.apply(ctx, m)
+    prometheus.apply(ctx, m, prometheus_settings)
 
-    prometheus_settings = ctx.settings.prometheus
     configpath = Path(str(prometheus_settings.configpath).format(name="test"))
     assert configpath.exists()
     queriespath = Path(str(prometheus_settings.queriespath).format(name="test"))
@@ -181,28 +188,33 @@ def test_apply(ctx: Context, tmp_port_factory: Iterator[int]) -> None:
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
     port1 = next(tmp_port_factory)
-    prometheus.apply(ctx, m.copy(update={"port": port1}))
+    prometheus.apply(ctx, m.copy(update={"port": port1}), prometheus_settings)
     prometheus_config = config_dict(configpath)
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port1}"
 
     prometheus.apply(
-        ctx, prometheus.PostgresExporter(name="test", dsn="", port=port, state="absent")
+        ctx,
+        prometheus.PostgresExporter(name="test", dsn="", port=port, state="absent"),
+        prometheus_settings,
     )
     assert not configpath.exists()
     assert not queriespath.exists()
 
 
 def test_drop_exists(
-    ctx: Context, tmp_port_factory: Iterator[int], caplog: pytest.LogCaptureFixture
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    tmp_port_factory: Iterator[int],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     port = next(tmp_port_factory)
-    prometheus.setup(ctx, "dropme", port=port)
-    assert prometheus.port(ctx, "dropme") == port
+    prometheus.setup(ctx, "dropme", prometheus_settings, port=port)
+    assert prometheus.port("dropme", prometheus_settings) == port
     assert prometheus.exists(ctx, "dropme")
     prometheus.drop(ctx, "dropme")
     assert not prometheus.exists(ctx, "dropme")
     with pytest.raises(exceptions.FileNotFoundError, match="postgres_exporter config"):
-        prometheus.port(ctx, "dropme")
+        prometheus.port("dropme", prometheus_settings)
     caplog.clear()
     with caplog.at_level(logging.WARNING, logger="pglift"):
         prometheus.drop(ctx, "dropme")
@@ -212,10 +224,12 @@ def test_drop_exists(
 @pytest.fixture
 def instance_no_prometheus(
     ctx: Context,
-    composite_intance_model: Type[interface.Instance],
+    composite_instance_model: Type[interface.Instance],
     tmp_port_factory: Iterator[int],
 ) -> Iterator[system.Instance]:
-    im = composite_intance_model.parse_obj(
+    if ctx.settings.prometheus is None:
+        pytest.skip("prometheus not enabled")
+    im = composite_instance_model.parse_obj(
         {
             "name": "noprom",
             "port": next(tmp_port_factory),
@@ -230,12 +244,14 @@ def instance_no_prometheus(
 
 
 def test_instance_no_prometheus(
-    ctx: Context, instance_no_prometheus: system.Instance
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    instance_no_prometheus: system.Instance,
 ) -> None:
     """Make sure we can create an instance without postgres_exporter and have
     it running and restarted.
     """
-    assert not prometheus.enabled(ctx, instance_no_prometheus.name)
+    assert not prometheus.enabled(instance_no_prometheus.name, prometheus_settings)
     assert (
         instance_mod.status(ctx, instance_no_prometheus) == instance_mod.Status.running
     )

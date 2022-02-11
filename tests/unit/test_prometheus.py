@@ -6,8 +6,18 @@ import pytest
 from pglift import exceptions, prometheus
 from pglift.ctx import Context
 from pglift.models.system import Instance
+from pglift.settings import PrometheusSettings, Settings
 
 
+@pytest.fixture
+def prometheus_settings(
+    need_prometheus: None, settings: Settings
+) -> PrometheusSettings:
+    assert settings.prometheus is not None
+    return settings.prometheus
+
+
+@pytest.mark.usefixtures("need_prometheus")
 def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     assert (
         prometheus.systemd_unit(instance.qualname)
@@ -15,6 +25,7 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     )
 
 
+@pytest.mark.usefixtures("need_prometheus")
 def test_install_systemd_unit_template(ctx: Context) -> None:
     prometheus.install_systemd_unit_template(ctx)
     unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
@@ -32,20 +43,20 @@ def test_install_systemd_unit_template(ctx: Context) -> None:
     assert not unit.exists()
 
 
-def test_port(ctx: Context, instance: Instance) -> None:
+def test_port(prometheus_settings: PrometheusSettings, instance: Instance) -> None:
     try:
         prometheus_service = instance.service(prometheus.Service)
     except ValueError:
         prometheus_service = None
     if prometheus_service:
-        port = prometheus.port(ctx, instance.qualname)
+        port = prometheus.port(instance.qualname, prometheus_settings)
         assert port == 9817
     else:
         with pytest.raises(exceptions.FileNotFoundError):
-            prometheus.port(ctx, instance.qualname)
+            prometheus.port(instance.qualname, prometheus_settings)
 
     configpath = pathlib.Path(
-        str(ctx.settings.prometheus.configpath).format(name=instance.qualname)
+        str(prometheus_settings.configpath).format(name=instance.qualname)
     )
     original_content = None
     if prometheus_service:
@@ -57,13 +68,13 @@ def test_port(ctx: Context, instance: Instance) -> None:
         with pytest.raises(
             LookupError, match="PG_EXPORTER_WEB_LISTEN_ADDRESS not found"
         ):
-            prometheus.port(ctx, instance.qualname)
+            prometheus.port(instance.qualname, prometheus_settings)
 
         configpath.write_text("\nPG_EXPORTER_WEB_LISTEN_ADDRESS=42\n")
         with pytest.raises(
             LookupError, match="malformatted PG_EXPORTER_WEB_LISTEN_ADDRESS"
         ):
-            prometheus.port(ctx, instance.qualname)
+            prometheus.port(instance.qualname, prometheus_settings)
     finally:
         if original_content is not None:
             configpath.write_text(original_content)
@@ -76,7 +87,9 @@ def test_postgresexporter() -> None:
         prometheus.PostgresExporter(dsn="x=y", port=9876)
 
 
-def test_apply(ctx: Context, instance: Instance) -> None:
+def test_apply(
+    ctx: Context, instance: Instance, prometheus_settings: PrometheusSettings
+) -> None:
     m = prometheus.PostgresExporter(name=instance.qualname, dsn="", port=123)
     with pytest.raises(exceptions.InstanceStateError, match="exists locally"):
-        prometheus.apply(ctx, m)
+        prometheus.apply(ctx, m, prometheus_settings)

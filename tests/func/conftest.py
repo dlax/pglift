@@ -14,12 +14,18 @@ import pytest
 from pgtoolkit.ctl import Status
 from typing_extensions import Protocol
 
+import pglift
 from pglift import _install
 from pglift import instance as instance_mod
-from pglift import pm
+from pglift import pgbackrest, pm, prometheus
 from pglift.ctx import Context
 from pglift.models import interface, system
-from pglift.settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
+from pglift.settings import (
+    POSTGRESQL_SUPPORTED_VERSIONS,
+    PgBackRestSettings,
+    PrometheusSettings,
+    Settings,
+)
 
 from . import configure_instance, execute
 
@@ -61,6 +67,16 @@ def systemd_available() -> bool:
     except (FileNotFoundError, subprocess.CalledProcessError):
         return False
     return True
+
+
+@pytest.fixture(scope="session")
+def pgbackrest_available() -> bool:
+    return shutil.which("pgbackrest") is not None
+
+
+@pytest.fixture(scope="session")
+def prometheus_available() -> bool:
+    return shutil.which("prometheus-postgres-exporter") is not None
 
 
 @pytest.fixture(scope="session")
@@ -134,6 +150,13 @@ def settings(
         )
     if obj.get("service_manager") == "systemd" and not systemd_available:
         pytest.skip("systemd not functional")
+
+    if pgbackrest_available:
+        obj["pgbackrest"] = {}
+
+    if prometheus_available:
+        obj["prometheus"] = {}
+
     try:
         return Settings.parse_obj(obj)
     except pydantic.ValidationError as exc:
@@ -159,8 +182,8 @@ def pg_version(request: Any, settings: Settings) -> str:
 
 
 @pytest.fixture(scope="session")
-def plugin_manager() -> pm.PluginManager:
-    p = pm.PluginManager.get()
+def plugin_manager(settings: Settings) -> pm.PluginManager:
+    p = pglift.plugin_manager(settings)
     p.trace.root.setwriter(print)
     p.enable_tracing()
     return p
@@ -190,6 +213,22 @@ def installed(ctx: Context, tmp_path_factory: pytest.TempPathFactory) -> Iterato
     )
     yield
     _install.undo(ctx)
+
+
+@pytest.fixture
+def pgbackrest_settings(ctx: Context) -> PgBackRestSettings:
+    settings = pgbackrest.available(ctx)
+    if settings is None:
+        pytest.skip("pgbackrest not available")
+    return settings
+
+
+@pytest.fixture
+def prometheus_settings(ctx: Context) -> PrometheusSettings:
+    settings = prometheus.available(ctx)
+    if settings is None:
+        pytest.skip("prometheus not available")
+    return settings
 
 
 @pytest.fixture(scope="session")

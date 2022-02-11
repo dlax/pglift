@@ -119,14 +119,14 @@ import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
 from pglift import instance as instance_mod
-from pglift import pm
+from pglift import plugin_manager
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface
 
 
 def run_module() -> None:
-    plugin_manager = pm.PluginManager.get()
-    model_type = interface.Instance.composite(plugin_manager)
+    pm = plugin_manager()
+    model_type = interface.Instance.composite(pm)
     argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
@@ -135,7 +135,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module, plugin_manager=plugin_manager)
+    ctx = AnsibleContext(module, plugin_manager=pm)
 
     result = {"changed": False, "instance": str(m)}
 

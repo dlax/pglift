@@ -35,7 +35,10 @@ def ansible_env() -> Dict[str, str]:
 
 @pytest.fixture
 def call_playbook(
-    tmp_path: pathlib.Path, ansible_env: Dict[str, str]
+    tmp_path: pathlib.Path,
+    ansible_env: Dict[str, str],
+    pgbackrest_available: bool,
+    prometheus_available: bool,
 ) -> Iterator[Callable[[pathlib.Path], None]]:
     env = ansible_env.copy()
     env["ANSIBLE_VERBOSITY"] = "3"
@@ -51,6 +54,12 @@ def call_playbook(
             "root": str(tmp_path / "postgresql"),
         },
     }
+    if pgbackrest_available:
+        settings["pgbackrest"] = {}
+    if not prometheus_available:
+        pytest.skip("prometheus not available")
+    settings["prometheus"] = {}
+
     with (tmp_path / "config.json").open("w") as f:
         json.dump(settings, f)
     env["SETTINGS"] = f"@{tmp_path / 'config.json'}"

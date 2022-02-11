@@ -7,7 +7,7 @@ from pathlib import Path, PosixPath
 from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 
 import yaml
-from pydantic import BaseSettings, Field, root_validator, validator
+from pydantic import BaseSettings, Field, FilePath, root_validator, validator
 from pydantic.fields import ModelField
 from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
@@ -239,7 +239,7 @@ class PgBackRestSettings(PluginSettings):
     class Config:
         env_prefix = "pgbackrest_"
 
-    execpath: Path = Path("/usr/bin/pgbackrest")
+    execpath: FilePath = Path("/usr/bin/pgbackrest")
     """Path to the pbBackRest executable."""
 
     configpath: ConfigPath = ConfigPath(
@@ -269,7 +269,7 @@ class PrometheusSettings(PluginSettings):
     class Config:
         env_prefix = "prometheus_"
 
-    execpath: Path = Path("/usr/bin/prometheus-postgres-exporter")
+    execpath: FilePath = Path("/usr/bin/prometheus-postgres-exporter")
     """Path to the postgres_exporter executable."""
 
     configpath: ConfigPath = ConfigPath("prometheus/postgres_exporter-{name}.conf")
@@ -345,8 +345,8 @@ def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
 class Settings(BaseSettings):
 
     postgresql: PostgreSQLSettings = PostgreSQLSettings()
-    pgbackrest: PgBackRestSettings = PgBackRestSettings()
-    prometheus: PrometheusSettings = PrometheusSettings()
+    pgbackrest: Optional[PgBackRestSettings] = None
+    prometheus: Optional[PrometheusSettings] = None
     systemd: SystemdSettings = SystemdSettings()
 
     service_manager: Optional[Literal["systemd"]] = None

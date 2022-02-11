@@ -46,7 +46,11 @@ from . import privileges, prometheus, roles, task, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface, system
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS
+from .settings import (
+    POSTGRESQL_SUPPORTED_VERSIONS,
+    PgBackRestSettings,
+    PrometheusSettings,
+)
 from .task import Displayer
 from .types import ConfigChanges
 
@@ -157,20 +161,26 @@ def pass_ctx(f: C) -> C:
     return cast(C, wrapper)
 
 
-def require_component(mod: ModuleType, name: str, fn: C) -> C:
-    @wraps(fn)
-    def wrapper(ctx: Context, *args: Any, **kwargs: Any) -> None:
-        if not getattr(mod, "available")(ctx):
+def pass_component_settings(mod: ModuleType, name: str, f: C) -> C:
+    @wraps(f)
+    def wrapper(*args: Any, **kwargs: Any) -> None:
+        context = click.get_current_context()
+        ctx = context.obj.ctx
+        assert isinstance(ctx, Context), ctx
+        settings = getattr(mod, "available")(ctx)
+        if not settings:
             click.echo(f"{name} not available", err=True)
             raise Exit(1)
-        fn(ctx, *args, **kwargs)
+        context.invoke(f, settings, *args, **kwargs)
 
     return cast(C, wrapper)
 
 
-require_pgbackrest = partial(require_component, pgbackrest_mod, "pgbackrest")
-require_prometheus = partial(
-    require_component, prometheus, "Prometheus postgres_exporter"
+pass_pgbackrest_settings = partial(
+    pass_component_settings, pgbackrest_mod, "pgbackrest"
+)
+pass_prometheus_settings = partial(
+    pass_component_settings, prometheus, "Prometheus postgres_exporter"
 )
 
 
@@ -693,15 +703,16 @@ def instance_logs(ctx: Context, instance: system.Instance) -> None:
     help="Backup type",
     callback=lambda ctx, param, value: pgbackrest_mod.BackupType(value),
 )
+@pass_pgbackrest_settings
 @pass_ctx
-@require_pgbackrest
 def instance_backup(
     ctx: Context,
+    settings: PgBackRestSettings,
     instance: system.Instance,
     backup_type: pgbackrest_mod.BackupType,
 ) -> None:
     """Back up a PostgreSQL instance"""
-    pgbackrest_mod.backup(ctx, instance, type=backup_type)
+    pgbackrest_mod.backup(ctx, instance, settings, type=backup_type)
 
 
 @instance.command("restore")
@@ -716,10 +727,11 @@ def instance_backup(
 )
 @click.option("--label", help="Label of backup to restore")
 @click.option("--date", type=click.DateTime(), help="Date of backup to restore")
+@pass_pgbackrest_settings
 @pass_ctx
-@require_pgbackrest
 def instance_restore(
     ctx: Context,
+    settings: PgBackRestSettings,
     instance: system.Instance,
     list_only: bool,
     label: Optional[str],
@@ -727,7 +739,7 @@ def instance_restore(
 ) -> None:
     """Restore a PostgreSQL instance"""
     if list_only:
-        backups = pgbackrest_mod.iter_backups(ctx, instance)
+        backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
         print_table_for(backups, title=f"Available backups for instance {instance}")
     else:
         instance_mod.check_status(ctx, instance, Status.not_running)
@@ -735,7 +747,7 @@ def instance_restore(
             raise click.BadArgumentUsage(
                 "--label and --date arguments are mutually exclusive"
             )
-        pgbackrest_mod.restore(ctx, instance, label=label, date=date)
+        pgbackrest_mod.restore(ctx, instance, settings, label=label, date=date)
 
 
 @instance.command("privileges")
@@ -1155,7 +1167,6 @@ def database_run(
 
 @cli.group("postgres_exporter")
 @pass_ctx
-@require_prometheus
 def postgres_exporter(ctx: Context) -> None:
     """Handle Prometheus postgres_exporter"""
 
@@ -1168,22 +1179,28 @@ def postgres_exporter_schema() -> None:
 
 @postgres_exporter.command("apply")
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
+@pass_prometheus_settings
 @pass_ctx
-def postgres_exporter_apply(ctx: Context, file: IO[str]) -> None:
+def postgres_exporter_apply(
+    ctx: Context, settings: PrometheusSettings, file: IO[str]
+) -> None:
     """Apply manifest as a Prometheus postgres_exporter."""
     exporter = prometheus.PostgresExporter.parse_yaml(file)
-    prometheus.apply(ctx, exporter)
+    prometheus.apply(ctx, exporter, settings)
 
 
 @postgres_exporter.command("install")
 @helpers.parameters_from_model(prometheus.PostgresExporter)
+@pass_prometheus_settings
 @pass_ctx
 def postgres_exporter_install(
-    ctx: Context, postgresexporter: prometheus.PostgresExporter
+    ctx: Context,
+    settings: PrometheusSettings,
+    postgresexporter: prometheus.PostgresExporter,
 ) -> None:
     """Install the service for a (non-local) instance."""
     with task.transaction():
-        prometheus.apply(ctx, postgresexporter)
+        prometheus.apply(ctx, postgresexporter, settings)
 
 
 @postgres_exporter.command("uninstall")
@@ -1197,38 +1214,47 @@ def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
 @postgres_exporter.command("start")
 @click.argument("name")
 @foreground_option
+@pass_prometheus_settings
 @pass_ctx
-def postgres_exporter_start(ctx: Context, name: str, foreground: bool) -> None:
+def postgres_exporter_start(
+    ctx: Context, settings: PrometheusSettings, name: str, foreground: bool
+) -> None:
     """Start postgres_exporter service NAME.
 
     The NAME argument is a local identifier for the postgres_exporter
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.start(ctx, name, foreground=foreground)
+    prometheus.start(ctx, name, settings, foreground=foreground)
 
 
 @postgres_exporter.command("stop")
 @click.argument("name")
+@pass_prometheus_settings
 @pass_ctx
-def postgres_exporter_stop(ctx: Context, name: str) -> None:
+def postgres_exporter_stop(
+    ctx: Context, settings: PrometheusSettings, name: str
+) -> None:
     """Stop postgres_exporter service NAME.
 
     The NAME argument is a local identifier for the postgres_exporter
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.stop(ctx, name)
+    prometheus.stop(ctx, name, settings)
 
 
 @cli.command("pgbackrest", hidden=True)
 @instance_identifier
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
+@pass_pgbackrest_settings
 @pass_ctx
-@require_pgbackrest
 def pgbackrest(
-    ctx: Context, instance: system.Instance, command: Tuple[str, ...]
+    ctx: Context,
+    settings: PgBackRestSettings,
+    instance: system.Instance,
+    command: Tuple[str, ...],
 ) -> None:
     """Proxy to pgbackrest operations on an instance"""
-    cmd = pgbackrest_mod.make_cmd(instance, ctx.settings.pgbackrest, *command)
+    cmd = pgbackrest_mod.make_cmd(instance, settings, *command)
     ctx.run(cmd, redirect_output=True, check=True)

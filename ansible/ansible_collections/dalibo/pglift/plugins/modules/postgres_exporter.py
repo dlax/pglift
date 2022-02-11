@@ -74,8 +74,10 @@ def run_module() -> None:
     if module.check_mode:
         module.exit_json(**result)
 
+    if ctx.settings.prometheus is None:
+        raise RuntimeError("prometheus is disabled in site settings")
     try:
-        prometheus.apply(ctx, exporter)
+        prometheus.apply(ctx, exporter, ctx.settings.prometheus)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
