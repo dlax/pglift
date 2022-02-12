@@ -16,15 +16,7 @@ from pgtoolkit.ctl import Status
 from pglift import CompositeInstance, _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, pm, prometheus, roles
-from pglift.cli import (
-    CLIContext,
-    Command,
-    Obj,
-    cli,
-    get_instance,
-    instance_create,
-    require_component,
-)
+from pglift.cli import CLIContext, Command, Obj, cli, get_instance, require_component
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -180,19 +172,6 @@ def test_site_configure(
 def test_instance_create(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
-    assert [p.name for p in instance_create.params] == [
-        "name",
-        "version",
-        "port",
-        "state",
-        "surole_password",
-        "replrole_password",
-        "data_checksums",
-        "standby_for",
-        "standby_slot",
-        "prometheus_port",
-    ]
-
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
             cli,
@@ -206,10 +185,27 @@ def test_instance_create(
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
             cli,
-            ["instance", "create", "new", "--port=1234"],
+            [
+                "instance",
+                "create",
+                "new",
+                "--port=1234",
+                "--data-checksums",
+                "--prometheus-port=1212",
+            ],
             obj=obj,
         )
-    apply.assert_called_once_with(ctx, CompositeInstance(name="new", port=1234))
+    apply.assert_called_once_with(
+        ctx,
+        CompositeInstance.parse_obj(
+            {
+                "name": "new",
+                "port": 1234,
+                "data_checksums": True,
+                "prometheus": {"port": 1212},
+            }
+        ),
+    )
     assert result.exit_code == 0, result
 
 
@@ -220,8 +216,9 @@ def test_instance_apply(
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.stderr
 
+    m = {"name": "test", "prometheus": {"port": 1212}}
     manifest = tmp_path / "manifest.yml"
-    content = yaml.dump({"name": "test"})
+    content = yaml.dump(m)
     manifest.write_text(content)
     mock_instance = object()
     with patch.object(
@@ -229,9 +226,7 @@ def test_instance_apply(
     ) as apply:
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
-    apply.assert_called_once()
-    assert apply.call_args[0][0] == ctx
-    assert isinstance(apply.call_args[0][1], interface.Instance)
+    apply.assert_called_once_with(ctx, CompositeInstance.parse_obj(m))
 
 
 def test_instance_alter(
