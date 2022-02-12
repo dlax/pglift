@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Iterator, List, NoReturn, Optional, Tuple
+from typing import Iterator, List, NoReturn, Optional, Tuple, Type
 from unittest.mock import patch
 
 import psycopg
@@ -11,7 +11,7 @@ from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import CompositeInstance, databases, exceptions
+from pglift import databases, exceptions
 from pglift import instance as instance_mod
 from pglift import systemd
 from pglift.ctx import Context
@@ -203,11 +203,12 @@ def test_apply(
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
+    composite_instance_model: Type[interface.Instance],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
-    im = CompositeInstance(
+    im = composite_instance_model(
         name="test_apply",
         port=port,
         ssl=True,
@@ -316,6 +317,7 @@ def test_standby(
     tmp_port_factory: Iterator[int],
     tmp_path_factory: pytest.TempPathFactory,
     database_factory: DatabaseFactory,
+    composite_instance_model: Type[interface.Instance],
     pg_version: str,
     slot: str,
 ) -> None:
@@ -324,7 +326,7 @@ def test_standby(
     standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
     if replrole.password:
         standby_for += f" password={replrole.password.get_secret_value()}"
-    standby_manifest = CompositeInstance(
+    standby_manifest = composite_instance_model(
         name="standby",
         version=pg_version,
         port=next(tmp_port_factory),
@@ -465,13 +467,14 @@ def test_logs(
 @pytest.fixture
 def datachecksums_instance(
     ctx: Context,
+    composite_instance_model: Type[interface.Instance],
     pg_version: str,
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
     if pg_version < "12":
         pytest.skip("pg_checksums requires PostgreSQL 12")
-    manifest = CompositeInstance(
+    manifest = composite_instance_model(
         name="datachecksums",
         version=pg_version,
         port=next(tmp_port_factory),

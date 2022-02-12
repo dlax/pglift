@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Iterator, Tuple, Type
 
 import pytest
 import requests
@@ -8,7 +8,7 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import CompositeInstance, exceptions
+from pglift import exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, systemd
 from pglift.ctx import Context
@@ -211,9 +211,11 @@ def test_drop_exists(
 
 @pytest.fixture
 def instance_no_prometheus(
-    ctx: Context, tmp_port_factory: Iterator[int]
+    ctx: Context,
+    composite_intance_model: Type[interface.Instance],
+    tmp_port_factory: Iterator[int],
 ) -> Iterator[system.Instance]:
-    im = CompositeInstance.parse_obj(
+    im = composite_intance_model.parse_obj(
         {
             "name": "noprom",
             "port": next(tmp_port_factory),

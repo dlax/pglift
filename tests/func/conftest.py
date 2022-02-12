@@ -5,7 +5,7 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Any, Iterator, Optional, Set
+from typing import Any, Iterator, Optional, Set, Type
 
 import pgtoolkit.conf
 import port_for
@@ -14,7 +14,7 @@ import pytest
 from pgtoolkit.ctl import Status
 from typing_extensions import Protocol
 
-from pglift import CompositeInstance, _install
+from pglift import _install
 from pglift import instance as instance_mod
 from pglift import pm
 from pglift.ctx import Context
@@ -159,13 +159,18 @@ def pg_version(request: Any, settings: Settings) -> str:
 
 
 @pytest.fixture(scope="session")
-def ctx(settings: Settings) -> Context:
+def plugin_manager() -> pm.PluginManager:
     p = pm.PluginManager.get()
     p.trace.root.setwriter(print)
     p.enable_tracing()
+    return p
+
+
+@pytest.fixture(scope="session")
+def ctx(settings: Settings, plugin_manager: pm.PluginManager) -> Context:
     logger = logging.getLogger("pglift")
     logger.setLevel(logging.DEBUG)
-    return Context(plugin_manager=p, settings=settings)
+    return Context(plugin_manager=plugin_manager, settings=settings)
 
 
 @pytest.fixture(scope="session")
@@ -227,16 +232,24 @@ def replrole_password(settings: Settings) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
+def composite_instance_model(
+    plugin_manager: pm.PluginManager,
+) -> Type[interface.Instance]:
+    return interface.Instance.composite(plugin_manager)
+
+
+@pytest.fixture(scope="session")
 def instance_manifest(
     ctx: Context,
     pg_version: str,
     surole_password: Optional[str],
     replrole_password: Optional[str],
     tmp_port_factory: Iterator[int],
+    composite_instance_model: Type[interface.Instance],
 ) -> interface.Instance:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
-    return CompositeInstance.parse_obj(
+    return composite_instance_model.parse_obj(
         {
             "name": "test",
             "version": pg_version,

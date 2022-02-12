@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, Type
 
 import pytest
 from pgtoolkit.ctl import PGCtl
@@ -77,8 +77,17 @@ def ctx(settings: Settings, plugin_manager: pm.PluginManager) -> Context:
 
 
 @pytest.fixture
-def instance_manifest(pg_version: str) -> interface.Instance:
-    return interface.Instance(name="test", version=pg_version)
+def composite_instance_model(
+    plugin_manager: pm.PluginManager,
+) -> Type[interface.Instance]:
+    return interface.Instance.composite(plugin_manager)
+
+
+@pytest.fixture
+def instance_manifest(
+    composite_instance_model: Type[interface.Instance], pg_version: str
+) -> interface.Instance:
+    return composite_instance_model(name="test", version=pg_version)
 
 
 def _instance(

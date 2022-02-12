@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Type
 from unittest.mock import MagicMock, patch
 
 import click
@@ -13,7 +13,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
-from pglift import CompositeInstance, _install, databases, exceptions
+from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import pgbackrest, pm, prometheus, roles
 from pglift.cli import CLIContext, Command, Obj, cli, get_instance, require_component
@@ -170,7 +170,11 @@ def test_site_configure(
 
 
 def test_instance_create(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    composite_instance_model: Type[interface.Instance],
 ) -> None:
     with patch.object(instance_mod, "apply") as apply:
         result = runner.invoke(
@@ -197,7 +201,7 @@ def test_instance_create(
         )
     apply.assert_called_once_with(
         ctx,
-        CompositeInstance.parse_obj(
+        composite_instance_model.parse_obj(
             {
                 "name": "new",
                 "port": 1234,
@@ -210,7 +214,11 @@ def test_instance_create(
 
 
 def test_instance_apply(
-    tmp_path: Path, runner: CliRunner, ctx: Context, obj: Obj
+    tmp_path: Path,
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    composite_instance_model: Type[interface.Instance],
 ) -> None:
     result = runner.invoke(cli, ["--log-level=debug", "instance", "apply"], obj=obj)
     assert result.exit_code == 2
@@ -226,11 +234,15 @@ def test_instance_apply(
     ) as apply:
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
-    apply.assert_called_once_with(ctx, CompositeInstance.parse_obj(m))
+    apply.assert_called_once_with(ctx, composite_instance_model.parse_obj(m))
 
 
 def test_instance_alter(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    composite_instance_model: Type[interface.Instance],
 ) -> None:
     result = runner.invoke(
         cli, ["instance", "alter", "11/notfound", "--port=1"], obj=obj
@@ -238,10 +250,10 @@ def test_instance_alter(
     assert result.exit_code == 2, result.stderr
     assert "instance '11/notfound' not found" in result.stderr
 
-    actual = CompositeInstance.parse_obj(
+    actual = composite_instance_model.parse_obj(
         {"name": instance.name, "prometheus": {"port": 1212}}
     )
-    altered = CompositeInstance.parse_obj(
+    altered = composite_instance_model.parse_obj(
         {
             "name": instance.name,
             "state": "stopped",
