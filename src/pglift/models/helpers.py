@@ -200,7 +200,10 @@ def parameters_from_model(
                 raise TypeError(
                     f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
                 )
-            if model_param.annotation not in (model_type, inspect.Signature.empty):
+            if model_param.annotation not in (
+                model_type,
+                inspect.Signature.empty,
+            ) and not issubclass(model_type, model_param.annotation):
                 raise TypeError(
                     f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'; got {model_param.annotation}"
                 )
