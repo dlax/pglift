@@ -194,15 +194,16 @@ def parameters_from_model(
         if parse_model:
             s = inspect.signature(f)
             model_argname = model_type.__name__.lower()
-            type_error = TypeError(
-                f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
-            )
             try:
                 model_param = s.parameters[model_argname]
             except KeyError:
-                raise type_error
+                raise TypeError(
+                    f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'"
+                )
             if model_param.annotation not in (model_type, inspect.Signature.empty):
-                raise type_error
+                raise TypeError(
+                    f"expecting a '{model_argname}: {model_type.__name__}' parameter in '{f.__name__}{s}'; got {model_param.annotation}"
+                )
 
             @functools.wraps(f)
             def callback(**kwargs: Any) -> Any:
