@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -37,7 +38,6 @@ from rich.highlighter import NullHighlighter
 from rich.table import Table
 from typing_extensions import Literal
 
-from . import CompositeInstance
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
@@ -52,6 +52,8 @@ from .types import ConfigChanges
 
 logger = logging.getLogger(__name__)
 CONSOLE = Console()
+
+Callback = Callable[..., Any]
 
 
 class LogDisplayer:
@@ -445,20 +447,99 @@ def site_configure(
         _install.undo(ctx)
 
 
-@cli.group("instance")
+CommandFactory = Callable[[Type[interface.Instance]], Callback]
+
+
+class CompositeInstanceCommands(click.MultiCommand):
+    """MultiCommand for 'instance' sub-commands that require a composite
+    interface.Instance model built from registered plugins at runtime.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._instance_commands: Dict[str, CommandFactory] = {}
+
+    def register(self, name: str) -> Callable[[CommandFactory], None]:
+        assert name not in self._instance_commands, name
+
+        def decorator(factory: CommandFactory) -> None:
+            self._instance_commands[name] = factory
+
+        return decorator
+
+    def list_commands(self, context: click.Context) -> List[str]:
+        return sorted(self._instance_commands)
+
+    def get_command(self, context: click.Context, name: str) -> Optional[click.Command]:
+        try:
+            factory = self._instance_commands[name]
+        except KeyError:
+            return None
+        else:
+            composite_instance_model = interface.Instance.composite(context.obj.ctx.pm)
+            f = factory(composite_instance_model)
+            return click.command(cls=Command)(f)
+
+
+composite_instance_commands = CompositeInstanceCommands()
+
+
+@composite_instance_commands.register("create")
+def _instance_create(
+    composite_instance_model: Type[interface.Instance],
+) -> Callback:
+    @helpers.parameters_from_model(composite_instance_model)
+    @pass_ctx
+    def command(ctx: Context, instance: interface.Instance) -> None:
+        """Initialize a PostgreSQL instance"""
+        if instance_mod.exists(ctx, instance.name, instance.version):
+            raise click.ClickException("instance already exists")
+        with task.transaction():
+            instance_mod.apply(ctx, instance)
+
+    return command
+
+
+@composite_instance_commands.register("alter")
+def _instance_alter(
+    composite_instance_model: Type[interface.Instance],
+) -> Callback:
+    @instance_identifier
+    @helpers.parameters_from_model(
+        composite_instance_model, exclude=["name", "version"], parse_model=False
+    )
+    @pass_ctx
+    def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
+        """Alter a PostgreSQL instance"""
+        changes = helpers.unnest(composite_instance_model, changes)
+        values = instance_mod.describe(ctx, instance.name, instance.version).dict()
+        values = deep_update(values, changes)
+        altered = composite_instance_model.parse_obj(values)
+        instance_mod.apply(ctx, altered)
+
+    return command
+
+
+@composite_instance_commands.register("schema")
+def _instance_schema(
+    composite_instance_model: Type[interface.Instance],
+) -> Callback:
+    def command() -> None:
+        """Print the JSON schema of PostgreSQL instance model"""
+        CONSOLE.print_json(composite_instance_model.schema_json(indent=2))
+
+    return command
+
+
+@cli.group()
 def instance() -> None:
     """Manipulate instances"""
 
 
-@instance.command("create")
-@helpers.parameters_from_model(CompositeInstance)
-@pass_ctx
-def instance_create(ctx: Context, instance: CompositeInstance) -> None:
-    """Initialize a PostgreSQL instance"""
-    if instance_mod.exists(ctx, instance.name, instance.version):
-        raise click.ClickException("instance already exists")
-    with task.transaction():
-        instance_mod.apply(ctx, instance)
+cli.add_command(
+    click.CommandCollection(sources=[instance, composite_instance_commands]),
+    name="instance",
+)
 
 
 @instance.command("apply")
@@ -470,37 +551,12 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
     instance_mod.apply(ctx, instance)
 
 
-@instance.command("alter")
-@instance_identifier
-@helpers.parameters_from_model(
-    CompositeInstance, exclude=["name", "version"], parse_model=False
-)
-@pass_ctx
-def instance_alter(
-    ctx: Context,
-    instance: system.Instance,
-    **changes: Any,
-) -> None:
-    """Alter a PostgreSQL instance"""
-    changes = helpers.unnest(CompositeInstance, changes)
-    values = instance_mod.describe(ctx, instance.name, instance.version).dict()
-    values = deep_update(values, changes)
-    altered = CompositeInstance.parse_obj(values)
-    instance_mod.apply(ctx, altered)
-
-
 @instance.command("promote")
 @instance_identifier
 @pass_ctx
 def instance_promote(ctx: Context, instance: system.Instance) -> None:
     """Promote a standby PostgreSQL instance"""
     instance_mod.promote(ctx, instance)
-
-
-@instance.command("schema")
-def instance_schema() -> None:
-    """Print the JSON schema of PostgreSQL instance model"""
-    CONSOLE.print_json(CompositeInstance.schema_json(indent=2))
 
 
 @instance.command("describe")

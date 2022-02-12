@@ -27,6 +27,7 @@ class BaseContext(ABC):
         settings: Settings = SETTINGS,
     ) -> None:
         self.settings = settings
+        self.pm = plugin_manager
         self.hook = plugin_manager.hook
 
     @functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
