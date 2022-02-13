@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from pglift.settings import DataPath, Settings
+from pglift.settings import DataPath, Settings, plugins
 
 
 def test_json_config_settings_source(
@@ -116,3 +116,7 @@ def test_systemd_sudo_user() -> None:
                 {"service_manager": "systemd", "systemd": {"user": True, "sudo": True}}
             )
     which.assert_called_once_with("systemctl")
+
+
+def test_plugins() -> None:
+    assert set(n for n, _ in plugins(Settings())) == {"pgbackrest", "prometheus"}

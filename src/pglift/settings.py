@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
 import yaml
 from pydantic import BaseSettings, Field, root_validator, validator
 from pydantic.fields import ModelField
+from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
@@ -86,6 +87,10 @@ class DataPath(PrefixedPath):
 
 class LogPath(PrefixedPath):
     basedir = Path("log")
+
+
+class PluginSettings(BaseSettings):
+    """Settings class for plugins."""
 
 
 POSTGRESQL_SUPPORTED_VERSIONS = ["14", "13", "12", "11", "10"]
@@ -228,7 +233,7 @@ class PostgreSQLSettings(BaseSettings):
 
 
 @frozen
-class PgBackRestSettings(BaseSettings):
+class PgBackRestSettings(PluginSettings):
     """Settings for pgBackRest."""
 
     class Config:
@@ -258,7 +263,7 @@ class PgBackRestSettings(BaseSettings):
 
 
 @frozen
-class PrometheusSettings(BaseSettings):
+class PrometheusSettings(PluginSettings):
     """Settings for Prometheus postgres_exporter"""
 
     class Config:
@@ -404,3 +409,10 @@ class Settings(BaseSettings):
                 yaml_settings_source,
                 json_config_settings_source,
             )
+
+
+def plugins(settings: Settings) -> Iterator[Tuple[str, Optional[PluginSettings]]]:
+    """Return an iterator of 'settings' fields and names for plugins."""
+    for name, field in settings.__class__.__fields__.items():
+        if lenient_issubclass(field.type_, PluginSettings):
+            yield name, getattr(settings, field.name)
