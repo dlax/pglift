@@ -57,8 +57,8 @@ def _stanza(instance: system.BaseInstance) -> str:
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
-    backup_set: Optional[str] = None,
     *,
+    backup_set: Optional[str] = None,
     output_json: Literal[False],
 ) -> str:
     ...
@@ -68,6 +68,7 @@ def backup_info(
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
+    *,
     backup_set: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     ...
@@ -76,8 +77,8 @@ def backup_info(
 def backup_info(
     ctx: "BaseContext",
     instance: system.BaseInstance,
-    backup_set: Optional[str] = None,
     *,
+    backup_set: Optional[str] = None,
     output_json: bool = True,
 ) -> Union[List[Dict[str, Any]], str]:
     """Call pgbackrest info command to obtain information about backups.
@@ -363,7 +364,9 @@ def iter_backups(
         return entry["timestamp"]["start"]  # type: ignore[no-any-return]
 
     for backup in sorted(backups, key=started_at, reverse=True):
-        info_set = backup_info(ctx, instance, backup["label"], output_json=False)
+        info_set = backup_info(
+            ctx, instance, backup_set=backup["label"], output_json=False
+        )
         databases = _parse_backup_databases(info_set)
         dt = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
         yield InstanceBackup(
