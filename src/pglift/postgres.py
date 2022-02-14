@@ -1,7 +1,7 @@
 import argparse
 from typing import Optional, Sequence
 
-from . import exceptions
+from . import exceptions, settings
 from .cmd import start_program
 from .ctx import Context
 from .exceptions import InstanceNotFound
@@ -21,7 +21,7 @@ def main(
 ) -> int:
     args = parser.parse_args(argv)
     if ctx is None:
-        ctx = Context()
+        ctx = Context(settings=settings.Settings())
 
     try:
         instance = system.PostgreSQLInstance.from_stanza(ctx, args.instance)

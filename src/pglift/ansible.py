@@ -1,10 +1,13 @@
 import logging
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
 
 from typing_extensions import Protocol
 
 from .ctx import BaseContext
 from .types import CompletedProcess
+
+if TYPE_CHECKING:
+    from .settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +41,10 @@ class AnsibleLoggingHandler(logging.Handler):
 class AnsibleContext(BaseContext):
     """Execution context that uses an Ansible module."""
 
-    def __init__(self, module: _AnsibleModule, **kwargs: Any) -> None:
+    def __init__(self, module: _AnsibleModule, *, settings: "Settings") -> None:
         self.module = module
         logger.addHandler(AnsibleLoggingHandler(module))
-        super().__init__(**kwargs)
+        super().__init__(settings=settings)
 
     def run(
         self, args: Sequence[str], log_command: bool = True, **kwargs: Any

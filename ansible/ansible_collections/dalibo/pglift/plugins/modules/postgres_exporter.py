@@ -55,6 +55,7 @@ from ansible.module_utils.basic import AnsibleModule
 from pglift import prometheus
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers
+from pglift.settings import Settings
 
 
 def run_module() -> None:
@@ -67,7 +68,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module)
+    ctx = AnsibleContext(module, settings=Settings())
 
     result: Dict[str, str] = {}
 

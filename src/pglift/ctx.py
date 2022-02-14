@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from pgtoolkit import ctl
 
-from . import SETTINGS, cmd, exceptions, plugin_manager, util
+from . import cmd, exceptions, plugin_manager, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class BaseContext(ABC):
     """Base class for execution context."""
 
-    def __init__(self, *, settings: Settings = SETTINGS) -> None:
+    def __init__(self, *, settings: Settings) -> None:
         self.settings = settings
         self.pm = plugin_manager(settings)
         self.hook = self.pm.hook

@@ -50,6 +50,7 @@ from .settings import (
     POSTGRESQL_SUPPORTED_VERSIONS,
     PgBackRestSettings,
     PrometheusSettings,
+    Settings,
 )
 from .task import Displayer
 from .types import ConfigChanges
@@ -235,7 +236,7 @@ def _list_instances(
     """Shell completion function for instance identifier <name> or <version>/<name>."""
     out = []
     iname, iversion = nameversion_from_id(incomplete)
-    ctx = Context()
+    ctx = Context(settings=Settings())
     for i in instance_mod.list(ctx):
         if iversion is not None and i.version.startswith(iversion):
             if i.name.startswith(iname):
@@ -419,7 +420,7 @@ def cli(
 
     if not context.obj:
         displayer = None if log_file else LogDisplayer()
-        context.obj = Obj(CLIContext(), displayer)
+        context.obj = Obj(CLIContext(settings=Settings()), displayer)
     else:
         assert isinstance(context.obj, Obj), context.obj
 

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from . import exceptions, hookimpl, pgbackrest, systemd
+from . import exceptions, hookimpl, pgbackrest, settings, systemd
 from .models import system
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    ctx = Context()
+    ctx = Context(settings=settings.Settings())
     try:
         instance = system.PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:

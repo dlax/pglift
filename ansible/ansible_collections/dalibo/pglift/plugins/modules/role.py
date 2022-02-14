@@ -100,6 +100,7 @@ from pglift import instance as instance_mod
 from pglift import roles, types
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
+from pglift.settings import Settings
 
 
 def run_module() -> None:
@@ -119,7 +120,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module)
+    ctx = AnsibleContext(module, settings=Settings())
 
     result: Dict[str, str] = {}
 

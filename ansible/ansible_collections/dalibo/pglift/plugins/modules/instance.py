@@ -122,10 +122,12 @@ from pglift import instance as instance_mod
 from pglift import plugin_manager
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface
+from pglift.settings import Settings
 
 
 def run_module() -> None:
-    pm = plugin_manager()
+    settings = Settings()
+    pm = plugin_manager(settings)
     model_type = interface.Instance.composite(pm)
     argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
@@ -135,7 +137,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module)
+    ctx = AnsibleContext(module, settings=settings)
     assert ctx.pm == pm, f"inconsistent plugin manager used by {ctx} and argspec ({pm})"
 
     result = {"changed": False, "instance": str(m)}
