@@ -25,6 +25,7 @@ from pglift.settings import (
     PgBackRestSettings,
     PrometheusSettings,
     Settings,
+    plugins,
 )
 
 from . import configure_instance, execute
@@ -36,6 +37,12 @@ def pytest_addoption(parser: Any) -> None:
         action="store_true",
         default=False,
         help="Run tests with systemd as service manager/scheduler",
+    )
+    parser.addoption(
+        "--no-plugins",
+        action="store_true",
+        default=False,
+        help="Run tests without any pglift plugin loaded.",
     )
 
 
@@ -158,7 +165,7 @@ def settings(
         obj["prometheus"] = {}
 
     try:
-        return Settings.parse_obj(obj)
+        s = Settings.parse_obj(obj)
     except pydantic.ValidationError as exc:
         pytest.skip(
             "; ".join(
@@ -166,6 +173,15 @@ def settings(
                 for e in exc.errors()
             )
         )
+
+    no_plugins = request.config.getoption("--no-plugins")
+    assert isinstance(no_plugins, bool)
+    if no_plugins:
+        to_disable = [name for name, field in plugins(s) if field is not None]
+        if to_disable:
+            s = s.copy(update={k: None for k in to_disable})
+
+    return s
 
 
 @pytest.fixture(
