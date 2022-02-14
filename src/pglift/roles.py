@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Any, List
 
 import psycopg.pq
@@ -13,6 +14,8 @@ from .types import Role
 if TYPE_CHECKING:
     from .ctx import BaseContext
     from .models import system
+
+logger = logging.getLogger(__name__)
 
 
 def apply(
@@ -203,7 +206,6 @@ def alter(
         cnx.commit()
 
 
-@task("setting password for '{role.name}' role")
 def set_password_for(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: Role
 ) -> None:
@@ -213,6 +215,7 @@ def set_password_for(
     if role.password is None:
         return
 
+    logger.info("setting password for '%(username)s' role", {"username": role.name})
     with db.superuser_connect(ctx, instance) as conn:
         conn.autocommit = True
         options = sql.SQL("PASSWORD {}").format(encrypt_password(conn, role))
@@ -232,7 +235,6 @@ def in_pgpass(
     return any(entry.matches(username=name, port=port) for entry in passfile)
 
 
-@task("editing password file entry for '{role.name}' role")
 def set_pgpass_entry_for(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
 ) -> None:
@@ -243,16 +245,29 @@ def set_pgpass_entry_for(
     password = None
     if role.password:
         password = role.password.get_secret_value()
-    with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
-        for entry in passfile:
+    passfile = ctx.settings.postgresql.auth.passfile
+    with pgpass.edit(passfile) as f:
+        for entry in f:
             if entry.matches(username=username, port=port):
                 if not role.pgpass:
-                    passfile.lines.remove(entry)
+                    logger.info(
+                        "removing entry for '%(username)s' in %(passfile)s",
+                        {"username": username, "passfile": passfile},
+                    )
+                    f.lines.remove(entry)
                 elif password is not None:
+                    logger.info(
+                        "updating password for '%(username)s' in %(passfile)s",
+                        {"username": username, "passfile": passfile},
+                    )
                     entry.password = password
                 break
         else:
             if role.pgpass and password is not None:
+                logger.info(
+                    "adding an entry for '%(username)s' in %(passfile)s",
+                    {"username": username, "passfile": passfile},
+                )
                 entry = pgpass.PassEntry("*", port, "*", username, password)
-                passfile.lines.append(entry)
-                passfile.sort()
+                f.lines.append(entry)
+                f.sort()
