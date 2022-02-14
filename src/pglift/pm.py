@@ -1,6 +1,6 @@
 import importlib
 from types import ModuleType
-from typing import List, Sequence
+from typing import Any, List, Sequence
 
 import pluggy
 
@@ -26,3 +26,8 @@ class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
             self.unregister(plugin)
             unregistered.append(plugin)
         return unregistered
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.get_plugins() == other.get_plugins()  # type: ignore[no-any-return]

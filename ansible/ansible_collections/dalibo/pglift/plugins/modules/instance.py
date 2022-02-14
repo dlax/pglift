@@ -135,7 +135,8 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module, plugin_manager=pm)
+    ctx = AnsibleContext(module)
+    assert ctx.pm == pm, f"inconsistent plugin manager used by {ctx} and argspec ({pm})"
 
     result = {"changed": False, "instance": str(m)}
 

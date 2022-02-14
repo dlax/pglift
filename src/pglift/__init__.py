@@ -20,6 +20,3 @@ def plugin_manager(s: settings.Settings = SETTINGS) -> pm.PluginManager:
         name for name, plugin_settings in settings.plugins(s) if plugin_settings is None
     ]
     return pm.PluginManager.get(no_register=disabled_plugins)
-
-
-PLUGIN_MANAGER: Final = plugin_manager(SETTINGS)

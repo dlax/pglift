@@ -16,3 +16,15 @@ def test_pluginmanager_unregister_all() -> None:
     assert p.list_name_plugin()
     p.unregister_all()
     assert not p.list_name_plugin()
+
+
+def test_eq() -> None:
+    p1, p2 = pm.PluginManager.get(), pm.PluginManager.get()
+    assert p1 is not p2
+    assert p1 == p2
+
+    p2.unregister_all()
+    assert p1 != p2
+
+    assert p1 != object()
+    assert 42 != p2

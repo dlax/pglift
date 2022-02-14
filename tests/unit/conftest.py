@@ -4,8 +4,6 @@ from typing import Any, Iterator, Type
 import pytest
 from pgtoolkit.ctl import PGCtl
 
-import pglift
-from pglift import pm
 from pglift import prometheus as prometheus_mod
 from pglift.ctx import Context
 from pglift.models import interface
@@ -84,28 +82,21 @@ def pg_version() -> str:
 
 
 @pytest.fixture
-def plugin_manager(settings: Settings) -> pm.PluginManager:
-    return pglift.plugin_manager(settings)
+def ctx(settings: Settings) -> Context:
+    return Context(settings=settings)
 
 
 @pytest.fixture
-def nohook(plugin_manager: pm.PluginManager) -> Iterator[None]:
-    unregistered = plugin_manager.unregister_all()
+def nohook(ctx: Context) -> Iterator[None]:
+    unregistered = ctx.pm.unregister_all()
     yield
     for plugin in unregistered:
-        plugin_manager.register(plugin)
+        ctx.pm.register(plugin)
 
 
 @pytest.fixture
-def ctx(settings: Settings, plugin_manager: pm.PluginManager) -> Context:
-    return Context(plugin_manager=plugin_manager, settings=settings)
-
-
-@pytest.fixture
-def composite_instance_model(
-    plugin_manager: pm.PluginManager,
-) -> Type[interface.Instance]:
-    return interface.Instance.composite(plugin_manager)
+def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
+    return interface.Instance.composite(ctx.pm)
 
 
 @pytest.fixture

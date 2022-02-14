@@ -2,17 +2,14 @@ import functools
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from pgtoolkit import ctl
 
-from . import PLUGIN_MANAGER, SETTINGS, cmd, exceptions, util
+from . import SETTINGS, cmd, exceptions, plugin_manager, util
 from ._compat import shlex_join
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 from .types import CompletedProcess
-
-if TYPE_CHECKING:
-    from .pm import PluginManager
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +17,10 @@ logger = logging.getLogger(__name__)
 class BaseContext(ABC):
     """Base class for execution context."""
 
-    def __init__(
-        self,
-        *,
-        plugin_manager: "PluginManager" = PLUGIN_MANAGER,
-        settings: Settings = SETTINGS,
-    ) -> None:
+    def __init__(self, *, settings: Settings = SETTINGS) -> None:
         self.settings = settings
-        self.pm = plugin_manager
-        self.hook = plugin_manager.hook
+        self.pm = plugin_manager(settings)
+        self.hook = self.pm.hook
 
     @functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
     def pg_ctl(self, version: Optional[str]) -> ctl.PGCtl:
