@@ -119,39 +119,31 @@ following units defined:
 
 For more, head out to more in-depth tutorials and user guides below.
 
-Tutorials
-=========
-
 .. toctree::
     :maxdepth: 1
+    :caption: Tutorials
 
     tutorials/install
     tutorials/cli
     tutorials/ansible
 
 
-User guides
-===========
-
 .. toctree::
     :maxdepth: 1
+    :caption: User guides
 
     user/setup/index
     user/ops/index
 
-Reference
-=========
-
 .. toctree::
     :maxdepth: 1
+    :caption: Reference
 
     api/index
 
-How to guides
-=============
-
 .. toctree::
     :maxdepth: 1
+    :caption: How to guides
 
     howto/instance-shell
     howto/instance-env
