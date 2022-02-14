@@ -1,0 +1,8 @@
+postgresql:
+  auth:
+    host: scram-sha-256
+service_manager: systemd
+scheduler: systemd
+pgbackrest: {}
+prometheus:
+  execpath: /usr/bin/prometheus-postgres-exporter
