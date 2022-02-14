@@ -6,8 +6,7 @@ to a specific operation context but may apply to several of them. It also
 describes the data models used through the API.
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Contents:
+    :maxdepth: 2
 
     datamodel
     exceptions
