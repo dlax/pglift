@@ -13,15 +13,10 @@ The :doc:`Ansible <ansible>` collection is not shipped with the
 Python package, so follow the :doc:`development setup <../dev>` to use the
 Ansible interface.
 
-After package installation, it is necessary to also install data files using:
-
-::
-
-    (.venv) $ pglift site-configure install
-
-This will essentially install systemd templates into
-``~/.local/share/systemd/user/``. Using the ``uninstall`` argument of
-``site-configure`` command would uninstall those.
+.. note::
+   If usage of systemd as service manager and/or scheduler is planned,
+   additional steps might be needed, see :ref:`detailed systemd installation
+   instructions <systemd_install>`.
 
 Once installed, the ``pglift`` command should be available:
 

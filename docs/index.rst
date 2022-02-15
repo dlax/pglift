@@ -79,8 +79,8 @@ following file:
 
 
 in which, we configure PostgreSQL host-based authentication, activate
-`systemd` as service manager and scheduler and finally enable `pgbackrest` and
-`prometheus` satellite services.
+`systemd` [#systemd]_ as service manager and scheduler and finally enable
+`pgbackrest` and `prometheus` satellite services.
 
 Now let's create again our ``main`` instance:
 
@@ -154,9 +154,14 @@ For more, head out to more in-depth tutorials and user guides below.
     dev
 
 
-Indices and tables
-------------------
+.. rubric:: Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. rubric:: Footnotes
+
+.. [#systemd] Operating with systemd requires extra installation steps, see
+   :ref:`detailed instructions <systemd_install>`.

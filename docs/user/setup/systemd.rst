@@ -1,15 +1,42 @@
 Systemd
 =======
 
+.. _systemd_install:
+
+Installation
+------------
+
 To operate pglift with systemd, set the ``service_manager`` and ``scheduler``
-settings to ``systemd``.
+settings to ``systemd``:
 
-.. code-block:: json
+.. code-block:: yaml
+   :caption: File ~/.config/pglift/settings.yaml
 
-    {
-        "service_manager": "systemd",
-        "scheduler": "systemd"
-    }
+    service_manager: systemd
+    scheduler: systemd
+
+Then use the ``site-configure`` command to install systemd unit templates:
+
+.. code-block:: console
+
+    (.venv) $ pglift site-configure install
+    INFO     installing systemd template unit for PostgreSQL
+    INFO     installed pglift-postgresql@.service systemd unit at
+             ~/.local/share/systemd/user/pglift-postgresql@.service
+    INFO     installing systemd template unit for Prometheus postgres_exporter
+    INFO     installed pglift-postgres_exporter@.service systemd unit at
+             ~/.local/share/systemd/user/pglift-postgres_exporter@.service
+    INFO     installing systemd template unit and timer for PostgreSQL backups
+    INFO     installed pglift-backup@.service systemd unit at
+             ~/.local/share/systemd/user/pglift-backup@.service
+    INFO     installed pglift-backup@.timer systemd unit at
+             ~/.local/share/systemd/user/pglift-backup@.timer
+
+.. note::
+   Use ``pglift site-configure uninstall`` to uninstall those templates.
+
+How it works
+------------
 
 By default, systemd is used in `user` mode, by running ``systemctl --user``
 commands. This way, the operator can install systemd units in their home
