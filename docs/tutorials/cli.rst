@@ -70,7 +70,13 @@ Altering an instance:
 ::
 
     $ pglift instance alter main --port=5456
-    $ pglift instance restart main
+    INFO     configuring PostgreSQL instance
+    INFO     setting up Prometheus postgres_exporter service
+    INFO     setting up pgBackRest
+    INFO     updating entry for 'postgres' in ~/.pgpass (port changed)
+    INFO     configuring PostgreSQL authentication
+    > Instance needs to be restarted; restart now? [y/n]: y
+    INFO     restarting instance 14/main
 
 Getting instance information:
 
