@@ -112,6 +112,9 @@ Adding and manipulating instance objects:
     $ pglift role create 13/main dba --password --login
     Password:
     Repeat for confirmation:
+
+::
+
     $ pglift role describe 13/main dba
     name: dba
     password: '**********'
@@ -121,7 +124,13 @@ Adding and manipulating instance objects:
     connection_limit: null
     validity: null
     in_roles: []
+
+::
+
     $ pglift role alter 13/main dba --connection-limit=10 --in-role=pg_monitor --inherit
+
+::
+
     $ pglift role describe 13/main dba
     name: dba
     password: '**********'
@@ -136,10 +145,19 @@ Adding and manipulating instance objects:
 ::
 
     $ pglift database create 13/main myapp
+
+::
+
     $ pglift database alter 13/main myapp --owner dba
+
+::
+
     $ pglift database describe 13/main myapp
     name: myapp
     owner: dba
+
+::
+
     $ pglift database list 13/main
     name       owner     encoding    collation    ctype    acls                                         size  description                                 tablespace    tablespace      tablespace
                                                                                                                                                           name          location              size
@@ -147,4 +165,7 @@ Adding and manipulating instance objects:
     myapp      postgres  UTF8        C            C                                                  8167939                                              pg_default                      41011771
     postgres   postgres  UTF8        C            C                                                  8319535  default administrative connection database  pg_default                      41011771
     template1  postgres  UTF8        C            C        ['=c/postgres', 'postgres=CTc/postgres']  8167939  default template for new databases          pg_default                      41011771
+
+::
+
     $ pglift database drop 13/main myapp
