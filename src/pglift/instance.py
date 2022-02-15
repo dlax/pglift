@@ -953,7 +953,7 @@ def logs(ctx: "BaseContext", instance: system.Instance) -> Iterator[str]:
     if not logfile.is_absolute():
         logfile = instance.datadir / logfile
 
-    logger.info("reading logs from instance '%s' from %s", instance, logfile)
+    logger.info("reading logs of instance '%s' from %s", instance, logfile)
     try:
         with logfile.open() as f:
             yield from f

@@ -36,7 +36,7 @@ We can inspect its logs:
 .. code-block:: console
 
     $ pglift instance logs main
-    INFO     reading logs from instance '14/main' from ~/.local/share/pglift/srv
+    INFO     reading logs of instance '14/main' from ~/.local/share/pglift/srv
              /pgsql/14/main/data/log/postgresql-2022-02-14_142151.log
     2022-02-14 14:21:51.629 CET [55556] LOG:  starting PostgreSQL 14.1 (Debian 14.1-1.pgdg110+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit
     2022-02-14 14:21:51.630 CET [55556] LOG:  listening on IPv6 address "::1", port 5433
