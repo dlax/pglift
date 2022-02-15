@@ -45,22 +45,31 @@ PostgreSQL instances, data and configuration files:
 ::
 
     $ tmpdir=$(mktemp -d)
-    $ settings=$tmpdir/config.json
-    $ cat > $settings << EOF
-    {
-      "prefix": "$tmpdir",
-      "postgresql": {
-        "auth": {"local": "md5", "host": "md5"},
-        "root": "$tmpdir/postgres"
-      },
-      "pgbackrest": {
-        "directory": "$tmpdir/backups"
-      }
-    }
+
+::
+
+    $ cat > ~/.config/pglift/settings.yaml << EOF
+    prefix: $tmpdir
+    service_manager: systemd
+    scheduler: systemd
+    postgresql:
+      auth:
+        local: md5
+        host: md5
+      root: $tmpdir/postgres
+    pgbackrest:
+     directory: $tmpdir/backups
+    prometheus: {}
     EOF
-    $ export SETTINGS="@$settings"
+
+::
+
     $ export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
 
+.. note::
+   If using `systemd` as service manager and/or scheduler as in above example,
+   an extra installation step is needed as documented :ref:`here
+   <systemd_install>`.
 
 The passwords for `postgres` and `bob` users can be encrypted using ansible
 vault, `ansible-vault encrypt` will ask for a passphrase used to encrypt
@@ -78,13 +87,6 @@ To view actual passwords:
 ::
 
     ansible-vault view $tmpdir/vars
-
-Then, proceed with post-installation step (preparing systemd templates, in
-particular):
-
-::
-
-    (.venv) $ pglift site-configure install --settings=$settings
 
 Finally, run:
 
