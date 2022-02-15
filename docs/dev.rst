@@ -121,17 +121,11 @@ Release workflow
 
     $ git log $(git describe --tags --abbrev=0).. --format=%s
 
-* Push the tag:
+* Push the tag to the main (upstream) repository:
 
   .. code-block:: bash
 
     $ git push --follow-tags
 
-* Finally get your PyPI API token and run:
-
-  .. code-block:: bash
-
-    $ env PYPI_TOKEN=pypi-xxx tox -e release
-
-  to build and upload the Python package to `PyPI
+* Finally, the CI will build and upload the Python package to `PyPI
   <https://pypi.org/project/pglift>`_.
