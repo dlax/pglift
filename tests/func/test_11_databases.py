@@ -162,6 +162,20 @@ def test_drop(
     assert not databases.exists(ctx, instance, "dropme")
 
 
+def test_run(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
+    database_factory("test")
+    databases.run(
+        ctx,
+        instance,
+        "CREATE TABLE persons AS (SELECT 'bob' AS name)",
+        dbnames=["test"],
+    )
+    result = execute(ctx, instance, "SELECT * FROM persons", dbname="test")
+    assert result == [{"name": "bob"}]
+
+
 def test_run_analyze(
     ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
 ) -> None:
