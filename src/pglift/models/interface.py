@@ -184,10 +184,19 @@ class Instance(Manifest):
         pydantic.error_wrappers.ValidationError: 1 validation error for Instance
         name
           instance name must not contain dashes (type=value_error)
+        >>> Instance(name='with/slash')
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        name
+          instance name must not contain slashes (type=value_error)
         """
         # Avoid dash as this will break systemd instance unit.
         if "-" in v:
             raise ValueError("instance name must not contain dashes")
+        # Likewise, slash messes up with file paths.
+        if "/" in v:
+            raise ValueError("instance name must not contain slashes")
         return v
 
     @validator("version")
