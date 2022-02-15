@@ -105,7 +105,6 @@ debian:
 
 publish:
   only:
-    - main@dalibo/pglift
     - tags@dalibo/pglift
   stage: publish
   image: python:3
