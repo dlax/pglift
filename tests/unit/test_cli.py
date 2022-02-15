@@ -1185,6 +1185,29 @@ def test_database_drop(
     assert result.exit_code == 0
 
 
+def test_database_run(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
+    with patch.object(databases, "run") as run:
+        result = runner.invoke(
+            cli,
+            [
+                "database",
+                "run",
+                str(instance),
+                "-d",
+                "db",
+                "some sql",
+            ],
+            obj=obj,
+        )
+    run.assert_called_once_with(
+        ctx, instance, "some sql", dbnames=("db",), exclude_dbnames=()
+    )
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0, result.stderr
+
+
 def test_database_privileges(
     ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock
 ) -> None:
