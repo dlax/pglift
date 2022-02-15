@@ -204,6 +204,7 @@ def setup(
     configpath.chmod(0o600)
 
     if not queriespath.exists():
+        queriespath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
         queriespath.touch()
 
     if ctx.settings.service_manager == "systemd":
