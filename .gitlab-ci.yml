@@ -6,6 +6,11 @@ variables:
   ROCKYLINUX8_CI_IMAGE: "$CI_REGISTRY_IMAGE:rockylinux8"
   DEBBUILD_CI_IMAGE: "$CI_REGISTRY_IMAGE:debbuild"
 
+stages:
+  - build
+  - test
+  - publish
+
 cache:
   paths:
     - .cache/pip
@@ -97,3 +102,14 @@ debian:
     - dpkg-buildpackage
     - debc
     - lintian
+
+publish:
+  only:
+    - main@dalibo/pglift
+    - tags@dalibo/pglift
+  stage: publish
+  image: python:3
+  before_script:
+    - pip install tox
+  script:
+    - tox -e release
