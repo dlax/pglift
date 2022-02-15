@@ -40,8 +40,9 @@ Runtime dependencies
 --------------------
 
 pglift operates PostgreSQL and a number of satellite components, each
-available as independent software packages. Thus, the following packages would
-be needed in most common situations:
+available as independent software packages. Thus, depending of selected
+components (see :ref:`site settings <settings>`), the following packages might
+be needed:
 
 - ``postgresql``
 - ``pgbackrest``
