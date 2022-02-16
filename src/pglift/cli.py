@@ -486,41 +486,53 @@ def site_configure(
 CommandFactory = Callable[[Type[interface.Instance]], Callback]
 
 
-class CompositeInstanceCommands(click.MultiCommand):
-    """MultiCommand for 'instance' sub-commands that require a composite
-    interface.Instance model built from registered plugins at runtime.
+class InstanceCommands(Group):
+    """Group for 'instance' sub-commands handling some of them that require a
+    composite interface.Instance model built from registered plugins at
+    runtime.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._instance_commands: Dict[str, CommandFactory] = {}
+        self._composite_instance_commands: Dict[str, CommandFactory] = {}
 
-    def register(self, name: str) -> Callable[[CommandFactory], None]:
-        assert name not in self._instance_commands, name
+    def command_with_composite_instance(
+        self, name: str
+    ) -> Callable[[CommandFactory], None]:
+        """Decorator for callback that needs a composite Instance model."""
+        assert name not in self._composite_instance_commands, name
 
         def decorator(factory: CommandFactory) -> None:
-            self._instance_commands[name] = factory
+            self._composite_instance_commands[name] = factory
 
         return decorator
 
     def list_commands(self, context: click.Context) -> List[str]:
-        return sorted(self._instance_commands)
+        return sorted(
+            super().list_commands(context) + list(self._composite_instance_commands)
+        )
 
     def get_command(self, context: click.Context, name: str) -> Optional[click.Command]:
         try:
-            factory = self._instance_commands[name]
+            factory = self._composite_instance_commands[name]
         except KeyError:
-            return None
+            return super().get_command(context, name)
         else:
             composite_instance_model = interface.Instance.composite(context.obj.ctx.pm)
             f = factory(composite_instance_model)
             return click.command(cls=Command)(f)
 
 
-composite_instance_commands = CompositeInstanceCommands()
+@cli.group(cls=InstanceCommands)
+def instance() -> None:
+    """Manipulate instances"""
 
 
-@composite_instance_commands.register("create")
+# Help mypy because click.group() looses the type of 'cls' argument.
+assert isinstance(instance, InstanceCommands)
+
+
+@instance.command_with_composite_instance("create")
 def _instance_create(
     composite_instance_model: Type[interface.Instance],
 ) -> Callback:
@@ -536,7 +548,7 @@ def _instance_create(
     return command
 
 
-@composite_instance_commands.register("alter")
+@instance.command_with_composite_instance("alter")
 def _instance_alter(
     composite_instance_model: Type[interface.Instance],
 ) -> Callback:
@@ -556,7 +568,7 @@ def _instance_alter(
     return command
 
 
-@composite_instance_commands.register("schema")
+@instance.command_with_composite_instance("schema")
 def _instance_schema(
     composite_instance_model: Type[interface.Instance],
 ) -> Callback:
@@ -565,17 +577,6 @@ def _instance_schema(
         CONSOLE.print_json(composite_instance_model.schema_json(indent=2))
 
     return command
-
-
-@cli.group()
-def instance() -> None:
-    """Manipulate instances"""
-
-
-cli.add_command(
-    click.CommandCollection(sources=[instance, composite_instance_commands]),
-    name="instance",
-)
 
 
 @instance.command("apply")
