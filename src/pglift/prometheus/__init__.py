@@ -11,14 +11,14 @@ from pgtoolkit.conf import Configuration
 from pydantic import Field, SecretStr, validator
 from typing_extensions import Final
 
-from . import cmd, exceptions, hookimpl, systemd, types, util
-from .models import system
-from .settings import PrometheusSettings
-from .task import task
+from .. import cmd, exceptions, hookimpl, systemd, types, util
+from ..models import system
+from ..settings import PrometheusSettings
+from ..task import task
 
 if TYPE_CHECKING:
-    from .ctx import BaseContext
-    from .models import interface
+    from ..ctx import BaseContext
+    from ..models import interface
 
 logger = logging.getLogger(__name__)
 
