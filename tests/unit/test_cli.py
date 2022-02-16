@@ -42,7 +42,7 @@ def ctx(settings: Settings) -> CLIContext:
 
 @pytest.fixture
 def obj(ctx: CLIContext) -> Obj:
-    return Obj(ctx, None)
+    return Obj(context=ctx)
 
 
 @pytest.fixture

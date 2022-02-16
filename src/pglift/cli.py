@@ -74,7 +74,14 @@ class CLIContext(Context):
 class Obj:
     """Object bound to click.Context"""
 
-    def __init__(self, context: CLIContext, displayer: Optional[Displayer]) -> None:
+    def __init__(
+        self,
+        *,
+        context: Optional[CLIContext] = None,
+        displayer: Optional[Displayer] = None,
+    ) -> None:
+        if context is None:
+            context = CLIContext(settings=Settings())
         self.ctx = context
         self.displayer = displayer
 
@@ -419,8 +426,7 @@ def cli(
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
-        displayer = None if log_file else LogDisplayer()
-        context.obj = Obj(CLIContext(settings=Settings()), displayer)
+        context.obj = Obj(displayer=None if log_file else LogDisplayer())
     else:
         assert isinstance(context.obj, Obj), context.obj
 
