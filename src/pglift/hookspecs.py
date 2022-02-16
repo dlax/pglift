@@ -6,6 +6,8 @@ from pgtoolkit.conf import Configuration
 from . import __name__ as pkgname
 
 if TYPE_CHECKING:
+    import click
+
     from .ctx import BaseContext
     from .models import interface
     from .models.system import BaseInstance, Instance
@@ -22,6 +24,11 @@ def install_systemd_unit_template(ctx: "BaseContext", header: str = "") -> None:
 @hookspec  # type: ignore[misc]
 def uninstall_systemd_unit_template(ctx: "BaseContext") -> None:
     """Uninstall systemd unit templates."""
+
+
+@hookspec  # type: ignore[misc]
+def cli() -> "click.Command":
+    """Return command-line entry point as click Command (or Group) for the plugin."""
 
 
 @hookspec  # type: ignore[misc]

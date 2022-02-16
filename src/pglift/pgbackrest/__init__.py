@@ -24,6 +24,8 @@ from ..task import task
 from ..types import AutoStrEnum
 
 if TYPE_CHECKING:
+    import click
+
     from ..ctx import BaseContext
 
 logger = logging.getLogger(__name__)
@@ -446,3 +448,10 @@ def restore(
 
     cmd = restore_command(instance, settings, date=date, backup_set=label)
     ctx.run(cmd, check=True)
+
+
+@hookimpl  # type: ignore[misc]
+def cli() -> "click.Command":
+    from .cli import pgbackrest
+
+    return pgbackrest

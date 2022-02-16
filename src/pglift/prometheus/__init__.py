@@ -17,6 +17,8 @@ from ..settings import PrometheusSettings
 from ..task import task
 
 if TYPE_CHECKING:
+    import click
+
     from ..ctx import BaseContext
     from ..models import interface
 
@@ -473,3 +475,10 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
     if not settings:
         return
     revert_setup(ctx, instance.qualname, settings)
+
+
+@hookimpl  # type: ignore[misc]
+def cli() -> "click.Group":
+    from .cli import postgres_exporter
+
+    return postgres_exporter

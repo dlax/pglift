@@ -27,6 +27,8 @@ from pglift.cli import (
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
+from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
+from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
 from pglift.settings import Settings
 
 
@@ -1267,19 +1269,19 @@ def test_postgres_exporter_start_stop(
 ) -> None:
     with patch.object(prometheus, action) as patched:
         result = runner.invoke(
-            cli,
-            ["postgres_exporter", action, instance.qualname],
+            postgres_exporter_cli,
+            [action, instance.qualname],
             obj=obj,
         )
+    assert result.exit_code == 0, result.stderr
     patched.assert_called_once_with(
         ctx, instance.qualname, ctx.settings.prometheus, **kwargs
     )
-    assert result.exit_code == 0, result
 
 
 @pytest.mark.usefixtures("need_prometheus")
-def test_postgres_exporter_schema(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["postgres_exporter", "schema"])
+def test_postgres_exporter_schema(runner: CliRunner, obj: Obj) -> None:
+    result = runner.invoke(postgres_exporter_cli, ["schema"], obj=obj)
     schema = json.loads(result.output)
     assert schema["title"] == "PostgresExporter"
     assert schema["description"] == "Prometheus postgres_exporter service."
@@ -1294,8 +1296,8 @@ def test_postgres_exporter_apply(
     manifest.write_text(content)
     with patch.object(prometheus, "apply") as apply:
         result = runner.invoke(
-            cli,
-            ["postgres_exporter", "apply", "-f", str(manifest)],
+            postgres_exporter_cli,
+            ["apply", "-f", str(manifest)],
             obj=obj,
         )
     assert result.exit_code == 0
@@ -1310,8 +1312,8 @@ def test_postgres_exporter_apply(
 def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "apply") as apply:
         result = runner.invoke(
-            cli,
-            ["postgres_exporter", "install", "123-exp", "dbname=monitoring", "123"],
+            postgres_exporter_cli,
+            ["install", "123-exp", "dbname=monitoring", "123"],
             obj=obj,
         )
     assert result.exit_code == 0
@@ -1326,8 +1328,8 @@ def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) ->
 def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus, "drop") as drop:
         result = runner.invoke(
-            cli,
-            ["postgres_exporter", "uninstall", "123-exp"],
+            postgres_exporter_cli,
+            ["uninstall", "123-exp"],
             obj=obj,
         )
     assert result.exit_code == 0
@@ -1339,7 +1341,7 @@ def test_pgbackrest(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(ctx, "run") as run:
-        result = runner.invoke(cli, ["pgbackrest", str(instance), "help"], obj=obj)
+        result = runner.invoke(pgbackrest_cli, [str(instance), "help"], obj=obj)
     assert result.exit_code == 0, result.stderr
     prefix = ctx.settings.prefix
     stanza = f"{instance.version}-{instance.name}"

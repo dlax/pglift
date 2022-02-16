@@ -42,16 +42,11 @@ from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
 from . import pgbackrest as pgbackrest_mod
-from . import privileges, prometheus, roles, task, version
+from . import privileges, roles, task, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface, system
-from .settings import (
-    POSTGRESQL_SUPPORTED_VERSIONS,
-    PgBackRestSettings,
-    PrometheusSettings,
-    Settings,
-)
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS, PgBackRestSettings, Settings
 from .task import Displayer
 from .types import ConfigChanges
 
@@ -153,6 +148,33 @@ class Group(click.Group):
     group_class = type
 
 
+class CLIGroup(Group):
+    """Group gathering main commands (defined here) and commands from plugins."""
+
+    def list_commands(self, context: click.Context) -> List[str]:
+        main_commands = super().list_commands(context)
+        obj = context.obj
+        if obj is None:
+            obj = context.ensure_object(Obj)
+        plugins_commands = sorted(g.name for g in obj.ctx.hook.cli())
+        return main_commands + plugins_commands
+
+    def get_command(
+        self, context: click.Context, cmd_name: str
+    ) -> Optional[click.Command]:
+        main_command = super().get_command(context, cmd_name)
+        if main_command is not None:
+            return main_command
+        obj = context.obj
+        if obj is None:
+            obj = context.ensure_object(Obj)
+        for group in obj.ctx.hook.cli():
+            assert isinstance(group, click.Command)
+            if group.name == cmd_name:
+                return group
+        return None
+
+
 C = TypeVar("C", bound=Callable[..., Any])
 
 
@@ -186,9 +208,6 @@ def pass_component_settings(mod: ModuleType, name: str, f: C) -> C:
 
 pass_pgbackrest_settings = partial(
     pass_component_settings, pgbackrest_mod, "pgbackrest"
-)
-pass_prometheus_settings = partial(
-    pass_component_settings, prometheus, "Prometheus postgres_exporter"
 )
 
 
@@ -370,7 +389,7 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     context.exit()
 
 
-@click.group(cls=Group)
+@click.group(cls=CLIGroup)
 @click.option(
     "-L",
     "--log-level",
@@ -1170,98 +1189,3 @@ def database_run(
         databases.run(
             ctx, instance, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
         )
-
-
-@cli.group("postgres_exporter")
-@pass_ctx
-def postgres_exporter(ctx: Context) -> None:
-    """Handle Prometheus postgres_exporter"""
-
-
-@postgres_exporter.command("schema")
-def postgres_exporter_schema() -> None:
-    """Print the JSON schema of database model"""
-    CONSOLE.print_json(prometheus.PostgresExporter.schema_json(indent=2))
-
-
-@postgres_exporter.command("apply")
-@click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
-@pass_prometheus_settings
-@pass_ctx
-def postgres_exporter_apply(
-    ctx: Context, settings: PrometheusSettings, file: IO[str]
-) -> None:
-    """Apply manifest as a Prometheus postgres_exporter."""
-    exporter = prometheus.PostgresExporter.parse_yaml(file)
-    prometheus.apply(ctx, exporter, settings)
-
-
-@postgres_exporter.command("install")
-@helpers.parameters_from_model(prometheus.PostgresExporter)
-@pass_prometheus_settings
-@pass_ctx
-def postgres_exporter_install(
-    ctx: Context,
-    settings: PrometheusSettings,
-    postgresexporter: prometheus.PostgresExporter,
-) -> None:
-    """Install the service for a (non-local) instance."""
-    with task.transaction():
-        prometheus.apply(ctx, postgresexporter, settings)
-
-
-@postgres_exporter.command("uninstall")
-@click.argument("name")
-@pass_ctx
-def postgres_exporter_uninstall(ctx: Context, name: str) -> None:
-    """Uninstall the service."""
-    prometheus.drop(ctx, name)
-
-
-@postgres_exporter.command("start")
-@click.argument("name")
-@foreground_option
-@pass_prometheus_settings
-@pass_ctx
-def postgres_exporter_start(
-    ctx: Context, settings: PrometheusSettings, name: str, foreground: bool
-) -> None:
-    """Start postgres_exporter service NAME.
-
-    The NAME argument is a local identifier for the postgres_exporter
-    service. If the service is bound to a local instance, it should be
-    <version>-<name>.
-    """
-    prometheus.start(ctx, name, settings, foreground=foreground)
-
-
-@postgres_exporter.command("stop")
-@click.argument("name")
-@pass_prometheus_settings
-@pass_ctx
-def postgres_exporter_stop(
-    ctx: Context, settings: PrometheusSettings, name: str
-) -> None:
-    """Stop postgres_exporter service NAME.
-
-    The NAME argument is a local identifier for the postgres_exporter
-    service. If the service is bound to a local instance, it should be
-    <version>-<name>.
-    """
-    prometheus.stop(ctx, name, settings)
-
-
-@cli.command("pgbackrest", hidden=True)
-@instance_identifier
-@click.argument("command", nargs=-1, type=click.UNPROCESSED)
-@pass_pgbackrest_settings
-@pass_ctx
-def pgbackrest(
-    ctx: Context,
-    settings: PgBackRestSettings,
-    instance: system.Instance,
-    command: Tuple[str, ...],
-) -> None:
-    """Proxy to pgbackrest operations on an instance"""
-    cmd = pgbackrest_mod.make_cmd(instance, settings, *command)
-    ctx.run(cmd, redirect_output=True, check=True)
