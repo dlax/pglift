@@ -3,9 +3,11 @@ import secrets
 import string
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import humanize
 
+from . import __name__ as pkgname
 from . import cmd, exceptions
 from .types import CommandRunner
 
@@ -22,6 +24,14 @@ def xdg_config_home() -> Path:
 
 def xdg_data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+
+
+def site_config(*parts: str) -> Optional[Path]:
+    for basedir in (xdg_config_home(), Path("/etc")):
+        config = (basedir / pkgname).joinpath(*parts)
+        if config.exists():
+            return config
+    return None
 
 
 def with_header(content: str, header: str) -> str:

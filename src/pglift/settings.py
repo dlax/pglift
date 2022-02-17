@@ -13,7 +13,7 @@ from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
-from .util import xdg_config_home, xdg_data_home
+from .util import site_config, xdg_data_home
 
 try:
     from pydantic.env_settings import SettingsSourceCallable
@@ -311,11 +311,8 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in user or system
     config directory directory.
     """
-    for basedir in (xdg_config_home(), Path("/etc")):
-        fpath = basedir / pkgname / "settings.yaml"
-        if fpath.exists():
-            break
-    else:
+    fpath = site_config("settings.yaml")
+    if fpath is None:
         return {}
     with fpath.open() as f:
         settings = yaml.safe_load(f)

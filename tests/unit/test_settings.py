@@ -30,15 +30,16 @@ def test_json_config_settings_source(
 def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     configdir = tmp_path / "pglift"
     configdir.mkdir()
-    (configdir / "settings.yaml").write_text("prefix: /tmp")
+    settings_fpath = configdir / "settings.yaml"
+    settings_fpath.write_text("prefix: /tmp")
     with monkeypatch.context() as m:
-        m.setattr("pglift.settings.xdg_config_home", lambda: tmp_path)
+        m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
         s = Settings()
     assert str(s.prefix) == "/tmp"
 
-    (configdir / "settings.yaml").write_text("hello")
+    settings_fpath.write_text("hello")
     with monkeypatch.context() as m:
-        m.setattr("pglift.settings.xdg_config_home", lambda: tmp_path)
+        m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
         with pytest.raises(TypeError, match="expecting an object"):
             Settings()
 
