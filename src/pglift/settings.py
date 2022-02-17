@@ -1,5 +1,6 @@
 import grp
 import json
+import logging
 import os
 import pwd
 import shutil
@@ -20,6 +21,7 @@ try:
 except ImportError:
     SettingsSourceCallable = Callable[[BaseSettings], Dict[str, Any]]  # type: ignore[misc]
 
+logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -317,7 +319,10 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     with fpath.open() as f:
         settings = yaml.safe_load(f)
     if not isinstance(settings, dict):
-        raise TypeError(f"expecting an object while loading settings from {fpath}")
+        logger.warning(
+            "failed to load site settings from %s, expecting an object", fpath
+        )
+        return {}
     return settings
 
 

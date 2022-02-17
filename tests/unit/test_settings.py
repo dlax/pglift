@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -27,7 +28,9 @@ def test_json_config_settings_source(
             Settings()
 
 
-def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_yaml_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     configdir = tmp_path / "pglift"
     configdir.mkdir()
     settings_fpath = configdir / "settings.yaml"
@@ -38,10 +41,12 @@ def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert str(s.prefix) == "/tmp"
 
     settings_fpath.write_text("hello")
-    with monkeypatch.context() as m:
+    with monkeypatch.context() as m, caplog.at_level(
+        logging.WARNING, logger="pglift.settings"
+    ):
         m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
-        with pytest.raises(TypeError, match="expecting an object"):
-            Settings()
+        Settings()
+    assert "expecting an object" in caplog.records[0].message
 
 
 def test_settings(tmp_path: Path) -> None:
