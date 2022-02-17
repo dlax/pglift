@@ -3,9 +3,10 @@ from unittest.mock import patch
 
 import pytest
 
-from pglift import exceptions, pgbackrest
+from pglift import exceptions, types
 from pglift.ctx import Context
 from pglift.models.system import Instance
+from pglift.pgbackrest import impl as pgbackrest
 from pglift.settings import PgBackRestSettings, Settings
 
 
@@ -64,7 +65,7 @@ def test_backup_command(
     instance: Instance,
 ) -> None:
     assert pgbackrest.backup_command(
-        instance, pgbackrest_settings, type=pgbackrest.BackupType.full
+        instance, pgbackrest_settings, type=types.BackupType.full
     ) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",

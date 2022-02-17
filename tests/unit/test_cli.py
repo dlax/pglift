@@ -15,7 +15,7 @@ from pgtoolkit.ctl import Status
 
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
-from pglift import pgbackrest, prometheus, roles
+from pglift import prometheus, roles, types
 from pglift.cli import (
     CLIContext,
     Command,
@@ -27,6 +27,7 @@ from pglift.cli import (
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
+from pglift.pgbackrest import impl as pgbackrest
 from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
 from pglift.prometheus import impl as prometheus_impl
 from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
@@ -597,7 +598,7 @@ def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> Non
         )
     assert result.exit_code == 0, result
     assert backup.call_count == 1
-    assert backup.call_args[1] == {"type": pgbackrest.BackupType("diff")}
+    assert backup.call_args[1] == {"type": types.BackupType("diff")}
 
 
 @pytest.mark.usefixtures("need_pgbackrest")

@@ -10,9 +10,5 @@ management using pgBackRest_:
 .. autofunction:: expire
 .. autofunction:: iter_backups
 .. autofunction:: restore
-.. autofunction:: backup_command
-.. autofunction:: expire_command
-.. autoclass:: BackupType
-    :members:
 
 .. _pgBackRest: https://pgbackrest.org/

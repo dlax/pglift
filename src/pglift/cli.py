@@ -41,14 +41,14 @@ from typing_extensions import Literal
 from . import __name__ as pkgname
 from . import _install, conf, databases, exceptions
 from . import instance as instance_mod
-from . import pgbackrest as pgbackrest_mod
 from . import privileges, roles, task, version
 from .ctx import Context
 from .instance import Status
 from .models import helpers, interface, system
+from .pgbackrest import impl as pgbackrest_mod
 from .settings import POSTGRESQL_SUPPORTED_VERSIONS, PgBackRestSettings, Settings
 from .task import Displayer
-from .types import ConfigChanges
+from .types import BackupType, ConfigChanges
 
 logger = logging.getLogger(__name__)
 CONSOLE = Console()
@@ -729,10 +729,10 @@ def instance_logs(ctx: Context, instance: system.Instance) -> None:
 @click.option(
     "--type",
     "backup_type",
-    type=click.Choice([t.name for t in pgbackrest_mod.BackupType]),
-    default=pgbackrest_mod.BackupType.default().name,
+    type=click.Choice([t.name for t in BackupType]),
+    default=BackupType.default().name,
     help="Backup type",
-    callback=lambda ctx, param, value: pgbackrest_mod.BackupType(value),
+    callback=lambda ctx, param, value: BackupType(value),
 )
 @pass_pgbackrest_settings
 @pass_ctx
@@ -740,7 +740,7 @@ def instance_backup(
     ctx: Context,
     settings: PgBackRestSettings,
     instance: system.Instance,
-    backup_type: pgbackrest_mod.BackupType,
+    backup_type: BackupType,
 ) -> None:
     """Back up a PostgreSQL instance"""
     pgbackrest_mod.backup(ctx, instance, settings, type=backup_type)

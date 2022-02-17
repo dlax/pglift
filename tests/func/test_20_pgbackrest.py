@@ -7,10 +7,11 @@ from typing import Iterator
 import pytest
 
 from pglift import instance as instance_mod
-from pglift import pgbackrest
+from pglift import types
 from pglift.conf import info as conf_info
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.pgbackrest import impl as pgbackrest
 from pglift.settings import PgBackRestSettings
 
 from . import execute, reconfigure_instance
@@ -106,7 +107,7 @@ def test_backup_restore(
             ctx,
             instance,
             pgbackrest_settings,
-            type=pgbackrest.BackupType.full,
+            type=types.BackupType.full,
         )
         assert latest_backup.exists() and latest_backup.is_symlink()
         pgbackrest.expire(ctx, instance, pgbackrest_settings)

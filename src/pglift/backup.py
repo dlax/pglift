@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from . import exceptions, hookimpl, pgbackrest, settings, systemd
+from . import exceptions, hookimpl, settings, systemd, types
 from .models import system
+from .pgbackrest import impl as pgbackrest
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
@@ -59,14 +60,14 @@ def main() -> None:
         settings = pgbackrest.available(ctx)
         assert settings, "pgbackrest not available"
         return pgbackrest.backup(
-            ctx, instance, settings, type=pgbackrest.BackupType(args.type)
+            ctx, instance, settings, type=types.BackupType(args.type)
         )
 
     parser.set_defaults(func=do_backup)
     parser.add_argument(
         "--type",
-        choices=[t.name for t in pgbackrest.BackupType],
-        default=pgbackrest.BackupType.default().name,
+        choices=[t.name for t in types.BackupType],
+        default=types.BackupType.default().name,
     )
 
     args = parser.parse_args()

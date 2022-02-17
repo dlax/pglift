@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Tuple
 import click
 
 from ..cli import Command, instance_identifier, pass_ctx, pass_pgbackrest_settings
-from . import make_cmd
+from .impl import make_cmd
 
 if TYPE_CHECKING:
     from ..ctx import Context

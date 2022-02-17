@@ -27,30 +27,6 @@ else:
     CompletedProcess = subprocess.CompletedProcess
 
 
-class CommandRunner(Protocol):
-    def __call__(
-        self,
-        args: Sequence[str],
-        *,
-        check: bool = False,
-        **kwargs: Any,
-    ) -> CompletedProcess:
-        ...
-
-
-ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
-
-
-class Role(Protocol):
-    name: str
-    password: Optional[SecretStr]
-
-
-class NoticeHandler(Protocol):
-    def __call__(self, diag: psycopg.errors.Diagnostic) -> Any:
-        ...
-
-
 class StrEnum(str, enum.Enum):
     pass
 
@@ -70,6 +46,45 @@ class AutoStrEnum(StrEnum):
 
     def _generate_next_value_(name, *args: Any) -> str:  # type: ignore[override]
         return name
+
+
+class CommandRunner(Protocol):
+    def __call__(
+        self,
+        args: Sequence[str],
+        *,
+        check: bool = False,
+        **kwargs: Any,
+    ) -> CompletedProcess:
+        ...
+
+
+ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
+
+
+class BackupType(AutoStrEnum):
+    """Backup type."""
+
+    full = enum.auto()
+    """full backup"""
+    incr = enum.auto()
+    """incremental backup"""
+    diff = enum.auto()
+    """differential backup"""
+
+    @classmethod
+    def default(cls) -> "BackupType":
+        return cls.incr
+
+
+class Role(Protocol):
+    name: str
+    password: Optional[SecretStr]
+
+
+class NoticeHandler(Protocol):
+    def __call__(self, diag: psycopg.errors.Diagnostic) -> Any:
+        ...
 
 
 class AnsibleArgSpec(TypedDict, total=False):
