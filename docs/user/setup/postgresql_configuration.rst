@@ -32,18 +32,28 @@ Head of ``postgresql.conf`` contains:
     #
 
 
+File ``conf.pglift.d/pgbackrest.conf`` contains configuration items needed for
+pgBackRest to operate. Any other satellite service needing to override
+PostgreSQL configuration would have its file there.
+
 File ``conf.pglift.d/user.conf`` contains configuration items defined by the
 user at instance creation or update.
 
 File ``conf.pglift.d/site.conf`` contains site-wise configuration items, if
-any. (That is, configuration defined at distribution step.)
+any. The content of this file, or a template, might be defined on site by
+writing to ``$XDG_CONFIG_HOME/pglift/postgresql/site.conf`` [#xdgconfighome]_
+or ``/etc/pglift/postgresql/site.conf`` (by order of precedence). The default
+``site.conf`` file contains:
 
-File ``conf.pglift.d/pgbackrest.conf`` contains configuration items needed for
-pgBackRest to operate. Any other satellite service needing to override
-PostgreSQL configuration would have its file there.
+.. literalinclude:: ../../../src/pglift/data/postgresql/site.conf
+   :caption: site.conf
 
 Since the include directive is located on top of ``postgresql.conf`` file, any
 setting defined in that file (and kept after the include directive) will take
 precedence over the managed configuration.
 
 .. seealso:: The ``pgconf`` command to manage :ref:`PostgreSQL configuration <pgconf>`.
+
+.. [#xdgconfighome]
+   Where ``$XDG_CONFIG_DIR`` would be ``$HOME/.config`` unless configured
+   differently.
