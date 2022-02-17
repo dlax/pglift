@@ -166,7 +166,7 @@ class Instance(Manifest):
         default=None,
         description=(
             "Enable or disable data checksums. "
-            "If None, fall back to site settings initdb.data_checksums."
+            "If unspecified, fall back to site settings choice."
         ),
     )
 
