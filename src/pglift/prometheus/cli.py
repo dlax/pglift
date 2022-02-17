@@ -2,9 +2,16 @@ from functools import partial
 from typing import IO, TYPE_CHECKING
 
 import click
+from rich.console import Console
 
 from .. import prometheus, task
-from ..cli import CONSOLE, Group, foreground_option, pass_component_settings, pass_ctx
+from ..cli.util import (
+    Group,
+    foreground_option,
+    pass_component_settings,
+    pass_console,
+    pass_ctx,
+)
 from ..models import helpers
 from . import impl, models
 
@@ -24,9 +31,10 @@ def postgres_exporter(ctx: "Context") -> None:
 
 
 @postgres_exporter.command("schema")
-def postgres_exporter_schema() -> None:
+@pass_console
+def postgres_exporter_schema(console: Console) -> None:
     """Print the JSON schema of database model"""
-    CONSOLE.print_json(models.PostgresExporter.schema_json(indent=2))
+    console.print_json(models.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")

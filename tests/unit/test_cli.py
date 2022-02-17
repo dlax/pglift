@@ -16,14 +16,8 @@ from pgtoolkit.ctl import Status
 from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, roles, types
-from pglift.cli import (
-    CLIContext,
-    Command,
-    Obj,
-    cli,
-    get_instance,
-    pass_component_settings,
-)
+from pglift.cli import CLIContext, Obj, cli
+from pglift.cli.util import Command, get_instance, pass_component_settings
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
