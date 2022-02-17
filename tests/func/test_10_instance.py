@@ -33,12 +33,17 @@ def test_init(
     postgresql_conf = i.datadir / "postgresql.conf"
     assert postgresql_conf.exists()
     assert (i.waldir / "archive_status").is_dir()
+    is_valid = False
     with postgresql_conf.open() as f:
         for line in f:
             if "lc_messages = 'C'" in line:
-                break
-        else:
-            raise AssertionError("invalid postgresql.conf")
+                is_valid = True
+            sline = line.lstrip()
+            assert not sline or sline.startswith(
+                "#"
+            ), f"found uncommented line in postgresql.conf: {line}"
+
+    assert is_valid, "invalid postgresql.conf"
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
@@ -54,10 +59,8 @@ def test_init(
 
 
 def test_log_directory(
-    ctx: Context, instance: system.Instance, log_directory: Path, redhat: bool
+    ctx: Context, instance: system.Instance, log_directory: Path
 ) -> None:
-    if redhat:
-        pytest.xfail("postgresql.conf on redhat contains 'log_directory' uncommented")
     config = instance.config()
     assert isinstance(config.log_directory, str)
     instance_log_dir = Path(config.log_directory)
@@ -266,9 +269,7 @@ def test_apply(
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(
-    ctx: Context, instance: system.Instance, log_directory: Path, redhat: bool
-) -> None:
+def test_describe(ctx: Context, instance: system.Instance, log_directory: Path) -> None:
     im = instance_mod.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
@@ -276,8 +277,7 @@ def test_describe(
     assert im.port == instance.port
     if "log_directory" in config:
         logdir = config.pop("log_directory")
-        if not redhat:
-            assert logdir == str(log_directory)
+        assert logdir == str(log_directory)
     assert config == {"logging_collector": False}
     assert im.state.name == "stopped"
 

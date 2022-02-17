@@ -1,5 +1,6 @@
 import pathlib
 import re
+from typing import Any
 from unittest.mock import patch
 
 import attr
@@ -72,9 +73,14 @@ def test_init_force_data_checksums(
     manifest = interface.Instance(
         name="checksums", version=pg_version, data_checksums=data_checksums
     )
-    with patch("pgtoolkit.ctl.PGCtl.init") as init:
-        instance_mod.init(ctx, manifest)
     instance = BaseInstance.get(manifest.name, manifest.version, ctx)
+
+    def fake_init(*a: Any, **kw: Any) -> None:
+        instance.datadir.mkdir(parents=True)
+        (instance.datadir / "postgresql.conf").touch()
+
+    with patch("pgtoolkit.ctl.PGCtl.init", side_effect=fake_init) as init:
+        instance_mod.init(ctx, manifest)
     expected = {
         "waldir": str(instance.waldir),
         "username": "postgres",

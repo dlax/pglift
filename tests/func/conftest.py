@@ -45,11 +45,6 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-@pytest.fixture(scope="session")
-def redhat() -> bool:
-    return pathlib.Path("/etc/redhat-release").exists()
-
-
 @pytest.fixture(autouse=True)
 def journalctl() -> Iterator[None]:
     journalctl = shutil.which("journalctl")
