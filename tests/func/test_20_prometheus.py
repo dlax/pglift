@@ -10,9 +10,11 @@ from tenacity.wait import wait_fixed
 
 from pglift import exceptions
 from pglift import instance as instance_mod
-from pglift import prometheus, systemd
+from pglift import systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.prometheus import impl as prometheus
+from pglift.prometheus import models
 from pglift.settings import PrometheusSettings
 
 from . import reconfigure_instance
@@ -33,7 +35,7 @@ def test_configure(
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
-    service = instance.service(prometheus.Service)
+    service = instance.service(models.Service)
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
@@ -110,7 +112,7 @@ def request_metrics(port: int) -> requests.Response:
 
 @pytest.mark.usefixtures("prometheus_available")
 def test_start_stop(ctx: Context, instance: system.Instance) -> None:
-    service = instance.service(prometheus.Service)
+    service = instance.service(models.Service)
     port = service.port
 
     if ctx.settings.service_manager == "systemd":
@@ -176,7 +178,7 @@ def test_apply(
     tmp_port_factory: Iterator[int],
 ) -> None:
     port = next(tmp_port_factory)
-    m = prometheus.PostgresExporter(name="test", dsn="dbname=test", port=port)
+    m = models.PostgresExporter(name="test", dsn="dbname=test", port=port)
     prometheus.apply(ctx, m, prometheus_settings)
 
     configpath = Path(str(prometheus_settings.configpath).format(name="test"))
@@ -194,7 +196,7 @@ def test_apply(
 
     prometheus.apply(
         ctx,
-        prometheus.PostgresExporter(name="test", dsn="", port=port, state="absent"),
+        models.PostgresExporter(name="test", dsn="", port=port, state="absent"),
         prometheus_settings,
     )
     assert not configpath.exists()

@@ -4,9 +4,10 @@ import pytest
 import requests
 from pgtoolkit.conf import Configuration
 
-from pglift import backup, exceptions, prometheus, systemd
+from pglift import backup, exceptions, systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
+from pglift.prometheus import impl as prometheus
 from pglift.settings import PgBackRestSettings, PrometheusSettings
 
 

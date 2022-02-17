@@ -28,6 +28,7 @@ from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
 from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
+from pglift.prometheus import impl as prometheus_impl
 from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
 from pglift.settings import Settings
 
@@ -1267,7 +1268,7 @@ def test_postgres_exporter_start_stop(
     action: str,
     kwargs: Dict[str, bool],
 ) -> None:
-    with patch.object(prometheus, action) as patched:
+    with patch.object(prometheus_impl, action) as patched:
         result = runner.invoke(
             postgres_exporter_cli,
             [action, instance.qualname],
@@ -1294,7 +1295,7 @@ def test_postgres_exporter_apply(
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump({"name": "123-exp", "dsn": "dbname=monitoring", "port": 123})
     manifest.write_text(content)
-    with patch.object(prometheus, "apply") as apply:
+    with patch.object(prometheus_impl, "apply") as apply:
         result = runner.invoke(
             postgres_exporter_cli,
             ["apply", "-f", str(manifest)],
@@ -1310,7 +1311,7 @@ def test_postgres_exporter_apply(
 
 @pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) -> None:
-    with patch.object(prometheus, "apply") as apply:
+    with patch.object(prometheus_impl, "apply") as apply:
         result = runner.invoke(
             postgres_exporter_cli,
             ["install", "123-exp", "dbname=monitoring", "123"],
@@ -1326,7 +1327,7 @@ def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) ->
 
 @pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) -> None:
-    with patch.object(prometheus, "drop") as drop:
+    with patch.object(prometheus_impl, "drop") as drop:
         result = runner.invoke(
             postgres_exporter_cli,
             ["uninstall", "123-exp"],

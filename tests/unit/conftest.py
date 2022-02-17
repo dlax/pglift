@@ -4,10 +4,11 @@ from typing import Any, Iterator, Type
 import pytest
 from pgtoolkit.ctl import PGCtl
 
-from pglift import prometheus as prometheus_mod
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import Instance
+from pglift.prometheus import impl as prometheus_mod
+from pglift.prometheus import models as prometheus_models
 from pglift.settings import Settings
 from pglift.util import short_version
 
@@ -110,7 +111,7 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
     prometheus = None
     if settings.prometheus is not None:
         prometheus_port = 9817
-        prometheus = prometheus_mod.Service(port=prometheus_port)
+        prometheus = prometheus_models.Service(port=prometheus_port)
 
     instance = Instance(
         name=name,

@@ -6,6 +6,7 @@ import click
 from .. import prometheus, task
 from ..cli import CONSOLE, Group, foreground_option, pass_component_settings, pass_ctx
 from ..models import helpers
+from . import impl, models
 
 if TYPE_CHECKING:
     from ..ctx import Context
@@ -25,7 +26,7 @@ def postgres_exporter(ctx: "Context") -> None:
 @postgres_exporter.command("schema")
 def postgres_exporter_schema() -> None:
     """Print the JSON schema of database model"""
-    CONSOLE.print_json(prometheus.PostgresExporter.schema_json(indent=2))
+    CONSOLE.print_json(models.PostgresExporter.schema_json(indent=2))
 
 
 @postgres_exporter.command("apply")
@@ -36,22 +37,22 @@ def postgres_exporter_apply(
     ctx: "Context", settings: "PrometheusSettings", file: IO[str]
 ) -> None:
     """Apply manifest as a Prometheus postgres_exporter."""
-    exporter = prometheus.PostgresExporter.parse_yaml(file)
-    prometheus.apply(ctx, exporter, settings)
+    exporter = models.PostgresExporter.parse_yaml(file)
+    impl.apply(ctx, exporter, settings)
 
 
 @postgres_exporter.command("install")
-@helpers.parameters_from_model(prometheus.PostgresExporter)
+@helpers.parameters_from_model(models.PostgresExporter)
 @pass_prometheus_settings
 @pass_ctx
 def postgres_exporter_install(
     ctx: "Context",
     settings: "PrometheusSettings",
-    postgresexporter: prometheus.PostgresExporter,
+    postgresexporter: models.PostgresExporter,
 ) -> None:
     """Install the service for a (non-local) instance."""
     with task.transaction():
-        prometheus.apply(ctx, postgresexporter, settings)
+        impl.apply(ctx, postgresexporter, settings)
 
 
 @postgres_exporter.command("uninstall")
@@ -59,7 +60,7 @@ def postgres_exporter_install(
 @pass_ctx
 def postgres_exporter_uninstall(ctx: "Context", name: str) -> None:
     """Uninstall the service."""
-    prometheus.drop(ctx, name)
+    impl.drop(ctx, name)
 
 
 @postgres_exporter.command("start")
@@ -76,7 +77,7 @@ def postgres_exporter_start(
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.start(ctx, name, settings, foreground=foreground)
+    impl.start(ctx, name, settings, foreground=foreground)
 
 
 @postgres_exporter.command("stop")
@@ -92,4 +93,4 @@ def postgres_exporter_stop(
     service. If the service is bound to a local instance, it should be
     <version>-<name>.
     """
-    prometheus.stop(ctx, name, settings)
+    impl.stop(ctx, name, settings)

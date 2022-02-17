@@ -3,9 +3,15 @@ import pathlib
 import pydantic
 import pytest
 
-from pglift import exceptions, prometheus
+from pglift import exceptions
 from pglift.ctx import Context
 from pglift.models.system import Instance
+from pglift.prometheus import impl as prometheus
+from pglift.prometheus import (
+    install_systemd_unit_template,
+    models,
+    uninstall_systemd_unit_template,
+)
 from pglift.settings import PrometheusSettings, Settings
 
 
@@ -27,7 +33,7 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
 
 @pytest.mark.usefixtures("need_prometheus")
 def test_install_systemd_unit_template(ctx: Context) -> None:
-    prometheus.install_systemd_unit_template(ctx)
+    install_systemd_unit_template(ctx)
     unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
     assert unit.exists()
     lines = unit.read_text().splitlines()
@@ -39,13 +45,13 @@ def test_install_systemd_unit_template(ctx: Context) -> None:
         "ExecStart=/usr/bin/prometheus-postgres-exporter $POSTGRES_EXPORTER_OPTS"
         in lines
     )
-    prometheus.uninstall_systemd_unit_template(ctx)
+    uninstall_systemd_unit_template(ctx)
     assert not unit.exists()
 
 
 def test_port(prometheus_settings: PrometheusSettings, instance: Instance) -> None:
     try:
-        prometheus_service = instance.service(prometheus.Service)
+        prometheus_service = instance.service(models.Service)
     except ValueError:
         prometheus_service = None
     if prometheus_service:
@@ -81,15 +87,15 @@ def test_port(prometheus_settings: PrometheusSettings, instance: Instance) -> No
 
 
 def test_postgresexporter() -> None:
-    m = prometheus.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
+    m = models.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
     assert m.dsn == "dbname=postgres"
     with pytest.raises(pydantic.ValidationError):
-        prometheus.PostgresExporter(dsn="x=y", port=9876)
+        models.PostgresExporter(dsn="x=y", port=9876)
 
 
 def test_apply(
     ctx: Context, instance: Instance, prometheus_settings: PrometheusSettings
 ) -> None:
-    m = prometheus.PostgresExporter(name=instance.qualname, dsn="", port=123)
+    m = models.PostgresExporter(name=instance.qualname, dsn="", port=123)
     with pytest.raises(exceptions.InstanceStateError, match="exists locally"):
         prometheus.apply(ctx, m, prometheus_settings)
