@@ -86,6 +86,10 @@ class InvalidVersion(Error, ValueError):
     """Invalid PostgreSQL version."""
 
 
+class UnsupportedError(Error, RuntimeError):
+    """Operation is unsupported."""
+
+
 class InstanceAlreadyExists(Error, ValueError):
     """Instance with Name and version already exists"""
 

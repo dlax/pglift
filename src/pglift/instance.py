@@ -648,8 +648,17 @@ def get_data_checksums(ctx: "BaseContext", instance: system.Instance) -> bool:
             value = cnx.execute("SHOW data_checksums").fetchall()[0]["data_checksums"]
             assert value in ("on", "off"), value
             return True if value == "on" else False
-    pg_checksums = str(ctx.pg_ctl(instance.version).bindir / "pg_checksums")
-    proc = ctx.run([pg_checksums, "--check", "--pgdata", str(instance.datadir)])
+    version = int(instance.version)
+    if version <= 10:
+        raise exceptions.UnsupportedError(
+            "PostgreSQL <= 10 doesn't allow to offline check for data-checksums"
+        )
+    elif version == 11:
+        command = str(ctx.pg_ctl(instance.version).bindir / "pg_verify_checksums")
+        proc = ctx.run([command, "--pgdata", str(instance.datadir)])
+    else:
+        command = str(ctx.pg_ctl(instance.version).bindir / "pg_checksums")
+        proc = ctx.run([command, "--check", "--pgdata", str(instance.datadir)])
     if proc.returncode == 0:
         return True
     elif proc.returncode == 1:
@@ -666,6 +675,10 @@ def set_data_checksums(
             "could not alter data_checksums on a running instance"
         )
     action = "enable" if enabled else "disable"
+    if int(instance.version) < 12:
+        raise exceptions.UnsupportedError(
+            "PostgreSQL <= 11 doesn't have pg_checksums to enable data checksums"
+        )
     ctx.run(
         [
             str(ctx.pg_ctl(instance.version).bindir / "pg_checksums"),

@@ -472,8 +472,6 @@ def datachecksums_instance(
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
-    if pg_version < "12":
-        pytest.skip("pg_checksums requires PostgreSQL 12")
     manifest = composite_instance_model(
         name="datachecksums",
         version=pg_version,
@@ -490,6 +488,7 @@ def datachecksums_instance(
 
 def test_data_checksums(
     ctx: Context,
+    pg_version: str,
     datachecksums_instance: Tuple[interface.Instance, system.Instance],
 ) -> None:
     manifest, instance = datachecksums_instance
@@ -503,6 +502,17 @@ def test_data_checksums(
             "state": interface.InstanceState.stopped,
         }
     )
+    if int(pg_version) < 12:
+        with pytest.raises(
+            exceptions.UnsupportedError,
+            match={
+                "10": r"^PostgreSQL <= 10 doesn't allow to offline check for data-checksums$",
+                "11": r"^PostgreSQL <= 11 doesn't have pg_checksums to enable data checksums$",
+            }[pg_version],
+        ):
+            result = instance_mod.apply(ctx, manifest)
+        return
+
     result = instance_mod.apply(ctx, manifest)
     assert result
     _, changes, _ = result
