@@ -54,7 +54,7 @@ def test_init(
         def fail() -> NoReturn:
             raise AssertionError("unexpected called")
 
-        m.setattr(ctx, "pg_ctl", fail)
+        m.setattr(instance_mod, "pg_ctl", fail)
         instance_mod.init(ctx, interface.Instance(name=i.name, version=i.version))
 
 

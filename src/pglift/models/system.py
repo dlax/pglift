@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, Uni
 
 import attr
 from attr.validators import instance_of
+from pgtoolkit import ctl
 from pgtoolkit.conf import Configuration
 
 from .. import conf, exceptions
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 def default_postgresql_version(ctx: "BaseContext") -> str:
     version = ctx.settings.postgresql.default_version
     if version is None:
-        version = short_version(ctx.pg_ctl(None).version)
+        version = short_version(ctl.PGCtl(None).version)
     return version
 
 

@@ -1,5 +1,6 @@
 import builtins
 import contextlib
+import functools
 import logging
 import os
 import shutil
@@ -20,13 +21,14 @@ from typing import (
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
-from pgtoolkit import pgpass
+from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
 from pydantic import SecretStr
 from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
 from .models import interface, system
+from .settings import POSTGRESQL_SUPPORTED_VERSIONS
 from .task import task
 from .types import ConfigChanges
 
@@ -34,6 +36,29 @@ if TYPE_CHECKING:
     from .ctx import BaseContext
 
 logger = logging.getLogger(__name__)
+
+
+@functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
+def pg_ctl(version: Optional[str], *, ctx: "BaseContext") -> ctl.PGCtl:
+    pg_bindir = None
+    settings = ctx.settings.postgresql
+    version = version or settings.default_version
+    if version is not None:
+        pg_bindir = settings.versions[version].bindir
+    try:
+        pg_ctl = ctl.PGCtl(pg_bindir, run_command=ctx.run)
+    except EnvironmentError as e:
+        raise exceptions.SystemError(
+            f"{str(e)}. Is PostgreSQL {version} installed?"
+        ) from e
+    if version is not None:
+        installed_version = util.short_version(pg_ctl.version)
+        if installed_version != version:
+            raise exceptions.SystemError(
+                f"PostgreSQL version from {pg_bindir} mismatches with declared value: "
+                f"{installed_version} != {version}"
+            )
+    return pg_ctl
 
 
 def systemd_unit(instance: system.BaseInstance) -> str:
@@ -57,7 +82,7 @@ def init_replication(
             shutil.copyfile(instance.datadir / name, tmpdir / name)
         shutil.rmtree(instance.datadir)
         shutil.rmtree(instance.waldir)
-        bindir = ctx.pg_ctl(instance.version).bindir
+        bindir = pg_ctl(instance.version, ctx=ctx).bindir
         cmd = [
             str(bindir / "pg_basebackup"),
             "--pgdata",
@@ -110,7 +135,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
 
     # Would raise SystemError if requested postgresql binaries are not
     # available or if versions mismatch.
-    pg_ctl = ctx.pg_ctl(manifest.version)
+    pgctl = pg_ctl(manifest.version, ctx=ctx)
 
     pgroot = settings.root
     pgroot.parent.mkdir(parents=True, exist_ok=True)
@@ -134,7 +159,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     ):
         opts["data_checksums"] = True
 
-    pg_ctl.init(instance.datadir, **opts)
+    pgctl.init(instance.datadir, **opts)
 
     # Possibly comment out everything in postgresql.conf, as in upstream
     # sample file, but in contrast with some distribution packages.
@@ -456,15 +481,14 @@ def start_postgresql(
     foreground: bool = False,
 ) -> None:
     if ctx.settings.service_manager is None:
+        pgctl = pg_ctl(instance.version, ctx=ctx)
         if foreground:
-            postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
+            postgres = pgctl.bindir / "postgres"
             cmd.execute_program(
                 [str(postgres), "-D", str(instance.datadir)], logger=logger
             )
         else:
-            ctx.pg_ctl(instance.version).start(
-                instance.datadir, wait=wait, logfile=logfile
-            )
+            pgctl.start(instance.datadir, wait=wait, logfile=logfile)
     elif ctx.settings.service_manager == "systemd":
         systemd.start(ctx, systemd_unit(instance))
 
@@ -472,7 +496,7 @@ def start_postgresql(
 def status(ctx: "BaseContext", instance: system.BaseInstance) -> Status:
     """Return the status of an instance."""
     logger.debug("get status of PostgreSQL instance %s", instance)
-    return ctx.pg_ctl(instance.version).status(instance.datadir)
+    return pg_ctl(instance.version, ctx=ctx).status(instance.datadir)
 
 
 def check_status(
@@ -519,7 +543,7 @@ def stop_postgresql(
 ) -> None:
     logger.info("stopping instance %s", instance)
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl(instance.version).stop(instance.datadir, mode=mode, wait=wait)
+        pg_ctl(instance.version, ctx=ctx).stop(instance.datadir, mode=mode, wait=wait)
     elif ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(instance))
 
@@ -535,7 +559,9 @@ def restart(
     """Restart an instance."""
     logger.info("restarting instance %s", instance)
     if ctx.settings.service_manager is None:
-        ctx.pg_ctl(instance.version).restart(instance.datadir, mode=mode, wait=wait)
+        pg_ctl(instance.version, ctx=ctx).restart(
+            instance.datadir, mode=mode, wait=wait
+        )
     elif ctx.settings.service_manager == "systemd":
         systemd.restart(ctx, systemd_unit(instance))
 
@@ -556,9 +582,9 @@ def promote(ctx: "BaseContext", instance: system.Instance) -> None:
     """Promote a standby instance"""
     if not instance.standby:
         raise exceptions.InstanceStateError(f"{instance} is not a standby")
-    pg_ctl = ctx.pg_ctl(instance.version)
-    pg_ctl.run_command(
-        [str(pg_ctl.pg_ctl), "promote", "-D", str(instance.datadir)],
+    pgctl = pg_ctl(instance.version, ctx=ctx)
+    ctx.run(
+        [str(pgctl.pg_ctl), "promote", "-D", str(instance.datadir)],
         check=True,
     )
 
@@ -615,11 +641,11 @@ def upgrade(
     newinstance = system.Instance.system_lookup(
         ctx, (new_manifest.name, new_manifest.version)
     )
-    bindir = ctx.pg_ctl(version).bindir
+    bindir = pg_ctl(version, ctx=ctx).bindir
     pg_upgrade = str(bindir / "pg_upgrade")
     cmd = [
         pg_upgrade,
-        f"--old-bindir={ctx.pg_ctl(instance.version).bindir}",
+        f"--old-bindir={pg_ctl(instance.version, ctx=ctx).bindir}",
         f"--new-bindir={bindir}",
         f"--old-datadir={instance.datadir}",
         f"--new-datadir={newinstance.datadir}",
@@ -655,10 +681,10 @@ def get_data_checksums(ctx: "BaseContext", instance: system.Instance) -> bool:
             "PostgreSQL <= 10 doesn't allow to offline check for data-checksums"
         )
     elif version == 11:
-        command = str(ctx.pg_ctl(instance.version).bindir / "pg_verify_checksums")
+        command = str(pg_ctl(instance.version, ctx=ctx).bindir / "pg_verify_checksums")
         proc = ctx.run([command, "--pgdata", str(instance.datadir)])
     else:
-        command = str(ctx.pg_ctl(instance.version).bindir / "pg_checksums")
+        command = str(pg_ctl(instance.version, ctx=ctx).bindir / "pg_checksums")
         proc = ctx.run([command, "--check", "--pgdata", str(instance.datadir)])
     if proc.returncode == 0:
         return True
@@ -682,7 +708,7 @@ def set_data_checksums(
         )
     ctx.run(
         [
-            str(ctx.pg_ctl(instance.version).bindir / "pg_checksums"),
+            str(pg_ctl(instance.version, ctx=ctx).bindir / "pg_checksums"),
             f"--{action}",
             "--pgdata",
             str(instance.datadir),
@@ -908,7 +934,7 @@ def env_for(
     )
     if path:
         env["PATH"] = ":".join(
-            [str(ctx.pg_ctl(instance.version).bindir)]
+            [str(pg_ctl(instance.version, ctx=ctx).bindir)]
             + ([os.environ["PATH"]] if "PATH" in os.environ else [])
         )
     return env
@@ -924,7 +950,7 @@ def exec(
     env = os.environ.copy()
     env.update(env_for(ctx, instance))
     progname, *args = command
-    program = ctx.pg_ctl(instance.version).bindir / progname
+    program = pg_ctl(instance.version, ctx=ctx).bindir / progname
     try:
         cmd.execute_program([str(program)] + args, env=env, logger=logger)
     except FileNotFoundError as e:

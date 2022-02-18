@@ -230,7 +230,7 @@ def test_check_status(ctx: Context, instance: Instance) -> None:
 def test_start_foreground(ctx: Context, instance: Instance) -> None:
     with patch("os.execv") as execv:
         instance_mod.start(ctx, instance, foreground=True)
-    postgres = ctx.pg_ctl(instance.version).bindir / "postgres"
+    postgres = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir / "postgres"
     execv.assert_called_once_with(
         str(postgres), f"{postgres} -D {instance.datadir}".split()
     )
@@ -272,7 +272,7 @@ def test_exec(ctx: Context, instance: Instance) -> None:
         "PGHOST": "/socks",
         "PGPASSWORD": "qwerty",
     }
-    bindir = ctx.pg_ctl(instance.version).bindir
+    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
     cmd = [
         f"{bindir}/psql",
         "--user",
@@ -284,7 +284,7 @@ def test_exec(ctx: Context, instance: Instance) -> None:
 
 
 def test_env(ctx: Context, instance: Instance) -> None:
-    bindir = ctx.pg_ctl(instance.version).bindir
+    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
     with patch.dict("os.environ", {"PATH": "/pg10/bin"}):
         assert instance_mod.env(ctx, instance) == "\n".join(
             [

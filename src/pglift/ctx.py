@@ -1,13 +1,10 @@
-import functools
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
-from pgtoolkit import ctl
-
-from . import cmd, exceptions, plugin_manager, util
+from . import cmd, plugin_manager
 from ._compat import shlex_join
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
+from .settings import Settings
 from .types import CompletedProcess
 
 logger = logging.getLogger(__name__)
@@ -20,27 +17,6 @@ class BaseContext(ABC):
         self.settings = settings
         self.pm = plugin_manager(settings)
         self.hook = self.pm.hook
-
-    @functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
-    def pg_ctl(self, version: Optional[str]) -> ctl.PGCtl:
-        pg_bindir = None
-        version = version or self.settings.postgresql.default_version
-        if version is not None:
-            pg_bindir = self.settings.postgresql.versions[version].bindir
-        try:
-            pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
-        except EnvironmentError as e:
-            raise exceptions.SystemError(
-                f"{str(e)}. Is PostgreSQL {version} installed?"
-            ) from e
-        if version is not None:
-            installed_version = util.short_version(pg_ctl.version)
-            if installed_version != version:
-                raise exceptions.SystemError(
-                    f"PostgreSQL version from {pg_bindir} mismatches with declared value: "
-                    f"{installed_version} != {version}"
-                )
-        return pg_ctl
 
     @abstractmethod
     def run(

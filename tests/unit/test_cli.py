@@ -553,7 +553,7 @@ def test_instance_env(
         obj=obj,
     )
     assert r.exit_code == 0, r
-    bindir = ctx.pg_ctl(instance.version).bindir
+    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
     path = os.environ["PATH"]
     assert r.stdout == (
         f"PATH={bindir}:{path}\n"

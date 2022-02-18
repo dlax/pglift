@@ -1,4 +1,5 @@
 import pytest
+from pgtoolkit import ctl
 
 from pglift import exceptions
 from pglift.ctx import Context
@@ -48,7 +49,7 @@ def test_baseinstance_paths(
 
 def test_baseinstance_get(ctx: Context) -> None:
     i = system.BaseInstance.get("test", None, ctx=ctx)
-    major_version = str(ctx.pg_ctl(None).version)[:2]
+    major_version = str(ctl.PGCtl(None).version)[:2]
     assert i.version == major_version
 
 
