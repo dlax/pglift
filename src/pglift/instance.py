@@ -793,7 +793,9 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
     ):
         promote(ctx, instance)
 
-    if ctx.confirm("Instance needs to be restarted; restart now?", False):
+    if needs_restart and ctx.confirm(
+        "Instance needs to be restarted; restart now?", False
+    ):
         restart(ctx, instance)
         needs_restart = False
 
