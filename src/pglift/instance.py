@@ -742,7 +742,7 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
                 "enabled" if manifest.data_checksums else "disabled",
             )
 
-    needs_restart = "port" in changes
+    needs_restart = is_running and "port" in changes
 
     if state == States.stopped:
         if is_running:
