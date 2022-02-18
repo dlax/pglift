@@ -56,7 +56,7 @@ def instance_configure(
                     entry.port = port
                     logger.info(
                         "updating entry for '%(username)s' in %(passfile)s (port changed)",
-                        {"username": surole.name, "passfile": passfile},
+                        {"username": entry.username, "passfile": passfile},
                     )
         if surole.pgpass and surole_entry is None and surole.password:
             # No previous entry for super-user, add one.
