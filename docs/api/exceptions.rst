@@ -8,6 +8,8 @@ Exception hierarchy
 
 * :class:`Error`
 
+  * :class:`SettingsError`
+
   * :class:`NotFound`
 
     * :class:`InstanceNotFound`
@@ -31,6 +33,7 @@ Exception classes
 -----------------
 
 .. autoexception:: Error
+.. autoexception:: SettingsError
 .. autoexception:: NotFound
    :members: object_type
 .. autoexception:: InstanceNotFound

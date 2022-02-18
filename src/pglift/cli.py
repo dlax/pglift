@@ -76,7 +76,11 @@ class Obj:
         displayer: Optional[Displayer] = None,
     ) -> None:
         if context is None:
-            context = CLIContext(settings=Settings())
+            try:
+                settings = Settings()
+            except exceptions.SettingsError as e:
+                raise click.ClickException(str(e))
+            context = CLIContext(settings=settings)
         self.ctx = context
         self.displayer = displayer
 

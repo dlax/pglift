@@ -1,6 +1,5 @@
 import grp
 import json
-import logging
 import os
 import pwd
 import shutil
@@ -14,6 +13,7 @@ from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
+from . import exceptions
 from .util import site_config, xdg_data_home
 
 try:
@@ -21,7 +21,6 @@ try:
 except ImportError:
     SettingsSourceCallable = Callable[[BaseSettings], Dict[str, Any]]  # type: ignore[misc]
 
-logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -318,11 +317,12 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
         return {}
     with fpath.open() as f:
         settings = yaml.safe_load(f)
-    if not isinstance(settings, dict):
-        logger.warning(
-            "failed to load site settings from %s, expecting an object", fpath
-        )
+    if settings is None:
         return {}
+    if not isinstance(settings, dict):
+        raise exceptions.SettingsError(
+            f"failed to load site settings from '{fpath}', expecting an object"
+        )
     return settings
 
 
