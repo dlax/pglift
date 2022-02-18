@@ -17,24 +17,32 @@ cache:
 
 lint:
   stage: test
+  except:
+    - tags
   image: $DEBIAN_CI_IMAGE
   script:
     - tox -e lint
 
 typing:
   stage: test
+  except:
+    - tags
   image: $DEBIAN_CI_IMAGE
   script:
     - tox -e typing
 
 bandit:
   stage: test
+  except:
+    - tags
   image: $DEBIAN_CI_IMAGE
   script:
     - tox -e bandit
 
 tests:
   stage: test
+  except:
+    - tags
   image: $CI_REGISTRY_IMAGE:$dist
   script:
     - tox -e tests
@@ -44,6 +52,8 @@ tests:
 
 docs:
   stage: test
+  except:
+    - tags
   image: $DEBIAN_CI_IMAGE
   script:
     - tox -e docs
@@ -53,6 +63,8 @@ docs:
 
 .ci_image:
   stage: build
+  except:
+    - tags
   image: docker:19.03-dind
   services:
     - docker:19.03-dind
