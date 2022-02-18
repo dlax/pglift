@@ -4,7 +4,17 @@ import os
 import pwd
 import shutil
 from pathlib import Path, PosixPath
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 import yaml
 from pydantic import BaseSettings, Field, FilePath, root_validator, validator
@@ -21,6 +31,8 @@ try:
 except ImportError:
     SettingsSourceCallable = Callable[[BaseSettings], Dict[str, Any]]  # type: ignore[misc]
 
+if TYPE_CHECKING:
+    from .ctx import BaseContext
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -231,6 +243,22 @@ class PostgreSQLSettings(BaseSettings):
 
     socket_directory: RunPath = RunPath("postgresql")
     """Path to directory where postgres unix socket will be written."""
+
+    def libpq_environ(
+        self, ctx: "BaseContext", *, base: Optional[Dict[str, str]] = None
+    ) -> Dict[str, str]:
+        """Return a dict with libpq environment variables for authentication."""
+        auth = self.auth
+        if base is None:
+            env = os.environ.copy()
+        else:
+            env = base.copy()
+        env.setdefault("PGPASSFILE", str(self.auth.passfile))
+        if auth.password_command and "PGPASSWORD" not in env:
+            password = ctx.run([auth.password_command], check=True).stdout.strip()
+            if password:
+                env["PGPASSWORD"] = password
+        return env
 
 
 @frozen

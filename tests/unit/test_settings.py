@@ -6,7 +6,8 @@ import pytest
 from pydantic import ValidationError
 
 from pglift import exceptions
-from pglift.settings import DataPath, Settings, plugins
+from pglift.ctx import Context
+from pglift.settings import DataPath, PostgreSQLSettings, Settings, plugins
 
 
 def test_json_config_settings_source(
@@ -43,6 +44,34 @@ def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
         with pytest.raises(exceptions.SettingsError, match="expecting an object"):
             Settings()
+
+
+def test_libpq_environ(ctx: Context, settings: Settings) -> None:
+    assert settings.postgresql.libpq_environ(ctx, base={}) == {
+        "PGPASSFILE": str(settings.postgresql.auth.passfile)
+    }
+    assert settings.postgresql.libpq_environ(
+        ctx, base={"PGPASSFILE": "/var/lib/pgsql/pgpass"}
+    ) == {"PGPASSFILE": "/var/lib/pgsql/pgpass"}
+
+
+def test_libpq_environ_password_command(ctx: Context, tmp_path: Path) -> None:
+    passcmd = tmp_path / "passcmd"
+    with passcmd.open("w") as f:
+        f.write("#!/bin/sh\necho foo")
+    passcmd.chmod(0o755)
+    settings = PostgreSQLSettings.parse_obj(
+        {
+            "auth": {
+                "password_command": str(passcmd),
+                "passfile": str(tmp_path / "pgpass"),
+            }
+        }
+    )
+    assert settings.libpq_environ(ctx, base={}) == {
+        "PGPASSFILE": str(tmp_path / "pgpass"),
+        "PGPASSWORD": "foo",
+    }
 
 
 def test_settings(tmp_path: Path) -> None:

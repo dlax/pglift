@@ -86,10 +86,11 @@ def superuser_connect(
 ) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
     if "user" in kwargs:
         raise TypeError("unexpected 'user' argument")
-    kwargs["user"] = ctx.settings.postgresql.surole.name
+    postgresql_settings = ctx.settings.postgresql
+    kwargs["user"] = postgresql_settings.surole.name
     if "password" not in kwargs:
-        kwargs["password"] = ctx.libpq_environ().get("PGPASSWORD")
-    return connect(instance, ctx.settings.postgresql, **kwargs)
+        kwargs["password"] = postgresql_settings.libpq_environ(ctx).get("PGPASSWORD")
+    return connect(instance, postgresql_settings, **kwargs)
 
 
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:

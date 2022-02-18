@@ -1,8 +1,7 @@
 import functools
 import logging
-import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from pgtoolkit import ctl
 
@@ -42,20 +41,6 @@ class BaseContext(ABC):
                     f"{installed_version} != {version}"
                 )
         return pg_ctl
-
-    def libpq_environ(self, *, base: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-        """Return a dict with libpq environment variables for authentication."""
-        auth = self.settings.postgresql.auth
-        if base is None:
-            env = os.environ.copy()
-        else:
-            env = base.copy()
-        env.setdefault("PGPASSFILE", str(auth.passfile))
-        if auth.password_command and "PGPASSWORD" not in env:
-            password = self.run([auth.password_command], check=True).stdout.strip()
-            if password:
-                env["PGPASSWORD"] = password
-        return env
 
     @abstractmethod
     def run(
