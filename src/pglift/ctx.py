@@ -31,7 +31,9 @@ class BaseContext(ABC):
         try:
             pg_ctl = ctl.PGCtl(pg_bindir, run_command=self.run)
         except EnvironmentError as e:
-            raise exceptions.SystemError(str(e)) from e
+            raise exceptions.SystemError(
+                f"{str(e)}. Is PostgreSQL {version} installed?"
+            ) from e
         if version is not None:
             installed_version = util.short_version(pg_ctl.version)
             if installed_version != version:
