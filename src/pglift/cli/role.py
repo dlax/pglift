@@ -117,6 +117,8 @@ def role_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        print_json_for(prvlgs, display=console.print_json)
+        print_json_for(
+            (i.dict(by_alias=True) for i in prvlgs), display=console.print_json
+        )
     else:
-        print_table_for(prvlgs, display=console.print)
+        print_table_for((i.dict(by_alias=True) for i in prvlgs), display=console.print)

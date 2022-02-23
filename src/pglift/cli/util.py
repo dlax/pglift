@@ -6,7 +6,7 @@ import tempfile
 import time
 from functools import wraps
 from types import ModuleType
-from typing import Any, Callable, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
 import click
 import psycopg
@@ -32,7 +32,7 @@ _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
 def print_table_for(
-    items: Iterable[_M],
+    items: Iterable[Dict[str, Dict[str, Any]]],
     title: Optional[str] = None,
     *,
     display: Callable[[RenderableType], None] = rich.print,
@@ -48,7 +48,7 @@ def print_table_for(
     ...     address: Address
     >>> items = [Person(name="bob",
     ...                 address=Address(street="main street", zip=31234, city="luz"))]
-    >>> print_table_for(items, title="address book")  # doctest: +NORMALIZE_WHITESPACE
+    >>> print_table_for((i.dict(by_alias=True) for i in items), title="address book")  # doctest: +NORMALIZE_WHITESPACE
                    address book
     ┏━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
     ┃      ┃ address     ┃ address ┃ address ┃
@@ -61,10 +61,9 @@ def print_table_for(
     headers: List[str] = []
     rows = []
     for item in items:
-        d = item.dict(by_alias=True)
         row = []
         hdr = []
-        for k, v in list(d.items()):
+        for k, v in list(item.items()):
             if isinstance(v, dict):
                 for sk, sv in v.items():
                     mk = f"{k}\n{sk}"
@@ -85,7 +84,7 @@ def print_table_for(
 
 
 def print_json_for(
-    items: Iterable[_M], *, display: Callable[[str], None] = rich.print_json
+    items: Iterable[Dict[str, Any]], *, display: Callable[[str], None] = rich.print_json
 ) -> None:
     """Render a list of items as JSON.
 
@@ -93,12 +92,12 @@ def print_json_for(
     ...     bar_: str = pydantic.Field(alias="bar")
     ...     baz: int
     >>> items = [Foo(bar="x", baz=1), Foo(bar="y", baz=3)]
-    >>> print_json_for(items, display=rich.print)
+    >>> print_json_for((i.dict(by_alias=True) for i in items), display=rich.print)
     [{"bar": "x", "baz": 1}, {"bar": "y", "baz": 3}]
     """
     display(
         json.dumps(
-            [i.dict(by_alias=True) for i in items],
+            items,
             default=pydantic.json.pydantic_encoder,
         ),
     )

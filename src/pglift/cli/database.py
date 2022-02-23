@@ -97,9 +97,9 @@ def database_list(
     with instance_mod.running(ctx, instance):
         dbs = databases.list(ctx, instance)
     if as_json:
-        print_json_for(dbs, display=console.print_json)
+        print_json_for((i.dict(by_alias=True) for i in dbs), display=console.print_json)
     else:
-        print_table_for(dbs, display=console.print)
+        print_table_for((i.dict(by_alias=True) for i in dbs), display=console.print)
 
 
 @cli.command("drop")
@@ -133,9 +133,9 @@ def database_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        print_json_for(prvlgs)
+        print_json_for((i.dict(by_alias=True) for i in prvlgs))
     else:
-        print_table_for(prvlgs)
+        print_table_for((i.dict(by_alias=True) for i in prvlgs))
 
 
 @cli.command("run")

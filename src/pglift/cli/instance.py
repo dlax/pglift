@@ -166,9 +166,13 @@ def instance_list(
 
     instances = instance_mod.list(ctx, version=version)
     if as_json:
-        print_json_for(instances, display=console.print_json)
+        print_json_for(
+            (i.dict(by_alias=True) for i in instances), display=console.print_json
+        )
     else:
-        print_table_for(instances, display=console.print)
+        print_table_for(
+            (i.dict(by_alias=True) for i in instances), display=console.print
+        )
 
 
 @cli.command("drop")
@@ -323,7 +327,7 @@ def instance_restore(
     if list_only:
         backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
         print_table_for(
-            backups,
+            (i.dict(by_alias=True) for i in backups),
             title=f"Available backups for instance {instance}",
             display=console.print,
         )
@@ -360,10 +364,12 @@ def instance_privileges(
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
-        print_json_for(prvlgs, display=console.print_json)
+        print_json_for(
+            (i.dict(by_alias=True) for i in prvlgs), display=console.print_json
+        )
     else:
         print_table_for(
-            prvlgs,
+            (i.dict(by_alias=True) for i in prvlgs),
             title=f"Default privileges on instance {instance}",
             display=console.print,
         )
