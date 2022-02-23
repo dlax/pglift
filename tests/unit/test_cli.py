@@ -342,143 +342,6 @@ def test_instance_list(
     assert not result.output
 
 
-@pytest.mark.parametrize(
-    "params, expected",
-    [
-        ([], ["port = 999", "unix_socket_directories = '/socks'"]),
-        (["port"], ["port = 999"]),
-        (["backslash_quote"], ["# backslash_quote = 'safe_encoding'"]),
-    ],
-    ids=["param=<none>", "param=port", "param=backslash_quote(commented)"],
-)
-def test_pgconf_show(
-    runner: CliRunner,
-    obj: Obj,
-    instance: Instance,
-    params: List[str],
-    expected: List[str],
-) -> None:
-    result = runner.invoke(cli, ["pgconf", "show", str(instance)] + params, obj=obj)
-    assert result.exit_code == 0, result.stderr
-    assert result.stdout.strip() == "\n".join(expected)
-
-    result = runner.invoke(cli, ["pgconf", "show", str(instance), "port"], obj=obj)
-    assert result.exit_code == 0, result.stderr
-    assert result.stdout.strip() == "\n".join(["port = 999"])
-
-
-def test_pgconf_set_validate(runner: CliRunner, obj: Obj, instance: Instance) -> None:
-    result = runner.invoke(
-        cli,
-        ["pgconf", "set", str(instance), "invalid"],
-        obj=obj,
-    )
-    assert result.exit_code == 2
-    assert "Error: Invalid value for '<PARAMETER>=<VALUE>...': invalid" in result.stderr
-
-
-def test_pgconf_set(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
-) -> None:
-    with patch.object(
-        instance_mod, "configure", return_value={"foo": ("baz", "bar")}
-    ) as configure:
-        result = runner.invoke(
-            cli,
-            [
-                "pgconf",
-                "set",
-                str(instance),
-                "cluster_name=unittests",
-                "foo=bar",
-            ],
-            obj=obj,
-        )
-    assert result.exit_code == 0
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(
-        ctx,
-        manifest,
-        values=dict(
-            bonjour=True,
-            bonjour_name="test",
-            cluster_name="unittests",
-            foo="bar",
-        ),
-    )
-    assert "foo: baz -> bar" in result.stderr
-
-    with patch.object(
-        instance_mod, "configure", return_value={"bonjour_name": ("test", "changed")}
-    ) as configure:
-        result = runner.invoke(
-            cli,
-            [
-                "pgconf",
-                "set",
-                str(instance),
-                "foo=bar",
-                "bonjour_name=changed",
-            ],
-            obj=obj,
-        )
-    assert result.exit_code == 0
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(
-        ctx,
-        manifest,
-        values=dict(
-            bonjour=True,
-            bonjour_name="changed",
-            foo="bar",
-        ),
-    )
-    assert "bonjour_name: test -> changed" in result.stderr
-    assert "foo: baz -> bar" not in result.stderr
-    assert "changes in 'foo' not applied" in result.stderr
-    assert "\n hint:" in result.stderr
-
-
-def test_pgconf_remove(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
-) -> None:
-    result = runner.invoke(
-        cli,
-        ["pgconf", "remove", str(instance), "fsync"],
-        obj=obj,
-    )
-    assert result.exit_code == 1
-    assert "'fsync' not found in managed configuration" in result.stderr
-
-    with patch.object(
-        instance_mod, "configure", return_value={"bonjour_name": ("test", None)}
-    ) as configure:
-        result = runner.invoke(
-            cli,
-            ["pgconf", "remove", str(instance), "bonjour_name"],
-            obj=obj,
-        )
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, values={"bonjour": True})
-    assert result.exit_code == 0, result.stderr
-    assert "bonjour_name: test -> None" in result.stderr
-
-
-def test_pgconf_edit(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
-) -> None:
-    with patch("click.edit") as edit:
-        result = runner.invoke(
-            cli,
-            ["pgconf", "edit", str(instance)],
-            obj=obj,
-        )
-    assert result.exit_code == 0, result.stderr
-    edit.assert_called_once_with(
-        filename=str(instance.datadir / "conf.pglift.d" / "user.conf")
-    )
-
-
 def test_instance_drop(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
@@ -718,6 +581,143 @@ def test_instance_upgrade(
         ctx, instance, version=None, name="new", port=12, jobs=3
     )
     start.assert_called_once_with(ctx, new_instance)
+
+
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        ([], ["port = 999", "unix_socket_directories = '/socks'"]),
+        (["port"], ["port = 999"]),
+        (["backslash_quote"], ["# backslash_quote = 'safe_encoding'"]),
+    ],
+    ids=["param=<none>", "param=port", "param=backslash_quote(commented)"],
+)
+def test_pgconf_show(
+    runner: CliRunner,
+    obj: Obj,
+    instance: Instance,
+    params: List[str],
+    expected: List[str],
+) -> None:
+    result = runner.invoke(cli, ["pgconf", "show", str(instance)] + params, obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.strip() == "\n".join(expected)
+
+    result = runner.invoke(cli, ["pgconf", "show", str(instance), "port"], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout.strip() == "\n".join(["port = 999"])
+
+
+def test_pgconf_set_validate(runner: CliRunner, obj: Obj, instance: Instance) -> None:
+    result = runner.invoke(
+        cli,
+        ["pgconf", "set", str(instance), "invalid"],
+        obj=obj,
+    )
+    assert result.exit_code == 2
+    assert "Error: Invalid value for '<PARAMETER>=<VALUE>...': invalid" in result.stderr
+
+
+def test_pgconf_set(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    with patch.object(
+        instance_mod, "configure", return_value={"foo": ("baz", "bar")}
+    ) as configure:
+        result = runner.invoke(
+            cli,
+            [
+                "pgconf",
+                "set",
+                str(instance),
+                "cluster_name=unittests",
+                "foo=bar",
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    configure.assert_called_once_with(
+        ctx,
+        manifest,
+        values=dict(
+            bonjour=True,
+            bonjour_name="test",
+            cluster_name="unittests",
+            foo="bar",
+        ),
+    )
+    assert "foo: baz -> bar" in result.stderr
+
+    with patch.object(
+        instance_mod, "configure", return_value={"bonjour_name": ("test", "changed")}
+    ) as configure:
+        result = runner.invoke(
+            cli,
+            [
+                "pgconf",
+                "set",
+                str(instance),
+                "foo=bar",
+                "bonjour_name=changed",
+            ],
+            obj=obj,
+        )
+    assert result.exit_code == 0
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    configure.assert_called_once_with(
+        ctx,
+        manifest,
+        values=dict(
+            bonjour=True,
+            bonjour_name="changed",
+            foo="bar",
+        ),
+    )
+    assert "bonjour_name: test -> changed" in result.stderr
+    assert "foo: baz -> bar" not in result.stderr
+    assert "changes in 'foo' not applied" in result.stderr
+    assert "\n hint:" in result.stderr
+
+
+def test_pgconf_remove(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    result = runner.invoke(
+        cli,
+        ["pgconf", "remove", str(instance), "fsync"],
+        obj=obj,
+    )
+    assert result.exit_code == 1
+    assert "'fsync' not found in managed configuration" in result.stderr
+
+    with patch.object(
+        instance_mod, "configure", return_value={"bonjour_name": ("test", None)}
+    ) as configure:
+        result = runner.invoke(
+            cli,
+            ["pgconf", "remove", str(instance), "bonjour_name"],
+            obj=obj,
+        )
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    configure.assert_called_once_with(ctx, manifest, values={"bonjour": True})
+    assert result.exit_code == 0, result.stderr
+    assert "bonjour_name: test -> None" in result.stderr
+
+
+def test_pgconf_edit(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    with patch("click.edit") as edit:
+        result = runner.invoke(
+            cli,
+            ["pgconf", "edit", str(instance)],
+            obj=obj,
+        )
+    assert result.exit_code == 0, result.stderr
+    edit.assert_called_once_with(
+        filename=str(instance.datadir / "conf.pglift.d" / "user.conf")
+    )
 
 
 def test_role_create(
