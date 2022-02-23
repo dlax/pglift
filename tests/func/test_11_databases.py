@@ -1,4 +1,5 @@
 import datetime
+import logging
 import time
 from typing import Iterator
 
@@ -163,15 +164,22 @@ def test_drop(
 
 
 def test_run(
-    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+    ctx: Context,
+    instance: system.Instance,
+    database_factory: DatabaseFactory,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     database_factory("test")
-    databases.run(
-        ctx,
-        instance,
-        "CREATE TABLE persons AS (SELECT 'bob' AS name)",
-        dbnames=["test"],
-    )
+    caplog.clear()
+    with caplog.at_level(logging.INFO, logger="pglift"):
+        databases.run(
+            ctx,
+            instance,
+            "CREATE TABLE persons AS (SELECT 'bob' AS name)",
+            dbnames=["test"],
+        )
+    assert "CREATE TABLE persons AS (SELECT 'bob' AS name)" in caplog.records[0].message
+    assert "SELECT 1" in caplog.records[1].message
     result = execute(ctx, instance, "SELECT * FROM persons", dbname="test")
     assert result == [{"name": "bob"}]
 

@@ -221,4 +221,6 @@ def run(
                 database.name,
                 instance,
             )
-            cnx.execute(sql_command)
+            cur = cnx.execute(sql_command)
+            if cur.statusmessage:
+                logger.info(cur.statusmessage)
