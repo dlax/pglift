@@ -198,14 +198,16 @@ def run(
     dbnames: Sequence[str] = (),
     exclude_dbnames: Sequence[str] = (),
     notice_handler: types.NoticeHandler = db.default_notice_handler,
-) -> None:
+) -> Dict[str, List[Dict[str, Any]]]:
     """Execute a SQL command on databases of `instance`.
 
     :param dbnames: restrict operation on databases with a name in this list.
     :param exclude_dbnames: exclude databases with a name in this list from
         the operation.
     :param notice_handler: a function to handle notice.
+    :returns: a dict mapping database names to query results, if any.
     """
+    result = {}
     for database in list(ctx, instance):
         if (
             dbnames and database.name not in dbnames
@@ -224,3 +226,6 @@ def run(
             cur = cnx.execute(sql_command)
             if cur.statusmessage:
                 logger.info(cur.statusmessage)
+            if cur.description is not None:
+                result[database.name] = cur.fetchall()
+    return result

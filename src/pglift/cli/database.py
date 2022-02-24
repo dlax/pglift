@@ -151,6 +151,7 @@ def database_privileges(
     multiple=True,
     help="Database to not run command on",
 )
+@as_json_option
 @pass_ctx
 def database_run(
     ctx: Context,
@@ -158,9 +159,15 @@ def database_run(
     sql_command: str,
     dbnames: Sequence[str],
     exclude_dbnames: Sequence[str],
+    as_json: bool,
 ) -> None:
     """Run given command on databases of a PostgreSQL instance"""
     with instance_mod.running(ctx, instance):
-        databases.run(
+        result = databases.run(
             ctx, instance, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
         )
+    if as_json:
+        print_json_for(result)
+    else:
+        for dbname, rows in result.items():
+            print_table_for(rows, title=f"Database {dbname}")

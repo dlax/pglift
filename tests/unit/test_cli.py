@@ -1186,13 +1186,14 @@ def test_database_drop(
 def test_database_run(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
 ) -> None:
-    with patch.object(databases, "run") as run:
+    with patch.object(databases, "run", return_value={"db": [{"name": "bob"}]}) as run:
         result = runner.invoke(
             cli,
             [
                 "database",
                 "run",
                 str(instance),
+                "--json",
                 "-d",
                 "db",
                 "some sql",
@@ -1204,6 +1205,8 @@ def test_database_run(
     )
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0, result.stderr
+    dbs = json.loads(result.stdout)
+    assert dbs == {"db": [{"name": "bob"}]}
 
 
 def test_database_privileges(

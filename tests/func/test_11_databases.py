@@ -172,7 +172,7 @@ def test_run(
     database_factory("test")
     caplog.clear()
     with caplog.at_level(logging.INFO, logger="pglift"):
-        databases.run(
+        result_run = databases.run(
             ctx,
             instance,
             "CREATE TABLE persons AS (SELECT 'bob' AS name)",
@@ -180,8 +180,16 @@ def test_run(
         )
     assert "CREATE TABLE persons AS (SELECT 'bob' AS name)" in caplog.records[0].message
     assert "SELECT 1" in caplog.records[1].message
+    assert not result_run
     result = execute(ctx, instance, "SELECT * FROM persons", dbname="test")
     assert result == [{"name": "bob"}]
+    result_run = databases.run(
+        ctx,
+        instance,
+        "SELECT * from persons",
+        dbnames=["test"],
+    )
+    assert result_run == {"test": [{"name": "bob"}]}
 
 
 def test_run_analyze(
