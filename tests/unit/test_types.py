@@ -21,4 +21,4 @@ def test_parse_yaml() -> None:
 def test_yaml() -> None:
     point = Point(x=0, y=1.2)
     s = point.yaml()
-    assert s == "x: 0.0\ny: 1.2\n"
+    assert s == "---\nx: 0.0\ny: 1.2\n"
