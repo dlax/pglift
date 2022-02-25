@@ -32,22 +32,25 @@ Callback = Callable[..., Any]
 CommandFactory = Callable[[Type[interface.Instance]], Callback]
 
 
-def instance_identifier(fn: Callback) -> Callback:
-    command = click.argument(
-        "instance",
-        metavar="INSTANCE",
-        required=False,
-        callback=instance_lookup,
-        shell_complete=_list_instances,
-    )(fn)
-    assert command.__doc__
-    command.__doc__ += (
-        "\n\nINSTANCE identifies target instance as <version>/<name> where the "
-        "<version>/ prefix may be omitted if there is only one instance "
-        "matching <name>. Required if there is more than one instance on "
-        "system."
-    )
-    return command
+def instance_identifier(nargs: int = 1) -> Callable[[Callback], Callback]:
+    def decorator(fn: Callback) -> Callback:
+        command = click.argument(
+            "instance",
+            nargs=nargs,
+            required=False,
+            callback=instance_lookup,
+            shell_complete=_list_instances,
+        )(fn)
+        assert command.__doc__
+        command.__doc__ += (
+            "\n\nINSTANCE identifies target instance as <version>/<name> where the "
+            "<version>/ prefix may be omitted if there is only one instance "
+            "matching <name>. Required if there is more than one instance on "
+            "system."
+        )
+        return command
+
+    return decorator
 
 
 class InstanceCommands(Group):
@@ -132,7 +135,7 @@ def _instance_create(
 def _instance_alter(
     composite_instance_model: Type[interface.Instance],
 ) -> Callback:
-    @instance_identifier
+    @instance_identifier(nargs=1)
     @helpers.parameters_from_model(
         composite_instance_model, exclude=["name", "version"], parse_model=False
     )
@@ -158,7 +161,7 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
 
 
 @cli.command("promote")
-@instance_identifier
+@instance_identifier(nargs=1)
 @pass_ctx
 def instance_promote(ctx: Context, instance: system.Instance) -> None:
     """Promote standby PostgreSQL INSTANCE"""
@@ -166,12 +169,13 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 
 
 @cli.command("describe")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @pass_ctx
-def instance_describe(ctx: Context, instance: system.Instance) -> None:
+def instance_describe(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Describe PostgreSQL INSTANCE"""
-    described = instance_mod.describe(ctx, instance.name, instance.version)
-    click.echo(described.yaml(), nl=False)
+    for i in instance:
+        described = instance_mod.describe(ctx, i.name, i.version)
+        click.echo(described.yaml(), nl=False)
 
 
 @cli.command("list")
@@ -200,15 +204,16 @@ def instance_list(
 
 
 @cli.command("drop")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @pass_ctx
-def instance_drop(ctx: Context, instance: system.Instance) -> None:
+def instance_drop(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Drop PostgreSQL INSTANCE"""
-    instance_mod.drop(ctx, instance)
+    for i in instance:
+        instance_mod.drop(ctx, i)
 
 
 @cli.command("status")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.pass_context
 def instance_status(context: click.Context, instance: system.Instance) -> None:
     """Check the status of PostgreSQL INSTANCE.
@@ -223,41 +228,51 @@ def instance_status(context: click.Context, instance: system.Instance) -> None:
 
 
 @cli.command("start")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @foreground_option
 @pass_ctx
-def instance_start(ctx: Context, instance: system.Instance, foreground: bool) -> None:
+def instance_start(
+    ctx: Context, instance: Tuple[system.Instance, ...], foreground: bool
+) -> None:
     """Start PostgreSQL INSTANCE"""
-    instance_mod.check_status(ctx, instance, Status.not_running)
-    instance_mod.start(ctx, instance, foreground=foreground)
+    if foreground and len(instance) != 1:
+        raise click.UsageError(
+            "only one INSTANCE argument may be given with --foreground"
+        )
+    for i in instance:
+        instance_mod.check_status(ctx, i, Status.not_running)
+        instance_mod.start(ctx, i, foreground=foreground)
 
 
 @cli.command("stop")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @pass_ctx
-def instance_stop(ctx: Context, instance: system.Instance) -> None:
+def instance_stop(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Stop PostgreSQL INSTANCE"""
-    instance_mod.stop(ctx, instance)
+    for i in instance:
+        instance_mod.stop(ctx, i)
 
 
 @cli.command("reload")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @pass_ctx
-def instance_reload(ctx: Context, instance: system.Instance) -> None:
+def instance_reload(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Reload PostgreSQL INSTANCE"""
-    instance_mod.reload(ctx, instance)
+    for i in instance:
+        instance_mod.reload(ctx, i)
 
 
 @cli.command("restart")
-@instance_identifier
+@instance_identifier(nargs=-1)
 @pass_ctx
-def instance_restart(ctx: Context, instance: system.Instance) -> None:
+def instance_restart(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Restart PostgreSQL INSTANCE"""
-    instance_mod.restart(ctx, instance)
+    for i in instance:
+        instance_mod.restart(ctx, i)
 
 
 @cli.command("exec")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @pass_ctx
 def instance_exec(
@@ -270,7 +285,7 @@ def instance_exec(
 
 
 @cli.command("env")
-@instance_identifier
+@instance_identifier(nargs=1)
 @pass_ctx
 def instance_env(ctx: Context, instance: system.Instance) -> None:
     """Output environment variables suitable to connect to PostgreSQL INSTANCE.
@@ -284,7 +299,7 @@ def instance_env(ctx: Context, instance: system.Instance) -> None:
 
 
 @cli.command("logs")
-@instance_identifier
+@instance_identifier(nargs=1)
 @pass_ctx
 def instance_logs(ctx: Context, instance: system.Instance) -> None:
     """Output INSTANCE logs
@@ -302,7 +317,7 @@ pass_pgbackrest_settings = partial(
 
 
 @cli.command("backup")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.option(
     "--type",
     "backup_type",
@@ -324,7 +339,7 @@ def instance_backup(
 
 
 @cli.command("restore")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.option(
     "-l",
     "--list",
@@ -365,7 +380,7 @@ def instance_restore(
 
 
 @cli.command("privileges")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.option(
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
@@ -400,7 +415,7 @@ def instance_privileges(
 
 
 @cli.command("upgrade")
-@instance_identifier
+@instance_identifier(nargs=1)
 @click.option(
     "--version",
     "newversion",

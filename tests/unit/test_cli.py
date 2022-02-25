@@ -4,7 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Type
+from typing import Any, Dict, Iterator, List, Tuple, Type
 from unittest.mock import MagicMock, patch
 
 import click
@@ -17,9 +17,10 @@ from pglift import _install, databases, exceptions
 from pglift import instance as instance_mod
 from pglift import prometheus, roles, types
 from pglift.cli import CLIContext, Obj, cli
+from pglift.cli import instance as instance_cli
 from pglift.cli.util import Command, get_instance, pass_component_settings
 from pglift.ctx import Context
-from pglift.models import interface
+from pglift.models import interface, system
 from pglift.models.system import Instance
 from pglift.pgbackrest import impl as pgbackrest
 from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
@@ -144,6 +145,36 @@ def test_get_instance(ctx: Context, instance: Instance) -> None:
         ):
             get_instance(ctx, "foo", None)
     assert system_lookup.call_count == 2
+
+
+def test_instance_identifier(runner: CliRunner, obj: Obj, instance: Instance) -> None:
+    @click.command(cls=Command)
+    @instance_cli.instance_identifier(nargs=1)
+    def one(instance: system.Instance) -> None:
+        """One"""
+        click.echo(instance, nl=False)
+
+    @click.command(cls=Command)
+    @instance_cli.instance_identifier(nargs=-1)
+    def many(instance: Tuple[system.Instance]) -> None:
+        """Many"""
+        click.echo(", ".join(str(i) for i in instance), nl=False)
+
+    result = runner.invoke(one, [], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout == str(instance)
+
+    result = runner.invoke(many, [], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout == str(instance)
+
+    result = runner.invoke(one, [str(instance)], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout == str(instance)
+
+    result = runner.invoke(many, [str(instance), instance.name], obj=obj)
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout == f"{instance}, {instance}"
 
 
 def test_cli(runner: CliRunner, obj: Obj) -> None:

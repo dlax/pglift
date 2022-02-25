@@ -16,6 +16,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -221,21 +222,46 @@ def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
 
 
 def instance_lookup(
-    context: click.Context, param: click.Parameter, value: Optional[str]
-) -> system.Instance:
+    context: click.Context, param: click.Parameter, value: Union[None, str, Tuple[str]]
+) -> Union[system.Instance, Tuple[system.Instance, ...]]:
+    """Return one or more system.Instance, possibly guessed if there is only
+    one on system, depending on 'param' variadic flag (nargs).
+    """
+
     ctx = context.obj.ctx
-    version: Optional[str]
-    if value is None:
+
+    def guess() -> Tuple[str, Optional[str]]:
+        """Return (name, version) of the instance found on system, if there's
+        only one, or fail.
+        """
         try:
             (i,) = instance_mod.list(ctx)
         except ValueError:
             raise click.UsageError(
                 f"argument {param.get_error_hint(context)} is required."
             )
-        name, version = i.name, i.version
+        return i.name, i.version
+
+    if param.nargs == 1:
+        if value is None:
+            name, version = guess()
+        else:
+            assert isinstance(value, str)
+            name, version = nameversion_from_id(value)
+        return get_instance(ctx, name, version)
+
+    elif param.nargs == -1:
+        assert isinstance(value, tuple)
+        if value:
+            return tuple(
+                get_instance(ctx, *nameversion_from_id(item)) for item in value
+            )
+        else:
+            name, version = guess()
+            return (get_instance(ctx, name, version),)
+
     else:
-        name, version = nameversion_from_id(value)
-    return get_instance(ctx, name, version)
+        raise AssertionError(f"unexpected nargs={param.nargs}")
 
 
 def instance_bind_context(
