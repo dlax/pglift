@@ -221,8 +221,9 @@ def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
 
 
 def instance_lookup(
-    context: click.Context, param: click.Parameter, value: str
+    context: click.Context, param: click.Parameter, value: Optional[str]
 ) -> system.Instance:
+    version: Optional[str]
     if value is None:
         try:
             (i,) = instance_mod.list(context.obj.ctx)
