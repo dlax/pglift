@@ -20,25 +20,29 @@ modification, deletion as well as status management (start, stop, restart).
       --help    Show this message and exit.
 
     Commands:
-      alter       Alter a PostgreSQL instance
+      alter       Alter PostgreSQL INSTANCE
       apply       Apply manifest as a PostgreSQL instance
-      backup      Back up a PostgreSQL instance
-      describe    Describe a PostgreSQL instance
-      drop        Drop a PostgreSQL instance
-      env         Output environment variables suitable to connect to a...
-      exec        Execute command in the libpq environment for a PostgreSQL...
-      init        Initialize a PostgreSQL instance
+      backup      Back up PostgreSQL INSTANCE
+      create      Initialize a PostgreSQL instance
+      describe    Describe PostgreSQL INSTANCE
+      drop        Drop PostgreSQL INSTANCE
+      env         Output environment variables suitable to connect to...
+      exec        Execute command in the libpq environment for PostgreSQL...
       list        List the available instances
-      privileges  List default privileges on instance.
-      reload      Reload a PostgreSQL instance
-      restart     Restart a PostgreSQL instance
-      restore     Restore a PostgreSQL instance
-      schema      Print the JSON schema of PostgreSQL instance model
-      start       Start a PostgreSQL instance
-      status      Check the status of a PostgreSQL instance.
-      stop        Stop a PostgreSQL instance
-      upgrade     Upgrade an instance using pg_upgrade
+      logs        Output INSTANCE logs
+      privileges  List default privileges on INSTANCE
+      promote     Promote standby PostgreSQL INSTANCE
+      reload      Reload PostgreSQL INSTANCE
+      restart     Restart PostgreSQL INSTANCE
+      restore     Restore PostgreSQL INSTANCE
+      start       Start PostgreSQL INSTANCE
+      status      Check the status of PostgreSQL INSTANCE.
+      stop        Stop PostgreSQL INSTANCE
+      upgrade     Upgrade INSTANCE using pg_upgrade
 
+Most commands take an ``INSTANCE`` argument in the form of
+``<version>/<name>`` where ``<version>/`` might be omitted. If there is only
+one instance on system, the argument is optional.
 
 Ansible module
 --------------

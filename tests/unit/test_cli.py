@@ -27,6 +27,10 @@ from pglift.prometheus import impl as prometheus_impl
 from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
 from pglift.settings import Settings
 
+instance_arg_guessed_or_given = pytest.mark.parametrize(
+    "args", [[], ["test"]], ids=["instance:guessed", "instance:given"]
+)
+
 
 @pytest.fixture
 def runner() -> CliRunner:
@@ -280,16 +284,18 @@ def test_instance_schema(runner: CliRunner, obj: Obj) -> None:
     assert schema["description"] == "PostgreSQL instance"
 
 
+@instance_arg_guessed_or_given
 def test_instance_describe(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, pg_version: str
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    instance: Instance,
+    pg_version: str,
+    args: List[str],
 ) -> None:
-    result = runner.invoke(cli, ["instance", "describe"], obj=obj)
-    assert result.exit_code == 2
-    assert "Missing argument '<version>/<name>'" in result.stderr
-
     manifest = interface.Instance(name="test")
     with patch.object(instance_mod, "describe", return_value=manifest) as describe:
-        result = runner.invoke(cli, ["instance", "describe", "test"], obj=obj)
+        result = runner.invoke(cli, ["instance", "describe"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
     describe.assert_called_once_with(ctx, "test", pg_version)
     assert "name: test" in result.output
@@ -342,15 +348,12 @@ def test_instance_list(
     assert not result.output
 
 
+@instance_arg_guessed_or_given
 def test_instance_drop(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, args: List[str]
 ) -> None:
-    result = runner.invoke(cli, ["instance", "drop"], obj=obj)
-    assert result.exit_code == 2
-    assert "Missing argument '<version>/<name>'" in result.stderr
-
     with patch.object(instance_mod, "drop") as patched:
-        result = runner.invoke(cli, ["instance", "drop", "test"], obj=obj)
+        result = runner.invoke(cli, ["instance", "drop"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
     patched.assert_called_once_with(ctx, instance)
 

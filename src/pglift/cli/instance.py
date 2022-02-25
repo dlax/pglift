@@ -31,12 +31,23 @@ from .util import (
 Callback = Callable[..., Any]
 CommandFactory = Callable[[Type[interface.Instance]], Callback]
 
-instance_identifier = click.argument(
-    "instance",
-    metavar="<version>/<name>",
-    callback=instance_lookup,
-    shell_complete=_list_instances,
-)
+
+def instance_identifier(fn: Callback) -> Callback:
+    command = click.argument(
+        "instance",
+        metavar="INSTANCE",
+        required=False,
+        callback=instance_lookup,
+        shell_complete=_list_instances,
+    )(fn)
+    assert command.__doc__
+    command.__doc__ += (
+        "\n\nINSTANCE identifies target instance as <version>/<name> where the "
+        "<version>/ prefix may be omitted if there is only one instance "
+        "matching <name>. Required if there is more than one instance on "
+        "system."
+    )
+    return command
 
 
 class InstanceCommands(Group):
@@ -52,7 +63,7 @@ class InstanceCommands(Group):
     def command_with_composite_instance(
         self, name: str
     ) -> Callable[[CommandFactory], None]:
-        """Decorator for callback that needs a composite Instance model."""
+        """Decorator for callback that needs a composite Instance model"""
         assert name not in self._composite_instance_commands, name
 
         def decorator(factory: CommandFactory) -> None:
@@ -127,7 +138,7 @@ def _instance_alter(
     )
     @pass_ctx
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
-        """Alter a PostgreSQL instance"""
+        """Alter PostgreSQL INSTANCE"""
         changes = helpers.unnest(composite_instance_model, changes)
         values = instance_mod.describe(ctx, instance.name, instance.version).dict()
         values = deep_update(values, changes)
@@ -150,7 +161,7 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
 @instance_identifier
 @pass_ctx
 def instance_promote(ctx: Context, instance: system.Instance) -> None:
-    """Promote a standby PostgreSQL instance"""
+    """Promote standby PostgreSQL INSTANCE"""
     instance_mod.promote(ctx, instance)
 
 
@@ -158,7 +169,7 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 @instance_identifier
 @pass_ctx
 def instance_describe(ctx: Context, instance: system.Instance) -> None:
-    """Describe a PostgreSQL instance"""
+    """Describe PostgreSQL INSTANCE"""
     described = instance_mod.describe(ctx, instance.name, instance.version)
     click.echo(described.yaml(), nl=False)
 
@@ -192,7 +203,7 @@ def instance_list(
 @instance_identifier
 @pass_ctx
 def instance_drop(ctx: Context, instance: system.Instance) -> None:
-    """Drop a PostgreSQL instance"""
+    """Drop PostgreSQL INSTANCE"""
     instance_mod.drop(ctx, instance)
 
 
@@ -200,7 +211,7 @@ def instance_drop(ctx: Context, instance: system.Instance) -> None:
 @instance_identifier
 @click.pass_context
 def instance_status(context: click.Context, instance: system.Instance) -> None:
-    """Check the status of a PostgreSQL instance.
+    """Check the status of PostgreSQL INSTANCE.
 
     Output the status string value ('running', 'not running', 'unspecified
     datadir') and exit with respective status code (0, 3, 4).
@@ -216,7 +227,7 @@ def instance_status(context: click.Context, instance: system.Instance) -> None:
 @foreground_option
 @pass_ctx
 def instance_start(ctx: Context, instance: system.Instance, foreground: bool) -> None:
-    """Start a PostgreSQL instance"""
+    """Start PostgreSQL INSTANCE"""
     instance_mod.check_status(ctx, instance, Status.not_running)
     instance_mod.start(ctx, instance, foreground=foreground)
 
@@ -225,7 +236,7 @@ def instance_start(ctx: Context, instance: system.Instance, foreground: bool) ->
 @instance_identifier
 @pass_ctx
 def instance_stop(ctx: Context, instance: system.Instance) -> None:
-    """Stop a PostgreSQL instance"""
+    """Stop PostgreSQL INSTANCE"""
     instance_mod.stop(ctx, instance)
 
 
@@ -233,7 +244,7 @@ def instance_stop(ctx: Context, instance: system.Instance) -> None:
 @instance_identifier
 @pass_ctx
 def instance_reload(ctx: Context, instance: system.Instance) -> None:
-    """Reload a PostgreSQL instance"""
+    """Reload PostgreSQL INSTANCE"""
     instance_mod.reload(ctx, instance)
 
 
@@ -241,7 +252,7 @@ def instance_reload(ctx: Context, instance: system.Instance) -> None:
 @instance_identifier
 @pass_ctx
 def instance_restart(ctx: Context, instance: system.Instance) -> None:
-    """Restart a PostgreSQL instance"""
+    """Restart PostgreSQL INSTANCE"""
     instance_mod.restart(ctx, instance)
 
 
@@ -252,7 +263,7 @@ def instance_restart(ctx: Context, instance: system.Instance) -> None:
 def instance_exec(
     ctx: Context, instance: system.Instance, command: Tuple[str, ...]
 ) -> None:
-    """Execute command in the libpq environment for a PostgreSQL instance."""
+    """Execute command in the libpq environment for PostgreSQL INSTANCE"""
     if not command:
         raise click.ClickException("no command given")
     instance_mod.exec(ctx, instance, command)
@@ -262,7 +273,7 @@ def instance_exec(
 @instance_identifier
 @pass_ctx
 def instance_env(ctx: Context, instance: system.Instance) -> None:
-    """Output environment variables suitable to connect to a PostgreSQL instance.
+    """Output environment variables suitable to connect to PostgreSQL INSTANCE.
 
     This can be injected in shell using:
 
@@ -276,7 +287,7 @@ def instance_env(ctx: Context, instance: system.Instance) -> None:
 @instance_identifier
 @pass_ctx
 def instance_logs(ctx: Context, instance: system.Instance) -> None:
-    """Output instance logs
+    """Output INSTANCE logs
 
     This assumes that the PostgreSQL instance is configured to use file-based
     logging (i.e. log_destination amongst 'stderr' or 'csvlog').
@@ -308,7 +319,7 @@ def instance_backup(
     instance: system.Instance,
     backup_type: types.BackupType,
 ) -> None:
-    """Back up a PostgreSQL instance"""
+    """Back up PostgreSQL INSTANCE"""
     pgbackrest_mod.backup(ctx, instance, settings, type=backup_type)
 
 
@@ -336,7 +347,7 @@ def instance_restore(
     label: Optional[str],
     date: Optional[datetime],
 ) -> None:
-    """Restore a PostgreSQL instance"""
+    """Restore PostgreSQL INSTANCE"""
     if list_only:
         backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
         print_table_for(
@@ -370,7 +381,7 @@ def instance_privileges(
     roles: Sequence[str],
     as_json: bool,
 ) -> None:
-    """List default privileges on instance."""
+    """List default privileges on INSTANCE"""
     with instance_mod.running(ctx, instance):
         try:
             prvlgs = privileges.get(ctx, instance, databases=databases, roles=roles)
@@ -416,7 +427,7 @@ def instance_upgrade(
     port: Optional[int],
     jobs: Optional[int],
 ) -> None:
-    """Upgrade an instance using pg_upgrade and configure respective satellite components"""
+    """Upgrade INSTANCE using pg_upgrade"""
     instance_mod.check_status(ctx, instance, Status.not_running)
     new_instance = instance_mod.upgrade(
         ctx, instance, version=newversion, name=newname, port=port, jobs=jobs
