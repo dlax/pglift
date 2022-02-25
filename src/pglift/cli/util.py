@@ -84,23 +84,20 @@ def print_table_for(
 
 
 def print_json_for(
-    items: Iterable[Dict[str, Any]], *, display: Callable[[str], None] = rich.print_json
+    data: Any, *, display: Callable[[str], None] = rich.print_json
 ) -> None:
-    """Render a list of items as JSON.
+    """Render `data` as JSON.
 
     >>> class Foo(pydantic.BaseModel):
     ...     bar_: str = pydantic.Field(alias="bar")
     ...     baz: int
     >>> items = [Foo(bar="x", baz=1), Foo(bar="y", baz=3)]
-    >>> print_json_for((i.dict(by_alias=True) for i in items), display=rich.print)
-    [{"bar": "x", "baz": 1}, {"bar": "y", "baz": 3}]
+    >>> print_json_for(items, display=rich.print)
+    [{"bar_": "x", "baz": 1}, {"bar_": "y", "baz": 3}]
+    >>> print_json_for(items[0].dict(by_alias=True), display=rich.print)
+    {"bar": "x", "baz": 1}
     """
-    display(
-        json.dumps(
-            items,
-            default=pydantic.json.pydantic_encoder,
-        ),
-    )
+    display(json.dumps(data, default=pydantic.json.pydantic_encoder))
 
 
 C = TypeVar("C", bound=Callable[..., Any])
