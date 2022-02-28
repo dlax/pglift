@@ -1,7 +1,7 @@
 Monitoring
 ==========
 
-Instance monitoring is handled by `Prometheus postgres_exporter`_ for which is
+Instance monitoring is handled by `Prometheus postgres_exporter`_ for which a
 service is deployed at instance creation.
 
 Command line interface
