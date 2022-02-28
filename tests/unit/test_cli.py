@@ -1353,7 +1353,9 @@ def test_pgbackrest(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(ctx, "run") as run:
-        result = runner.invoke(pgbackrest_cli, ["-i", str(instance), "help"], obj=obj)
+        result = runner.invoke(
+            pgbackrest_cli, ["-i", str(instance), "info", "--output=json"], obj=obj
+        )
     assert result.exit_code == 0, result.stderr
     prefix = ctx.settings.prefix
     stanza = f"{instance.version}-{instance.name}"
@@ -1362,7 +1364,8 @@ def test_pgbackrest(
             "/usr/bin/pgbackrest",
             f"--config={prefix}/etc/pgbackrest/pgbackrest-{stanza}.conf",
             f"--stanza={stanza}",
-            "help",
+            "info",
+            "--output=json",
         ],
         redirect_output=True,
         check=True,

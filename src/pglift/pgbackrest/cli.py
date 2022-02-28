@@ -12,7 +12,12 @@ if TYPE_CHECKING:
     from ..settings import PgBackRestSettings
 
 
-@click.command("pgbackrest", hidden=True, cls=Command)
+@click.command(
+    "pgbackrest",
+    hidden=True,
+    cls=Command,
+    context_settings={"ignore_unknown_options": True},
+)
 @instance_identifier_option
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @pass_pgbackrest_settings
