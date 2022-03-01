@@ -4,6 +4,12 @@ Monitoring
 Instance monitoring is handled by `Prometheus postgres_exporter`_ for which a
 service is deployed at instance creation.
 
+.. note::
+
+    `Prometheus postgres_exporter`_ must be **installed** on the system.
+    Prometheus also needs to be **enabled** via the :ref:`site settings
+    <settings>`.
+
 Command line interface
 ----------------------
 
