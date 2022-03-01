@@ -33,9 +33,9 @@ def instance_configure(ctx: "BaseContext", manifest: "interface.Instance") -> No
         return
     impl.setup(ctx, instance, settings)
 
-    info_json = impl.backup_info(ctx, instance, settings)
+    info = impl.backup_info(ctx, instance, settings)
     # Only initialize if the stanza does not already exist.
-    if not info_json or info_json[0]["status"]["code"] == 1:
+    if not info or info[0]["status"]["code"] == 1:
         impl.init(ctx, instance, settings)
 
 
