@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import sys
 from collections import OrderedDict
 from functools import partial
 from typing import List, Optional, Union
@@ -143,8 +144,11 @@ def cli(
     logger = logging.getLogger(pkgname)
     logger.setLevel(logging.DEBUG)
     handler: Union[logging.Handler, rich.logging.RichHandler]
-    if log_file:
-        handler = logging.FileHandler(log_file)
+    if log_file or not sys.stderr.isatty():
+        if log_file:
+            handler = logging.FileHandler(log_file)
+        else:
+            handler = logging.StreamHandler(sys.stderr)
         formatter = logging.Formatter(
             fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%X"
         )
