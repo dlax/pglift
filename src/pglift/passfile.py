@@ -46,7 +46,7 @@ def instance_configure(
     passfile = ctx.settings.postgresql.auth.passfile
     with pgpass.edit(passfile) as f:
         surole_entry = None
-        if old_port is not None:
+        if old_port is not None and old_port != port:
             # Port changed, update all entries matching the old value.
             assert isinstance(old_port, int)
             for entry in f:
