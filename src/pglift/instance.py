@@ -558,12 +558,14 @@ def restart(
 ) -> None:
     """Restart an instance."""
     logger.info("restarting instance %s", instance)
+    ctx.hook.instance_stop(ctx=ctx, instance=instance)
     if ctx.settings.service_manager is None:
         pg_ctl(instance.version, ctx=ctx).restart(
             instance.datadir, mode=mode, wait=wait
         )
     elif ctx.settings.service_manager == "systemd":
         systemd.restart(ctx, systemd_unit(instance))
+    ctx.hook.instance_start(ctx=ctx, instance=instance)
 
 
 @task("reloading PostgreSQL instance")
