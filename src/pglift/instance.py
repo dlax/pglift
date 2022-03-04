@@ -218,6 +218,7 @@ def configure(
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
+    _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
@@ -293,7 +294,7 @@ def configure(
 
     def make_config(
         fpath: Path, items: Dict[str, Optional[pgconf.Value]]
-    ) -> ConfigChanges:
+    ) -> Tuple[pgconf.Configuration, ConfigChanges]:
         config = conf.make(instance.name, **items)
 
         config_before = {}
@@ -307,20 +308,27 @@ def configure(
             if nv != pv:
                 changes[k] = (pv, nv)
 
+        return config, changes
+
+    site_config, site_changes = make_config(site_conffile, site_confitems)
+    user_config, changes = make_config(user_conffile, confitems)
+
+    def write_configs() -> None:
+        if site_changes:
+            with site_conffile.open("w") as f:
+                site_config.save(f)
         if changes:
-            with fpath.open("w") as f:
-                config.save(f)
+            with user_conffile.open("w") as f:
+                user_config.save(f)
 
-        return changes
-
-    make_config(site_conffile, site_confitems)
-    changes = make_config(user_conffile, confitems)
-
-    i = system.PostgreSQLInstance.system_lookup(ctx, instance)
-    i_config = i.config()
+    if _creating:
+        write_configs()
+    i_config = site_config + user_config
     ctx.hook.instance_configure(
         ctx=ctx, manifest=manifest, config=i_config, changes=changes
     )
+    if not _creating:
+        write_configs()
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
@@ -661,7 +669,7 @@ def upgrade(
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             ctx.run(cmd, check=True, cwd=tmpdir, env=env)
-        apply(ctx, new_manifest)
+        apply(ctx, new_manifest, _creating=True)
     except exceptions.CommandError:
         drop(ctx, newinstance)
         raise
@@ -722,7 +730,9 @@ def set_data_checksums(
 ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges, bool]]
 
 
-def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
+def apply(
+    ctx: "BaseContext", manifest: interface.Instance, *, _creating: bool = False
+) -> ApplyResult:
     """Apply state described by specified manifest as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
@@ -748,6 +758,7 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
         return None
 
     if not exists(ctx, manifest.name, manifest.version):
+        _creating = True
         init(ctx, manifest)
 
     configure_options = manifest.configuration or {}
@@ -757,6 +768,7 @@ def apply(ctx: "BaseContext", manifest: interface.Instance) -> ApplyResult:
         manifest,
         ssl=manifest.ssl,
         values=configure_options,
+        _creating=_creating,
     )
 
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))

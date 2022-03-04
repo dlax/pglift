@@ -63,7 +63,7 @@ def test_configure(
 
     # Calling setup an other time doesn't overwrite configuration
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
-    pgbackrest.setup(ctx, instance, pgbackrest_settings)
+    pgbackrest.setup(ctx, instance, pgbackrest_settings, instance.config())
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     assert mtime_before == mtime_after
 

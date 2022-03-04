@@ -12,6 +12,7 @@ from .impl import restore as restore
 
 if TYPE_CHECKING:
     import click
+    from pgtoolkit.conf import Configuration
 
     from ..ctx import BaseContext
     from ..models import interface
@@ -22,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 @hookimpl  # type: ignore[misc]
-def instance_configure(ctx: "BaseContext", manifest: "interface.Instance") -> None:
+def instance_configure(
+    ctx: "BaseContext", manifest: "interface.Instance", config: "Configuration"
+) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     settings = available(ctx)
     if not settings:
@@ -31,7 +34,7 @@ def instance_configure(ctx: "BaseContext", manifest: "interface.Instance") -> No
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if instance.standby:
         return
-    impl.setup(ctx, instance, settings)
+    impl.setup(ctx, instance, settings, config)
 
     info = impl.backup_info(ctx, instance, settings)
     # Only initialize if the stanza does not already exist.
@@ -47,7 +50,7 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
         return
     if instance.standby:
         return
-    impl.revert_setup(ctx, instance, settings)
+    impl.revert_setup(ctx, instance, settings, instance.config())
 
 
 @hookimpl  # type: ignore[misc]

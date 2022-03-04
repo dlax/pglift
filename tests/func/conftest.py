@@ -339,7 +339,9 @@ def instance(
     # --show-locals.
     postgresql_conf = instance_initialized.datadir / "postgresql.conf"
     postgresql_conf.write_text("# PostgreSQL configuration file\n#ssl = on\n")
-    configure_instance(ctx, instance_manifest, log_directory=str(log_directory))
+    configure_instance(
+        ctx, instance_manifest, creating=True, log_directory=str(log_directory)
+    )
     return system.Instance.system_lookup(
         ctx, (instance_manifest.name, instance_manifest.version)
     )

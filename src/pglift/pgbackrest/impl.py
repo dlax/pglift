@@ -103,6 +103,7 @@ def setup(
     ctx: "BaseContext",
     instance: "system.PostgreSQLInstance",
     settings: "PgBackRestSettings",
+    instance_config: pgconf.Configuration,
 ) -> None:
     """Setup pgBackRest"""
     configpath = _configpath(instance, settings)
@@ -115,7 +116,6 @@ def setup(
     lockpath = Path(str(settings.lockpath).format(instance=instance))
     lockpath.mkdir(exist_ok=True, parents=True)
 
-    instance_config = instance.config()
     stanza = _stanza(instance)
 
     # Always use string values so that this would match with actual config (on
@@ -176,6 +176,7 @@ def revert_setup(
     ctx: "BaseContext",
     instance: "system.PostgreSQLInstance",
     settings: "PgBackRestSettings",
+    instance_config: pgconf.Configuration,
 ) -> None:
     """Un-setup pgBackRest"""
     configpath = _configpath(instance, settings)

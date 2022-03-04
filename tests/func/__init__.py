@@ -17,12 +17,13 @@ def configure_instance(
     manifest: interface.Instance,
     *,
     port: Optional[int] = None,
+    creating: bool = False,
     **confitems: Any,
 ) -> None:
     values = manifest.configuration.copy()
     values["port"] = port or manifest.port
     values.update(confitems)
-    instance_mod.configure(ctx, manifest, values=values)
+    instance_mod.configure(ctx, manifest, values=values, _creating=creating)
 
 
 @contextmanager
