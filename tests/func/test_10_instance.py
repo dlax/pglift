@@ -358,6 +358,12 @@ def test_standby(
         assert standby_instance.standby
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
+
+        described = instance_mod._describe(ctx, standby_instance).standby
+        assert described is not None
+        assert described.for_ == standby_instance.standby.for_
+        assert described.slot == standby_instance.standby.slot
+
         try:
             with instance_mod.running(ctx, standby_instance):
                 assert execute(

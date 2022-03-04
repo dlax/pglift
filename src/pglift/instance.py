@@ -849,6 +849,12 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         for s in ctx.hook.describe(ctx=ctx, instance=instance)
         if s is not None
     }
+    if instance.standby:
+        standby = interface.Instance.Standby(
+            **{"for": instance.standby.for_, "slot": instance.standby.slot}
+        )
+    else:
+        standby = None
     return interface.Instance(
         name=instance.name,
         version=instance.version,
@@ -856,6 +862,7 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         state=state,
         ssl=config.ssl,
         configuration=managed_config,
+        standby=standby,
         **services,
     )
 
