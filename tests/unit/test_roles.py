@@ -40,7 +40,7 @@ def test_in_pgpass(ctx: Context, instance: Instance, passfile: Path) -> None:
         (Role("bob", "secret"), "*:999:*:edgar:fbi\n"),
         (Role("charles", pgpass=True), "*:999:*:edgar:fbi\n"),
         (Role("danny", "sss", True), "*:999:*:danny:sss\n*:999:*:edgar:fbi\n"),
-        (Role("edgar", "fbi", True), "*:999:*:edgar:fbi\n"),
+        (Role("edgar", "cia", True), "*:999:*:edgar:cia\n"),
         (Role("edgar", None, False), ""),
     ],
 )
