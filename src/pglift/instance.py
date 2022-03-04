@@ -860,7 +860,7 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         version=instance.version,
         port=instance.port,
         state=state,
-        ssl=config.ssl,
+        ssl=config.get("ssl", False),
         configuration=managed_config,
         standby=standby,
         **services,

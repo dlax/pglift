@@ -135,7 +135,7 @@ def setup(
         },
         stanza: {
             "pg1-path": f"{instance.datadir}",
-            "pg1-port": str(instance.port),
+            "pg1-port": str(instance_config.get("port", 5432)),
             "pg1-user": ctx.settings.postgresql.backuprole,
         },
     }

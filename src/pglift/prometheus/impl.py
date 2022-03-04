@@ -283,7 +283,7 @@ def setup_local(
     if host:
         dsn.append(f"host={host}")
     dsn.append(f"user={role.name}")
-    if not instance_config.ssl:
+    if not instance_config.get("ssl", False):
         dsn.append("sslmode=disable")
     password = None
     if role.password:
