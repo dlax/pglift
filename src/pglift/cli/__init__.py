@@ -150,7 +150,7 @@ def cli(
         else:
             handler = logging.StreamHandler(sys.stderr)
         formatter = logging.Formatter(
-            fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%X"
+            fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         handler.setFormatter(formatter)
         handler.setLevel(log_level or logging.WARNING)
