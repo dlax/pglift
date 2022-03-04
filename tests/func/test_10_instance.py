@@ -460,8 +460,8 @@ def test_logs(
     with reconfigure_instance(ctx, instance_manifest, logging_collector=True):
         with instance_mod.running(ctx, instance):
             pass
-    logs = list(instance_mod.logs(ctx, instance))
-    assert "database system is shut down" in logs[-1]
+        logs = list(instance_mod.logs(ctx, instance))
+        assert "database system is shut down" in logs[-1]
 
 
 @pytest.fixture
