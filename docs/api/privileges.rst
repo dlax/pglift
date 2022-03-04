@@ -1,9 +1,9 @@
-Privileges
-==========
+Default privileges
+==================
 
 .. currentmodule:: pglift.privileges
 
 Module :mod:`pglift.privileges` exposes the following API to manipulate
-access privileges:
+default access privileges:
 
 .. autofunction:: get
