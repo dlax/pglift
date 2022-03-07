@@ -55,7 +55,7 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
         instance,
         f"select rolpassword from pg_authid where rolname = '{role.name}'",
     )
-    if int(instance.version) > 10:
+    if int(instance.version) > 11:
         assert r[0]["rolpassword"].startswith("SCRAM-SHA-256$4096:")
     else:
         assert r[0]["rolpassword"].startswith("md5")
