@@ -5,7 +5,7 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Any, Iterator, Optional, Set, Type
+from typing import Any, Iterator, List, Optional, Set, Type
 
 import pgtoolkit.conf
 import port_for
@@ -24,13 +24,26 @@ from pglift.settings import (
     PgBackRestSettings,
     PrometheusSettings,
     Settings,
+    _postgresql_bindir_version,
     plugins,
 )
 
 from . import configure_instance, execute
 
+default_pg_version: Optional[str]
+try:
+    default_pg_version = _postgresql_bindir_version()[1]
+except EnvironmentError:
+    default_pg_version = None
+
 
 def pytest_addoption(parser: Any) -> None:
+    parser.addoption(
+        "--pg-version",
+        choices=POSTGRESQL_SUPPORTED_VERSIONS,
+        default=default_pg_version,
+        help="Run tests with specified PostgreSQL version (default: %(default)s)",
+    )
     parser.addoption(
         "--systemd",
         action="store_true",
@@ -43,6 +56,11 @@ def pytest_addoption(parser: Any) -> None:
         default=False,
         help="Run tests without any pglift plugin loaded.",
     )
+
+
+def pytest_report_header(config: Any) -> List[str]:
+    pg_version = config.getoption("--pg-version")
+    return [f"postgresql: {pg_version}"]
 
 
 @pytest.fixture(autouse=True)
@@ -178,16 +196,14 @@ def settings(
     return s
 
 
-@pytest.fixture(
-    scope="session",
-    params=POSTGRESQL_SUPPORTED_VERSIONS,
-    ids=lambda v: f"postgresql:{v}",
-)
+@pytest.fixture(scope="session")
 def pg_version(request: Any, settings: Settings) -> str:
-    version = request.param
+    version = request.config.getoption("--pg-version")
+    if version is None:
+        pytest.skip("no PostgreSQL installation found")
     assert isinstance(version, str)
     if not pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
-        pytest.skip(f"PostgreSQL {version} not available")
+        pytest.fail(f"PostgreSQL {version} not available", pytrace=False)
     return version
 
 
