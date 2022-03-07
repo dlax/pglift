@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Iterator, Tuple, Type
+from typing import Dict, Iterator, Optional, Tuple, Type
 
 import pytest
 import requests
@@ -226,8 +226,10 @@ def test_drop_exists(
 @pytest.fixture
 def instance_no_prometheus(
     ctx: Context,
-    composite_instance_model: Type[interface.Instance],
+    surole_password: Optional[str],
+    replrole_password: Optional[str],
     tmp_port_factory: Iterator[int],
+    composite_instance_model: Type[interface.Instance],
 ) -> Iterator[system.Instance]:
     if ctx.settings.prometheus is None:
         pytest.skip("prometheus not enabled")
@@ -235,6 +237,8 @@ def instance_no_prometheus(
         {
             "name": "noprom",
             "port": next(tmp_port_factory),
+            "surole_password": surole_password,
+            "replrole_password": replrole_password,
             "prometheus": None,
         }
     )
