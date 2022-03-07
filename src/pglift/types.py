@@ -13,6 +13,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 
 import psycopg.errors
@@ -122,9 +123,9 @@ class Manifest(BaseModel):
     _M = TypeVar("_M", bound="Manifest")
 
     @classmethod
-    def parse_yaml(cls: Type[_M], stream: IO[str]) -> _M:
+    def parse_yaml(cls: Type[_M], value: Union[str, IO[str]]) -> _M:
         """Parse from a YAML stream."""
-        data = yaml.safe_load(stream)
+        data = yaml.safe_load(value)
         return cls.parse_obj(data)
 
     def yaml(self, **kwargs: Any) -> str:
