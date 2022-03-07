@@ -335,6 +335,10 @@ def instance(
     instance_initialized: system.PostgreSQLInstance,
     log_directory: pathlib.Path,
 ) -> system.Instance:
+    # Write a minimal postgresql.conf to reduce pytest's output due to
+    # --show-locals.
+    postgresql_conf = instance_initialized.datadir / "postgresql.conf"
+    postgresql_conf.write_text("# PostgreSQL configuration file\n#ssl = on\n")
     configure_instance(ctx, instance_manifest, log_directory=str(log_directory))
     return system.Instance.system_lookup(
         ctx, (instance_manifest.name, instance_manifest.version)
