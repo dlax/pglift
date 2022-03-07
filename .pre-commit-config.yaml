@@ -7,29 +7,30 @@
 # with `pre-commit install`
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v3.2.0
+  rev: v4.1.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
   - id: check-added-large-files
-- repo: https://github.com/psf/black
-  rev: 20.8b1
+- repo: local
   hooks:
   - id: black
-    args: [--config=./pyproject.toml, --check, .]
-- repo: https://gitlab.com/pycqa/flake8
-  rev: 3.8.4
-  hooks:
-  - id: flake8
-    args: [--config=./setup.cfg, src]
-- repo: https://github.com/timothycrosley/isort
-  rev: 5.7.0
-  hooks:
-  - id: isort
-    args: ["--check", "--diff", "--profile", "black"]
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v0.800
-  hooks:
-  - id: mypy
-    entry: bash -c 'mypy .'
+    name: black
+    entry: black --config=./pyproject.toml --check .
     language: system
+    types: [python]
+  - id: flake8
+    name: flake8
+    entry: flake8 --config=./setup.cfg src
+    language: system
+    types: [python]
+  - id: isort
+    name: isort
+    entry: isort --check --diff --profile black
+    language: system
+    type: [python]
+  - id: mypy
+    name: mypy
+    entry: bash -c "mypy ."
+    language: system
+    type: [python]
