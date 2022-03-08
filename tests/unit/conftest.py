@@ -141,6 +141,7 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
         )
         prometheus_config.parent.mkdir(parents=True, exist_ok=True)
         prometheus_config.write_text(
+            f"DATA_SOURCE_NAME=dbname=postgres port={instance.port} host={settings.postgresql.socket_directory} user=monitoring sslmode=disable password=truite\n"
             f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus.port}"
         )
 

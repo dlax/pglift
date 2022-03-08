@@ -3,6 +3,9 @@ import shlex
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
+import psycopg
+import psycopg.conninfo
+
 from .. import cmd, exceptions, systemd
 from ..models import system
 from ..task import task
@@ -42,6 +45,29 @@ def systemd_unit(qualname: str) -> str:
     return f"pglift-postgres_exporter@{qualname}.service"
 
 
+def config_var(configpath: Path, varname: str) -> str:
+    """Return postgres_exporter configuration file line for given varname.
+
+    :param configpath: the path to the configuration file.
+    :param varname: the name of the variable to search for.
+
+    :raises ~exceptions.ConfigurationError: if varname could not be read from
+        configuration file.
+    :raises ~exceptions.FileNotFoundError: if configuration file is not found.
+    """
+    if not configpath.exists():
+        raise exceptions.FileNotFoundError(
+            f"postgres_exporter configuration file {configpath} not found"
+        )
+    with configpath.open() as f:
+        for line in f:
+            if line.startswith(varname):
+                break
+        else:
+            raise exceptions.ConfigurationError(configpath, f"{varname} not found")
+    return line
+
+
 def port(name: str, settings: "PrometheusSettings") -> int:
     """Return postgres_exporter port read from configuration file.
 
@@ -52,17 +78,8 @@ def port(name: str, settings: "PrometheusSettings") -> int:
     :raises ~exceptions.FileNotFoundError: if configuration file is not found.
     """
     configpath = _configpath(name, settings)
-    if not configpath.exists():
-        raise exceptions.FileNotFoundError(
-            f"postgres_exporter configuration file {configpath} not found"
-        )
     varname = "PG_EXPORTER_WEB_LISTEN_ADDRESS"
-    with configpath.open() as f:
-        for line in f:
-            if line.startswith(varname):
-                break
-        else:
-            raise exceptions.ConfigurationError(configpath, f"{varname} not found")
+    line = config_var(configpath, varname)
     try:
         value = line.split("=", 1)[1].split(":", 1)[1]
     except (IndexError, ValueError):
@@ -70,6 +87,28 @@ def port(name: str, settings: "PrometheusSettings") -> int:
             configpath, f"malformatted {varname} parameter"
         )
     return int(value.strip())
+
+
+def password(name: str, settings: "PrometheusSettings") -> Optional[str]:
+    """Return postgres_exporter dsn password read from configuration file.
+
+    :param name: the name for the service.
+
+    :raises ~exceptions.ConfigurationError: if password could not be read from
+        configuration file.
+    :raises ~exceptions.FileNotFoundError: if configuration file is not found.
+    """
+    configpath = _configpath(name, settings)
+    varname = "DATA_SOURCE_NAME"
+    line = config_var(configpath, varname)
+    try:
+        conninfo = psycopg.conninfo.conninfo_to_dict(line.split("=", 1)[1])
+        value: Optional[str] = conninfo.get("password")
+    except (IndexError, ValueError, psycopg.ProgrammingError):
+        raise exceptions.ConfigurationError(
+            configpath, f"malformatted {varname} parameter"
+        )
+    return value
 
 
 @task("setting up Prometheus postgres_exporter service")

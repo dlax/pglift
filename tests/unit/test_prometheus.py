@@ -86,6 +86,39 @@ def test_port(prometheus_settings: PrometheusSettings, instance: Instance) -> No
             configpath.write_text(original_content)
 
 
+def test_password(prometheus_settings: PrometheusSettings, instance: Instance) -> None:
+    try:
+        prometheus_service = instance.service(models.Service)
+    except ValueError:
+        prometheus_service = None
+    if prometheus_service:
+        password = prometheus.password(instance.qualname, prometheus_settings)
+        assert password == "truite"
+    else:
+        with pytest.raises(exceptions.FileNotFoundError):
+            prometheus.password(instance.qualname, prometheus_settings)
+
+    configpath = pathlib.Path(
+        str(prometheus_settings.configpath).format(name=instance.qualname)
+    )
+    original_content = None
+    if prometheus_service:
+        original_content = configpath.read_text()
+    else:
+        configpath.parent.mkdir(parents=True)  # exists not ok
+    try:
+        configpath.write_text("\nempty\n")
+        with pytest.raises(LookupError, match="DATA_SOURCE_NAME not found"):
+            prometheus.password(instance.qualname, prometheus_settings)
+
+        configpath.write_text("\nDATA_SOURCE_NAME=foo=bar\n")
+        with pytest.raises(LookupError, match="malformatted DATA_SOURCE_NAME"):
+            prometheus.password(instance.qualname, prometheus_settings)
+    finally:
+        if original_content is not None:
+            configpath.write_text(original_content)
+
+
 def test_postgresexporter() -> None:
     m = models.PostgresExporter(name="12-x", dsn="dbname=postgres", port=9876)
     assert m.dsn == "dbname=postgres"
