@@ -11,6 +11,10 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg 
 	| tee /etc/apt/sources.list.d/pgdg.list
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 RUN apt-get -qq update && \
+	apt-get -y install --no-install-recommends postgresql-common
+RUN echo "create_main_cluster = false" \
+	> /etc/postgresql-common/createcluster.conf
+RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends \
 	build-essential \
 	git \
@@ -21,7 +25,6 @@ RUN apt-get -qq update && \
 	pgbackrest \
 	prometheus-postgres-exporter \
 	tox \
-	&& pg_dropcluster 14 main \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home runner
