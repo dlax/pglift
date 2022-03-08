@@ -10,7 +10,7 @@ from tenacity.wait import wait_fixed
 
 from pglift import exceptions
 from pglift import instance as instance_mod
-from pglift import systemd
+from pglift import systemd, util
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.prometheus import impl as prometheus
@@ -18,6 +18,7 @@ from pglift.prometheus import models
 from pglift.settings import PrometheusSettings
 
 from . import reconfigure_instance
+from .conftest import RoleFactory
 
 
 def config_dict(configpath: Path) -> Dict[str, str]:
@@ -42,7 +43,7 @@ def test_configure(
 
     prometheus_config = config_dict(configpath)
     dsn = prometheus_config["DATA_SOURCE_NAME"]
-    assert "user=postgres" in dsn
+    assert "user=monitoring" in dsn
     assert f"port={instance.port}" in dsn
     port = service.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
@@ -64,11 +65,15 @@ def postgres_exporter(
     instance_manifest: interface.Instance,
     instance: system.Instance,
     tmp_port_factory: Iterator[int],
+    role_factory: RoleFactory,
 ) -> Iterator[Tuple[str, str, int]]:
     """Setup a postgres_exporter service for 'instance' using another port."""
     port = next(tmp_port_factory)
     name = "123-fo-o"
-    role = instance_manifest.surole(ctx.settings)
+    role = interface.Role(
+        name="monitoring_tests",  # don't override monitoring Role
+        password=util.generate_password(),
+    )
     dsn = f"dbname=postgres port={instance.port} user={role.name} sslmode=disable"
     host = instance.config().get("unix_socket_directories")
     if host:
@@ -83,6 +88,8 @@ def postgres_exporter(
     assert configpath.exists()
     queriespath = Path(str(prometheus_settings.queriespath).format(name=name))
     assert queriespath.exists()
+
+    role_factory(role.name, f"LOGIN PASSWORD '{password}' IN ROLE pg_monitor")
 
     yield name, dsn, port
 

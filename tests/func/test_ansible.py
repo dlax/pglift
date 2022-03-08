@@ -135,6 +135,7 @@ def test_ansible(
         )
         assert cur.fetchall() == [
             {"role": "bob", "member_of": ["pg_read_all_stats", "pg_signal_backend"]},
+            {"role": "monitoring", "member_of": ["pg_monitor"]},
             {
                 "role": "pg_monitor",
                 "member_of": [

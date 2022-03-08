@@ -6,8 +6,10 @@ from typing import TYPE_CHECKING, Dict, Optional
 import psycopg
 import psycopg.conninfo
 
-from .. import cmd, exceptions, systemd
-from ..models import system
+from .. import cmd, exceptions
+from .. import instance as instance_mod
+from .. import roles, systemd, util
+from ..models import interface, system
 from ..task import task
 from .models import PostgresExporter, ServiceManifest, default_port
 
@@ -15,7 +17,6 @@ if TYPE_CHECKING:
     from pgtoolkit.conf import Configuration
 
     from ..ctx import BaseContext
-    from ..models import interface
     from ..settings import PrometheusSettings
 
 logger = logging.getLogger(__name__)
@@ -314,27 +315,44 @@ def setup_local(
     service = manifest.service(ServiceManifest)
     if service is None:
         return
-    role = manifest.surole(ctx.settings)
-    dsn = []
+    rolename = ctx.settings.postgresql.monitoringrole
+    dsn = ["dbname=postgres"]
     if "port" in instance_config:
         dsn.append(f"port={instance_config.port}")
     host = instance_config.get("unix_socket_directories")
     if host:
         dsn.append(f"host={host}")
-    dsn.append(f"user={role.name}")
+    dsn.append(f"user={rolename}")
     if not instance_config.get("ssl", False):
         dsn.append("sslmode=disable")
-    password = None
-    if role.password:
-        password = role.password.get_secret_value()
+
     instance = system.PostgreSQLInstance.system_lookup(
         ctx, (manifest.name, manifest.version)
     )
+    configpath = _configpath(instance.qualname, settings)
+    password_: Optional[str]
+    if not configpath.exists():
+        # Create dedicated user but only if postgres_exporter
+        # as never been initialized
+        password_ = util.generate_password()
+        with instance_mod.running(ctx, instance):
+            role = interface.Role(
+                name=rolename,
+                password=password_,
+                login=True,
+                in_roles=["pg_monitor"],
+            )
+            if not roles.exists(ctx, instance, role.name):
+                roles.create(ctx, instance, role)
+    else:
+        # Get the password from config file
+        password_ = password(instance.qualname, settings)
+
     setup(
         ctx,
         instance.qualname,
         settings,
         dsn=" ".join(dsn),
-        password=password,
+        password=password_,
         port=service.port,
     )

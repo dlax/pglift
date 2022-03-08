@@ -232,6 +232,9 @@ class PostgreSQLSettings(BaseSettings):
     backuprole: str = "backup"
     """Instance role used to backup."""
 
+    monitoringrole: str = "monitoring"
+    """Instance role used for monitoring."""
+
     datadir: str = "data"
     """Path segment from instance base directory to PGDATA directory."""
 
