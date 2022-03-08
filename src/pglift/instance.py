@@ -848,6 +848,11 @@ def describe(
 ) -> interface.Instance:
     """Return an instance described as a manifest."""
     instance = system.Instance.system_lookup(ctx, (name, version))
+    is_running = status(ctx, instance) == Status.running
+    if not is_running:
+        logger.warning(
+            "Instance is not running, info about passwords may not be accurate",
+        )
     return _describe(ctx, instance)
 
 
@@ -867,7 +872,8 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         )
     else:
         standby = None
-    return interface.Instance(
+
+    result = interface.Instance(
         name=instance.name,
         version=instance.version,
         port=instance.port,
@@ -877,6 +883,14 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         standby=standby,
         **services,
     )
+    is_running = status(ctx, instance) == Status.running
+    if is_running and instance.standby is None:
+        surole_name = ctx.settings.postgresql.surole.name
+        result.surole_password = roles.describe(ctx, instance, surole_name).password
+        replrole = ctx.settings.postgresql.replrole
+        result.replrole_password = roles.describe(ctx, instance, replrole).password
+
+    return result
 
 
 @task("dropping PostgreSQL instance")

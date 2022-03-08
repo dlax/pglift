@@ -6,6 +6,7 @@ from unittest.mock import patch
 import psycopg
 import pytest
 from pgtoolkit.ctl import Status
+from pydantic import SecretStr
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
@@ -269,7 +270,12 @@ def test_apply(
     assert instance_mod.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(ctx: Context, instance: system.Instance, log_directory: Path) -> None:
+def test_describe(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    log_directory: Path,
+) -> None:
     im = instance_mod.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
@@ -280,6 +286,12 @@ def test_describe(ctx: Context, instance: system.Instance, log_directory: Path) 
         assert logdir == str(log_directory)
     assert config == {"logging_collector": False}
     assert im.state.name == "stopped"
+    assert not im.surole_password
+
+    if instance_manifest.surole_password:
+        with instance_mod.running(ctx, instance):
+            im = instance_mod.describe(ctx, instance.name, instance.version)
+            assert isinstance(im.surole_password, SecretStr)
 
 
 def test_list(ctx: Context, instance: system.Instance) -> None:
