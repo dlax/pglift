@@ -8,7 +8,7 @@ RUN curl -O -L \
 RUN tar xvf postgres_exporter_v0.8.0_linux-amd64.tar.gz
 RUN mv postgres_exporter_v0.8.0_linux-amd64/postgres_exporter \
 	/usr/bin/prometheus-postgres-exporter
-RUN dnf install -y gcc git openssl postgresql10-devel procps-ng python3-devel python3-pip
+RUN dnf install -y gcc git openssl procps-ng python3-pip
 
 RUN pip3 install tox
 RUN useradd --create-home runner

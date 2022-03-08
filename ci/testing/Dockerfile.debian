@@ -14,9 +14,7 @@ RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends \
 	build-essential \
 	git \
-	libpq-dev \
 	procps \
-	python3-dev \
 	python3-pip \
 	python3-venv \
 	postgresql-14 \

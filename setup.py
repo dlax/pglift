@@ -50,7 +50,7 @@ setup(
         "importlib_metadata; python_version < '3.8'",
         "pgtoolkit >= 0.18.0",
         "pluggy",
-        "psycopg",
+        "psycopg[binary]",
         "pydantic",
         "python-dateutil",
         "typing-extensions",
