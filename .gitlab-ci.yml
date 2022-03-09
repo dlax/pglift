@@ -119,6 +119,8 @@ publish:
   only:
     - tags@dalibo/pglift
   stage: publish
+  variables:
+    PYPI_TOKEN: $PYPI_TOKEN
   image: python:3
   before_script:
     - pip install tox
