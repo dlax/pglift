@@ -21,6 +21,7 @@ Then, create a Python3 virtualenv and install the project:
 
     $ python3 -m venv .venv
     $ . .venv/bin/activate
+    (.venv) $ pip install --upgrade pip
     (.venv) $ pip install -e ".[dev,test]"
 
 Running tests
