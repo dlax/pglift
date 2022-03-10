@@ -223,10 +223,11 @@ def nameversion_from_id(instance_id: str) -> Tuple[str, Optional[str]]:
 def instance_lookup(
     context: click.Context, param: click.Parameter, value: Optional[str]
 ) -> system.Instance:
+    ctx = context.obj.ctx
     version: Optional[str]
     if value is None:
         try:
-            (i,) = instance_mod.list(context.obj.ctx)
+            (i,) = instance_mod.list(ctx)
         except ValueError:
             raise click.UsageError(
                 f"argument {param.get_error_hint(context)} is required."
@@ -234,7 +235,6 @@ def instance_lookup(
         name, version = i.name, i.version
     else:
         name, version = nameversion_from_id(value)
-    ctx = context.obj.ctx
     return get_instance(ctx, name, version)
 
 
