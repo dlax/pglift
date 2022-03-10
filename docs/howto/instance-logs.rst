@@ -38,5 +38,5 @@ Check how instance logging is configured as follows:
 
 .. code-block:: console
 
-    $ pglift instance config show main log_destination
+    $ pglift pgconf -i main show log_destination
     log_destination = 'stderr'
