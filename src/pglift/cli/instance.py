@@ -85,6 +85,8 @@ class InstanceCommands(Group):
         except KeyError:
             return super().get_command(context, name)
         else:
+            if context.obj is None:
+                return None
             composite_instance_model = interface.Instance.composite(context.obj.ctx.pm)
             f = factory(composite_instance_model)
             return click.command(cls=Command)(f)
