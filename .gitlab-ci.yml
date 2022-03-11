@@ -45,7 +45,8 @@ tests:
     - tags
   image: $CI_REGISTRY_IMAGE:$dist
   script:
-    - tox -e tests
+    - tox -e tests-unit
+    - tox -e tests-func
   parallel:
     matrix:
       - dist: [debian, rockylinux8]
