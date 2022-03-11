@@ -139,7 +139,9 @@ def _instance_alter(
 ) -> Callback:
     @instance_identifier(nargs=1)
     @helpers.parameters_from_model(
-        composite_instance_model, exclude=["name", "version"], parse_model=False
+        composite_instance_model,
+        exclude=["name", "version", "surole_password", "replrole_password"],
+        parse_model=False,
     )
     @pass_ctx
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
