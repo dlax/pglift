@@ -522,7 +522,8 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
         label="foo",
         size=12,
         repo_size=13,
-        datetime=datetime.datetime(2012, 1, 1),
+        date_start=datetime.datetime(2012, 1, 1),
+        date_stop=datetime.datetime(2012, 1, 2),
         type="incr",
         databases="postgres, prod",
     )
@@ -536,14 +537,23 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
     assert iter_backups.call_count == 1
 
     assert [
-        v.strip() for v in result.stdout.splitlines()[-2].split("│") if v.strip()
+        v.strip() for v in result.stdout.splitlines()[-3].split("│") if v.strip()
     ] == [
         "foo",
         "12.0B",
         "13.0B",
-        "2012-01-01 00:00:00",
+        "2012-01-01",
+        "2012-01-02",
         "incr",
-        "postgres, prod",
+        "postgres,",
+    ]
+
+    assert [
+        v.strip() for v in result.stdout.splitlines()[-2].split("│") if v.strip()
+    ] == [
+        "00:00:00",
+        "00:00:00",
+        "prod",
     ]
 
 

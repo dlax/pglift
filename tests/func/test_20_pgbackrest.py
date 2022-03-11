@@ -122,7 +122,8 @@ def test_backup_restore(
     (backup1,) = list(pgbackrest.iter_backups(ctx, instance, pgbackrest_settings))
     assert backup1.type == "full"
     assert backup1.databases == "backrest, postgres"
-    assert backup1.datetime.replace(tzinfo=None) > before
+    assert backup1.date_start.replace(tzinfo=None) > before
+    assert backup1.date_stop > backup1.date_start
 
     pgbackrest.restore(ctx, instance, pgbackrest_settings, date=before_drop)
     with instance_mod.running(ctx, instance):

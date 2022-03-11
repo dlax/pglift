@@ -342,12 +342,14 @@ def iter_backups(
             ctx, instance, settings, backup_set=backup["label"], output_json=False
         )
         databases = _parse_backup_databases(info_set)
-        dt = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
+        dtstart = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
+        dtstop = datetime.datetime.fromtimestamp(backup["timestamp"]["stop"])
         yield interface.InstanceBackup(
             label=backup["label"],
             size=backup["info"]["size"],
             repo_size=backup["info"]["repository"]["size"],
-            datetime=dt.replace(tzinfo=gettz()),
+            date_start=dtstart.replace(tzinfo=gettz()),
+            date_stop=dtstop.replace(tzinfo=gettz()),
             type=backup["type"],
             databases=", ".join(databases),
         )

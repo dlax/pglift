@@ -288,7 +288,8 @@ class InstanceBackup(Manifest):
     label: str
     size: ByteSize
     repo_size: ByteSize
-    datetime: datetime
+    date_start: datetime
+    date_stop: datetime
     type: Literal["incr", "diff", "full"]
     databases: str
 
