@@ -226,7 +226,7 @@ def configure(
     ssl: Union[bool, Tuple[Path, Path]] = False,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
     _creating: bool = False,
-) -> ConfigChanges:
+) -> Tuple[ConfigChanges, bool]:
     """Write instance's configuration and include it in its postgresql.conf.
 
     `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
@@ -328,6 +328,7 @@ def configure(
             with user_conffile.open("w") as f:
                 user_config.save(f)
 
+    needs_restart = False
     if _creating:
         write_configs()
     i_config = site_config + user_config
@@ -336,12 +337,14 @@ def configure(
     )
     if not _creating:
         write_configs()
+        instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+        needs_restart = check_pending_actions(ctx, instance, changes)
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(instance, logdir)
 
-    return changes
+    return changes, needs_restart
 
 
 @contextlib.contextmanager
@@ -768,7 +771,7 @@ def apply(
 
     configure_options = manifest.configuration or {}
     configure_options["port"] = manifest.port
-    changes = configure(
+    changes, needs_restart = configure(
         ctx,
         manifest,
         ssl=manifest.ssl,
@@ -788,45 +791,11 @@ def apply(
                 "enabled" if manifest.data_checksums else "disabled",
             )
 
-    needs_restart = False
-
     if state == States.stopped:
         if is_running:
             stop(ctx, instance)
     elif state == States.started:
-        if is_running:
-            needs_restart = "port" in changes
-            # Check if a restart is needed, unless we're sure it is already
-            # (because of 'port' change) and querying for run-time settings
-            # would fail.
-            if changes and not needs_restart:
-                pending_restart = set()
-                pending_reload = set()
-                for p in settings(ctx, instance):
-                    pname = p.name
-                    if pname not in changes:
-                        continue
-                    if p.context == "postmaster":
-                        pending_restart.add(pname)
-                    elif p.context == "sighup":
-                        pending_reload.add(pname)
-
-                if pending_reload:
-                    logger.info(
-                        "instance %s needs reload due to parameter changes: %s",
-                        instance,
-                        ", ".join(sorted(pending_reload)),
-                    )
-                    reload(ctx, instance)
-
-                if pending_restart:
-                    logger.warning(
-                        "instance %s needs restart due to parameter changes: %s",
-                        instance,
-                        ", ".join(sorted(pending_restart)),
-                    )
-                    needs_restart = True
-        else:
+        if not is_running:
             start(ctx, instance)
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
@@ -847,6 +816,60 @@ def apply(
         needs_restart = False
 
     return instance, changes, needs_restart
+
+
+def check_pending_actions(
+    ctx: "BaseContext", instance: system.Instance, changes: ConfigChanges
+) -> bool:
+    """Check if any of the changes require a reload or a restart.
+
+    The instance is automatically reloaded if needed.
+    The user is prompted for confirmation if a restart is needed.
+    This function will return True if the instance needs to be restarted and
+    the user doesn't accept the restart.
+    """
+    is_running = status(ctx, instance) == Status.running
+    if not is_running:
+        return False
+
+    if "port" in changes:
+        needs_restart = True
+    else:
+        needs_restart = False
+        pending_restart = set()
+        pending_reload = set()
+        for p in settings(ctx, instance):
+            pname = p.name
+            if pname not in changes:
+                continue
+            if p.context == "postmaster":
+                pending_restart.add(pname)
+            elif p.context == "sighup":
+                pending_reload.add(pname)
+
+        if pending_reload:
+            logger.info(
+                "instance %s needs reload due to parameter changes: %s",
+                instance,
+                ", ".join(sorted(pending_reload)),
+            )
+            reload(ctx, instance)
+
+        if pending_restart:
+            logger.warning(
+                "instance %s needs restart due to parameter changes: %s",
+                instance,
+                ", ".join(sorted(pending_restart)),
+            )
+            needs_restart = True
+
+    if needs_restart and ctx.confirm(
+        "Instance needs to be restarted; restart now?", False
+    ):
+        restart(ctx, instance)
+        needs_restart = False
+
+    return needs_restart
 
 
 def describe(

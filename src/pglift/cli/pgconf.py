@@ -88,7 +88,7 @@ def pgconf_set(
     values = instance.config(managed_only=True).as_dict()
     values.update(parameters)
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instances.configure(ctx, manifest, values=values)
+    changes, needs_restart = instances.configure(ctx, manifest, values=values)
     show_configuration_changes(changes, parameters.keys())
 
 
@@ -107,7 +107,7 @@ def pgconf_remove(
         except KeyError:
             raise click.ClickException(f"'{p}' not found in managed configuration")
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instances.configure(ctx, manifest, values=values)
+    changes, needs_restart = instances.configure(ctx, manifest, values=values)
     show_configuration_changes(changes, parameters)
 
 

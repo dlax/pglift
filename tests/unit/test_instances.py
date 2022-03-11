@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import re
 from typing import Any
@@ -12,6 +13,7 @@ from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import BaseInstance, Instance
 from pglift.settings import Settings
+from pglift.types import ConfigChanges
 
 
 def test_systemd_unit(pg_version: str, instance: Instance) -> None:
@@ -107,7 +109,7 @@ def test_configure(
     with postgresql_conf.open("w") as f:
         f.write("bonjour_name = 'overridden'\n")
 
-    changes = instances.configure(
+    changes, needs_restart = instances.configure(
         ctx,
         instance_manifest,
         values=dict(
@@ -150,7 +152,7 @@ def test_configure(
     assert config.bonjour_name == "overridden"
     assert config.cluster_name == "test"
 
-    changes = instances.configure(
+    changes, needs_restart = instances.configure(
         ctx,
         instance_manifest,
         ssl=True,
@@ -170,7 +172,7 @@ def test_configure(
         site_configfpath.stat().st_mtime,
         user_configfpath.stat().st_mtime,
     )
-    changes = instances.configure(
+    changes, needs_restart = instances.configure(
         ctx, instance_manifest, values=dict(listen_address="*"), ssl=True
     )
     assert changes == {}
@@ -181,7 +183,7 @@ def test_configure(
     )
     assert mtime_before == mtime_after
 
-    changes = instances.configure(ctx, instance_manifest, ssl=True)
+    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=True)
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -193,7 +195,7 @@ def test_configure(
     )
     for fpath in ssl:
         fpath.touch()
-    changes = instances.configure(ctx, instance_manifest, ssl=ssl)
+    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=ssl)
     assert changes == {
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
@@ -206,14 +208,14 @@ def test_configure(
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    changes = instances.configure(ctx, instance_manifest, ssl=True)
+    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=True)
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
         "ssl_key_file": (str(key_file), None),
     }
 
     # disable ssl
-    changes = instances.configure(ctx, instance_manifest, ssl=False)
+    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=False)
     assert changes == {
         "ssl": (True, None),
     }
@@ -364,3 +366,53 @@ def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
 
     stderr_logpath.write_text("line1\nline2\n")
     assert list(instances.logs(ctx, instance)) == ["line1\n", "line2\n"]
+
+
+def test_check_pending_actions(
+    ctx: Context,
+    instance: Instance,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _settings = [
+        interface.PGSetting(
+            name="needs_restart",
+            context="postmaster",
+            setting="somevalue",
+            pending_restart=False,
+        ),
+        interface.PGSetting(
+            name="needs_reload",
+            context="sighup",
+            setting="somevalue",
+            pending_restart=False,
+        ),
+    ]
+    changes: ConfigChanges = {
+        "needs_restart": ("before", "after"),
+        "needs_reload": ("before", "after"),
+    }
+
+    needs_restart = instances.check_pending_actions(ctx, instance, changes)
+    assert not needs_restart  # not running
+
+    with patch.object(
+        instances, "status", return_value=instances.Status.running
+    ), patch.object(
+        instances, "settings", return_value=_settings
+    ) as settings, patch.object(
+        instances, "reload"
+    ) as reload, caplog.at_level(
+        logging.INFO
+    ):
+        needs_restart = instances.check_pending_actions(ctx, instance, changes)
+        assert needs_restart
+    settings.assert_called_once()
+    assert (
+        f"instance {instance} needs restart due to parameter changes: needs_restart"
+        in caplog.messages
+    )
+    assert (
+        f"instance {instance} needs reload due to parameter changes: needs_reload"
+        in caplog.messages
+    )
+    reload.assert_called_once_with(ctx, instance)
