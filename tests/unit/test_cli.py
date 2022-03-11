@@ -530,8 +530,8 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
         v.strip() for v in result.stdout.splitlines()[-2].split("│") if v.strip()
     ] == [
         "foo",
-        "12.0",
-        "13.0",
+        "12.0B",
+        "13.0B",
         "2012-01-01 00:00:00",
         "incr",
         "postgres, prod",

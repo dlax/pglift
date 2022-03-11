@@ -4,7 +4,7 @@ import os
 import pathlib
 import tempfile
 import time
-from functools import wraps
+from functools import singledispatch, wraps
 from types import ModuleType
 from typing import (
     Any,
@@ -27,6 +27,7 @@ import pydantic.json
 import rich
 from click.exceptions import Exit
 from click.shell_completion import CompletionItem
+from pydantic import ByteSize
 from rich.console import Console, RenderableType
 from rich.table import Table
 
@@ -41,6 +42,21 @@ from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
 logger = logging.getLogger(pkgname)
 
 _M = TypeVar("_M", bound=pydantic.BaseModel)
+
+
+@singledispatch
+def humanize(value: Any) -> Any:
+    return value
+
+
+@humanize.register(ByteSize)
+def _(value: ByteSize) -> str:
+    """Humanize a ByteSize value
+
+    >>> humanize(ByteSize(1024))
+    '1.0KiB'
+    """
+    return value.human_readable()
 
 
 def print_table_for(
@@ -80,10 +96,10 @@ def print_table_for(
                 for sk, sv in v.items():
                     mk = f"{k}\n{sk}"
                     hdr.append(mk)
-                    row.append(sv)
+                    row.append(humanize(sv))
             else:
                 hdr.append(k)
-                row.append(v)
+                row.append(humanize(v))
         if not headers:
             headers = hdr[:]
         rows.append([str(v) for v in row])

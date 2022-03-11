@@ -18,6 +18,7 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from pydantic import (
     BaseModel,
+    ByteSize,
     DirectoryPath,
     Field,
     SecretStr,
@@ -285,8 +286,8 @@ class Instance(Manifest):
 
 class InstanceBackup(Manifest):
     label: str
-    size: float
-    repo_size: float
+    size: ByteSize
+    repo_size: ByteSize
     datetime: datetime
     type: Literal["incr", "diff", "full"]
     databases: str
@@ -350,7 +351,7 @@ class Database(Manifest):
 class Tablespace(BaseModel):
     name: str
     location: str
-    size: int
+    size: ByteSize
 
 
 class DetailedDatabase(Manifest):
@@ -362,7 +363,7 @@ class DetailedDatabase(Manifest):
     collation: str
     ctype: str
     acls: Optional[List[str]]
-    size: int
+    size: ByteSize
     description: Optional[str]
     tablespace: Tablespace
 
