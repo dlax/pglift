@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 from . import cmd, plugin_manager
 from ._compat import shlex_join
@@ -38,6 +38,15 @@ class BaseContext(ABC):
         implementations (this one), will always return the 'default' value.
         """
         return default
+
+    def prompt(self, message: str, hide_input: bool = False) -> Optional[str]:
+        """Possible ask for user input.
+
+        Interactive implementation should prompt for input with 'message' and
+        return a string value. Non-Interactive implementations (this one), will
+        always return None.
+        """
+        return None
 
 
 class Context(BaseContext):

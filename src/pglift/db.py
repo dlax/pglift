@@ -2,7 +2,7 @@ import pathlib
 import re
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, ContextManager, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, Iterator, Tuple
 
 import psycopg.conninfo
 import psycopg.errors
@@ -68,6 +68,7 @@ def connect_dsn(
         yield conn
 
 
+@contextmanager
 def connect(
     instance: "PostgreSQLInstance",
     settings: "PostgreSQLSettings",
@@ -75,22 +76,37 @@ def connect(
     dbname: str = "postgres",
     autocommit: bool = False,
     **kwargs: Any,
-) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
+) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to specified database of `instance` with `role`."""
     conninfo = dsn(instance, settings, dbname=dbname, **kwargs)
-    return connect_dsn(conninfo, autocommit=autocommit)
+    with connect_dsn(conninfo, autocommit=autocommit) as cnx:
+        yield cnx
 
 
+@contextmanager
 def superuser_connect(
     ctx: "BaseContext", instance: "PostgreSQLInstance", **kwargs: Any
-) -> ContextManager[psycopg.Connection[psycopg.rows.DictRow]]:
+) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
     if "user" in kwargs:
         raise TypeError("unexpected 'user' argument")
     postgresql_settings = ctx.settings.postgresql
     kwargs["user"] = postgresql_settings.surole.name
     if "password" not in kwargs:
         kwargs["password"] = postgresql_settings.libpq_environ(ctx).get("PGPASSWORD")
-    return connect(instance, postgresql_settings, **kwargs)
+    try:
+        with connect(instance, postgresql_settings, **kwargs) as cnx:
+            yield cnx
+    except psycopg.OperationalError:
+        if kwargs.get("password"):
+            raise
+        password = ctx.prompt(
+            f"Password for user {postgresql_settings.surole.name}", hide_input=True
+        )
+        if not password:
+            raise
+        kwargs["password"] = password
+        with connect(instance, postgresql_settings, **kwargs) as cnx:
+            yield cnx
 
 
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:

@@ -2,7 +2,7 @@ import logging
 import pathlib
 import sys
 from collections import OrderedDict
-from functools import partial
+from functools import lru_cache, partial
 from typing import List, Optional, Union
 
 import click
@@ -36,6 +36,12 @@ class LogDisplayer:
 class CLIContext(Context):
     def confirm(self, message: str, default: bool) -> bool:
         return rich.prompt.Confirm(console=CONSOLE).ask(f"[yellow]>[/yellow] {message}")
+
+    @lru_cache(maxsize=None)
+    def prompt(self, message: str, hide_input: bool = False) -> str:
+        return rich.prompt.Prompt(console=CONSOLE).ask(
+            f"[yellow]>[/yellow] {message}", password=hide_input
+        )
 
 
 class Obj:
