@@ -110,7 +110,6 @@ def options(
     cnx: psycopg.Connection[Any],
     role: interface.Role,
     *,
-    with_password: bool = True,
     in_roles: bool = True,
 ) -> sql.Composable:
     """Return the "options" part of CREATE ROLE or ALTER ROLE SQL commands
@@ -122,7 +121,7 @@ def options(
         sql.SQL("SUPERUSER" if role.superuser else "NOSUPERUSER"),
         sql.SQL("REPLICATION" if role.replication else "NOREPLICATION"),
     ]
-    if with_password and role.password is not None:
+    if role.password is not None:
         opts.append(sql.SQL("PASSWORD {}").format(encrypt_password(cnx, role)))
     if role.validity is not None:
         opts.append(sql.SQL("VALID UNTIL {}").format(role.validity.isoformat()))
@@ -181,12 +180,7 @@ def alter(
         "revoke": set(actual_role.in_roles) - set(role.in_roles),
     }
     with db.superuser_connect(ctx, instance) as cnx:
-        opts = options(
-            cnx,
-            role,
-            with_password=not has_password(ctx, instance, role.name),
-            in_roles=False,
-        )
+        opts = options(cnx, role, in_roles=False)
         cnx.execute(
             db.query(
                 "role_alter",

@@ -2,12 +2,13 @@ import datetime
 import functools
 import pathlib
 from typing import Iterator, Optional, Union
+from unittest.mock import patch
 
 import psycopg
 import pytest
 from pydantic import SecretStr
 
-from pglift import exceptions
+from pglift import db, exceptions
 from pglift import instance as instance_mod
 from pglift import roles, types
 from pglift.ctx import Context
@@ -137,13 +138,24 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
 
-    role = interface.Role(name=rolname, password=SecretStr("passw0rd"), pgpass=True)
+    role = interface.Role(
+        name=rolname, login=True, password=SecretStr("passw0rd"), pgpass=True
+    )
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
+    with db.connect(
+        instance,
+        ctx.settings.postgresql,
+        dbname="template1",
+        user=rolname,
+        password="passw0rd",
+    ):
+        pass
 
     role = interface.Role(
         name=rolname,
+        login=True,
         password=SecretStr("passw0rd_changed"),
         pgpass=True,
         connection_limit=5,
@@ -152,12 +164,54 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
     assert roles.describe(ctx, instance, rolname).connection_limit == 5
+    with db.connect(
+        instance,
+        ctx.settings.postgresql,
+        dbname="template1",
+        user=rolname,
+        password="passw0rd_changed",
+    ):
+        pass
 
     role = interface.Role(name=rolname, pgpass=False)
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
     assert roles.describe(ctx, instance, rolname).connection_limit is None
+
+
+def test_alter_surole_password(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    surole_password: Optional[str],
+) -> None:
+    check_connect = functools.partial(
+        db.connect,
+        instance,
+        ctx.settings.postgresql,
+        user="postgres",
+    )
+    surole = roles.describe(ctx, instance, "postgres")
+    surole = surole.copy(
+        update={"password": instance_manifest.surole(ctx.settings).password}
+    )
+    role = surole.copy(update={"password": SecretStr("passw0rd_changed")})
+    roles.apply(ctx, instance, role)
+    try:
+        with check_connect(password="passw0rd_changed"):
+            pass
+    finally:
+        with patch.dict("os.environ", {"PGPASSWORD": "passw0rd_changed"}):
+            roles.apply(ctx, instance, surole)
+        if ctx.settings.postgresql.auth.local != "trust":
+            with pytest.raises(
+                psycopg.OperationalError, match="password authentication failed"
+            ):
+                with check_connect(password="passw0rd_changed"):
+                    pass
+            with db.superuser_connect(ctx, instance):
+                pass
 
 
 def test_describe(
