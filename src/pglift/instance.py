@@ -159,7 +159,14 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     ):
         opts["data_checksums"] = True
 
-    pgctl.init(instance.datadir, **opts)
+    surole_password = manifest.surole(ctx.settings).password
+    if surole_password:
+        with tempfile.NamedTemporaryFile("w") as pwfile:
+            pwfile.write(surole_password.get_secret_value())
+            pwfile.flush()
+            pgctl.init(instance.datadir, pwfile=pwfile.name, **opts)
+    else:
+        pgctl.init(instance.datadir, **opts)
 
     # Possibly comment out everything in postgresql.conf, as in upstream
     # sample file, but in contrast with some distribution packages.
@@ -436,8 +443,6 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     if not instance.standby:
         # standby instances are read-only
         with running(ctx, instance):
-            if surole.password:
-                roles.set_password_for(ctx, instance, surole)
             roles.apply(ctx, instance, replrole)
 
     hba_path.write_text(hba)
