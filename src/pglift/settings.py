@@ -113,16 +113,16 @@ class PostgreSQLVersionSettings(BaseSettings):
     bindir: Path
 
 
-def _postgresql_bindir() -> str:
+def _postgresql_bindir_version() -> Tuple[str, str]:
     usrdir = Path("/usr")
     for version in POSTGRESQL_SUPPORTED_VERSIONS:
         # Debian packages
         if (usrdir / "lib" / "postgresql" / version).exists():
-            return str(usrdir / "lib" / "postgresql" / "{version}" / "bin")
+            return str(usrdir / "lib" / "postgresql" / "{version}" / "bin"), version
 
         # RPM packages from the PGDG
         if (usrdir / f"pgsql-{version}").exists():
-            return str(usrdir / "pgsql-{version}" / "bin")
+            return str(usrdir / "pgsql-{version}" / "bin"), version
     else:
         raise EnvironmentError("no PostgreSQL installation found")
 
@@ -184,7 +184,7 @@ class PostgreSQLSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_"
 
-    bindir: str = _postgresql_bindir()
+    bindir: str = _postgresql_bindir_version()[0]
     """Default PostgreSQL bindir, templated by version."""
 
     versions: Dict[str, PostgreSQLVersionSettings] = Field(default_factory=lambda: {})
