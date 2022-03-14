@@ -233,6 +233,7 @@ def test_drop_exists(
 @pytest.fixture
 def instance_no_prometheus(
     ctx: Context,
+    pg_version: str,
     surole_password: Optional[str],
     replrole_password: Optional[str],
     tmp_port_factory: Iterator[int],
@@ -243,6 +244,7 @@ def instance_no_prometheus(
     im = composite_instance_model.parse_obj(
         {
             "name": "noprom",
+            "version": pg_version,
             "port": next(tmp_port_factory),
             "surole_password": surole_password,
             "replrole_password": replrole_password,

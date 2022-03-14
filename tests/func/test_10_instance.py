@@ -204,6 +204,7 @@ def test_start_stop_restart_running_stopped(
 @pytest.mark.usefixtures("installed")
 def test_apply(
     ctx: Context,
+    pg_version: str,
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
     surole_password: Optional[str],
@@ -214,6 +215,7 @@ def test_apply(
     prometheus_port = next(tmp_port_factory)
     im = composite_instance_model(
         name="test_apply",
+        version=pg_version,
         port=port,
         ssl=True,
         state=interface.InstanceState.stopped,
