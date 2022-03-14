@@ -38,7 +38,7 @@ def cli(instance: system.Instance) -> None:
 
 
 @cli.command("create")
-@helpers.parameters_from_model(interface.Database)
+@helpers.parameters_from_model(interface.Database, "create")
 @pass_instance
 @pass_ctx
 def database_create(
@@ -53,16 +53,17 @@ def database_create(
 
 
 @cli.command("alter")
-@helpers.parameters_from_model(interface.Database, parse_model=False)
+@helpers.parameters_from_model(interface.Database, "update", parse_model=False)
+@click.argument("dbname")
 @pass_instance
 @pass_ctx
 def database_alter(
-    ctx: Context, instance: system.Instance, name: str, **changes: Any
+    ctx: Context, instance: system.Instance, dbname: str, **changes: Any
 ) -> None:
     """Alter a database in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Database, changes)
     with instance_mod.running(ctx, instance):
-        values = databases.describe(ctx, instance, name).dict()
+        values = databases.describe(ctx, instance, dbname).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
         databases.apply(ctx, instance, altered)

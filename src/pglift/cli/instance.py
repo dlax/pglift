@@ -121,7 +121,7 @@ assert isinstance(cli, InstanceCommands)
 def _instance_create(
     composite_instance_model: Type[interface.Instance],
 ) -> Callback:
-    @helpers.parameters_from_model(composite_instance_model)
+    @helpers.parameters_from_model(composite_instance_model, "create")
     @pass_ctx
     def command(ctx: Context, instance: interface.Instance) -> None:
         """Initialize a PostgreSQL instance"""
@@ -139,9 +139,7 @@ def _instance_alter(
 ) -> Callback:
     @instance_identifier(nargs=1)
     @helpers.parameters_from_model(
-        composite_instance_model,
-        exclude=["name", "version", "surole_password", "replrole_password"],
-        parse_model=False,
+        composite_instance_model, "update", parse_model=False
     )
     @pass_ctx
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:

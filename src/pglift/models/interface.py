@@ -143,8 +143,10 @@ class Instance(Manifest):
         )
         slot: Optional[str] = Field(description="replication slot name")
 
-    name: str
-    version: Optional[str] = Field(default=None, description="PostgreSQL version")
+    name: str = Field(readOnly=True)
+    version: Optional[str] = Field(
+        default=None, description="PostgreSQL version", readOnly=True
+    )
     port: Optional[int] = Field(
         default=None,
         description="TCP port the postgresql instance will be listening to",
@@ -156,12 +158,10 @@ class Instance(Manifest):
     ssl: Union[bool, Tuple[Path, Path]] = Field(default=False, title="SSL")
     configuration: Dict[str, Any] = Field(default_factory=dict)
     surole_password: Optional[SecretStr] = Field(
-        default=None,
-        description="super-user role password",
+        default=None, description="super-user role password", readOnly=True
     )
     replrole_password: Optional[SecretStr] = Field(
-        default=None,
-        description="replication role password",
+        default=None, description="replication role password", readOnly=True
     )
     data_checksums: Optional[bool] = Field(
         default=None,
@@ -301,7 +301,7 @@ class Role(Manifest):
         "state": {"hide": True},
     }
 
-    name: str
+    name: str = Field(readOnly=True)
     password: Optional[SecretStr] = Field(default=None, description="role password")
     pgpass: bool = Field(
         default=False, description="add an entry in password file for this role"
@@ -337,7 +337,7 @@ class Database(Manifest):
         "settings": {"spec": {"type": "dict", "required": False}},
     }
 
-    name: str
+    name: str = Field(readOnly=True)
     owner: Optional[str] = Field(
         description="the role name of the user who will own the new database"
     )

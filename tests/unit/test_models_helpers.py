@@ -58,7 +58,9 @@ class Person(BaseModel):
     gender: Optional[Gender]
     age: Optional[int] = Field(description="age")
     address: Optional[Address]
-    dob: Optional[datetime] = Field(alias="birthdate", description="date of birth")
+    dob: Optional[datetime] = Field(
+        alias="birthdate", description="date of birth", readOnly=True
+    )
 
     class Config:
         extra = "forbid"
@@ -68,7 +70,7 @@ def test_parameters_from_model_typeerror() -> None:
     with pytest.raises(TypeError, match="expecting a 'person: Person' parameter"):
 
         @click.command("add-person")
-        @helpers.parameters_from_model(Person)
+        @helpers.parameters_from_model(Person, "create")
         @click.pass_context
         def cb1(ctx: click.core.Context, x: Person) -> None:
             pass
@@ -76,7 +78,7 @@ def test_parameters_from_model_typeerror() -> None:
     with pytest.raises(TypeError, match="expecting a 'person: Person' parameter"):
 
         @click.command("add-person")
-        @helpers.parameters_from_model(Person)
+        @helpers.parameters_from_model(Person, "create")
         @click.pass_context
         def cb2(ctx: click.core.Context, person: str) -> None:
             pass
@@ -85,7 +87,7 @@ def test_parameters_from_model_typeerror() -> None:
 def test_parameters_from_model() -> None:
     @click.command("add-person")
     @click.option("--sort-keys", is_flag=True, default=False)
-    @helpers.parameters_from_model(Person)
+    @helpers.parameters_from_model(Person, "create")
     @click.option("--indent", type=int)
     @click.pass_context
     def add_person(
@@ -156,9 +158,33 @@ def test_parameters_from_model() -> None:
     }
 
 
+def test_parameters_from_model_update() -> None:
+    @click.command("update-person")
+    @helpers.parameters_from_model(Person, "update")
+    @click.pass_context
+    def update_person(ctx: click.core.Context, person: Person) -> None:
+        """Modify new person."""
+        click.echo(person.json(exclude_unset=True), err=True)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        update_person,
+        ["alice", "--age=5", "--birthdate=2042-02-31"],
+    )
+    assert result.exit_code == 2, result.output
+    assert "Error: No such option: --birthdate" in result.output
+
+    result = runner.invoke(
+        update_person,
+        ["alice", "--age=5"],
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"name": "alice", "age": 5}
+
+
 def test_parameters_from_model_no_parse() -> None:
     @click.command("add-person")
-    @helpers.parameters_from_model(Person, parse_model=False)
+    @helpers.parameters_from_model(Person, "create", parse_model=False)
     @click.pass_context
     def add_person(ctx: click.core.Context, **values: Any) -> None:
         click.echo(json.dumps(values))

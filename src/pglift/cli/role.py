@@ -37,7 +37,7 @@ def cli(instance: system.Instance) -> None:
 
 
 @cli.command("create")
-@helpers.parameters_from_model(interface.Role)
+@helpers.parameters_from_model(interface.Role, "create")
 @pass_instance
 @pass_ctx
 def role_create(ctx: Context, instance: system.Instance, role: interface.Role) -> None:
@@ -50,16 +50,17 @@ def role_create(ctx: Context, instance: system.Instance, role: interface.Role) -
 
 
 @cli.command("alter")
-@helpers.parameters_from_model(interface.Role, parse_model=False)
+@helpers.parameters_from_model(interface.Role, "update", parse_model=False)
+@click.argument("rolname")
 @pass_instance
 @pass_ctx
 def role_alter(
-    ctx: Context, instance: system.Instance, name: str, **changes: Any
+    ctx: Context, instance: system.Instance, rolname: str, **changes: Any
 ) -> None:
     """Alter a role in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Role, changes)
     with instance_mod.running(ctx, instance):
-        values = roles.describe(ctx, instance, name).dict()
+        values = roles.describe(ctx, instance, rolname).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
         roles.apply(ctx, instance, altered)

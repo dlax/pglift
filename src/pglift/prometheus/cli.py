@@ -50,7 +50,7 @@ def postgres_exporter_apply(
 
 
 @postgres_exporter.command("install")
-@helpers.parameters_from_model(models.PostgresExporter)
+@helpers.parameters_from_model(models.PostgresExporter, "create")
 @pass_prometheus_settings
 @pass_ctx
 def postgres_exporter_install(

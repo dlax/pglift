@@ -2,21 +2,11 @@ import enum
 import functools
 import inspect
 import typing
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    Mapping,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterator, Mapping, Tuple, Type, TypeVar, Union
 
 import pydantic
 from pydantic.utils import lenient_issubclass
+from typing_extensions import Literal
 
 from ..types import AnsibleArgSpec
 
@@ -24,6 +14,7 @@ Callback = Callable[..., Any]
 ModelType = Type[pydantic.BaseModel]
 T = TypeVar("T", bound=pydantic.BaseModel)
 
+Operation = Literal["create", "update"]
 try:
     get_origin = getattr(typing, "get_origin")
 except AttributeError:  # Python < 3.8
@@ -60,7 +51,7 @@ DEFAULT = object()
 
 
 def _decorators_from_model(
-    model_type: ModelType, *, exclude: Sequence[str] = (), _prefix: str = ""
+    model_type: ModelType, operation: Operation, *, _prefix: str = ""
 ) -> Iterator[Tuple[Tuple[str, str], Callable[[Callback], Callback]]]:
     """Yield click.{argument,option} decorators corresponding to fields of
     a pydantic model type along with respective callback argument name and
@@ -80,7 +71,7 @@ def _decorators_from_model(
         if cli_config.get("hide", False):
             continue
         argname = cli_config.get("name", field.alias)
-        if argname in exclude:
+        if operation == "update" and field.field_info.extra.get("readOnly"):
             continue
         argname = argname.replace("_", "-")
         modelname = field.alias
@@ -114,7 +105,7 @@ def _decorators_from_model(
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
-                yield from _decorators_from_model(ftype, _prefix=argname)
+                yield from _decorators_from_model(ftype, operation, _prefix=argname)
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
@@ -141,19 +132,19 @@ def _decorators_from_model(
 
 
 def parameters_from_model(
-    model_type: ModelType, *, exclude: Sequence[str] = (), parse_model: bool = True
+    model_type: ModelType, operation: Operation, *, parse_model: bool = True
 ) -> Callable[[Callback], Callback]:
     """Attach click parameters (arguments or options) built from a pydantic
     model to the command.
 
     >>> class Obj(pydantic.BaseModel):
     ...     message: str
-    ...     ignored: int = 0
+    ...     ignored: int = pydantic.Field(default=0, readOnly=True)
 
     >>> import click
 
     >>> @click.command("echo")
-    ... @parameters_from_model(Obj, exclude=['ignored'])
+    ... @parameters_from_model(Obj, "update")
     ... @click.option("--caps", is_flag=True, default=False)
     ... @click.pass_context
     ... def cmd(ctx, obj, caps):
@@ -179,7 +170,7 @@ def parameters_from_model(
     def decorator(f: Callback) -> Callback:
 
         modelnames_and_argnames, param_decorators = zip(
-            *reversed(list(_decorators_from_model(model_type, exclude=exclude)))
+            *reversed(list(_decorators_from_model(model_type, operation)))
         )
 
         def params_to_modelargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
