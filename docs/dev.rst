@@ -37,25 +37,36 @@ or through ``tox``:
 
 ::
 
-    $ tox [-e tests]
+    $ tox [-e tests-unit|tests-func]
 
-By default, tests will not use systemd as a service manager / scheduler. In
-order to run tests with systemd, pass the ``--systemd`` option to pytest
-command.
-
-The test suite is quite extensive and can take long to run, especially if
-several PostgreSQL versions are available on the system. It is split into
+The test suite is quite extensive and can take long to run. It is split into
 *functional* tests and more *unit* ones, the former require a real PostgreSQL
-instance (which will be set up automatically) while the latter do not.
+instance (which will be set up automatically) while the latter do not. Each
+test suite gets a dedicated tox environment: ``tests-unit`` and
+``tests-func``.
 
-When working on a simple fix or changes that would be covered by
-non-functional tests, one can run the following part of the test suite
-quickly:
+When working on a simple fix or change that would be covered by non-functional
+tests, one can run the following part of the test suite quickly:
 
 ::
 
     (.venv) $ pytest src tests/unit
 
+or through ``tox``:
+
+::
+
+    $ tox -e tests-unit
+
+By default, functional tests will not use systemd as a service manager /
+scheduler. In order to run tests with systemd, pass the ``--systemd`` option
+to pytest command.
+
+Still in functional tests, the PostgreSQL environment would be guessed by
+inspecting the system to look for PostgreSQL binaries for the most recent
+version available. If multiple versions of PostgreSQL are available, a
+specific version can be selected by passing ``--pg-version=<version>`` option
+to the ``pytest`` command.
 
 Pre-commit hooks
 ~~~~~~~~~~~~~~~~
