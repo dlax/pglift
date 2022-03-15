@@ -28,9 +28,9 @@ repos:
     name: isort
     entry: isort --check --diff --profile black
     language: system
-    type: [python]
+    types: [python]
   - id: mypy
     name: mypy
     entry: bash -c "mypy ."
     language: system
-    type: [python]
+    types: [python]
