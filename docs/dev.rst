@@ -24,6 +24,11 @@ Then, create a Python3 virtualenv and install the project:
     (.venv) $ pip install --upgrade pip
     (.venv) $ pip install -e ".[dev,test]"
 
+Though not required, tox_ can be used to run all checks (lint, tests, etc.)
+needed in development environment.
+
+.. _tox: https://tox.wiki/
+
 Linting, formatting, type-checking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
