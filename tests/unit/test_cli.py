@@ -18,7 +18,7 @@ from pglift import instance as instance_mod
 from pglift import prometheus, roles, types
 from pglift.cli import CLIContext, Obj, cli
 from pglift.cli import instance as instance_cli
-from pglift.cli.util import Command, get_instance, pass_component_settings
+from pglift.cli.util import Command, get_instance, pass_component_settings, pass_ctx
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.models.system import Instance
@@ -180,6 +180,21 @@ def test_instance_identifier(runner: CliRunner, obj: Obj, instance: Instance) ->
 def test_cli(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, obj=obj)
     assert result.exit_code == 0
+
+
+def test_non_interactive(runner: CliRunner) -> None:
+    @cli.command("confirmme")
+    @pass_ctx
+    def confirm_me(ctx: Context) -> None:
+        if not ctx.confirm("Confirm?", default=True):
+            raise click.Abort()
+        print("confirmed")
+
+    result = runner.invoke(cli, ["confirmme"], input="n\n")
+    assert result.exit_code == 1 and "Aborted!" in result.stderr
+
+    result = runner.invoke(cli, ["--non-interactive", "confirmme"])
+    assert result.exit_code == 0 and "confirmed" in result.stdout
 
 
 def test_version(runner: CliRunner, obj: Obj) -> None:

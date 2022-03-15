@@ -46,6 +46,13 @@ class CLIContext(Context):
         )
 
 
+class NonInteractiveCLIContext(CLIContext):
+    """A CLI context that does not ask for confirmation and always accept the default choice."""
+
+    def confirm(self, message: str, default: bool) -> bool:
+        return default
+
+
 class Obj:
     """Object bound to click.Context"""
 
@@ -54,9 +61,11 @@ class Obj:
         *,
         context: Optional[CLIContext] = None,
         displayer: Optional[Displayer] = None,
+        non_interactive: bool = False,
     ) -> None:
         if context is None:
-            context = CLIContext(settings=Settings())
+            cls = NonInteractiveCLIContext if non_interactive else CLIContext
+            context = cls(settings=Settings())
         self.ctx = context
         self.displayer = displayer
         self.console = CONSOLE
@@ -135,6 +144,12 @@ def print_version(context: click.Context, param: click.Parameter, value: bool) -
     help="Write logs to LOGFILE, instead of stderr.",
 )
 @click.option(
+    "--non-interactive",
+    is_flag=True,
+    default=False,
+    help="Do not prompt, automatically pick the default option for all choices.",
+)
+@click.option(
     "--version",
     is_flag=True,
     callback=print_version,
@@ -147,6 +162,7 @@ def cli(
     context: click.Context,
     log_level: Optional[str],
     log_file: Optional[pathlib.Path],
+    non_interactive: bool,
 ) -> None:
     """Deploy production-ready instances of PostgreSQL"""
     logger = logging.getLogger(pkgname)
@@ -177,7 +193,10 @@ def cli(
     context.call_on_close(partial(logger.removeHandler, handler))
 
     if not context.obj:
-        context.obj = Obj(displayer=None if log_file else LogDisplayer())
+        context.obj = Obj(
+            displayer=None if log_file else LogDisplayer(),
+            non_interactive=non_interactive,
+        )
     else:
         assert isinstance(context.obj, Obj), context.obj
 
