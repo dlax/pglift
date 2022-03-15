@@ -24,6 +24,20 @@ Then, create a Python3 virtualenv and install the project:
     (.venv) $ pip install --upgrade pip
     (.venv) $ pip install -e ".[dev,test]"
 
+Linting, formatting, type-checking
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The project uses flake8_ for linting, black_ and isort_ for formatting and
+mypy_ for type-checking. The packaging is checked with `check-manifest`_.
+
+All these checks can be run with ``tox -e lint`` or individually.
+
+.. _flake8: https://flake8.pycqa.org/
+.. _black: https://black.readthedocs.io/
+.. _isort: https://pycqa.github.io/isort/
+.. _mypy: https://mypy.readthedocs.io/
+.. _`check-manifest`: https://pypi.org/project/check-manifest/
+
 Running tests
 ~~~~~~~~~~~~~
 
