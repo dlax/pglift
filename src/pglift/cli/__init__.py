@@ -35,7 +35,9 @@ class LogDisplayer:
 
 class CLIContext(Context):
     def confirm(self, message: str, default: bool) -> bool:
-        return rich.prompt.Confirm(console=CONSOLE).ask(f"[yellow]>[/yellow] {message}")
+        return rich.prompt.Confirm(console=CONSOLE).ask(
+            f"[yellow]>[/yellow] {message}", default=default
+        )
 
     @lru_cache(maxsize=None)
     def prompt(self, message: str, hide_input: bool = False) -> str:
