@@ -236,3 +236,42 @@ def site_configure(
         _install.do(ctx, env=env)
     elif action == "uninstall":
         _install.undo(ctx)
+
+
+@cli.command("completion", hidden=True)
+@click.argument("shell", type=click.Choice(["bash", "fish", "zsh"]), required=True)
+def completion(shell: Literal["bash", "fish", "zsh"]) -> None:
+    """Output completion for the given shell (bash, zsh or fish).
+
+    To load completions:
+
+    Bash:
+
+    $ source <(pglift completion bash)
+
+    To load completions for each session, execute once:
+
+    $ pglift completion bash > /etc/bash_completion.d/pglift
+
+    Fish:
+
+    $ pglift completion fish | source
+
+    To load completions for each session, execute once:
+
+    $ pglift completion fish > ~/.config/fish/completions/pglift.fish
+
+    Zsh:
+
+    $ pglift completion zsh > "${fpath[1]}/pglift"
+    """
+
+    shell_complete_class_map = {
+        "bash": click.shell_completion.BashComplete,
+        "fish": click.shell_completion.FishComplete,
+        "zsh": click.shell_completion.ZshComplete,
+    }
+    click.echo(
+        shell_complete_class_map[shell](cli, {}, "pglift", "_PGLIFT_COMPLETE").source(),
+        nl=False,
+    )

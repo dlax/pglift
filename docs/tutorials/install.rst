@@ -58,15 +58,26 @@ completion for ``bash``, ``zsh`` or ``fish``.
 Bash
 ~~~~
 
-Source the bash complete script ``extras/.pglift-complete.bash`` (for example in ``~/.bashrc`` or ``~/.bash_profile``).
+::
+
+  $ source <(pglift completion bash)
+
+  # To load completions for each session, execute once:
+  $ pglift completion bash > /etc/bash_completion.d/pglift
 
 Zsh
 ~~~
 
-Source the zsh complete script ``extras/.pglift-complete.zsh`` (for example in ``~/.zshrc`` or ``~/.zsh_profile``).
+::
+
+  $ pglift completion zsh > "${fpath[1]}/pglift"
 
 Fish
 ~~~~
 
-Copy the fish complete script ``extras/.pglift-complete.fish`` to
-``~/.config/fish/completions/``.
+::
+
+  $ pglift completion fish | source
+
+  # To load completions for each session, execute once:
+  $ pglift completion fish > ~/.config/fish/completions/pglift.fish

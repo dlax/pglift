@@ -225,6 +225,13 @@ def test_site_configure(
     undo_install.assert_called_once_with(ctx)
 
 
+@pytest.mark.parametrize("shell", ["bash", "fish", "zsh"])
+def test_completion(runner: CliRunner, shell: str) -> None:
+    result = runner.invoke(cli, ["completion", shell])
+    assert result.exit_code == 0, result
+    assert "_pglift_completion" in result.output
+
+
 def test_instance_create(
     runner: CliRunner,
     ctx: Context,
