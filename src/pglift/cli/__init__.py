@@ -212,7 +212,6 @@ def site_settings(ctx: Context, console: Console) -> None:
 @cli.command(
     "site-configure",
     hidden=True,
-    help="Manage installation of extra data files for pglift.\n\nThis is an INTERNAL command.",
 )
 @click.argument(
     "action", type=click.Choice(["install", "uninstall"]), default="install"
@@ -228,6 +227,10 @@ def site_configure(
     action: Literal["install", "uninstall"],
     settings: Optional[pathlib.Path],
 ) -> None:
+    """Manage installation of extra data files for pglift.
+
+    This is an INTERNAL command.
+    """
     if action == "install":
         env = f"SETTINGS=@{settings}" if settings else None
         _install.do(ctx, env=env)
