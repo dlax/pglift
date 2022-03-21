@@ -304,9 +304,11 @@ def test_instance_alter(
     altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(
         instance_mod, "apply", return_value=(instance, {}, True)
-    ) as apply, patch.object(instance_mod, "describe", return_value=actual) as describe:
+    ) as apply, patch.object(
+        instance_mod, "_describe", return_value=actual
+    ) as _describe:
         result = runner.invoke(cli, cmd, obj=obj)
-    describe.assert_called_once_with(ctx, instance.name, instance.version)
+    _describe.assert_called_once_with(ctx, instance)
     apply.assert_called_once_with(ctx, altered)
     assert result.exit_code == 0, result.output
 
