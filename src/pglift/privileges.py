@@ -47,7 +47,7 @@ def get(
     """
 
     with db.superuser_connect(ctx, instance) as cnx:
-        cur = cnx.execute(db.query("database_list"))
+        cur = cnx.execute(db.query("database_list", where_clause=sql.SQL("")))
         existing_databases = [db["name"] for db in cur.fetchall()]
     if not databases:
         databases = existing_databases

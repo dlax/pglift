@@ -102,8 +102,15 @@ def test_list(
     ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
 ) -> None:
     database_factory("db1")
+    database_factory("db2")
     dbs = databases.list(ctx, instance)
-    db1 = next(d for d in dbs if d.name == "db1").dict()
+    dbnames = [d.name for d in dbs]
+    assert "db2" in dbnames
+    dbs = databases.list(ctx, instance, dbnames=("db1",))
+    dbnames = [d.name for d in dbs]
+    assert "db2" not in dbnames
+    assert len(dbs) == 1
+    db1 = next(d for d in dbs).dict()
     db1.pop("size")
     db1["tablespace"].pop("size")
     assert db1 == {

@@ -58,15 +58,23 @@ def describe(
 
 
 def list(
-    ctx: BaseContext, instance: "system.Instance"
+    ctx: BaseContext, instance: "system.Instance", dbnames: Sequence[str] = ()
 ) -> List[interface.DetailedDatabase]:
-    """List all databases in instance."""
+    """List databases in instance.
 
+    :param dbnames: restrict operation on databases with a name in this list.
+    """
+    where_clause: sql.Composable
+    where_clause = sql.SQL("")
+    if dbnames:
+        where_clause = sql.SQL("AND d.datname IN ({})").format(
+            sql.SQL(", ").join((map(sql.Literal, dbnames)))
+        )
     with db.superuser_connect(ctx, instance) as cnx:
         with cnx.cursor(
             row_factory=psycopg.rows.class_row(interface.DetailedDatabase)
         ) as cur:
-            cur.execute(db.query("database_list"))
+            cur.execute(db.query("database_list", where_clause=where_clause))
             return cur.fetchall()
 
 

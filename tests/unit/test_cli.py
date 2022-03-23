@@ -1204,10 +1204,10 @@ def test_database_list(
     ) as list_:
         result = runner.invoke(
             cli,
-            ["database", "-i", instance.name, "list", "--json"],
+            ["database", "-i", instance.name, "list", "template1", "--json"],
             obj=obj,
         )
-    list_.assert_called_once_with(ctx, instance)
+    list_.assert_called_once_with(ctx, instance, dbnames=("template1",))
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0, result.stdout
     dbs = json.loads(result.stdout)

@@ -91,15 +91,24 @@ def database_describe(ctx: Context, instance: system.Instance, name: str) -> Non
 
 @cli.command("list")
 @as_json_option
+@click.argument("dbname", nargs=-1)
 @pass_instance
 @pass_console
 @pass_ctx
 def database_list(
-    ctx: Context, console: Console, instance: system.Instance, as_json: bool
+    ctx: Context,
+    console: Console,
+    instance: system.Instance,
+    dbname: Sequence[str],
+    as_json: bool,
 ) -> None:
-    """List databases"""
+    """List databases (all or specified ones)
+
+    Only queried databases are shown when DBNAME is specified.
+    """
+
     with instances.running(ctx, instance):
-        dbs = databases.list(ctx, instance)
+        dbs = databases.list(ctx, instance, dbnames=dbname)
     if as_json:
         print_json_for((i.dict(by_alias=True) for i in dbs), display=console.print_json)
     else:
