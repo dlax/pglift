@@ -788,13 +788,14 @@ def apply(
                 "enabled" if manifest.data_checksums else "disabled",
             )
 
-    needs_restart = is_running and "port" in changes
+    needs_restart = False
 
     if state == States.stopped:
         if is_running:
             stop(ctx, instance)
     elif state == States.started:
         if is_running:
+            needs_restart = "port" in changes
             # Check if a restart is needed, unless we're sure it is already
             # (because of 'port' change) and querying for run-time settings
             # would fail.
