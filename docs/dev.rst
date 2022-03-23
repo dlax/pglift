@@ -87,6 +87,10 @@ version available. If multiple versions of PostgreSQL are available, a
 specific version can be selected by passing ``--pg-version=<version>`` option
 to the ``pytest`` command.
 
+If your system uses a specific locale and your tests are failing because of
+assertion issues with translated messages, you can run the tests with
+`LANG=C`.
+
 Pre-commit hooks
 ~~~~~~~~~~~~~~~~
 
