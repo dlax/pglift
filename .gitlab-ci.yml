@@ -126,6 +126,6 @@ publish:
     - pip install build
   script:
     - git describe --exact-match
-    - build
-    - twine check dist/*
-    - twine upload dist/*
+    - python3 -m build
+    - python3 -m twine check dist/*
+    - python3 -m twine upload dist/*
