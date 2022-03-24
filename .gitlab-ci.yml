@@ -122,6 +122,10 @@ publish:
   stage: publish
   image: python:3
   before_script:
-    - pip install tox
+    - pip install twine
+    - pip install build
   script:
-    - tox -e release
+    - git describe --exact-match
+    - build
+    - twine check dist/*
+    - twine upload dist/*
