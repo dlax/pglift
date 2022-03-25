@@ -31,6 +31,12 @@ First, ``ansible`` needs to be installed in the :ref:`development environment
 
     (.venv) $ pip install ansible
 
+.. note::
+   Ansible modules require Python 3 so, depending on the Ansible version being
+   used, one may need to configure managed machines to use Python 3 through
+   the ``ansible_python_interpreter`` inventory variable or ``-e``
+   command-line option.
+
 The following playbook installs and configures 3 PostgreSQL instances on
 localhost; the first two ones are *started* while the third one is not.
 
