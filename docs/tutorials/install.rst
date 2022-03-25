@@ -7,6 +7,7 @@ pglift can be installed from PyPI, for instance in a virtualenv as follow:
 
     $ python3 -m venv .venv
     $ . .venv/bin/activate
+    (.venv) $ pip install 'pip>=20.3'
     (.venv) $ pip install pglift
 
 The :doc:`Ansible <ansible>` collection is not shipped with the
