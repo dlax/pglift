@@ -32,17 +32,23 @@ def test_init(
     postgresql_conf = i.datadir / "postgresql.conf"
     assert postgresql_conf.exists()
     assert (i.waldir / "archive_status").is_dir()
-    is_valid = False
+    locale_prefix = "lc_"
+    locale_settings = {}
     with postgresql_conf.open() as f:
         for line in f:
-            if "lc_messages = 'C'" in line:
-                is_valid = True
-            sline = line.lstrip()
-            assert not sline or sline.startswith(
-                "#"
-            ), f"found uncommented line in postgresql.conf: {line}"
+            if line.startswith(locale_prefix):
+                key, value = line[len(locale_prefix) :].split(" = ", 1)
+                locale_settings[key] = value.split("#", 1)[0].strip()
+            else:
+                sline = line.lstrip()
+                assert not sline or sline.startswith(
+                    "#"
+                ), f"found uncommented line in postgresql.conf: {line}"
 
-    assert is_valid, "invalid postgresql.conf"
+    expected_locale_settings = dict.fromkeys(
+        ["messages", "monetary", "numeric", "time"], "'C'"
+    )
+    assert locale_settings == expected_locale_settings
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instances.systemd_unit(i))
