@@ -487,7 +487,7 @@ def start(
 @task("starting PostgreSQL instance")
 def start_postgresql(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
@@ -550,7 +550,7 @@ def stop(
 @task("stopping PostgreSQL instance")
 def stop_postgresql(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     mode: str = "fast",
     wait: bool = True,
 ) -> None:
@@ -584,7 +584,7 @@ def restart(
 @task("reloading PostgreSQL instance")
 def reload(
     ctx: "BaseContext",
-    instance: system.Instance,
+    instance: system.PostgreSQLInstance,
 ) -> None:
     """Reload an instance."""
     logger.info("reloading instance %s", instance)
@@ -593,7 +593,7 @@ def reload(
 
 
 @task("promoting PostgreSQL instance")
-def promote(ctx: "BaseContext", instance: system.Instance) -> None:
+def promote(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> None:
     """Promote a standby instance"""
     if not instance.standby:
         raise exceptions.InstanceStateError(f"{instance} is not a standby")
@@ -681,7 +681,7 @@ def upgrade(
     return newinstance
 
 
-def get_data_checksums(ctx: "BaseContext", instance: system.Instance) -> bool:
+def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
     """Return True/False if data_checksums is enabled/disable on instance."""
     if status(ctx, instance) == Status.running:
         # Use SQL SHOW data_checksums since pg_checksums doesn't work if
@@ -709,7 +709,7 @@ def get_data_checksums(ctx: "BaseContext", instance: system.Instance) -> bool:
 
 
 def set_data_checksums(
-    ctx: "BaseContext", instance: system.Instance, enabled: bool
+    ctx: "BaseContext", instance: system.PostgreSQLInstance, enabled: bool
 ) -> None:
     """Enable/disable data checksums on instance."""
     if status(ctx, instance) == Status.running:
@@ -952,7 +952,7 @@ def list(
 
 
 def env_for(
-    ctx: "BaseContext", instance: system.Instance, *, path: bool = False
+    ctx: "BaseContext", instance: system.PostgreSQLInstance, *, path: bool = False
 ) -> Dict[str, str]:
     """Return libpq environment variables suitable to connect to `instance`.
 
@@ -982,7 +982,7 @@ def env_for(
 
 
 def exec(
-    ctx: "BaseContext", instance: system.Instance, command: Tuple[str, ...]
+    ctx: "BaseContext", instance: system.PostgreSQLInstance, command: Tuple[str, ...]
 ) -> None:
     """Execute given PostgreSQL command in the libpq environment for `instance`.
 
@@ -998,7 +998,7 @@ def exec(
         raise exceptions.FileNotFoundError(str(e))
 
 
-def env(ctx: "BaseContext", instance: system.Instance) -> str:
+def env(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> str:
     return "\n".join(
         [
             f"export {key}={value}"
@@ -1017,7 +1017,7 @@ def exists(ctx: "BaseContext", name: str, version: Optional[str]) -> bool:
 
 
 def settings(
-    ctx: "BaseContext", instance: system.Instance
+    ctx: "BaseContext", instance: system.PostgreSQLInstance
 ) -> List[interface.PGSetting]:
     """Return the list of run-time parameters of the server, as available in
     pg_settings view.
@@ -1031,7 +1031,7 @@ def settings(
         return cur.fetchall()
 
 
-def logs(ctx: "BaseContext", instance: system.Instance) -> Iterator[str]:
+def logs(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> Iterator[str]:
     """Return the content of current log file as an iterator.
 
     :raises ~exceptions.FileNotFoundError: if the current log file, matching
