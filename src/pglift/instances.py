@@ -43,7 +43,7 @@ def pg_ctl(version: Optional[str], *, ctx: "BaseContext") -> ctl.PGCtl:
     pg_bindir = None
     settings = ctx.settings.postgresql
     version = version or settings.default_version
-    if version is not None:
+    if version is not None and settings.versions:
         pg_bindir = settings.versions[version].bindir
     try:
         pg_ctl = ctl.PGCtl(pg_bindir, run_command=ctx.run)

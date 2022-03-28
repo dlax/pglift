@@ -200,6 +200,7 @@ def pg_version(request: Any, settings: Settings) -> str:
     if version is None:
         pytest.skip("no PostgreSQL installation found")
     assert isinstance(version, str)
+    assert settings.postgresql.bindir
     if not pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
         pytest.fail(f"PostgreSQL {version} not available", pytrace=False)
     return version

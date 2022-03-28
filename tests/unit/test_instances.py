@@ -58,7 +58,10 @@ def test_init_dirty(
 def test_init_version_not_available(ctx: Context) -> None:
     settings = ctx.settings
     version = "11"
-    if pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
+    if (
+        settings.postgresql.bindir
+        and pathlib.Path(settings.postgresql.bindir.format(version=version)).exists()
+    ):
         pytest.skip(f"PostgreSQL {version} seems available")
     manifest = interface.Instance(name=f"pg{version}", version=version)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):

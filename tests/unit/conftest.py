@@ -69,6 +69,7 @@ def settings(tmp_path: Path, pgbackrest: bool, prometheus: bool) -> Settings:
 @pytest.fixture(scope="session")
 def pg_version() -> str:
     s = Settings().postgresql
+    assert s.bindir
     pg_bindir_template = s.bindir
     versions = s.versions
     for version in versions:

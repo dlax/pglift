@@ -127,6 +127,13 @@ def _postgresql_bindir_version() -> Tuple[str, str]:
         raise EnvironmentError("no PostgreSQL installation found")
 
 
+bindir: Optional[str]
+try:
+    bindir = _postgresql_bindir_version()[0]
+except EnvironmentError:
+    bindir = None
+
+
 AuthMethod = Literal[
     "trust",
     "reject",
@@ -184,7 +191,7 @@ class PostgreSQLSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_"
 
-    bindir: str = _postgresql_bindir_version()[0]
+    bindir: Optional[str] = bindir
     """Default PostgreSQL bindir, templated by version."""
 
     versions: Dict[str, PostgreSQLVersionSettings] = Field(default_factory=lambda: {})
@@ -194,11 +201,12 @@ class PostgreSQLSettings(BaseSettings):
     def set_versions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         bindir = values["bindir"]
         pgversions = values["versions"]
-        for version in POSTGRESQL_SUPPORTED_VERSIONS:
-            if version not in pgversions:
-                pgversions[version] = PostgreSQLVersionSettings(
-                    bindir=bindir.format(version=version)
-                )
+        if bindir is not None:
+            for version in POSTGRESQL_SUPPORTED_VERSIONS:
+                if version not in pgversions:
+                    pgversions[version] = PostgreSQLVersionSettings(
+                        bindir=bindir.format(version=version)
+                    )
         return values
 
     default_version: Optional[str] = None
