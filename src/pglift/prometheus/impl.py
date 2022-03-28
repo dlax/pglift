@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 import psycopg
 import psycopg.conninfo
 
-from .. import cmd, exceptions
-from .. import instance as instance_mod
-from .. import roles, systemd, util
+from .. import cmd, exceptions, instances, roles, systemd, util
 from ..models import interface, system
 from ..task import task
 from .models import PostgresExporter, ServiceManifest, default_port
@@ -335,7 +333,7 @@ def setup_local(
         # Create dedicated user but only if postgres_exporter
         # as never been initialized
         password_ = util.generate_password()
-        with instance_mod.running(ctx, instance):
+        with instances.running(ctx, instance):
             role = interface.Role(
                 name=rolename,
                 password=password_,

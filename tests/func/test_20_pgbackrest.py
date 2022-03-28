@@ -6,8 +6,7 @@ from typing import Iterator
 
 import pytest
 
-from pglift import instance as instance_mod
-from pglift import types
+from pglift import instances, types
 from pglift.conf import info as conf_info
 from pglift.ctx import Context
 from pglift.models import interface, system
@@ -100,7 +99,7 @@ def test_backup_restore(
 
     before = datetime.now()
     assert not latest_backup.exists()
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
         assert "backrest" in [r["datname"] for r in rows]
         pgbackrest.backup(
@@ -126,6 +125,6 @@ def test_backup_restore(
     assert backup1.date_stop > backup1.date_start
 
     pgbackrest.restore(ctx, instance, pgbackrest_settings, date=before_drop)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
         assert "backrest" in [r["datname"] for r in rows]

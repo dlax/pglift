@@ -5,8 +5,7 @@ import click
 from pydantic.utils import deep_update
 from rich.console import Console
 
-from .. import instance as instance_mod
-from .. import privileges, roles, task
+from .. import instances, privileges, roles, task
 from ..ctx import Context
 from ..models import helpers, interface, system
 from .util import (
@@ -42,7 +41,7 @@ def cli(instance: system.Instance) -> None:
 @pass_ctx
 def role_create(ctx: Context, instance: system.Instance, role: interface.Role) -> None:
     """Create a role in a PostgreSQL instance"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         if roles.exists(ctx, instance, role.name):
             raise click.ClickException("role already exists")
         with task.transaction():
@@ -59,7 +58,7 @@ def role_alter(
 ) -> None:
     """Alter a role in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Role, changes)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         values = roles.describe(ctx, instance, rolname).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
@@ -73,7 +72,7 @@ def role_alter(
 def role_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
     """Apply manifest as a role"""
     role = interface.Role.parse_yaml(file)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         roles.apply(ctx, instance, role)
 
 
@@ -83,7 +82,7 @@ def role_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
 @pass_ctx
 def role_describe(ctx: Context, instance: system.Instance, name: str) -> None:
     """Describe a role"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         described = roles.describe(ctx, instance, name)
     click.echo(described.yaml(exclude={"state"}), nl=False)
 
@@ -94,7 +93,7 @@ def role_describe(ctx: Context, instance: system.Instance, name: str) -> None:
 @pass_ctx
 def role_drop(ctx: Context, instance: system.Instance, name: str) -> None:
     """Drop a role"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         roles.drop(ctx, instance, name)
 
 
@@ -116,7 +115,7 @@ def role_privileges(
     as_json: bool,
 ) -> None:
     """List default privileges of a role."""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         roles.describe(ctx, instance, name)  # check existence
         try:
             prvlgs = privileges.get(ctx, instance, databases=databases, roles=(name,))

@@ -5,7 +5,7 @@ def test_pluginmanager_get() -> None:
     p = pm.PluginManager.get(no_register=["prometheus"])
     assert {name for name, _ in p.list_name_plugin()} == {
         "pglift.backup",
-        "pglift.instance",
+        "pglift.instances",
         "pglift.passfile",
         "pglift.pgbackrest",
     }

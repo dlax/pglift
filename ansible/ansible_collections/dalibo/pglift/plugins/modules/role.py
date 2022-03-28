@@ -96,8 +96,7 @@ from typing import Dict
 import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
-from pglift import instance as instance_mod
-from pglift import roles, types
+from pglift import instances, roles, types
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface, system
 from pglift.settings import Settings
@@ -129,7 +128,7 @@ def run_module() -> None:
 
     try:
         instance = system.Instance.system_lookup(ctx, (i_name, i_version))
-        with instance_mod.running(ctx, instance):
+        with instances.running(ctx, instance):
             roles.apply(ctx, instance, role)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)

@@ -11,9 +11,7 @@ from dateutil.tz import gettz
 from pgtoolkit import conf as pgconf
 from typing_extensions import Literal
 
-from .. import exceptions
-from .. import instance as instance_mod
-from .. import roles, util
+from .. import exceptions, instances, roles, util
 from ..conf import info as conf_info
 from ..models import interface
 from ..task import task
@@ -203,7 +201,7 @@ def init(
     instance: "system.PostgreSQLInstance",
     settings: "PgBackRestSettings",
 ) -> None:
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         role = interface.Role(
             name=ctx.settings.postgresql.backuprole,
             password=util.generate_password(),

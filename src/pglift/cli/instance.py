@@ -6,10 +6,9 @@ import click
 from pydantic.utils import deep_update
 from rich.console import Console
 
-from .. import instance as instance_mod
-from .. import privileges, task, types
+from .. import instances, privileges, task, types
 from ..ctx import Context
-from ..instance import Status
+from ..instances import Status
 from ..models import helpers, interface, system
 from ..pgbackrest import impl as pgbackrest_mod
 from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, PgBackRestSettings
@@ -125,10 +124,10 @@ def _instance_create(
     @pass_ctx
     def command(ctx: Context, instance: interface.Instance) -> None:
         """Initialize a PostgreSQL instance"""
-        if instance_mod.exists(ctx, instance.name, instance.version):
+        if instances.exists(ctx, instance.name, instance.version):
             raise click.ClickException("instance already exists")
         with task.transaction():
-            instance_mod.apply(ctx, instance)
+            instances.apply(ctx, instance)
 
     return command
 
@@ -145,10 +144,10 @@ def _instance_alter(
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
         """Alter PostgreSQL INSTANCE"""
         changes = helpers.unnest(composite_instance_model, changes)
-        values = instance_mod._describe(ctx, instance).dict()
+        values = instances._describe(ctx, instance).dict()
         values = deep_update(values, changes)
         altered = composite_instance_model.parse_obj(values)
-        instance_mod.apply(ctx, altered)
+        instances.apply(ctx, altered)
 
     return command
 
@@ -159,7 +158,7 @@ def _instance_alter(
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
     instance = interface.Instance.parse_yaml(file)
-    instance_mod.apply(ctx, instance)
+    instances.apply(ctx, instance)
 
 
 @cli.command("promote")
@@ -167,7 +166,7 @@ def instance_apply(ctx: Context, file: IO[str]) -> None:
 @pass_ctx
 def instance_promote(ctx: Context, instance: system.Instance) -> None:
     """Promote standby PostgreSQL INSTANCE"""
-    instance_mod.promote(ctx, instance)
+    instances.promote(ctx, instance)
 
 
 @cli.command("describe")
@@ -176,7 +175,7 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 def instance_describe(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Describe PostgreSQL INSTANCE"""
     for i in instance:
-        described = instance_mod.describe(ctx, i.name, i.version)
+        described = instances.describe(ctx, i.name, i.version)
         click.echo(described.yaml(), nl=False)
 
 
@@ -194,15 +193,13 @@ def instance_list(
 ) -> None:
     """List the available instances"""
 
-    instances = instance_mod.list(ctx, version=version)
+    insts = instances.list(ctx, version=version)
     if as_json:
         print_json_for(
-            (i.dict(by_alias=True) for i in instances), display=console.print_json
+            (i.dict(by_alias=True) for i in insts), display=console.print_json
         )
     else:
-        print_table_for(
-            (i.dict(by_alias=True) for i in instances), display=console.print
-        )
+        print_table_for((i.dict(by_alias=True) for i in insts), display=console.print)
 
 
 @cli.command("drop")
@@ -211,7 +208,7 @@ def instance_list(
 def instance_drop(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Drop PostgreSQL INSTANCE"""
     for i in instance:
-        instance_mod.drop(ctx, i)
+        instances.drop(ctx, i)
 
 
 @cli.command("status")
@@ -224,7 +221,7 @@ def instance_status(context: click.Context, instance: system.Instance) -> None:
     datadir') and exit with respective status code (0, 3, 4).
     """
     ctx = context.obj.ctx
-    status = instance_mod.status(ctx, instance)
+    status = instances.status(ctx, instance)
     click.echo(status.name.replace("_", " "))
     context.exit(status.value)
 
@@ -242,8 +239,8 @@ def instance_start(
             "only one INSTANCE argument may be given with --foreground"
         )
     for i in instance:
-        instance_mod.check_status(ctx, i, Status.not_running)
-        instance_mod.start(ctx, i, foreground=foreground)
+        instances.check_status(ctx, i, Status.not_running)
+        instances.start(ctx, i, foreground=foreground)
 
 
 @cli.command("stop")
@@ -252,7 +249,7 @@ def instance_start(
 def instance_stop(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Stop PostgreSQL INSTANCE"""
     for i in instance:
-        instance_mod.stop(ctx, i)
+        instances.stop(ctx, i)
 
 
 @cli.command("reload")
@@ -261,7 +258,7 @@ def instance_stop(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
 def instance_reload(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Reload PostgreSQL INSTANCE"""
     for i in instance:
-        instance_mod.reload(ctx, i)
+        instances.reload(ctx, i)
 
 
 @cli.command("restart")
@@ -270,7 +267,7 @@ def instance_reload(ctx: Context, instance: Tuple[system.Instance, ...]) -> None
 def instance_restart(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
     """Restart PostgreSQL INSTANCE"""
     for i in instance:
-        instance_mod.restart(ctx, i)
+        instances.restart(ctx, i)
 
 
 @cli.command("exec")
@@ -283,7 +280,7 @@ def instance_exec(
     """Execute command in the libpq environment for PostgreSQL INSTANCE"""
     if not command:
         raise click.ClickException("no command given")
-    instance_mod.exec(ctx, instance, command)
+    instances.exec(ctx, instance, command)
 
 
 @cli.command("env")
@@ -296,7 +293,7 @@ def instance_env(ctx: Context, instance: system.Instance) -> None:
 
     export $(pglift instance env myinstance)
     """
-    for key, value in sorted(instance_mod.env_for(ctx, instance, path=True).items()):
+    for key, value in sorted(instances.env_for(ctx, instance, path=True).items()):
         click.echo(f"{key}={value}")
 
 
@@ -309,7 +306,7 @@ def instance_logs(ctx: Context, instance: system.Instance) -> None:
     This assumes that the PostgreSQL instance is configured to use file-based
     logging (i.e. log_destination amongst 'stderr' or 'csvlog').
     """
-    for line in instance_mod.logs(ctx, instance):
+    for line in instances.logs(ctx, instance):
         click.echo(line, nl=False)
 
 
@@ -373,7 +370,7 @@ def instance_restore(
             display=console.print,
         )
     else:
-        instance_mod.check_status(ctx, instance, Status.not_running)
+        instances.check_status(ctx, instance, Status.not_running)
         if label is not None and date is not None:
             raise click.BadArgumentUsage(
                 "--label and --date arguments are mutually exclusive"
@@ -399,7 +396,7 @@ def instance_privileges(
     as_json: bool,
 ) -> None:
     """List default privileges on INSTANCE"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         try:
             prvlgs = privileges.get(ctx, instance, databases=databases, roles=roles)
         except ValueError as e:
@@ -445,8 +442,8 @@ def instance_upgrade(
     jobs: Optional[int],
 ) -> None:
     """Upgrade INSTANCE using pg_upgrade"""
-    instance_mod.check_status(ctx, instance, Status.not_running)
-    new_instance = instance_mod.upgrade(
+    instances.check_status(ctx, instance, Status.not_running)
+    new_instance = instances.upgrade(
         ctx, instance, version=newversion, name=newname, port=port, jobs=jobs
     )
-    instance_mod.start(ctx, new_instance)
+    instances.start(ctx, new_instance)

@@ -1,9 +1,9 @@
 Instances
 =========
 
-.. currentmodule:: pglift.instance
+.. currentmodule:: pglift.instances
 
-Module :mod:`pglift.instance` exposes the following API to manipulate
+Module :mod:`pglift.instances` exposes the following API to manipulate
 instances:
 
 .. autofunction:: apply

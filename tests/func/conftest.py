@@ -14,9 +14,7 @@ import pytest
 from pgtoolkit.ctl import Status
 from typing_extensions import Protocol
 
-from pglift import _install
-from pglift import instance as instance_mod
-from pglift import pgbackrest, prometheus
+from pglift import _install, instances, pgbackrest, prometheus
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import (
@@ -331,9 +329,9 @@ def instance_initialized(
     instance = system.BaseInstance.get(
         instance_manifest.name, instance_manifest.version, ctx
     )
-    assert instance_mod.status(ctx, instance) == Status.unspecified_datadir
-    instance_mod.init(ctx, instance_manifest)
-    assert instance_mod.status(ctx, instance) == Status.not_running
+    assert instances.status(ctx, instance) == Status.unspecified_datadir
+    instances.init(ctx, instance_manifest)
+    assert instances.status(ctx, instance) == Status.not_running
     return system.PostgreSQLInstance.system_lookup(
         ctx, (instance_manifest.name, instance_manifest.version)
     )
@@ -369,7 +367,7 @@ def instance_dropped(
 ) -> pgtoolkit.conf.Configuration:
     config = instance.config()
     if instance.exists():
-        instance_mod.drop(ctx, instance)
+        instances.drop(ctx, instance)
     return config
 
 

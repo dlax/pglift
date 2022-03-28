@@ -12,9 +12,7 @@ from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import databases, exceptions
-from pglift import instance as instance_mod
-from pglift import systemd
+from pglift import databases, exceptions, instances, systemd
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import Settings
@@ -47,7 +45,7 @@ def test_init(
     assert is_valid, "invalid postgresql.conf"
 
     if ctx.settings.service_manager == "systemd":
-        assert systemd.is_enabled(ctx, instance_mod.systemd_unit(i))
+        assert systemd.is_enabled(ctx, instances.systemd_unit(i))
 
     # Instance already exists, no-op.
     with monkeypatch.context() as m:
@@ -55,8 +53,8 @@ def test_init(
         def fail() -> NoReturn:
             raise AssertionError("unexpected called")
 
-        m.setattr(instance_mod, "pg_ctl", fail)
-        instance_mod.init(ctx, interface.Instance(name=i.name, version=i.version))
+        m.setattr(instances, "pg_ctl", fail)
+        instances.init(ctx, interface.Instance(name=i.name, version=i.version))
 
 
 def test_log_directory(
@@ -108,7 +106,7 @@ def test_connect(
     if surole.password:
         password = surole.password.get_secret_value()
 
-    with instance_mod.running(ctx, i):
+    with instances.running(ctx, i):
         if password is not None:
             with pytest.raises(psycopg.OperationalError, match="no password supplied"):
                 with patch.dict("os.environ", clear=True):
@@ -151,54 +149,54 @@ def test_start_stop_restart_running_stopped(
     i = instance
     use_systemd = ctx.settings.service_manager == "systemd"
     if use_systemd:
-        assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
+        assert not systemd.is_active(ctx, instances.systemd_unit(i))
 
-    instance_mod.start(ctx, i)
+    instances.start(ctx, i)
     try:
-        assert instance_mod.status(ctx, i) == Status.running
+        assert instances.status(ctx, i) == Status.running
         if use_systemd:
-            assert systemd.is_active(ctx, instance_mod.systemd_unit(i))
+            assert systemd.is_active(ctx, instances.systemd_unit(i))
     finally:
-        instance_mod.stop(ctx, i)
+        instances.stop(ctx, i)
 
         # Stopping a non-running instance is a no-op.
         caplog.clear()
         with caplog.at_level(logging.WARNING, logger="pglift"):
-            instance_mod.stop(ctx, i)
+            instances.stop(ctx, i)
         assert f"instance {instance} is already stopped" in caplog.records[0].message
 
-    assert instance_mod.status(ctx, i) == Status.not_running
+    assert instances.status(ctx, i) == Status.not_running
     if use_systemd:
-        assert not systemd.is_active(ctx, instance_mod.systemd_unit(i))
+        assert not systemd.is_active(ctx, instances.systemd_unit(i))
 
-    instance_mod.start(ctx, i, logfile=tmp_path / "log", run_hooks=False)
+    instances.start(ctx, i, logfile=tmp_path / "log", run_hooks=False)
     try:
-        assert instance_mod.status(ctx, i) == Status.running
+        assert instances.status(ctx, i) == Status.running
         if not use_systemd:
             # FIXME: systemctl restart would fail with:
             #   Start request repeated too quickly.
             #   Failed with result 'start-limit-hit'.
-            instance_mod.restart(ctx, i)
-            assert instance_mod.status(ctx, i) == Status.running
-        instance_mod.reload(ctx, i)
-        assert instance_mod.status(ctx, i) == Status.running
+            instances.restart(ctx, i)
+            assert instances.status(ctx, i) == Status.running
+        instances.reload(ctx, i)
+        assert instances.status(ctx, i) == Status.running
     finally:
-        instance_mod.stop(ctx, i, mode="immediate", run_hooks=False)
+        instances.stop(ctx, i, mode="immediate", run_hooks=False)
 
-    assert instance_mod.status(ctx, i) == Status.not_running
-    with instance_mod.stopped(ctx, i):
-        assert instance_mod.status(ctx, i) == Status.not_running
-        with instance_mod.stopped(ctx, i):
-            assert instance_mod.status(ctx, i) == Status.not_running
-        with instance_mod.running(ctx, i):
-            assert instance_mod.status(ctx, i) == Status.running
-            with instance_mod.running(ctx, i):
-                assert instance_mod.status(ctx, i) == Status.running
-            with instance_mod.stopped(ctx, i):
-                assert instance_mod.status(ctx, i) == Status.not_running
-            assert instance_mod.status(ctx, i) == Status.running
-        assert instance_mod.status(ctx, i) == Status.not_running
-    assert instance_mod.status(ctx, i) == Status.not_running
+    assert instances.status(ctx, i) == Status.not_running
+    with instances.stopped(ctx, i):
+        assert instances.status(ctx, i) == Status.not_running
+        with instances.stopped(ctx, i):
+            assert instances.status(ctx, i) == Status.not_running
+        with instances.running(ctx, i):
+            assert instances.status(ctx, i) == Status.running
+            with instances.running(ctx, i):
+                assert instances.status(ctx, i) == Status.running
+            with instances.stopped(ctx, i):
+                assert instances.status(ctx, i) == Status.not_running
+            assert instances.status(ctx, i) == Status.running
+        assert instances.status(ctx, i) == Status.not_running
+    assert instances.status(ctx, i) == Status.not_running
 
 
 @pytest.mark.usefixtures("installed")
@@ -223,7 +221,7 @@ def test_apply(
         prometheus={"port": prometheus_port},
         surole_password=surole_password,
     )
-    r = instance_mod.apply(ctx, im)
+    r = instances.apply(ctx, im)
     assert r is not None
     i, changes, needs_restart = r
     assert i is not None
@@ -234,19 +232,19 @@ def test_apply(
     assert pgconfig
     assert pgconfig.ssl
 
-    assert instance_mod.status(ctx, i) == Status.not_running
+    assert instances.status(ctx, i) == Status.not_running
     im.state = interface.InstanceState.started
-    r = instance_mod.apply(ctx, im)
+    r = instances.apply(ctx, im)
     assert r is not None
     i, changes, needs_restart = r
     assert not changes
     assert not needs_restart
-    assert instance_mod.status(ctx, i) == Status.running
+    assert instances.status(ctx, i) == Status.running
 
     im.configuration["listen_addresses"] = "*"  # requires restart
     im.configuration["autovacuum"] = False  # requires reload
     with caplog.at_level(logging.DEBUG, logger="pgflit"):
-        r = instance_mod.apply(ctx, im)
+        r = instances.apply(ctx, im)
     assert (
         f"instance {i} needs restart due to parameter changes: listen_addresses"
         in caplog.messages
@@ -258,18 +256,18 @@ def test_apply(
         "autovacuum": (None, False),
     }
     assert needs_restart
-    assert instance_mod.status(ctx, i) == Status.running
+    assert instances.status(ctx, i) == Status.running
 
     im.state = interface.InstanceState.stopped
-    instance_mod.apply(ctx, im)
-    assert instance_mod.status(ctx, i) == Status.not_running
+    instances.apply(ctx, im)
+    assert instances.status(ctx, i) == Status.not_running
 
     im.state = interface.InstanceState.absent
-    r = instance_mod.apply(ctx, im)
+    r = instances.apply(ctx, im)
     assert r is None
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()
-    assert instance_mod.status(ctx, i) == Status.unspecified_datadir
+    assert instances.status(ctx, i) == Status.unspecified_datadir
 
 
 def test_describe(
@@ -278,7 +276,7 @@ def test_describe(
     instance: system.Instance,
     log_directory: Path,
 ) -> None:
-    im = instance_mod.describe(ctx, instance.name, instance.version)
+    im = instances.describe(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
     config = im.configuration
@@ -291,8 +289,8 @@ def test_describe(
     assert not im.surole_password
 
     if instance_manifest.surole_password:
-        with instance_mod.running(ctx, instance):
-            im = instance_mod.describe(ctx, instance.name, instance.version)
+        with instances.running(ctx, instance):
+            im = instances.describe(ctx, instance.name, instance.version)
             assert isinstance(im.surole_password, SecretStr)
 
 
@@ -300,23 +298,23 @@ def test_list(ctx: Context, instance: system.Instance) -> None:
     not_instance_dir = ctx.settings.postgresql.root / "12" / "notAnInstanceDir"
     not_instance_dir.mkdir(parents=True)
     try:
-        instances = list(instance_mod.list(ctx))
+        ilist = list(instances.list(ctx))
 
-        for i in instances:
+        for i in ilist:
             assert i.status == Status.not_running.name
             # this also ensure instance name is not notAnInstanceDir
             assert i.name == "test"
 
-        for i in instances:
+        for i in ilist:
             if (i.version, i.name) == (instance.version, instance.name):
                 break
         else:
             assert False, f"Instance {instance.version}/{instance.name} not found"
 
         with pytest.raises(ValueError, match="unknown version '7'"):
-            next(instance_mod.list(ctx, version="7"))
+            next(instances.list(ctx, version="7"))
 
-        iv = next(instance_mod.list(ctx, version=instance.version))
+        iv = next(instances.list(ctx, version=instance.version))
         assert iv == i
     finally:
         not_instance_dir.rmdir()
@@ -351,7 +349,7 @@ def test_standby(
         rows = execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
         return [r["slot_name"] for r in rows]
 
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         database_factory("test")
         execute(
             ctx,
@@ -362,7 +360,7 @@ def test_standby(
             role=replrole,
         )
         assert not pg_replication_slots()
-        r = instance_mod.apply(ctx, standby_manifest)
+        r = instances.apply(ctx, standby_manifest)
         assert r is not None
         standby_instance = r[0]
         if slot:
@@ -373,13 +371,13 @@ def test_standby(
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
 
-        described = instance_mod._describe(ctx, standby_instance).standby
+        described = instances._describe(ctx, standby_instance).standby
         assert described is not None
         assert described.for_ == standby_instance.standby.for_
         assert described.slot == standby_instance.standby.slot
 
         try:
-            with instance_mod.running(ctx, standby_instance):
+            with instances.running(ctx, standby_instance):
                 assert execute(
                     ctx,
                     standby_instance,
@@ -419,7 +417,7 @@ def test_standby(
 
                 assert_replicated()
 
-                instance_mod.promote(ctx, standby_instance)
+                instances.promote(ctx, standby_instance)
                 assert not standby_instance.standby
                 assert execute(
                     ctx,
@@ -429,7 +427,7 @@ def test_standby(
                     dbname="template1",
                 ) == [{"pg_is_in_recovery": False}]
         finally:
-            instance_mod.drop(ctx, standby_instance)
+            instances.drop(ctx, standby_instance)
             if slot:
                 execute(
                     ctx,
@@ -447,7 +445,7 @@ def test_instance_upgrade(
 ) -> None:
     database_factory("present")
     port = next(tmp_port_factory)
-    newinstance = instance_mod.upgrade(
+    newinstance = instances.upgrade(
         ctx,
         instance,
         name="test_upgrade",
@@ -458,16 +456,16 @@ def test_instance_upgrade(
         assert newinstance.name == "test_upgrade"
         assert newinstance.version == instance.version
         assert newinstance.port == port
-        assert instance_mod.status(ctx, newinstance) == Status.not_running
-        with instance_mod.running(ctx, newinstance):
+        assert instances.status(ctx, newinstance) == Status.not_running
+        with instances.running(ctx, newinstance):
             assert databases.exists(ctx, newinstance, "present")
     finally:
-        instance_mod.drop(ctx, newinstance)
+        instances.drop(ctx, newinstance)
 
 
 def test_server_settings(ctx: Context, instance: system.Instance) -> None:
-    with instance_mod.running(ctx, instance):
-        pgsettings = instance_mod.settings(ctx, instance)
+    with instances.running(ctx, instance):
+        pgsettings = instances.settings(ctx, instance)
     port = next(p for p in pgsettings if p.name == "port")
     assert port.setting == str(instance.port)
     assert not port.pending_restart
@@ -478,9 +476,9 @@ def test_logs(
     ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
 ) -> None:
     with reconfigure_instance(ctx, instance_manifest, logging_collector=True):
-        with instance_mod.running(ctx, instance):
+        with instances.running(ctx, instance):
             pass
-        logs = list(instance_mod.logs(ctx, instance))
+        logs = list(instances.logs(ctx, instance))
         assert "database system is shut down" in logs[-1]
 
 
@@ -499,11 +497,11 @@ def datachecksums_instance(
         state=interface.InstanceState.stopped,
         surole_password=surole_password,
     )
-    r = instance_mod.apply(ctx, manifest)
+    r = instances.apply(ctx, manifest)
     assert r
     instance = r[0]
     yield manifest, instance
-    instance_mod.drop(ctx, instance)
+    instances.drop(ctx, instance)
 
 
 def test_data_checksums(
@@ -530,10 +528,10 @@ def test_data_checksums(
                 "11": r"^PostgreSQL <= 11 doesn't have pg_checksums to enable data checksums$",
             }[pg_version],
         ):
-            result = instance_mod.apply(ctx, manifest)
+            result = instances.apply(ctx, manifest)
         return
 
-    result = instance_mod.apply(ctx, manifest)
+    result = instances.apply(ctx, manifest)
     assert result
     _, changes, _ = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
@@ -543,7 +541,7 @@ def test_data_checksums(
 
     # not explicitly disabled so still enabled
     manifest = manifest.copy(update={"data_checksums": None})
-    result = instance_mod.apply(ctx, manifest)
+    result = instances.apply(ctx, manifest)
     assert result
     _, changes, _ = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
@@ -551,7 +549,7 @@ def test_data_checksums(
 
     # explicitly disabled
     manifest = manifest.copy(update={"data_checksums": False})
-    result = instance_mod.apply(ctx, manifest)
+    result = instances.apply(ctx, manifest)
     assert result
     _, changes, _ = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
@@ -560,10 +558,10 @@ def test_data_checksums(
     }
 
     # re-enabled with instance running
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         manifest = manifest.copy(update={"data_checksums": True})
         with pytest.raises(
             exceptions.InstanceStateError,
             match="could not alter data_checksums on a running instance",
         ):
-            instance_mod.apply(ctx, manifest)
+            instances.apply(ctx, manifest)

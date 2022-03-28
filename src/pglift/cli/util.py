@@ -32,9 +32,7 @@ from rich.console import Console, RenderableType
 from rich.table import Table
 
 from .. import __name__ as pkgname
-from .. import exceptions
-from .. import instance as instance_mod
-from .. import task
+from .. import exceptions, instances, task
 from ..ctx import Context
 from ..models import system
 from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
@@ -251,7 +249,7 @@ def instance_lookup(
         only one, or fail.
         """
         try:
-            (i,) = instance_mod.list(ctx)
+            (i,) = instances.list(ctx)
         except ValueError:
             raise click.UsageError(
                 f"argument {param.get_error_hint(context)} is required."
@@ -289,7 +287,7 @@ def instance_bind_context(
     version: Optional[str]
     if value is None:
         try:
-            (i,) = instance_mod.list(context.obj.ctx)
+            (i,) = instances.list(context.obj.ctx)
         except ValueError:
             raise click.UsageError(
                 f"option {param.get_error_hint(context)} is required."
@@ -311,7 +309,7 @@ def _list_instances(
     out = []
     iname, iversion = nameversion_from_id(incomplete)
     ctx = Context(settings=Settings())
-    for i in instance_mod.list(ctx):
+    for i in instances.list(ctx):
         if iversion is not None and i.version.startswith(iversion):
             if i.name.startswith(iname):
                 out.append(

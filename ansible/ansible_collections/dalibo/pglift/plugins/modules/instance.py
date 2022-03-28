@@ -118,8 +118,7 @@ from typing import Any, Dict
 import pydantic
 from ansible.module_utils.basic import AnsibleModule
 
-from pglift import instance as instance_mod
-from pglift import plugin_manager
+from pglift import instances, plugin_manager
 from pglift.ansible import AnsibleContext
 from pglift.models import helpers, interface
 from pglift.settings import Settings
@@ -145,10 +144,10 @@ def run_module() -> None:
     if module.check_mode:
         module.exit_json(**result)
 
-    instance_exists = instance_mod.exists(ctx, m.name, m.version)
+    instance_exists = instances.exists(ctx, m.name, m.version)
 
     try:
-        apply_result = instance_mod.apply(ctx, m)
+        apply_result = instances.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 

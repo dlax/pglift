@@ -13,9 +13,7 @@ import yaml
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
-from pglift import _install, databases, exceptions
-from pglift import instance as instance_mod
-from pglift import prometheus, roles, types
+from pglift import _install, databases, exceptions, instances, prometheus, roles, types
 from pglift.cli import CLIContext, Obj, cli
 from pglift.cli import instance as instance_cli
 from pglift.cli.util import Command, get_instance, pass_component_settings, pass_ctx
@@ -50,7 +48,7 @@ def obj(ctx: CLIContext) -> Obj:
 
 @pytest.fixture
 def running(ctx: Context, instance: Instance) -> Iterator[MagicMock]:
-    with patch("pglift.instance.running") as m:
+    with patch("pglift.instances.running") as m:
         yield m
     m.assert_called_once_with(ctx, instance)
 
@@ -239,7 +237,7 @@ def test_instance_create(
     instance: Instance,
     composite_instance_model: Type[interface.Instance],
 ) -> None:
-    with patch.object(instance_mod, "apply") as apply:
+    with patch.object(instances, "apply") as apply:
         result = runner.invoke(
             cli,
             ["instance", "create", instance.name, f"--version={instance.version}"],
@@ -252,7 +250,7 @@ def test_instance_create(
     cmd = ["instance", "create", "new", "--port=1234", "--data-checksums"]
     if ctx.settings.prometheus is not None:
         cmd.append("--prometheus-port=1212")
-    with patch.object(instance_mod, "apply") as apply:
+    with patch.object(instances, "apply") as apply:
         result = runner.invoke(cli, cmd, obj=obj)
     expected = {"name": "new", "port": 1234, "data_checksums": True}
     if ctx.settings.prometheus is not None:
@@ -280,7 +278,7 @@ def test_instance_apply(
     manifest.write_text(content)
     mock_instance = object()
     with patch.object(
-        instance_mod, "apply", return_value=(mock_instance, {}, False)
+        instances, "apply", return_value=(mock_instance, {}, False)
     ) as apply:
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
@@ -310,10 +308,8 @@ def test_instance_alter(
     actual = composite_instance_model.parse_obj(actual_obj)
     altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(
-        instance_mod, "apply", return_value=(instance, {}, True)
-    ) as apply, patch.object(
-        instance_mod, "_describe", return_value=actual
-    ) as _describe:
+        instances, "apply", return_value=(instance, {}, True)
+    ) as apply, patch.object(instances, "_describe", return_value=actual) as _describe:
         result = runner.invoke(cli, cmd, obj=obj)
     _describe.assert_called_once_with(ctx, instance)
     apply.assert_called_once_with(ctx, altered)
@@ -326,7 +322,7 @@ def test_instance_promote(
     result = runner.invoke(cli, ["instance", "promote", "notfound"], obj=obj)
     assert result.exit_code == 2, result.stderr
     assert "instance 'notfound' not found" in result.stderr
-    with patch.object(instance_mod, "promote") as promote:
+    with patch.object(instances, "promote") as promote:
         result = runner.invoke(cli, ["instance", "promote", str(instance)], obj=obj)
     assert result.exit_code == 0, result.stderr
     promote.assert_called_once_with(ctx, instance)
@@ -349,7 +345,7 @@ def test_instance_describe(
     args: List[str],
 ) -> None:
     manifest = interface.Instance(name="test")
-    with patch.object(instance_mod, "describe", return_value=manifest) as describe:
+    with patch.object(instances, "describe", return_value=manifest) as describe:
         result = runner.invoke(cli, ["instance", "describe"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
     describe.assert_called_once_with(ctx, "test", pg_version)
@@ -407,7 +403,7 @@ def test_instance_list(
 def test_instance_drop(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, args: List[str]
 ) -> None:
-    with patch.object(instance_mod, "drop") as patched:
+    with patch.object(instances, "drop") as patched:
         result = runner.invoke(cli, ["instance", "drop"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
     patched.assert_called_once_with(ctx, instance)
@@ -416,9 +412,7 @@ def test_instance_drop(
 def test_instance_status(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
-    with patch.object(
-        instance_mod, "status", return_value=Status.not_running
-    ) as patched:
+    with patch.object(instances, "status", return_value=Status.not_running) as patched:
         result = runner.invoke(cli, ["instance", "status", instance.name], obj=obj)
     assert result.exit_code == 3, (result, result.output)
     assert result.stdout == "not running\n"
@@ -437,7 +431,7 @@ def test_instance_operations(
     action: str,
     kwargs: Dict[str, bool],
 ) -> None:
-    with patch.object(instance_mod, action) as patched:
+    with patch.object(instances, action) as patched:
         result = runner.invoke(cli, ["instance", action, str(instance)], obj=obj)
     assert result.exit_code == 0, result
     patched.assert_called_once_with(ctx, instance, **kwargs)
@@ -446,7 +440,7 @@ def test_instance_operations(
 def test_instance_exec(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
-    with patch.object(instance_mod, "exec") as instance_exec:
+    with patch.object(instances, "exec") as instance_exec:
         r = runner.invoke(
             cli,
             ["instance", "exec", instance.name],
@@ -456,7 +450,7 @@ def test_instance_exec(
     assert r.exit_code == 1
     assert r.stderr == "Error: no command given\n"
 
-    with patch.object(instance_mod, "exec") as instance_exec:
+    with patch.object(instances, "exec") as instance_exec:
         runner.invoke(
             cli,
             ["instance", "exec", instance.name, "--", "psql", "-d", "test"],
@@ -474,7 +468,7 @@ def test_instance_env(
         obj=obj,
     )
     assert r.exit_code == 0, r
-    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
+    bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     path = os.environ["PATH"]
     assert r.stdout == (
         f"PATH={bindir}:{path}\n"
@@ -561,7 +555,7 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
 def test_instance_restore(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
-    with patch("pglift.instance.status", return_value=Status.running) as status:
+    with patch("pglift.instances.status", return_value=Status.running) as status:
         result = runner.invoke(
             cli,
             ["instance", "restore", str(instance)],
@@ -630,8 +624,8 @@ def test_instance_upgrade(
 ) -> None:
     new_instance = MagicMock()
     with patch.object(
-        instance_mod, "upgrade", return_value=new_instance
-    ) as upgrade, patch.object(instance_mod, "start") as start:
+        instances, "upgrade", return_value=new_instance
+    ) as upgrade, patch.object(instances, "start") as start:
         result = runner.invoke(
             cli,
             [
@@ -694,7 +688,7 @@ def test_pgconf_set(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(
-        instance_mod, "configure", return_value={"foo": ("baz", "bar")}
+        instances, "configure", return_value={"foo": ("baz", "bar")}
     ) as configure:
         result = runner.invoke(
             cli,
@@ -723,7 +717,7 @@ def test_pgconf_set(
     assert "foo: baz -> bar" in result.stderr
 
     with patch.object(
-        instance_mod, "configure", return_value={"bonjour_name": ("test", "changed")}
+        instances, "configure", return_value={"bonjour_name": ("test", "changed")}
     ) as configure:
         result = runner.invoke(
             cli,
@@ -766,7 +760,7 @@ def test_pgconf_remove(
     assert "'fsync' not found in managed configuration" in result.stderr
 
     with patch.object(
-        instance_mod, "configure", return_value={"bonjour_name": ("test", None)}
+        instances, "configure", return_value={"bonjour_name": ("test", None)}
     ) as configure:
         result = runner.invoke(
             cli,

@@ -8,9 +8,7 @@ import psycopg
 import pytest
 from pydantic import SecretStr
 
-from pglift import db, exceptions
-from pglift import instance as instance_mod
-from pglift import roles, types
+from pglift import db, exceptions, instances, roles, types
 from pglift.ctx import Context
 from pglift.models import interface, system
 
@@ -20,7 +18,7 @@ from .conftest import RoleFactory
 
 @pytest.fixture(scope="module", autouse=True)
 def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         yield
 
 

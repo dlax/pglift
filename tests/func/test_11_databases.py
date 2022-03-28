@@ -5,8 +5,7 @@ from typing import Iterator
 
 import pytest
 
-from pglift import databases, exceptions
-from pglift import instance as instance_mod
+from pglift import databases, exceptions, instances
 from pglift.ctx import Context
 from pglift.models import interface, system
 
@@ -16,7 +15,7 @@ from .conftest import DatabaseFactory, RoleFactory
 
 @pytest.fixture(scope="module", autouse=True)
 def instance_running(ctx: Context, instance: system.Instance) -> Iterator[None]:
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         yield
 
 

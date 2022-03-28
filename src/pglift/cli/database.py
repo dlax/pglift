@@ -5,9 +5,7 @@ import click
 from pydantic.utils import deep_update
 from rich.console import Console
 
-from .. import databases
-from .. import instance as instance_mod
-from .. import privileges, task
+from .. import databases, instances, privileges, task
 from ..ctx import Context
 from ..models import helpers, interface, system
 from .util import (
@@ -45,7 +43,7 @@ def database_create(
     ctx: Context, instance: system.Instance, database: interface.Database
 ) -> None:
     """Create a database in a PostgreSQL instance"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         if databases.exists(ctx, instance, database.name):
             raise click.ClickException("database already exists")
         with task.transaction():
@@ -62,7 +60,7 @@ def database_alter(
 ) -> None:
     """Alter a database in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Database, changes)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         values = databases.describe(ctx, instance, dbname).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
@@ -76,7 +74,7 @@ def database_alter(
 def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
     """Apply manifest as a database"""
     database = interface.Database.parse_yaml(file)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         databases.apply(ctx, instance, database)
 
 
@@ -86,7 +84,7 @@ def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> No
 @pass_ctx
 def database_describe(ctx: Context, instance: system.Instance, name: str) -> None:
     """Describe a database"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         described = databases.describe(ctx, instance, name)
     click.echo(described.yaml(exclude={"state"}), nl=False)
 
@@ -100,7 +98,7 @@ def database_list(
     ctx: Context, console: Console, instance: system.Instance, as_json: bool
 ) -> None:
     """List databases"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         dbs = databases.list(ctx, instance)
     if as_json:
         print_json_for((i.dict(by_alias=True) for i in dbs), display=console.print_json)
@@ -114,7 +112,7 @@ def database_list(
 @pass_ctx
 def database_drop(ctx: Context, instance: system.Instance, name: str) -> None:
     """Drop a database"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         databases.drop(ctx, instance, name)
 
 
@@ -132,7 +130,7 @@ def database_privileges(
     as_json: bool,
 ) -> None:
     """List default privileges on a database."""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         databases.describe(ctx, instance, name)  # check existence
         try:
             prvlgs = privileges.get(ctx, instance, databases=(name,), roles=roles)
@@ -168,7 +166,7 @@ def database_run(
     as_json: bool,
 ) -> None:
     """Run given command on databases of a PostgreSQL instance"""
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         result = databases.run(
             ctx, instance, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
         )

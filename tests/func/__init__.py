@@ -4,8 +4,7 @@ from typing import Any, Iterator, List, Optional, overload
 
 from typing_extensions import Literal
 
-from pglift import db
-from pglift import instance as instance_mod
+from pglift import db, instances
 from pglift.ctx import BaseContext
 from pglift.models import interface
 from pglift.models.system import Instance
@@ -23,7 +22,7 @@ def configure_instance(
     values = manifest.configuration.copy()
     values["port"] = port or manifest.port
     values.update(confitems)
-    instance_mod.configure(ctx, manifest, values=values, _creating=creating)
+    instances.configure(ctx, manifest, values=values, _creating=creating)
 
 
 @contextmanager
@@ -83,7 +82,7 @@ def execute(
         )
     else:
         connect = partial(db.connect, settings=ctx.settings.postgresql, user=role.name)
-    with instance_mod.running(ctx, instance):
+    with instances.running(ctx, instance):
         with connect(instance, autocommit=autocommit, **kwargs) as conn:
             cur = conn.execute(query)
             conn.commit()

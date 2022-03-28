@@ -11,7 +11,7 @@ from . import hookspecs
 class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
     @classmethod
     def get(cls, no_register: Sequence[str] = ()) -> "PluginManager":
-        hook_modules = ("instance", "passfile", "backup", "pgbackrest", "prometheus")
+        hook_modules = ("instances", "passfile", "backup", "pgbackrest", "prometheus")
         self = cls(pkgname)
         self.add_hookspecs(hookspecs)
         for hname in hook_modules:

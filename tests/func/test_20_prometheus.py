@@ -8,9 +8,7 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from pglift import exceptions
-from pglift import instance as instance_mod
-from pglift import systemd, util
+from pglift import exceptions, instances, systemd, util
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.prometheus import impl as prometheus
@@ -125,7 +123,7 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance.qualname))
 
-    with instance_mod.running(ctx, instance, run_hooks=True):
+    with instances.running(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
             assert systemd.is_active(ctx, prometheus.systemd_unit(instance.qualname))
         try:
@@ -137,7 +135,7 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
         output = r.text
         assert "pg_up 1" in output.splitlines()
 
-    with instance_mod.stopped(ctx, instance, run_hooks=True):
+    with instances.stopped(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
             assert not systemd.is_active(
                 ctx, prometheus.systemd_unit(instance.qualname)
@@ -157,7 +155,7 @@ def test_start_stop_nonlocal(
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(name))
 
-    with instance_mod.running(ctx, instance, run_hooks=False):
+    with instances.running(ctx, instance, run_hooks=False):
         prometheus.start(ctx, name, prometheus_settings)
         try:
             if ctx.settings.service_manager == "systemd":
@@ -251,11 +249,11 @@ def instance_no_prometheus(
             "prometheus": None,
         }
     )
-    r = instance_mod.apply(ctx, im)
+    r = instances.apply(ctx, im)
     assert r is not None
     instance = r[0]
     yield instance
-    instance_mod.drop(ctx, instance)
+    instances.drop(ctx, instance)
 
 
 def test_instance_no_prometheus(
@@ -267,10 +265,6 @@ def test_instance_no_prometheus(
     it running and restarted.
     """
     assert not prometheus.enabled(instance_no_prometheus.name, prometheus_settings)
-    assert (
-        instance_mod.status(ctx, instance_no_prometheus) == instance_mod.Status.running
-    )
-    instance_mod.restart(ctx, instance_no_prometheus)
-    assert (
-        instance_mod.status(ctx, instance_no_prometheus) == instance_mod.Status.running
-    )
+    assert instances.status(ctx, instance_no_prometheus) == instances.Status.running
+    instances.restart(ctx, instance_no_prometheus)
+    assert instances.status(ctx, instance_no_prometheus) == instances.Status.running

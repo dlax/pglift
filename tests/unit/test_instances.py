@@ -7,9 +7,7 @@ import attr
 import pytest
 from pgtoolkit.conf import parse as parse_pgconf
 
-from pglift import exceptions
-from pglift import instance as instance_mod
-from pglift import task
+from pglift import exceptions, instances, task
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.models.system import BaseInstance, Instance
@@ -18,7 +16,7 @@ from pglift.settings import Settings
 
 def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     assert (
-        instance_mod.systemd_unit(instance)
+        instances.systemd_unit(instance)
         == f"pglift-postgresql@{pg_version}-test.service"
     )
 
@@ -32,7 +30,7 @@ def test_init_lookup_failed(pg_version: str, settings: Settings, ctx: Context) -
     pg_version_file.write_text("7.1")
     with pytest.raises(Exception, match="version mismatch"):
         with task.transaction():
-            instance_mod.init(ctx, manifest)
+            instances.init(ctx, manifest)
     assert not pg_version_file.exists()  # per revert
 
 
@@ -48,7 +46,7 @@ def test_init_dirty(
         with task.transaction():
             with monkeypatch.context() as m:
                 m.setattr("pglift.systemd.enable", lambda *a: calls.append(a))
-                instance_mod.init(ctx, manifest)
+                instances.init(ctx, manifest)
     assert not i.datadir.exists()  # XXX: not sure this is a sane thing to do?
     assert not i.waldir.exists()
     if ctx.settings.service_manager == "systemd":
@@ -62,7 +60,7 @@ def test_init_version_not_available(ctx: Context) -> None:
         pytest.skip(f"PostgreSQL {version} seems available")
     manifest = interface.Instance(name=f"pg{version}", version=version)
     with pytest.raises(EnvironmentError, match="pg_ctl executable not found"):
-        instance_mod.init(ctx, manifest)
+        instances.init(ctx, manifest)
 
 
 @pytest.mark.parametrize("data_checksums", [True, False])
@@ -80,7 +78,7 @@ def test_init_force_data_checksums(
         (instance.datadir / "postgresql.conf").touch()
 
     with patch("pgtoolkit.ctl.PGCtl.init", side_effect=fake_init) as init:
-        instance_mod.init(ctx, manifest)
+        instances.init(ctx, manifest)
     expected = {
         "waldir": str(instance.waldir),
         "username": "postgres",
@@ -97,7 +95,7 @@ def test_init_force_data_checksums(
 
 def test_list_no_pgroot(ctx: Context) -> None:
     assert not ctx.settings.postgresql.root.exists()
-    assert list(instance_mod.list(ctx)) == []
+    assert list(instances.list(ctx)) == []
 
 
 @pytest.mark.usefixtures("nohook")
@@ -109,7 +107,7 @@ def test_configure(
     with postgresql_conf.open("w") as f:
         f.write("bonjour_name = 'overridden'\n")
 
-    changes = instance_mod.configure(
+    changes = instances.configure(
         ctx,
         instance_manifest,
         values=dict(
@@ -152,7 +150,7 @@ def test_configure(
     assert config.bonjour_name == "overridden"
     assert config.cluster_name == "test"
 
-    changes = instance_mod.configure(
+    changes = instances.configure(
         ctx,
         instance_manifest,
         ssl=True,
@@ -172,7 +170,7 @@ def test_configure(
         site_configfpath.stat().st_mtime,
         user_configfpath.stat().st_mtime,
     )
-    changes = instance_mod.configure(
+    changes = instances.configure(
         ctx, instance_manifest, values=dict(listen_address="*"), ssl=True
     )
     assert changes == {}
@@ -183,7 +181,7 @@ def test_configure(
     )
     assert mtime_before == mtime_after
 
-    changes = instance_mod.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest, ssl=True)
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -195,7 +193,7 @@ def test_configure(
     )
     for fpath in ssl:
         fpath.touch()
-    changes = instance_mod.configure(ctx, instance_manifest, ssl=ssl)
+    changes = instances.configure(ctx, instance_manifest, ssl=ssl)
     assert changes == {
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
@@ -208,14 +206,14 @@ def test_configure(
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    changes = instance_mod.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest, ssl=True)
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
         "ssl_key_file": (str(key_file), None),
     }
 
     # disable ssl
-    changes = instance_mod.configure(ctx, instance_manifest, ssl=False)
+    changes = instances.configure(ctx, instance_manifest, ssl=False)
     assert changes == {
         "ssl": (True, None),
     }
@@ -223,14 +221,14 @@ def test_configure(
 
 def test_check_status(ctx: Context, instance: Instance) -> None:
     with pytest.raises(exceptions.InstanceStateError, match="instance is not_running"):
-        instance_mod.check_status(ctx, instance, instance_mod.Status.running)
-    instance_mod.check_status(ctx, instance, instance_mod.Status.not_running)
+        instances.check_status(ctx, instance, instances.Status.running)
+    instances.check_status(ctx, instance, instances.Status.not_running)
 
 
 def test_start_foreground(ctx: Context, instance: Instance) -> None:
     with patch("os.execv") as execv:
-        instance_mod.start(ctx, instance, foreground=True)
-    postgres = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir / "postgres"
+        instances.start(ctx, instance, foreground=True)
+    postgres = instances.pg_ctl(instance.version, ctx=ctx).bindir / "postgres"
     execv.assert_called_once_with(
         str(postgres), f"{postgres} -D {instance.datadir}".split()
     )
@@ -241,14 +239,14 @@ def test_drop(
 ) -> None:
     with patch.object(ctx, "confirm", return_value=False) as confirm:
         with pytest.raises(exceptions.Cancelled):
-            instance_mod.drop(ctx, instance)
+            instances.drop(ctx, instance)
     confirm.assert_called_once_with(
         f"Confirm complete deletion of instance {instance}?", True
     )
 
 
 def test_env_for(ctx: Context, instance: Instance) -> None:
-    assert instance_mod.env_for(ctx, instance) == {
+    assert instances.env_for(ctx, instance) == {
         "PGDATA": str(instance.datadir),
         "PGHOST": "/socks",
         "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
@@ -261,7 +259,7 @@ def test_exec(ctx: Context, instance: Instance) -> None:
     with patch("os.execve") as patched, patch.dict(
         "os.environ", {"PGPASSWORD": "qwerty"}, clear=True
     ):
-        instance_mod.exec(
+        instances.exec(
             ctx, instance, command=("psql", "--user", "test", "--dbname", "test")
         )
     expected_env = {
@@ -272,7 +270,7 @@ def test_exec(ctx: Context, instance: Instance) -> None:
         "PGHOST": "/socks",
         "PGPASSWORD": "qwerty",
     }
-    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
+    bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     cmd = [
         f"{bindir}/psql",
         "--user",
@@ -284,9 +282,9 @@ def test_exec(ctx: Context, instance: Instance) -> None:
 
 
 def test_env(ctx: Context, instance: Instance) -> None:
-    bindir = instance_mod.pg_ctl(instance.version, ctx=ctx).bindir
+    bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     with patch.dict("os.environ", {"PATH": "/pg10/bin"}):
-        assert instance_mod.env(ctx, instance) == "\n".join(
+        assert instances.env(ctx, instance) == "\n".join(
             [
                 f"export PATH={bindir}:/pg10/bin",
                 f"export PGDATA={instance.datadir}",
@@ -299,8 +297,8 @@ def test_env(ctx: Context, instance: Instance) -> None:
 
 
 def test_exists(ctx: Context, instance: Instance) -> None:
-    assert instance_mod.exists(ctx, instance.name, instance.version)
-    assert not instance_mod.exists(ctx, "doesnotexists", instance.version)
+    assert instances.exists(ctx, instance.name, instance.version)
+    assert not instances.exists(ctx, "doesnotexists", instance.version)
 
 
 def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
@@ -308,13 +306,13 @@ def test_upgrade_forbid_same_instance(ctx: Context, instance: Instance) -> None:
         exceptions.InvalidVersion,
         match=f"Could not upgrade {instance.version}/test using same name and same version",
     ):
-        instance_mod.upgrade(ctx, instance, version=instance.version)
+        instances.upgrade(ctx, instance, version=instance.version)
 
 
 def test_upgrade_target_instance_exists(ctx: Context, instance: Instance) -> None:
     orig_instance = attr.evolve(instance, name="old")
     with pytest.raises(exceptions.InstanceAlreadyExists):
-        instance_mod.upgrade(
+        instances.upgrade(
             ctx, orig_instance, version=instance.version, name=instance.name
         )
 
@@ -322,7 +320,7 @@ def test_upgrade_target_instance_exists(ctx: Context, instance: Instance) -> Non
 def test_upgrade_confirm(ctx: Context, instance: Instance, pg_version: str) -> None:
     with patch.object(ctx, "confirm", return_value=False) as confirm:
         with pytest.raises(exceptions.Cancelled):
-            instance_mod.upgrade(ctx, instance, name="new")
+            instances.upgrade(ctx, instance, name="new")
     confirm.assert_called_once_with(
         f"Confirm upgrade of instance {instance} to version {pg_version}?",
         True,
@@ -334,7 +332,7 @@ def test_standby_upgrade(ctx: Context, standby_instance: Instance) -> None:
         exceptions.InstanceReadOnlyError,
         match=f"^{standby_instance.version}/standby is a read-only standby instance$",
     ):
-        instance_mod.upgrade(
+        instances.upgrade(
             ctx, standby_instance, version=str(int(standby_instance.version) + 1)
         )
 
@@ -344,7 +342,7 @@ def test_non_standby_promote(ctx: Context, instance: Instance) -> None:
         exceptions.InstanceStateError,
         match=f"^{instance.version}/test is not a standby$",
     ):
-        instance_mod.promote(ctx, instance)
+        instances.promote(ctx, instance)
 
 
 def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
@@ -352,17 +350,17 @@ def test_logs(ctx: Context, instance: Instance, tmp_path: pathlib.Path) -> None:
         exceptions.FileNotFoundError,
         match=r"file 'current_logfiles' for instance \d{2}/test not found",
     ):
-        next(instance_mod.logs(ctx, instance))
+        next(instances.logs(ctx, instance))
 
     current_logfiles = instance.datadir / "current_logfiles"
     current_logfiles.write_text("csvlog log/postgresql.csv\n")
     with pytest.raises(ValueError, match="no record matching 'stderr'"):
-        next(instance_mod.logs(ctx, instance))
+        next(instances.logs(ctx, instance))
 
     stderr_logpath = tmp_path / "postgresql.log"
     current_logfiles.write_text(f"stderr {stderr_logpath}\n")
     with pytest.raises(exceptions.SystemError, match="failed to read"):
-        next(instance_mod.logs(ctx, instance))
+        next(instances.logs(ctx, instance))
 
     stderr_logpath.write_text("line1\nline2\n")
-    assert list(instance_mod.logs(ctx, instance)) == ["line1\n", "line2\n"]
+    assert list(instances.logs(ctx, instance)) == ["line1\n", "line2\n"]
