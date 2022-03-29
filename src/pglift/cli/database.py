@@ -2,6 +2,7 @@ import functools
 from typing import IO, Any, Sequence
 
 import click
+import psycopg
 from pydantic.utils import deep_update
 from rich.console import Console
 
@@ -176,9 +177,16 @@ def database_run(
 ) -> None:
     """Run given command on databases of a PostgreSQL instance"""
     with instances.running(ctx, instance):
-        result = databases.run(
-            ctx, instance, sql_command, dbnames=dbnames, exclude_dbnames=exclude_dbnames
-        )
+        try:
+            result = databases.run(
+                ctx,
+                instance,
+                sql_command,
+                dbnames=dbnames,
+                exclude_dbnames=exclude_dbnames,
+            )
+        except psycopg.ProgrammingError as e:
+            raise click.ClickException(str(e))
     if as_json:
         print_json_for(result)
     else:

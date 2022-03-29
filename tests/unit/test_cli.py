@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterator, List, Tuple, Type
 from unittest.mock import MagicMock, patch
 
 import click
+import psycopg
 import pytest
 import yaml
 from click.testing import CliRunner
@@ -1280,6 +1281,24 @@ def test_database_run(
     assert result.exit_code == 0, result.stderr
     dbs = json.loads(result.stdout)
     assert dbs == {"db": [{"name": "bob"}]}
+
+
+def test_database_run_programmingerror(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
+    with patch.object(
+        databases, "run", side_effect=psycopg.ProgrammingError("bingo")
+    ) as run:
+        result = runner.invoke(
+            cli,
+            ["database", "-i", str(instance), "run", "some sql"],
+            obj=obj,
+        )
+    run.assert_called_once_with(
+        ctx, instance, "some sql", dbnames=(), exclude_dbnames=()
+    )
+    assert result.exit_code == 1
+    assert result.stderr == "Error: bingo\n"
 
 
 def test_database_privileges(
