@@ -56,7 +56,7 @@ setup(
         "typing-extensions",
         "PyYAML >= 5.1",
         # CLI requirements
-        "click >= 8.0.0",
+        "click >= 8.0.0, != 8.1.0",
         "rich >= 11.0.0",
     ],
     extras_require={
