@@ -362,7 +362,7 @@ def test_argspec_from_model_keep_default() -> None:
     }
 
 
-# Composite instance model will all plugins enabled, for Ansible argspec tests.
+# Composite instance model with all plugins enabled, for Ansible argspec tests.
 composite_instance_model = interface.Instance.composite(pm.PluginManager.get())
 
 
