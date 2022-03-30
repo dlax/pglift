@@ -179,10 +179,10 @@ epub_exclude_files = ["search.html"]
 
 # -- Options for intersphinx extension ---------------------------------------
 
-# Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "python": ("https://docs.python.org/", None),
     "pgtoolkit": ("https://pgtoolkit.readthedocs.io/en/latest/", None),
+    "psycopg": ("https://www.psycopg.org/psycopg3/docs/", None),
 }
 
 # -- Options for autodoc extension -------------------------------------------

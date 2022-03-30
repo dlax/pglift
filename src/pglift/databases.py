@@ -213,7 +213,10 @@ def run(
     :param exclude_dbnames: exclude databases with a name in this list from
         the operation.
     :param notice_handler: a function to handle notice.
+
     :returns: a dict mapping database names to query results, if any.
+
+    :raises psycopg.ProgrammingError: in case of unprocessable query.
     """
     result = {}
     for database in list(ctx, instance):
