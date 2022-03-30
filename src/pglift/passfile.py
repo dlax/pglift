@@ -74,6 +74,8 @@ def instance_configure(
 def instance_drop(ctx: "BaseContext", instance: "PostgreSQLInstance") -> None:
     """Remove password file (pgpass) entries for the instance being dropped."""
     passfile_path = ctx.settings.postgresql.auth.passfile
+    if not passfile_path.exists():
+        return
     with pgpass.edit(passfile_path) as passfile:
         logger.info(
             "removing entries matching port=%(port)s from %(passfile)s",
