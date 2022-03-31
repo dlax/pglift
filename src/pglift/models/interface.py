@@ -83,6 +83,9 @@ class InstanceListItem(BaseModel):
     status: str
 
 
+Extension = AutoStrEnum("Extension", list(settings.AVAILABLE_EXTENSIONS))  # type: ignore[call-overload]
+
+
 class Instance(Manifest):
     """PostgreSQL instance"""
 
@@ -99,6 +102,7 @@ class Instance(Manifest):
         },
         "ssl": {"hide": True},
         "configuration": {"hide": True},
+        "extensions": {"name": "extension"},
     }
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
         "ssl": {"spec": {"type": "bool", "required": False, "default": False}},
@@ -172,6 +176,11 @@ class Instance(Manifest):
     )
 
     standby: Optional[Standby] = None
+
+    extensions: List[Extension] = Field(  # type: ignore[valid-type]
+        default_factory=list,
+        description="List of extensions to install in the instance",
+    )
 
     @validator("name")
     def __validate_name_(cls, v: str) -> str:

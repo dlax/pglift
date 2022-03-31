@@ -145,6 +145,11 @@ def test_ansible(
                 ],
             },
         ]
+        extensions = cnx.execute("SELECT extname FROM pg_extension").fetchall()
+
+    installed = [r["extname"] for r in extensions]
+    assert "pg_stat_statements" in installed
+    assert "unaccent" in installed
 
     socket.create_connection(("localhost", 9186), 1)
 
@@ -177,6 +182,14 @@ def test_ansible(
 
     # prod running
     assert cluster_name(prod_dsn) == "prod"
+
+    # pg_stat_statements extension is uninstalled
+    with db.connect_dsn(prod_dsn) as cnx:
+        extensions = cnx.execute("SELECT extname FROM pg_extension").fetchall()
+    installed = [r["extname"] for r in extensions]
+    assert "pg_stat_statements" not in installed
+    assert "unaccent" in installed
+
     # bob user and db database no longer exists
     with pytest.raises(
         psycopg.OperationalError, match='password authentication failed for user "bob"'

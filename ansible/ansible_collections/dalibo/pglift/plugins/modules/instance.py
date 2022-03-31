@@ -63,6 +63,11 @@ options:
       - Instance standby state
     choices: [ demoted, promoted ]
     default: demoted
+  extensions:
+    description:
+      - Extensions to install in the instance
+    type: list[str]
+    required: false
 
 author:
 - Dalibo (@dalibo)

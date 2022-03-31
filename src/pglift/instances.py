@@ -20,6 +20,7 @@ from typing import (
 )
 
 import psycopg.rows
+import psycopg.sql
 from pgtoolkit import conf as pgconf
 from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
@@ -28,7 +29,7 @@ from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
 from .models import interface, system
-from .settings import POSTGRESQL_SUPPORTED_VERSIONS
+from .settings import AVAILABLE_EXTENSIONS, POSTGRESQL_SUPPORTED_VERSIONS
 from .task import task
 from .types import ConfigChanges
 
@@ -287,6 +288,13 @@ def configure(
     site_config_template = util.site_config("postgresql", "site.conf")
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
+
+    spl = []
+    for extension in manifest.extensions:
+        if AVAILABLE_EXTENSIONS[extension][0]:
+            spl.append(extension)
+    if spl:
+        confitems["shared_preload_libraries"] = ", ".join(spl)
 
     def format_values(
         confitems: Dict[str, Any], memtotal: float = util.total_memory()
@@ -825,7 +833,39 @@ def apply(
         restart(ctx, instance)
         needs_restart = False
 
+    if not instance.standby:
+        create_or_drop_extensions(ctx, instance, manifest)
+
     return instance, changes, needs_restart
+
+
+def create_or_drop_extensions(
+    ctx: "BaseContext", instance: system.Instance, manifest: interface.Instance
+) -> None:
+    """Create or drop extensions in instance.
+
+    We compare what is already installed to what is set in manifest.extensions.
+    The 'plpgsql' extension will not be dropped because it is meant to be installed
+    by default.
+    """
+    with running(ctx, instance):
+        installed = installed_extensions(ctx, instance)
+        with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
+            extensions = [e for e in manifest.extensions if AVAILABLE_EXTENSIONS[e][1]]
+            to_add = set(extensions) - set(installed)
+            to_remove = set(installed) - set(extensions)
+            for extension in sorted(to_add):
+                cnx.execute(
+                    psycopg.sql.SQL(
+                        "CREATE EXTENSION IF NOT EXISTS {extension}"
+                    ).format(extension=psycopg.sql.Identifier(extension))
+                )
+            for extension in sorted(to_remove):
+                cnx.execute(
+                    psycopg.sql.SQL("DROP EXTENSION IF EXISTS {extension}").format(
+                        extension=psycopg.sql.Identifier(extension)
+                    )
+                )
 
 
 def check_pending_actions(
@@ -890,7 +930,7 @@ def describe(
     is_running = status(ctx, instance) == Status.running
     if not is_running:
         logger.warning(
-            "Instance is not running, info about passwords may not be accurate",
+            "Instance is not running, info about passwords and extensions may not be accurate",
         )
     return _describe(ctx, instance)
 
@@ -922,14 +962,40 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         standby=standby,
         **services,
     )
+
+    config = instance.config()
+    extensions = []
+    if "shared_preload_libraries" in config:
+        extensions += [
+            spl.strip()
+            for spl in str(config["shared_preload_libraries"]).split(",")
+            if spl.strip()
+        ]
+
     is_running = status(ctx, instance) == Status.running
     if is_running and instance.standby is None:
         surole_name = ctx.settings.postgresql.surole.name
         result.surole_password = roles.describe(ctx, instance, surole_name).password
         replrole = ctx.settings.postgresql.replrole
         result.replrole_password = roles.describe(ctx, instance, replrole).password
+        extensions += installed_extensions(ctx, instance)
+    result.extensions = sorted(set(extensions))
 
     return result
+
+
+def installed_extensions(
+    ctx: "BaseContext", instance: system.Instance
+) -> List[interface.Extension]:
+    """Return list of extensions installed in database using CREATE EXTENSION"""
+    assert status(ctx, instance) == Status.running
+    with db.superuser_connect(ctx, instance) as cnx:
+        return [
+            r["extname"]
+            for r in cnx.execute(
+                "SELECT extname FROM pg_extension WHERE extname != 'plpgsql'"
+            )
+        ]
 
 
 @task("dropping PostgreSQL instance")

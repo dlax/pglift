@@ -11,6 +11,12 @@
     ],
     "type": "bool"
   },
+  "extensions": {
+    "description": [
+      "List of extensions to install in the instance"
+    ],
+    "type": "list"
+  },
   "name": {
     "required": true,
     "type": "str"

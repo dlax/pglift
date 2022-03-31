@@ -14,6 +14,8 @@
           unix_socket_directories: /tmp
         prometheus_port: 9186
         surole_password: "{{ postgresql_surole_password }}"
+        extensions:
+          - unaccent
 
     - name: db, dropped
       dalibo.pglift.database:

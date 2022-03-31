@@ -298,6 +298,7 @@ def test_describe(
     assert config == {"logging_collector": False}
     assert im.state.name == "stopped"
     assert not im.surole_password
+    assert im.extensions == []
 
     if instance_manifest.surole_password:
         with instances.running(ctx, instance):
@@ -576,3 +577,49 @@ def test_data_checksums(
             match="could not alter data_checksums on a running instance",
         ):
             instances.apply(ctx, manifest)
+
+
+def test_extensions(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+) -> None:
+    with instances.running(ctx, instance):
+        manifest = instance_manifest.copy(
+            update={"extensions": ["passwordcheck", "pg_stat_statements", "unaccent"]}
+        )
+        r = instances.apply(ctx, manifest)
+        instances.restart(ctx, instance)
+        assert r is not None
+
+        im = instances.describe(ctx, instance.name, instance.version)
+        assert sorted(im.extensions) == [
+            "passwordcheck",
+            "pg_stat_statements",
+            "unaccent",
+        ]
+
+        config = instance.config()
+        assert config.shared_preload_libraries == "passwordcheck, pg_stat_statements"
+
+        def get_installed_extensions() -> List[str]:
+            return [
+                r["extname"]
+                for r in execute(ctx, instance, "SELECT extname FROM pg_extension")
+            ]
+
+        installed = get_installed_extensions()
+        assert "pg_stat_statements" in installed
+        assert "unaccent" in installed
+
+        rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
+        assert len(rows)
+
+        manifest = manifest.copy(update={"extensions": ["unaccent"]})
+        r = instances.apply(ctx, manifest)
+        instances.restart(ctx, instance)
+        config = instance.config()
+        assert "shared_preload_libraries" not in config
+        installed = get_installed_extensions()
+        assert "pg_stat_statements" not in installed
+        assert "unaccent" in installed

@@ -14,6 +14,9 @@
           unix_socket_directories: /tmp
         prometheus_port: 9186
         surole_password: "{{ postgresql_surole_password }}"
+        extensions:
+          - pg_stat_statements
+          - unaccent
 
     - name: a role in production instance
       dalibo.pglift.role:

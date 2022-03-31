@@ -277,12 +277,25 @@ def test_instance_create(
     assert result.exit_code == 1
     assert "instance already exists" in result.stderr
 
-    cmd = ["instance", "create", "new", "--port=1234", "--data-checksums"]
+    cmd = [
+        "instance",
+        "create",
+        "new",
+        "--port=1234",
+        "--data-checksums",
+        "--extension=unaccent",
+        "--extension=pg_stat_statements",
+    ]
     if ctx.settings.prometheus is not None:
         cmd.append("--prometheus-port=1212")
     with patch.object(instances, "apply") as apply:
         result = runner.invoke(cli, cmd, obj=obj)
-    expected = {"name": "new", "port": 1234, "data_checksums": True}
+    expected = {
+        "name": "new",
+        "port": 1234,
+        "data_checksums": True,
+        "extensions": ["unaccent", "pg_stat_statements"],
+    }
     if ctx.settings.prometheus is not None:
         expected["prometheus"] = {"port": 1212}
     apply.assert_called_once_with(ctx, composite_instance_model.parse_obj(expected))
@@ -328,9 +341,22 @@ def test_instance_alter(
     assert result.exit_code == 2, result.stderr
     assert "instance '11/notfound' not found" in result.stderr
 
-    actual_obj: Dict[str, Any] = {"name": instance.name}
-    altered_obj: Dict[str, Any] = {"name": instance.name, "state": "stopped"}
-    cmd = ["instance", "alter", str(instance), "--state=stopped"]
+    actual_obj: Dict[str, Any] = {
+        "name": instance.name,
+        "extensions": ["pg_stat_statements", "unaccent"],
+    }
+    altered_obj: Dict[str, Any] = {
+        "name": instance.name,
+        "state": "stopped",
+        "extensions": ["passwordcheck"],
+    }
+    cmd = [
+        "instance",
+        "alter",
+        str(instance),
+        "--state=stopped",
+        "--extension=passwordcheck",
+    ]
     if ctx.settings.prometheus is not None:
         actual_obj["prometheus"] = {"port": 1212}
         altered_obj["prometheus"] = {"port": 2121}

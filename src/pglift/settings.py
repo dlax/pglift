@@ -106,6 +106,17 @@ class PluginSettings(BaseSettings):
     """Settings class for plugins."""
 
 
+# List of extensions supported by pglift
+# The value is a tuple with two items:
+#  - the first one tells if the module needs to be added to shared_preload_libraries
+#  - the second one tells if the module is an extension (used with CREATE EXTENSION…)
+AVAILABLE_EXTENSIONS: Dict[str, Tuple[bool, bool]] = {
+    "passwordcheck": (True, False),
+    "pg_stat_statements": (True, True),
+    "unaccent": (False, True),
+}
+
+
 POSTGRESQL_SUPPORTED_VERSIONS = ["14", "13", "12", "11", "10"]
 
 
