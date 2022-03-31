@@ -10,7 +10,8 @@ target instance or to execute any program in PostgreSQL binary directory.
     psql (14.1 (Debian 14.1-1.pgdg110+1))
     Type "help" for help.
 
-    postgres@postgres=# \q
+    [14/main] postgres@~=# \q
+
     $ pglift instance exec 14/main -- psql "dbname=test" -c '\x' -c 'SELECT * FROM foo;'
     Expanded display is on.
     -[ RECORD 1 ]
@@ -20,3 +21,6 @@ target instance or to execute any program in PostgreSQL binary directory.
 
     $ pglift instance exec test -- pg_isready
     /home/dba/.local/share/pglift/run/postgresql:5432 - no response
+
+Each instance gets specific ``.psqlrc`` and ``.psql_history`` files located
+in their base directory.

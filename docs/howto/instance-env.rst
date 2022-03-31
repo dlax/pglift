@@ -13,6 +13,8 @@ target instance.
     PGPASSFILE=/home/dba/.pgpass
     PGPORT=5456
     PGUSER=postgres
+    PSQLRC=/home/dba/.local/share/pglift/srv/pgsql/14/main/.psqlrc
+    PSQL_HISTORY=/home/dba/.local/share/pglift/srv/pgsql/14/main/.psql_history
 
 This can be used in shell scripts. For instance:
 

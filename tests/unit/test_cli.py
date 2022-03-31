@@ -506,6 +506,8 @@ def test_instance_env(
         f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}\n"
         "PGPORT=999\n"
         "PGUSER=postgres\n"
+        f"PSQLRC={instance.psqlrc}\n"
+        f"PSQL_HISTORY={instance.psql_history}\n"
     )
 
 

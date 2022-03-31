@@ -50,6 +50,11 @@ def test_init(
     )
     assert locale_settings == expected_locale_settings
 
+    assert i.psqlrc.read_text().strip().splitlines() == [
+        f"\\set PROMPT1 '[{i}] %n@%~%R%x%# '",
+        "\\set PROMPT2 ' %R%x%# '",
+    ]
+
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, instances.systemd_unit(i))
 

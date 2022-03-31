@@ -195,6 +195,16 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     if manifest.standby:
         init_replication(ctx, instance, manifest.standby.for_, manifest.standby.slot)
 
+    instance.psqlrc.write_text(
+        "\n".join(
+            [
+                f"\\set PROMPT1 '[{instance}] %n@%~%R%x%# '",
+                "\\set PROMPT2 ' %R%x%# '",
+            ]
+        )
+        + "\n"
+    )
+
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance))
 
@@ -996,6 +1006,8 @@ def env_for(
             "PGPORT": str(instance.port),
             "PGHOST": host,
             "PGDATA": str(instance.datadir),
+            "PSQLRC": str(instance.psqlrc),
+            "PSQL_HISTORY": str(instance.psql_history),
         }
     )
     if path:

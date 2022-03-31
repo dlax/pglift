@@ -56,6 +56,14 @@ class BaseInstance:
         """Path to WAL directory for this instance."""
         return self.path / self._settings.postgresql.waldir
 
+    @property
+    def psqlrc(self) -> Path:
+        return self.path / ".psqlrc"
+
+    @property
+    def psql_history(self) -> Path:
+        return self.path / ".psql_history"
+
     def exists(self) -> bool:
         """Return True if the instance exists based on system lookup.
 

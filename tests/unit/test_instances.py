@@ -257,6 +257,8 @@ def test_env_for(ctx: Context, instance: Instance) -> None:
         "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
         "PGPORT": "999",
         "PGUSER": "postgres",
+        "PSQLRC": f"{instance.path}/.psqlrc",
+        "PSQL_HISTORY": f"{instance.path}/.psql_history",
     }
 
 
@@ -274,6 +276,8 @@ def test_exec(ctx: Context, instance: Instance) -> None:
         "PGUSER": "postgres",
         "PGHOST": "/socks",
         "PGPASSWORD": "qwerty",
+        "PSQLRC": str(instance.psqlrc),
+        "PSQL_HISTORY": str(instance.psql_history),
     }
     bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     cmd = [
@@ -297,6 +301,8 @@ def test_env(ctx: Context, instance: Instance) -> None:
                 f"export PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
                 "export PGPORT=999",
                 "export PGUSER=postgres",
+                f"export PSQLRC={instance.psqlrc}",
+                f"export PSQL_HISTORY={instance.psql_history}",
             ]
         )
 
