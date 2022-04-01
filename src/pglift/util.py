@@ -15,7 +15,12 @@ datapath = Path(__file__).parent / "data"
 
 
 def template(*args: str) -> str:
-    return datapath.joinpath(*args).read_text()
+    """Return the content of a configuration file template, either found in
+    site configuration or in distribution data.
+    """
+    path = site_config(*args)
+    assert path is not None and path.exists(), f"{path} template file not found"
+    return path.read_text()
 
 
 def xdg_config_home() -> Path:

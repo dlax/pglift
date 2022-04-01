@@ -16,6 +16,19 @@ authentication. Default values are:
 For a production cluster it's recommended to set ``local`` and ``host``
 authentication to one of the supported `authentication methods`_.
 
+In addition, a site administrator may provide templates for ``pg_hba.conf``
+and ``pg_ident.conf`` in ``$XDG_CONFIG_HOME/pglift/postgresql`` or
+``/etc/pglift/postgresql``. The defaults contain:
+
+.. literalinclude:: ../../../src/pglift/data/postgresql/pg_hba.conf
+   :caption: pg_hba.conf
+
+.. literalinclude:: ../../../src/pglift/data/postgresql/pg_ident.conf
+   :caption: pg_ident.conf
+
+These templates use site settings which are substituted in each
+``{<placeholder>}``.
+
 Many `pglift` operations require a database access to the target instance using
 the super-user role (``postgres`` by default). Unless the authentication policy
 is set to ``trust`` a password would then be required for each operations.
