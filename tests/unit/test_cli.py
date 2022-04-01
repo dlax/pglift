@@ -11,6 +11,7 @@ import click
 import psycopg
 import pytest
 import yaml
+from click.shell_completion import ShellComplete
 from click.testing import CliRunner
 from pgtoolkit.ctl import Status
 
@@ -174,6 +175,31 @@ def test_instance_identifier(runner: CliRunner, obj: Obj, instance: Instance) ->
     result = runner.invoke(many, [str(instance), instance.name], obj=obj)
     assert result.exit_code == 0, result.stderr
     assert result.stdout == f"{instance}, {instance}"
+
+
+def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
+    group = instance_cli.cli
+    assert group.name
+    comp = ShellComplete(group, {}, group.name, "_CLICK_COMPLETE")
+    commands = [c.value for c in comp.get_completions([], "")]
+    assert commands == [
+        "backup",
+        "describe",
+        "drop",
+        "env",
+        "exec",
+        "list",
+        "logs",
+        "privileges",
+        "promote",
+        "reload",
+        "restart",
+        "restore",
+        "start",
+        "status",
+        "stop",
+        "upgrade",
+    ]
 
 
 def test_cli(runner: CliRunner, obj: Obj) -> None:
