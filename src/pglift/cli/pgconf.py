@@ -1,8 +1,10 @@
-from typing import Any, Dict, Iterable, Tuple
+import io
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 import click
+import pgtoolkit.conf
 
-from .. import conf, instances
+from .. import instances
 from ..ctx import Context
 from ..models import interface, system
 from ..types import ConfigChanges
@@ -16,10 +18,12 @@ def cli(instance: system.Instance) -> None:
 
 
 def show_configuration_changes(
-    changes: ConfigChanges, parameters: Iterable[str]
+    changes: ConfigChanges, parameters: Optional[Iterable[str]] = None
 ) -> None:
     for param, (old, new) in changes.items():
         click.secho(f"{param}: {old} -> {new}", err=True, fg="green")
+    if parameters is None:
+        return
     unchanged = set(parameters) - set(changes)
     if unchanged:
         click.secho(
@@ -116,5 +120,11 @@ def pgconf_remove(
 @pass_ctx
 def pgconf_edit(ctx: Context, instance: system.Instance) -> None:
     """Edit managed configuration."""
-    confd = conf.info(instance.datadir)[0]
-    click.edit(filename=str(confd / "user.conf"))
+    actual_config = instance.config(managed_only=True)
+    edited = click.edit(text="".join(actual_config.lines))
+    assert edited is not None
+    config = pgtoolkit.conf.parse(io.StringIO(edited))
+    values = config.as_dict()
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    changes, _ = instances.configure(ctx, manifest, values=values)
+    show_configuration_changes(changes)

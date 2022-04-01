@@ -809,16 +809,20 @@ def test_pgconf_remove(
 def test_pgconf_edit(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
-    with patch("click.edit") as edit:
+    user_conf = instance.datadir / "conf.pglift.d" / "user.conf"
+    with patch("click.edit", return_value="bonjour = bonsoir\n") as edit, patch.object(
+        instances, "configure", return_value=({"bonjour": ("on", "'matin")}, False)
+    ) as configure:
         result = runner.invoke(
             cli,
             ["pgconf", f"--instance={instance}", "edit"],
             obj=obj,
         )
     assert result.exit_code == 0, result.stderr
-    edit.assert_called_once_with(
-        filename=str(instance.datadir / "conf.pglift.d" / "user.conf")
-    )
+    edit.assert_called_once_with(text=user_conf.read_text())
+    manifest = interface.Instance(name=instance.name, version=instance.version)
+    configure.assert_called_once_with(ctx, manifest, values={"bonjour": "bonsoir"})
+    assert result.stderr == "bonjour: on -> 'matin\n"
 
 
 def test_role_create(
