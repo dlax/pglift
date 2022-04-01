@@ -224,8 +224,11 @@ def in_pgpass(
     """Return True if a role with 'name' is present in password file for
     'instance'.
     """
+    passfile_path = ctx.settings.postgresql.auth.passfile
+    if not passfile_path.exists():
+        return False
     port = int(instance.config().port)  # type: ignore[arg-type]
-    passfile = pgpass.parse(ctx.settings.postgresql.auth.passfile)
+    passfile = pgpass.parse(passfile_path)
     return any(entry.matches(username=name, port=port) for entry in passfile)
 
 
