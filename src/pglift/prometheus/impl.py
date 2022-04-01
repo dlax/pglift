@@ -340,7 +340,7 @@ def setup_local(
                 login=True,
                 in_roles=["pg_monitor"],
             )
-            if not roles.exists(ctx, instance, role.name):
+            if not instance.standby and not roles.exists(ctx, instance, role.name):
                 roles.create(ctx, instance, role)
     else:
         # Get the password from config file
