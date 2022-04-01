@@ -183,7 +183,9 @@ def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
     comp = ShellComplete(group, {}, group.name, "_CLICK_COMPLETE")
     commands = [c.value for c in comp.get_completions([], "")]
     assert commands == [
+        "alter",
         "backup",
+        "create",
         "describe",
         "drop",
         "env",
