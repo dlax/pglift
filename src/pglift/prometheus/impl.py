@@ -214,7 +214,10 @@ def start(
     :param name: the name for the service.
     :param foreground: start the program in foreground, replacing the current process.
     :raises ValueError: if 'foreground' does not apply with site configuration.
+    :raises ~exceptions.InstanceNotFound: if 'name' service does not exist.
     """
+    if not enabled(name, settings):
+        raise exceptions.InstanceNotFound(name)
     if ctx.settings.service_manager == "systemd":
         if foreground:
             raise ValueError("'foreground' parameter does not apply with systemd")
@@ -239,7 +242,12 @@ def start(
 
 @task("stopping postgres_exporter service")
 def stop(ctx: "BaseContext", name: str, settings: "PrometheusSettings") -> None:
-    """Stop postgres_exporter service."""
+    """Stop postgres_exporter service.
+
+    :raises ~exceptions.InstanceNotFound: if 'name' service does not exist.
+    """
+    if not enabled(name, settings):
+        raise exceptions.InstanceNotFound(name)
     if ctx.settings.service_manager == "systemd":
         systemd.stop(ctx, systemd_unit(name))
     else:
