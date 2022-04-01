@@ -26,7 +26,6 @@ manage PostgreSQL databases of an instance.
 
     Commands:
       alter       Alter a database in a PostgreSQL instance
-      apply       Apply manifest as a database
       create      Create a database in a PostgreSQL instance
       describe    Describe a database
       drop        Drop a database

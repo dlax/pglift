@@ -21,7 +21,6 @@ modification, deletion as well as status management (start, stop, restart).
 
     Commands:
       alter       Alter PostgreSQL INSTANCE
-      apply       Apply manifest as a PostgreSQL instance
       backup      Back up PostgreSQL INSTANCE
       create      Initialize a PostgreSQL instance
       describe    Describe PostgreSQL INSTANCE

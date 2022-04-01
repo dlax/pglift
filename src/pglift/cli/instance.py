@@ -152,7 +152,7 @@ def _instance_alter(
     return command
 
 
-@cli.command("apply")
+@cli.command("apply", hidden=True)
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @pass_ctx
 def instance_apply(ctx: Context, file: IO[str]) -> None:

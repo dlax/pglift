@@ -68,7 +68,7 @@ def database_alter(
         databases.apply(ctx, instance, altered)
 
 
-@cli.command("apply")
+@cli.command("apply", hidden=True)
 @click.option("-f", "--file", type=click.File("r"), metavar="MANIFEST", required=True)
 @pass_instance
 @pass_ctx
