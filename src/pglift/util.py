@@ -27,8 +27,18 @@ def xdg_data_home() -> Path:
 
 
 def site_config(*parts: str) -> Optional[Path]:
+    """Return path to configuration file if found in site or distribution data
+    path.
+
+    >>> print(site_config("postgresql", "pg_ident.conf"))  # doctest: +ELLIPSIS
+    /.../pglift/data/postgresql/pg_ident.conf
+    """
     for basedir in (xdg_config_home(), Path("/etc")):
         config = (basedir / pkgname).joinpath(*parts)
+        if config.exists():
+            return config
+    else:
+        config = datapath.joinpath(*parts)
         if config.exists():
             return config
     return None

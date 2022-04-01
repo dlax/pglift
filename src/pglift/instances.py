@@ -285,9 +285,7 @@ def configure(
 
     site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": instance.name}
     site_config_template = util.site_config("postgresql", "site.conf")
-    if site_config_template is None:
-        site_config_template = util.datapath / "postgresql" / "site.conf"
-    if site_config_template.exists():
+    if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
     def format_values(

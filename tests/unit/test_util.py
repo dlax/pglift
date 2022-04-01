@@ -42,6 +42,10 @@ def test_site_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         assert util.site_config("x") == configfile
     assert util.site_config("x") is None
 
+    pg_hba = util.site_config("postgresql", "pg_hba.conf")
+    assert pg_hba is not None
+    assert pg_hba.parent == util.datapath / "postgresql"
+
 
 def test_gen_certificate(tmp_path: Path) -> None:
 
