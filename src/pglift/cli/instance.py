@@ -340,14 +340,6 @@ def instance_backup(
 
 @cli.command("restore")
 @instance_identifier(nargs=1)
-@click.option(
-    "-l",
-    "--list",
-    "list_only",
-    is_flag=True,
-    default=False,
-    help="Only list available backups",
-)
 @click.option("--label", help="Label of backup to restore")
 @click.option("--date", type=click.DateTime(), help="Date of backup to restore")
 @pass_pgbackrest_settings
@@ -358,25 +350,36 @@ def instance_restore(
     console: Console,
     settings: PgBackRestSettings,
     instance: system.Instance,
-    list_only: bool,
     label: Optional[str],
     date: Optional[datetime],
 ) -> None:
     """Restore PostgreSQL INSTANCE"""
-    if list_only:
-        backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
-        print_table_for(
-            (i.dict(by_alias=True) for i in backups),
-            title=f"Available backups for instance {instance}",
-            display=console.print,
+    instances.check_status(ctx, instance, Status.not_running)
+    if label is not None and date is not None:
+        raise click.BadArgumentUsage(
+            "--label and --date arguments are mutually exclusive"
         )
-    else:
-        instances.check_status(ctx, instance, Status.not_running)
-        if label is not None and date is not None:
-            raise click.BadArgumentUsage(
-                "--label and --date arguments are mutually exclusive"
-            )
-        pgbackrest_mod.restore(ctx, instance, settings, label=label, date=date)
+    pgbackrest_mod.restore(ctx, instance, settings, label=label, date=date)
+
+
+@cli.command("backups")
+@instance_identifier(nargs=1)
+@pass_pgbackrest_settings
+@pass_console
+@pass_ctx
+def instance_backups(
+    ctx: Context,
+    console: Console,
+    settings: PgBackRestSettings,
+    instance: system.Instance,
+) -> None:
+    """List available backups for INSTANCE"""
+    backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
+    print_table_for(
+        (i.dict(by_alias=True) for i in backups),
+        title=f"Available backups for instance {instance}",
+        display=console.print,
+    )
 
 
 @cli.command("privileges")

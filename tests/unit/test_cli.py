@@ -185,6 +185,7 @@ def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
     assert commands == [
         "alter",
         "backup",
+        "backups",
         "create",
         "describe",
         "drop",
@@ -542,7 +543,7 @@ def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> Non
 
 
 @pytest.mark.usefixtures("need_pgbackrest")
-def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) -> None:
+def test_instance_backups(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     bck = interface.InstanceBackup(
         label="foo",
         size=12,
@@ -555,7 +556,7 @@ def test_instance_restore_list(runner: CliRunner, instance: Instance, obj: Obj) 
     with patch.object(pgbackrest, "iter_backups", return_value=[bck]) as iter_backups:
         result = runner.invoke(
             cli,
-            ["instance", "restore", str(instance), "--list"],
+            ["instance", "backups", str(instance)],
             obj=obj,
         )
     assert result.exit_code == 0, result

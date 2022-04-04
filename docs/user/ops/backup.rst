@@ -25,17 +25,16 @@ restoration using selected PITR tool, currently pgBackRest_.
       Restore a PostgreSQL instance
 
     Options:
-      -l, --list                      Only list available backups
       --label TEXT                    Label of backup to restore
       --date [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
                                       Date of backup to restore
       --help                          Show this message and exit.
 
-The ``restore`` command can be used to list available backups:
+The ``backups`` command can be used to list available backups:
 
 .. code-block:: console
 
-    $ pglift instance restore -l main
+    $ pglift instance backups main
                                                          Available backups for instance 14/main
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
     ┃ label                             ┃ size    ┃ repo_size ┃ date_start                ┃ date_stop                 ┃ type ┃ databases           ┃
