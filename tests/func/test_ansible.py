@@ -8,7 +8,6 @@ import string
 import subprocess
 from typing import Callable, Dict, Iterator
 
-import dateutil.tz
 import psycopg
 import pytest
 import yaml
@@ -117,6 +116,7 @@ def test_ansible(
     prod_dsn = "host=/tmp user=postgres password=supers3kret dbname=postgres port=5433"
     assert cluster_name(prod_dsn) == "prod"
     with db.connect_dsn(prod_dsn) as cnx:
+        cnx.execute("SET TIME ZONE 'UTC'")
         cur = cnx.execute(
             "SELECT rolname,rolinherit,rolcanlogin,rolconnlimit,rolpassword,rolvaliduntil FROM pg_roles WHERE rolname = 'bob'"
         )
@@ -127,7 +127,7 @@ def test_ansible(
             "rolconnlimit": 10,
             "rolpassword": "********",
             "rolvaliduntil": datetime.datetime(
-                2025, 1, 1, tzinfo=dateutil.tz.tzlocal()
+                2025, 1, 1, tzinfo=datetime.timezone.utc
             ),
         }
         cur = cnx.execute(
