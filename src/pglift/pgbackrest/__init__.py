@@ -50,7 +50,14 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
         return
     if not impl.enabled(instance, settings):
         return
-    impl.revert_setup(ctx, instance, settings, instance.config())
+
+    nb_backups = len(impl.backup_info(ctx, instance, settings)[0]["backup"])
+
+    if not nb_backups or ctx.confirm(
+        f"Confirm deletion of {nb_backups} backup(s) for instance {instance} ?",
+        True,
+    ):
+        impl.revert_setup(ctx, instance, settings, instance.config())
 
 
 @hookimpl  # type: ignore[misc]
