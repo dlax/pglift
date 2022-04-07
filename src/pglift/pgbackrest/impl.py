@@ -27,6 +27,10 @@ def available(ctx: "BaseContext") -> Optional["PgBackRestSettings"]:
     return ctx.settings.pgbackrest
 
 
+def enabled(instance: "system.BaseInstance", settings: "PgBackRestSettings") -> bool:
+    return _configpath(instance, settings).exists()
+
+
 def make_cmd(
     instance: "system.BaseInstance", settings: "PgBackRestSettings", *args: str
 ) -> List[str]:

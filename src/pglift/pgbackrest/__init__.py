@@ -48,7 +48,7 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
     settings = available(ctx)
     if not settings:
         return
-    if instance.standby:
+    if not impl.enabled(instance, settings):
         return
     impl.revert_setup(ctx, instance, settings, instance.config())
 
