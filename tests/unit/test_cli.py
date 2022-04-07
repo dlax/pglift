@@ -883,7 +883,7 @@ def test_role_create(
 def test_role_alter(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
 ) -> None:
-    actual = interface.Role(name="alterme", connection_limit=3)
+    actual = interface.Role(name="alterme", connection_limit=3, in_roles=["pg_monitor"])
     altered = interface.Role(
         name="alterme",
         connection_limit=30,
@@ -891,6 +891,7 @@ def test_role_alter(
         password="blah",
         login=True,
         inherit=False,
+        in_roles=["pg_read_all_data", "pg_read_all_settings"],
     )
 
     with patch.object(roles, "describe", return_value=actual) as describe, patch.object(
@@ -909,6 +910,8 @@ def test_role_alter(
                 "--password=blah",
                 "--login",
                 "--no-inherit",
+                "--in-role=pg_read_all_data",
+                "--in-role=pg_read_all_settings",
             ],
             obj=obj,
         )
