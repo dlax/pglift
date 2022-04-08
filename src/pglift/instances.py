@@ -29,7 +29,7 @@ from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
 from .models import interface, system
-from .settings import EXTENSIONS_CONFIG, POSTGRESQL_SUPPORTED_VERSIONS
+from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion
 from .task import task
 from .types import ConfigChanges
 
@@ -39,8 +39,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@functools.lru_cache(maxsize=len(POSTGRESQL_SUPPORTED_VERSIONS) + 1)
-def pg_ctl(version: Optional[str], *, ctx: "BaseContext") -> ctl.PGCtl:
+@functools.lru_cache(maxsize=len(PostgreSQLVersion) + 1)
+def pg_ctl(version: Optional[PostgreSQLVersion], *, ctx: "BaseContext") -> ctl.PGCtl:
     pg_bindir = None
     settings = ctx.settings.postgresql
     version = version or settings.default_version
@@ -1016,7 +1016,7 @@ def drop(ctx: "BaseContext", instance: system.Instance) -> None:
 
 
 def list(
-    ctx: "BaseContext", *, version: Optional[str] = None
+    ctx: "BaseContext", *, version: Optional[PostgreSQLVersion] = None
 ) -> Iterator[interface.InstanceListItem]:
     """Yield instances found by system lookup.
 
@@ -1024,11 +1024,11 @@ def list(
 
     :raises ~exceptions.InvalidVersion: if specified version is unknown.
     """
-    versions = builtins.list(ctx.settings.postgresql.versions)
-    if version:
-        if version not in versions:
-            raise exceptions.InvalidVersion(f"unknown version '{version}'")
-        versions = [version]
+    if version is not None:
+        assert isinstance(version, PostgreSQLVersion)
+        versions = [version.value]
+    else:
+        versions = builtins.list(ctx.settings.postgresql.versions)
 
     pgroot = ctx.settings.postgresql.root
 

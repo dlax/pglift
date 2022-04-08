@@ -26,7 +26,7 @@ from pglift.pgbackrest import impl as pgbackrest
 from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
 from pglift.prometheus import impl as prometheus_impl
 from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
-from pglift.settings import Settings
+from pglift.settings import PostgreSQLVersion, Settings
 
 instance_arg_guessed_or_given = pytest.mark.parametrize(
     "args", [[], ["test"]], ids=["instance:guessed", "instance:given"]
@@ -266,6 +266,7 @@ def test_instance_create(
     obj: Obj,
     instance: Instance,
     composite_instance_model: Type[interface.Instance],
+    pg_version: str,
 ) -> None:
     with patch.object(instances, "apply") as apply:
         result = runner.invoke(
@@ -281,6 +282,7 @@ def test_instance_create(
         "instance",
         "create",
         "new",
+        f"--version={pg_version}",
         "--port=1234",
         "--data-checksums",
         "--extension=unaccent",
@@ -292,13 +294,15 @@ def test_instance_create(
         result = runner.invoke(cli, cmd, obj=obj)
     expected = {
         "name": "new",
+        "version": pg_version,
         "port": 1234,
         "data_checksums": True,
         "extensions": ["unaccent", "pg_stat_statements"],
     }
     if ctx.settings.prometheus is not None:
         expected["prometheus"] = {"port": 1212}
-    apply.assert_called_once_with(ctx, composite_instance_model.parse_obj(expected))
+    e = composite_instance_model.parse_obj(expected)
+    apply.assert_called_once_with(ctx, e)
     assert result.exit_code == 0, result
 
 
@@ -453,6 +457,13 @@ def test_instance_list(
     )
     assert result.exit_code == 0
     assert not result.output
+
+    ver = next(iter(PostgreSQLVersion))
+    with patch.object(instances, "list") as list_instances:
+        result = runner.invoke(
+            cli, ["instance", "list", f"--version={ver.value}"], obj=obj
+        )
+    list_instances.assert_called_once_with(ctx, version=ver)
 
 
 @instance_arg_guessed_or_given
@@ -682,6 +693,7 @@ def test_instance_upgrade(
     ctx: Context, obj: Obj, instance: Instance, runner: CliRunner
 ) -> None:
     new_instance = MagicMock()
+    newversion = next(iter(PostgreSQLVersion))
     with patch.object(
         instances, "upgrade", return_value=new_instance
     ) as upgrade, patch.object(instances, "start") as start:
@@ -694,12 +706,13 @@ def test_instance_upgrade(
                 "--name=new",
                 "--port=12",
                 "--jobs=3",
+                f"--version={newversion.value}",
             ],
             obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     upgrade.assert_called_once_with(
-        ctx, instance, version=None, name="new", port=12, jobs=3
+        ctx, instance, version=newversion, name="new", port=12, jobs=3
     )
     start.assert_called_once_with(ctx, new_instance)
 

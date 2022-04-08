@@ -120,7 +120,9 @@ def test_postgresql_versions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     config_path.write_text(json.dumps(config))
     with monkeypatch.context() as m:
         m.setenv("SETTINGS", f"@{config_path}")
-        with pytest.raises(ValidationError, match="unsupported default version: 7"):
+        with pytest.raises(
+            ValidationError, match="value is not a valid enumeration member; permitted:"
+        ):
             Settings()
 
     config["postgresql"]["default_version"] = "13"

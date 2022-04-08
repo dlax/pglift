@@ -18,8 +18,8 @@ from pglift import _install, instances, pgbackrest, prometheus
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import (
-    POSTGRESQL_SUPPORTED_VERSIONS,
     PgBackRestSettings,
+    PostgreSQLVersion,
     PrometheusSettings,
     Settings,
     _postgresql_bindir_version,
@@ -38,7 +38,7 @@ except EnvironmentError:
 def pytest_addoption(parser: Any) -> None:
     parser.addoption(
         "--pg-version",
-        choices=POSTGRESQL_SUPPORTED_VERSIONS,
+        choices=list(PostgreSQLVersion),
         default=default_pg_version,
         help="Run tests with specified PostgreSQL version (default: %(default)s)",
     )

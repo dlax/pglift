@@ -5,7 +5,7 @@ from pglift import exceptions
 from pglift.ctx import Context
 from pglift.models import system
 from pglift.models.system import Instance
-from pglift.settings import Settings
+from pglift.settings import PostgreSQLVersion, Settings
 
 
 def test_default_postgresql_version(
@@ -22,6 +22,10 @@ def test_default_postgresql_version(
     with monkeypatch.context() as m:
         m.setattr(ctx, "settings", new_settings)
         assert system.default_postgresql_version(ctx) == "42"
+
+
+def test_baseinstance(instance: Instance) -> None:
+    assert isinstance(instance.version, PostgreSQLVersion)
 
 
 def test_baseinstance_str(pg_version: str, instance: Instance) -> None:

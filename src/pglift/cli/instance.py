@@ -11,7 +11,7 @@ from ..ctx import Context
 from ..instances import Status
 from ..models import helpers, interface, system
 from ..pgbackrest import impl as pgbackrest_mod
-from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, PgBackRestSettings
+from ..settings import PgBackRestSettings, PostgreSQLVersion
 from .util import (
     Command,
     Group,
@@ -183,14 +183,14 @@ def instance_describe(ctx: Context, instance: Tuple[system.Instance, ...]) -> No
 @cli.command("list")
 @click.option(
     "--version",
-    type=click.Choice(POSTGRESQL_SUPPORTED_VERSIONS),
+    type=click.Choice(list(PostgreSQLVersion)),
     help="Only list instances of specified version.",
 )
 @as_json_option
 @pass_console
 @pass_ctx
 def instance_list(
-    ctx: Context, console: Console, version: Optional[str], as_json: bool
+    ctx: Context, console: Console, version: Optional[PostgreSQLVersion], as_json: bool
 ) -> None:
     """List the available instances"""
 
@@ -430,7 +430,7 @@ def instance_privileges(
 @click.option(
     "--version",
     "newversion",
-    type=click.Choice(POSTGRESQL_SUPPORTED_VERSIONS),
+    type=click.Choice(list(PostgreSQLVersion)),
     help="PostgreSQL version of the new instance (default to site-configured value).",
 )
 @click.option(
@@ -449,7 +449,7 @@ def instance_privileges(
 def instance_upgrade(
     ctx: Context,
     instance: system.Instance,
-    newversion: Optional[str],
+    newversion: Optional[PostgreSQLVersion],
     newname: Optional[str],
     port: Optional[int],
     jobs: Optional[int],

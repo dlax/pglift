@@ -117,7 +117,14 @@ EXTENSIONS_CONFIG: Dict[types.Extension, Tuple[bool, bool]] = {
 }
 
 
-POSTGRESQL_SUPPORTED_VERSIONS = ["14", "13", "12", "11", "10"]
+class PostgreSQLVersion(types.StrEnum):
+    """PostgreSQL version"""
+
+    v14 = "14"
+    v13 = "13"
+    v12 = "12"
+    v11 = "11"
+    v10 = "10"
 
 
 class PostgreSQLVersionSettings(BaseSettings):
@@ -126,7 +133,7 @@ class PostgreSQLVersionSettings(BaseSettings):
 
 def _postgresql_bindir_version() -> Tuple[str, str]:
     usrdir = Path("/usr")
-    for version in POSTGRESQL_SUPPORTED_VERSIONS:
+    for version in PostgreSQLVersion:
         # Debian packages
         if (usrdir / "lib" / "postgresql" / version).exists():
             return str(usrdir / "lib" / "postgresql" / "{version}" / "bin"), version
@@ -213,21 +220,15 @@ class PostgreSQLSettings(BaseSettings):
         bindir = values["bindir"]
         pgversions = values["versions"]
         if bindir is not None:
-            for version in POSTGRESQL_SUPPORTED_VERSIONS:
+            for version in PostgreSQLVersion.__members__.values():
                 if version not in pgversions:
                     pgversions[version] = PostgreSQLVersionSettings(
                         bindir=bindir.format(version=version)
                     )
         return values
 
-    default_version: Optional[str] = None
+    default_version: Optional[PostgreSQLVersion] = None
     """Default PostgreSQL version to use, if unspecified."""
-
-    @validator("default_version")
-    def default_version_in_supported_versions(cls, v: Optional[str]) -> Optional[str]:
-        if v and v not in POSTGRESQL_SUPPORTED_VERSIONS:
-            raise ValueError(f"unsupported default version: {v}")
-        return v
 
     root: DataPath = DataPath("pgsql")
     """Root directory for all managed instances."""

@@ -82,9 +82,15 @@
     "type": "str"
   },
   "version": {
+    "choices": [
+      "14",
+      "13",
+      "12",
+      "11",
+      "10"
+    ],
     "description": [
       "PostgreSQL version"
-    ],
-    "type": "str"
+    ]
   }
 }

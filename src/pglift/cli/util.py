@@ -37,7 +37,7 @@ from .. import __name__ as pkgname
 from .. import exceptions, instances, task
 from ..ctx import Context
 from ..models import system
-from ..settings import POSTGRESQL_SUPPORTED_VERSIONS, Settings
+from ..settings import PostgreSQLVersion, Settings
 
 logger = logging.getLogger(pkgname)
 
@@ -258,7 +258,7 @@ def get_instance(ctx: Context, name: str, version: Optional[str]) -> system.Inst
     """Return an Instance from name/version, possibly guessing version if unspecified."""
     if version is None:
         found = None
-        for version in POSTGRESQL_SUPPORTED_VERSIONS:
+        for version in PostgreSQLVersion:
             try:
                 instance = system.Instance.system_lookup(ctx, (name, version))
             except exceptions.InstanceNotFound:

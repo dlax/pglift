@@ -326,9 +326,6 @@ def test_list(ctx: Context, instance: system.Instance) -> None:
         else:
             assert False, f"Instance {instance.version}/{instance.name} not found"
 
-        with pytest.raises(ValueError, match="unknown version '7'"):
-            next(instances.list(ctx, version="7"))
-
         iv = next(instances.list(ctx, version=instance.version))
         assert iv == i
     finally:

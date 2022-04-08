@@ -7,18 +7,17 @@ from pgtoolkit import ctl
 from pgtoolkit.conf import Configuration
 
 from .. import conf, exceptions
-from ..settings import Settings
+from ..settings import PostgreSQLVersion, Settings
 from ..util import short_version
-from ..validators import known_postgresql_version
 
 if TYPE_CHECKING:
     from ..ctx import BaseContext
 
 
-def default_postgresql_version(ctx: "BaseContext") -> str:
+def default_postgresql_version(ctx: "BaseContext") -> PostgreSQLVersion:
     version = ctx.settings.postgresql.default_version
     if version is None:
-        version = short_version(ctl.PGCtl(None).version)
+        return PostgreSQLVersion(short_version(ctl.PGCtl(None).version))
     return version
 
 
@@ -26,7 +25,7 @@ def default_postgresql_version(ctx: "BaseContext") -> str:
 class BaseInstance:
 
     name: str
-    version: str = attr.ib(validator=known_postgresql_version)
+    version: PostgreSQLVersion = attr.ib(converter=PostgreSQLVersion)
 
     _settings: Settings = attr.ib(validator=instance_of(Settings))
 
@@ -85,9 +84,11 @@ class BaseInstance:
     @classmethod
     def get(cls: Type[T], name: str, version: Optional[str], ctx: "BaseContext") -> T:
         # attrs strip leading underscores at init for private attributes.
-        return cls(
-            name, version or default_postgresql_version(ctx), settings=ctx.settings
-        )
+        if version is None:
+            version = default_postgresql_version(ctx)
+        else:
+            version = PostgreSQLVersion(version)
+        return cls(name, version, settings=ctx.settings)
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
