@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -43,18 +44,63 @@ _M = TypeVar("_M", bound=pydantic.BaseModel)
 
 
 @singledispatch
-def humanize(value: Any) -> Any:
-    return value
+def prettify(value: Any) -> str:
+    """Prettify a value
 
+    The prettification will depend on value type.
 
-@humanize.register(ByteSize)
-def _(value: ByteSize) -> str:
-    """Humanize a ByteSize value
-
-    >>> humanize(ByteSize(1024))
+    >>> prettify(ByteSize(1024))
     '1.0KiB'
+    >>> prettify([None, 1, "foo"])
+    'None, 1, foo'
+    >>> prettify(None)
+    ''
+    >>> prettify({"foo": "bob"})
+    'foo: bob'
     """
+    return str(value)
+
+
+@prettify.register(ByteSize)
+def _(value: ByteSize) -> str:
+    """Prettify a ByteSize value"""
     return value.human_readable()
+
+
+@prettify.register(list)
+def _(value: List[Any]) -> str:
+    """Prettify a List value"""
+    return ", ".join((str(x) for x in value))
+
+
+@prettify.register(type(None))
+def _(value: None) -> str:
+    """Prettify a None value"""
+    return ""
+
+
+@prettify.register(dict)
+def _(value: Dict[str, Any]) -> str:
+    """Prettify a Dict value.
+
+    >>> print(prettify({"foo": "bob", "bar": {"blah": ["some", 123]}}))
+    foo: bob
+    bar:
+      blah: some, 123
+    """
+
+    def prettify_dict(
+        d: Dict[str, Any], level: int = 0, indent: str = "  "
+    ) -> Iterator[str]:
+        for key, value in d.items():
+            row = f"{indent * level}{key}:"
+            if isinstance(value, dict):
+                yield row
+                yield from prettify_dict(value, level + 1)
+            else:
+                yield row + " " + prettify(value)
+
+    return "\n".join(prettify_dict(value))
 
 
 def print_table_for(
@@ -71,17 +117,24 @@ def print_table_for(
     ...     city: str
     >>> class Person(pydantic.BaseModel):
     ...     name: str
+    ...     children: Optional[List[str]]
     ...     address: Address
-    >>> items = [Person(name="bob",
-    ...                 address=Address(street="main street", zip=31234, city="luz"))]
+    >>> items = [Person(name="bob", children=["marley", "dylan"],
+    ...                 address=Address(street="main street", zip=31234, city="luz")),
+    ...          Person(name="janis", children=None,
+    ...                 address=Address(street="robinson lane", zip=38650, city="mars"))]
     >>> print_table_for((i.dict(by_alias=True) for i in items), title="address book")  # doctest: +NORMALIZE_WHITESPACE
-                   address book
-    ┏━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-    ┃      ┃ address     ┃ address ┃ address ┃
-    ┃ name ┃ street      ┃ zip     ┃ city    ┃
-    ┡━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
-    │ bob  │ main street │ 31234   │ luz     │
-    └──────┴─────────────┴─────────┴─────────┘
+                      address book
+    ┏━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ name  ┃ children      ┃ address               ┃
+    ┡━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ bob   │ marley, dylan │ street: main street   │
+    │       │               │ zip: 31234            │
+    │       │               │ city: luz             │
+    │ janis │               │ street: robinson lane │
+    │       │               │ zip: 38650            │
+    │       │               │ city: mars            │
+    └───────┴───────────────┴───────────────────────┘
     """
     table = None
     headers: List[str] = []
@@ -90,17 +143,11 @@ def print_table_for(
         row = []
         hdr = []
         for k, v in list(item.items()):
-            if isinstance(v, dict):
-                for sk, sv in v.items():
-                    mk = f"{k}\n{sk}"
-                    hdr.append(mk)
-                    row.append(humanize(sv))
-            else:
-                hdr.append(k)
-                row.append(humanize(v))
+            hdr.append(k)
+            row.append(prettify(v))
         if not headers:
             headers = hdr[:]
-        rows.append([str(v) for v in row])
+        rows.append(row)
     if not rows:
         return
     table = Table(*headers, title=title)
