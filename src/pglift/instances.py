@@ -995,7 +995,7 @@ def installed_extensions(
     assert status(ctx, instance) == Status.running
     with db.superuser_connect(ctx, instance) as cnx:
         return [
-            r["extname"]
+            interface.Extension(r["extname"])
             for r in cnx.execute(
                 "SELECT extname FROM pg_extension WHERE extname != 'plpgsql'"
             )
