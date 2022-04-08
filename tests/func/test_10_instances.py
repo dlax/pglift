@@ -295,10 +295,13 @@ def test_describe(
     if "log_directory" in config:
         logdir = config.pop("log_directory")
         assert logdir == str(log_directory)
-    assert config == {"logging_collector": False}
+    assert config == {
+        "logging_collector": False,
+        "shared_preload_libraries": "passwordcheck",
+    }
     assert im.state.name == "stopped"
     assert not im.surole_password
-    assert im.extensions == []
+    assert im.extensions == ["passwordcheck"]
 
     if instance_manifest.surole_password:
         with instances.running(ctx, instance):
@@ -584,6 +587,8 @@ def test_extensions(
     instance_manifest: interface.Instance,
     instance: system.Instance,
 ) -> None:
+    config = instance.config()
+    assert config.shared_preload_libraries == "passwordcheck"
     with instances.running(ctx, instance):
         manifest = instance_manifest.copy(
             update={"extensions": ["passwordcheck", "pg_stat_statements", "unaccent"]}

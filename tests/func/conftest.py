@@ -317,6 +317,7 @@ def instance_manifest(
             },
             "surole_password": surole_password,
             "replrole_password": replrole_password,
+            "extensions": ["passwordcheck"],
             "prometheus": {"port": prometheus_port},
         }
     )

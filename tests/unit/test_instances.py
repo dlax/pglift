@@ -131,6 +131,7 @@ def test_configure(
         "effective_cache_size": (None, "5MB"),
         "max_connections": (None, 100),
         "port": (None, 5433),
+        "shared_preload_libraries": (None, "passwordcheck"),
     }
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()

@@ -105,7 +105,9 @@ def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
 def instance_manifest(
     composite_instance_model: Type[interface.Instance], pg_version: str
 ) -> interface.Instance:
-    return composite_instance_model(name="test", version=pg_version)
+    return composite_instance_model(
+        name="test", version=pg_version, extensions=["passwordcheck"]
+    )
 
 
 def _instance(name: str, version: str, settings: Settings) -> Instance:
