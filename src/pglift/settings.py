@@ -23,7 +23,7 @@ from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
-from . import exceptions
+from . import exceptions, types
 from .util import site_config, xdg_data_home
 
 try:
@@ -110,10 +110,10 @@ class PluginSettings(BaseSettings):
 # The value is a tuple with two items:
 #  - the first one tells if the module needs to be added to shared_preload_libraries
 #  - the second one tells if the module is an extension (used with CREATE EXTENSION…)
-AVAILABLE_EXTENSIONS: Dict[str, Tuple[bool, bool]] = {
-    "passwordcheck": (True, False),
-    "pg_stat_statements": (True, True),
-    "unaccent": (False, True),
+EXTENSIONS_CONFIG: Dict[types.Extension, Tuple[bool, bool]] = {
+    types.Extension.passwordcheck: (True, False),
+    types.Extension.pg_stat_statements: (True, True),
+    types.Extension.unaccent: (False, True),
 }
 
 

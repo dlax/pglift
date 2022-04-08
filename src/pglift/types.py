@@ -63,6 +63,14 @@ class CommandRunner(Protocol):
 ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 
 
+class Extension(AutoStrEnum):
+    """A PostgreSQL instance-level extension"""
+
+    passwordcheck = enum.auto()
+    pg_stat_statements = enum.auto()
+    unaccent = enum.auto()
+
+
 class BackupType(AutoStrEnum):
     """Backup type."""
 

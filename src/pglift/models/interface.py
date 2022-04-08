@@ -30,7 +30,9 @@ from pydantic import (
 from typing_extensions import Literal
 
 from .. import settings
-from ..types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest, ServiceManifest
+from ..types import AnsibleConfig, AutoStrEnum, CLIConfig
+from ..types import Extension as Extension
+from ..types import Manifest, ServiceManifest
 
 if TYPE_CHECKING:
     from ..pm import PluginManager
@@ -82,9 +84,6 @@ class InstanceListItem(BaseModel):
     port: int
     path: DirectoryPath
     status: str
-
-
-Extension = AutoStrEnum("Extension", list(settings.AVAILABLE_EXTENSIONS))  # type: ignore[call-overload]
 
 
 class Instance(Manifest):
@@ -178,7 +177,7 @@ class Instance(Manifest):
 
     standby: Optional[Standby] = None
 
-    extensions: List[Extension] = Field(  # type: ignore[valid-type]
+    extensions: List[Extension] = Field(
         default_factory=list,
         description="List of extensions to install in the instance",
     )

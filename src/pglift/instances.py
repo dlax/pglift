@@ -29,7 +29,7 @@ from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
 from .models import interface, system
-from .settings import AVAILABLE_EXTENSIONS, POSTGRESQL_SUPPORTED_VERSIONS
+from .settings import EXTENSIONS_CONFIG, POSTGRESQL_SUPPORTED_VERSIONS
 from .task import task
 from .types import ConfigChanges
 
@@ -291,7 +291,7 @@ def configure(
 
     spl = []
     for extension in manifest.extensions:
-        if AVAILABLE_EXTENSIONS[extension][0]:
+        if EXTENSIONS_CONFIG[extension][0]:
             spl.append(extension)
     if spl:
         confitems["shared_preload_libraries"] = ", ".join(spl)
@@ -851,7 +851,7 @@ def create_or_drop_extensions(
     with running(ctx, instance):
         installed = installed_extensions(ctx, instance)
         with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
-            extensions = [e for e in manifest.extensions if AVAILABLE_EXTENSIONS[e][1]]
+            extensions = [e for e in manifest.extensions if EXTENSIONS_CONFIG[e][1]]
             to_add = set(extensions) - set(installed)
             to_remove = set(installed) - set(extensions)
             for extension in sorted(to_add):
