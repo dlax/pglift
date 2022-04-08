@@ -952,6 +952,25 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
     else:
         standby = None
 
+    extensions = set()
+    if "shared_preload_libraries" in config:
+        extensions.update(
+            {
+                spl.strip()
+                for spl in str(config["shared_preload_libraries"]).split(",")
+                if spl.strip()
+            }
+        )
+
+    surole_password = replrole_password = None
+    is_running = status(ctx, instance) == Status.running
+    if is_running and instance.standby is None:
+        surole_name = ctx.settings.postgresql.surole.name
+        surole_password = roles.describe(ctx, instance, surole_name).password
+        replrole = ctx.settings.postgresql.replrole
+        replrole_password = roles.describe(ctx, instance, replrole).password
+        extensions.update(installed_extensions(ctx, instance))
+
     result = interface.Instance(
         name=instance.name,
         version=instance.version,
@@ -959,27 +978,12 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         state=state,
         ssl=config.get("ssl", False),
         configuration=managed_config,
+        surole_password=surole_password,
+        replrole_password=replrole_password,
+        extensions=sorted(extensions),
         standby=standby,
         **services,
     )
-
-    config = instance.config()
-    extensions = []
-    if "shared_preload_libraries" in config:
-        extensions += [
-            spl.strip()
-            for spl in str(config["shared_preload_libraries"]).split(",")
-            if spl.strip()
-        ]
-
-    is_running = status(ctx, instance) == Status.running
-    if is_running and instance.standby is None:
-        surole_name = ctx.settings.postgresql.surole.name
-        result.surole_password = roles.describe(ctx, instance, surole_name).password
-        replrole = ctx.settings.postgresql.replrole
-        result.replrole_password = roles.describe(ctx, instance, replrole).password
-        extensions += installed_extensions(ctx, instance)
-    result.extensions = sorted(set(extensions))
 
     return result
 
