@@ -16,11 +16,16 @@ would list default privileges for all roles and databases of the instance, unles
 .. code-block:: console
 
     $ pglift instance privileges main
-    database    schema    role    object_type    privileges
-    ----------  --------  ------  -------------  -----------------------------------------------------------------------------
-    myapp       public    manuel  TABLE          ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']
-    otherapp    public    manuel  FUNCTION       ['EXECUTE']
-    postgres    public    manuel  TABLE          ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']
+                           Default privileges on instance main
+    ─────────────────────────────────────────────────────────────────────────────────────────────
+   | database  | schema  | role   | object_type | privileges                                     |
+   └───────────┴─────────┴────────┴─────────────┴────────────────────────────────────────────────┘
+   │ myapp      │ public │ manuel │ TABLE       │ DELETE, INSERT, REFERENCES, SELECT, TRIGGER,   │
+   │            │        │        │             │ TRUNCATE, UPDATE                               │
+   │ otherapp   │ public │ manuel │ FUNCTION    │ EXECUTE                                        │
+   │ postgres   │ public │ manuel │ TABLE       │ DELETE, INSERT, REFERENCES, SELECT, TRIGGER,   │
+   │            │        │        │             │ TRUNCATE, UPDATE                               │
+   └────────────┴────────┴────────┴─────────────┴────────────────────────────────────────────────┘
     $ pglift instance privileges main --database=postgres --json
     [
       {
@@ -47,9 +52,12 @@ list default privileges for specified database (resp. role):
 .. code-block:: console
 
     $ pglift database -i 13/main privileges myapp
-    database    schema    role    object_type    privileges
-    ----------  --------  ------  -------------  -----------------------------------------------------------------------------
-    myapp       public    manuel  TABLE          ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']
+    ──────────────────────────────────────────────────────────────────────────────────────────
+   | database | schema | role   | object_type | privileges                                    |
+   └──────────┴────────┴────────┴─────────────┴───────────────────────────────────────────────┘
+   │ myapp    │ public │ manuel │ TABLE       │ DELETE, INSERT, REFERENCES, SELECT, TRIGGER,  │
+   │          │        │        │             │ TRUNCATE, UPDATE                              │
+   └──────────┴────────┴────────┴─────────────┴───────────────────────────────────────────────┘
 
 Alter default parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -83,12 +91,12 @@ or
 .. code-block:: console
 
     $ pglift database -i 13/main privileges myapp
-     ───────────────────────────────────────────────────────────────────────────────────────────
-    | database | schema | role | object_type | privileges                                       |
-    └──────────┴────────┴──────┴─────────────┴──────────────────────────────────────────────────┘
-    │ myapp    │ public │ dba  │ TABLE       │ ['DELETE', 'INSERT', 'REFERENCES', 'SELECT',     │
-    │          │        │      │             │ 'TRIGGER', 'TRUNCATE', 'UPDATE']                 │
-    └──────────┴────────┴──────┴─────────────┴──────────────────────────────────────────────────┘
+     ────────────────────────────────────────────────────────────────────────────────────────
+    | database | schema | role | object_type | privileges                                    |
+    └──────────┴────────┴──────┴─────────────┴───────────────────────────────────────────────┘
+    │ myapp    │ public │ dba  │ TABLE       │ DELETE, INSERT, REFERENCES, SELECT, TRIGGER,  │
+    │          │        │      │             │ TRUNCATE, UPDATE                              │
+    └──────────┴────────┴──────┴─────────────┴───────────────────────────────────────────────┘
 
 .. [#f1]
    See the `privileges documentation`_.

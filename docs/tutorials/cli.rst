@@ -63,11 +63,13 @@ Listing instances:
 ::
 
     $ pglift instance list
-    name       version    port  path                                          status
-    -------  ---------  ------  --------------------------------------------  -----------
-    local           13    7892  .../.local/share/pglift/srv/pgsql/13/local    running
-    standby         13    7893  .../.local/share/pglift/srv/pgsql/13/standby  not_running
-    main            13    5455  .../.local/share/pglift/srv/pgsql/13/main     running
+     ─────────────────────────────────────────────────────────────────────────────────────────
+    │ name      │ version │ port │ path                                         │ status      │
+    └───────────┴─────────┴──────┴──────────────────────────────────────────────┴─────────────┘
+    │ local     │ 13      │ 7892 │ .../.local/share/pglift/srv/pgsql/13/local   │ running     │
+    │ standby   │ 13      │ 7893 │ .../.local/share/pglift/srv/pgsql/13/standby │ not_running │
+    │ main      │ 13      │ 5455 │ .../.local/share/pglift/srv/pgsql/13/main    │ running     │
+    └───────────┴─────────┴──────┴──────────────────────────────────────────────┴─────────────┘
 
 Altering an instance:
 
@@ -163,12 +165,20 @@ Adding and manipulating instance objects:
 ::
 
     $ pglift database -i 13/main list
-    name       owner     encoding    collation    ctype    acls                                         size  description                                 tablespace    tablespace      tablespace
-                                                                                                                                                          name          location              size
-    ---------  --------  ----------  -----------  -------  ----------------------------------------  -------  ------------------------------------------  ------------  ------------  ------------
-    myapp      postgres  UTF8        C            C                                                  8167939                                              pg_default                      41011771
-    postgres   postgres  UTF8        C            C                                                  8319535  default administrative connection database  pg_default                      41011771
-    template1  postgres  UTF8        C            C        ['=c/postgres', 'postgres=CTc/postgres']  8167939  default template for new databases          pg_default                      41011771
+     ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    │ name      │ owner    │ encoding │ collation │ ctype   │ acls                  │ size   │ description               │ tablespace       │
+    │           │          │          │           │         │                       │        │                           │                  │
+    └───────────┴──────────┴──────────┴───────────┴─────────┴───────────────────────┴────────┴───────────────────────────┴──────────────────┘
+    │ myapp     │ postgres │ UTF8     │ C         │ C       │                       │ 8.2MiB │                           │ name: pg_default │
+    │           │          │          │           │         │                       │        │                           │ location:        │
+    │           │          │          │           │         │                       │        │                           │ size: 41.0MiB    │
+    │ postgres  │ postgres │ UTF8     │ C         │ C       │                       │ 8.3MiB │ default administrative    │ name: pg_default │
+    │           │          │          │           │         │                       │        │ connection database       │ location:        │
+    │           │          │          │           │         │                       │        │                           │ size: 41.0MiB    │
+    │ template1 │ postgres │ UTF8     │ C         │ C       │ =c/postgres,          │ 8.2MiB │ default template for new  │ name: pg_default │
+    │           │          │          │           │         │ postgres=CTc/postgres │        │ databases                 │ location:        │
+    │           │          │          │           │         │                       │        │                           │ size: 41.0MiB    │
+    └───────────┴──────────┴──────────┴───────────┴─────────┴───────────────────────┴────────┴───────────────────────────┴──────────────────┘
 
 ::
 
