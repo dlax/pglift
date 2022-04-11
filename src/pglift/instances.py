@@ -351,7 +351,7 @@ def configure(
         write_configs()
     i_config = site_config + user_config
     ctx.hook.instance_configure(
-        ctx=ctx, manifest=manifest, config=i_config, changes=changes
+        ctx=ctx, manifest=manifest, config=i_config, changes=changes, creating=_creating
     )
     if not _creating:
         write_configs()

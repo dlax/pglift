@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from .. import hookimpl
+from .. import exceptions, hookimpl
 from ..models import system
 from . import impl
 from .impl import available as available
@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: "BaseContext", manifest: "interface.Instance", config: "Configuration"
+    ctx: "BaseContext",
+    manifest: "interface.Instance",
+    config: "Configuration",
+    creating: bool,
 ) -> None:
     """Install pgBackRest for an instance when it gets configured."""
     settings = available(ctx)
@@ -34,6 +37,15 @@ def instance_configure(
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     if instance.standby:
         return
+
+    if creating and impl.enabled(instance, settings):
+        if not ctx.confirm(
+            f"Old pgbackrest repository exists for instance {instance}, continue by overwriting it?",
+            False,
+        ):
+            raise exceptions.Cancelled("Pgbackrest repository already exists")
+        impl.revert_setup(ctx, instance, settings, config)
+
     impl.setup(ctx, instance, settings, config)
 
     info = impl.backup_info(ctx, instance, settings)

@@ -52,6 +52,7 @@ def instance_configure(
     manifest: "interface.Instance",
     config: Configuration,
     changes: "ConfigChanges",
+    creating: bool,
 ) -> None:
     """Called when the PostgreSQL instance got (re-)configured."""
 

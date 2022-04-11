@@ -2,11 +2,14 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
+from pgtoolkit.conf import Configuration
 
 from pglift import exceptions, types
 from pglift.ctx import Context
+from pglift.models import interface
 from pglift.models.system import Instance
 from pglift.pgbackrest import impl as pgbackrest
+from pglift.pgbackrest import instance_configure
 from pglift.settings import PgBackRestSettings, Settings
 
 
@@ -136,3 +139,20 @@ def test_standby_restore(
         match=f"^{standby_instance.version}/standby is a read-only standby",
     ):
         pgbackrest.restore(ctx, standby_instance, pgbackrest_settings)
+
+
+@pytest.mark.usefixtures("need_pgbackrest")
+def test_instance_configure_cancelled_if_repo_exists(
+    ctx: Context, instance: Instance, instance_manifest: interface.Instance
+) -> None:
+    settings = ctx.settings.pgbackrest
+    assert settings is not None
+    with patch.object(pgbackrest, "enabled", return_value=True) as enabled:
+        with pytest.raises(exceptions.Cancelled):
+            instance_configure(
+                ctx=ctx,
+                manifest=instance_manifest,
+                config=Configuration(),
+                creating=True,
+            )
+    enabled.assert_called_once_with(instance, settings)
