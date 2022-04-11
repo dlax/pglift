@@ -20,6 +20,7 @@ from typing import (
 from typing_extensions import Protocol
 
 from . import __name__ as pkgname
+from . import exceptions
 
 A = TypeVar("A", bound=Callable[..., Any])
 
@@ -119,7 +120,7 @@ def transaction() -> Iterator[None]:
         if isinstance(exc, KeyboardInterrupt):
             if Task._calls:
                 logger.warning("%s interrupted", Task._calls[-1][0])
-        else:
+        elif not isinstance(exc, exceptions.Cancelled):
             logger.exception(str(exc))
         assert Task._calls is not None
         while True:

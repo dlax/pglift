@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from pglift import task
+from pglift import exceptions, task
 
 
 class SimpleDisplayer:
@@ -112,3 +112,13 @@ def test_transaction(caplog: pytest.LogCaptureFixture) -> None:
         with task.transaction():
             intr()
     assert caplog.messages == [f"{intr} interrupted"]
+
+    @task.task("... CANCEL")
+    def cancel() -> None:
+        raise exceptions.Cancelled("forget about it")
+
+    caplog.clear()
+    with pytest.raises(exceptions.Cancelled):
+        with task.transaction():
+            cancel()
+    assert not caplog.messages
