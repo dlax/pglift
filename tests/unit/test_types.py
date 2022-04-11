@@ -2,7 +2,7 @@ import io
 
 import yaml
 
-from pglift.types import Manifest
+from pglift.types import Manifest, StrEnum
 
 
 class Point(Manifest):
@@ -22,3 +22,10 @@ def test_yaml() -> None:
     point = Point(x=0, y=1.2)
     s = point.yaml()
     assert s == "---\nx: 0.0\ny: 1.2\n"
+
+
+def test_strenum() -> None:
+    class Pets(StrEnum):
+        cat = "cat"
+
+    assert str(Pets.cat) == "cat"

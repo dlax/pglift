@@ -29,7 +29,9 @@ else:
 
 
 class StrEnum(str, enum.Enum):
-    pass
+    def __str__(self) -> str:
+        assert isinstance(self.value, str)
+        return self.value
 
 
 @enum.unique
