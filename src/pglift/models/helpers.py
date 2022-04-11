@@ -8,7 +8,7 @@ import pydantic
 from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
-from ..types import AnsibleArgSpec
+from ..types import AnsibleArgSpec, StrEnum
 
 Callback = Callable[..., Any]
 ModelType = Type[pydantic.BaseModel]
@@ -101,7 +101,10 @@ def _decorators_from_model(
                 try:
                     choices = cli_config["choices"]
                 except KeyError:
-                    choices = [v.name for v in ftype]
+                    if lenient_issubclass(ftype, StrEnum):
+                        choices = list(ftype)
+                    else:
+                        choices = [v.value for v in ftype]
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
@@ -267,7 +270,7 @@ def argspec_from_model(
                     try:
                         choices = ansible_config["choices"]
                     except KeyError:
-                        choices = [f.name for f in ftype]
+                        choices = [f.value for f in ftype]
                     arg_spec["choices"] = choices
                 elif origin_type is not None and issubclass(origin_type, list):
                     arg_spec["type"] = "list"
@@ -278,7 +281,7 @@ def argspec_from_model(
             if not force_non_required and field.default is not None:
                 default = field.default
                 if lenient_issubclass(ftype, enum.Enum):
-                    default = default.name
+                    default = default.value
                 arg_spec["default"] = default
 
             if field.field_info.description:

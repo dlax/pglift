@@ -15,8 +15,8 @@ from pglift.types import AnsibleConfig, CLIConfig, Manifest
 
 
 class Gender(enum.Enum):
-    M = "M"
-    F = "F"
+    male = "M"
+    female = "F"
 
 
 class Country(enum.Enum):
@@ -272,7 +272,7 @@ def test_parse_params_as() -> None:
     person = Person(
         name="alice",
         age=42,
-        gender=Gender.F,
+        gender=Gender.female,
         address=address,
     )
     assert helpers.parse_params_as(Person, params) == person
