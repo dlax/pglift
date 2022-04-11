@@ -19,9 +19,8 @@ Then, create a Python3 virtualenv and install the project:
 
 ::
 
-    $ python3 -m venv .venv
+    $ python3 -m venv .venv --upgrade-deps
     $ . .venv/bin/activate
-    (.venv) $ pip install --upgrade pip
     (.venv) $ pip install -e ".[dev,test]"
 
 Though not required, tox_ can be used to run all checks (lint, tests, etc.)
