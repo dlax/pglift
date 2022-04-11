@@ -50,7 +50,6 @@ setup(
         "importlib_metadata; python_version < '3.8'",
         "pgtoolkit >= 0.20.1",
         "pluggy",
-        "psycopg[binary]",
         "pydantic",
         "python-dateutil",
         "typing-extensions",
@@ -66,10 +65,12 @@ setup(
             "flake8",
             "isort",
             "pre-commit",
+            "psycopg[binary]",
         ]
         + extras_typing,
         "test": [
             "port-for",
+            "psycopg[binary]",
             "pytest",
             "pytest-cov",
             "requests",
@@ -78,8 +79,9 @@ setup(
         ],
         "typing": extras_typing,
         "docs": [
-            "sphinx",
             "furo",
+            "psycopg[binary]",
+            "sphinx",
         ],
     },
     include_package_data=True,

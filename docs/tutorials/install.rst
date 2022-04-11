@@ -1,14 +1,26 @@
 Installation
 ============
 
-pglift can be installed from PyPI, for instance in a virtualenv as follow:
+pglift can be installed from PyPI.
 
+First, it is recommended to use a dedicated virtualenv:
 ::
 
     $ python3 -m venv .venv
     $ . .venv/bin/activate
     (.venv) $ pip install 'pip>=20.3'
-    (.venv) $ pip install pglift
+
+then proceed with actual installation as:
+::
+
+    (.venv) $ pip install pglift "psycopg[binary]"
+
+.. warning::
+   Some old platforms, e.g. CentOS 7, do not support *binary* installation of
+   psycopg so one should follow the `local installation
+   <https://www.psycopg.org/psycopg3/docs/basic/install.html#local-installation>`_
+   instructions.
+.. https://github.com/psycopg/psycopg/issues/180
 
 The :doc:`Ansible <ansible>` collection is not shipped with the
 Python package, so follow the :doc:`development setup <../dev>` to use the
