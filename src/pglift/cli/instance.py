@@ -430,6 +430,7 @@ def instance_privileges(
 @click.option(
     "--version",
     "newversion",
+    type=click.Choice(POSTGRESQL_SUPPORTED_VERSIONS),
     help="PostgreSQL version of the new instance (default to site-configured value).",
 )
 @click.option(
