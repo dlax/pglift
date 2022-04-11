@@ -149,6 +149,81 @@ ORDER BY
     role,
     object_type;
 
+-- name: database_privileges
+WITH relacl AS (
+    SELECT
+        c.oid,
+        rolname,
+        array_agg(relacl.privilege_type) AS relacl
+    FROM
+        pg_catalog.pg_class c
+        CROSS JOIN aclexplode(c.relacl) as relacl
+        JOIN pg_roles ON (relacl.grantee = pg_roles.oid)
+        LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+    GROUP BY 1, 2
+),
+attacl AS (
+    SELECT
+        c.oid,
+        attname,
+        rolname,
+        array_agg(attacl.privilege_type) AS attacl
+    FROM
+        pg_catalog.pg_class c
+        JOIN pg_catalog.pg_attribute ON attrelid = c.oid
+        CROSS JOIN aclexplode(pg_catalog.pg_attribute.attacl) as attacl
+        JOIN pg_roles ON (attacl.grantee = pg_roles.oid)
+    WHERE
+        NOT attisdropped
+        AND attacl IS NOT NULL
+    GROUP BY 1, 2, 3
+),
+attacl_agg AS (
+    SELECT
+        oid,
+        attacl.rolname,
+        json_object_agg(
+            attacl.attname,
+            attacl.attacl
+        ) as attacl
+    FROM attacl
+    GROUP BY 1, 2
+)
+SELECT
+    current_database() AS database,
+    n.nspname AS schema,
+    c.relname AS object_name,
+    CASE c.relkind
+        WHEN 'r' THEN
+            'TABLE'
+        WHEN 'v' THEN
+            'VIEW'
+        WHEN 'm' THEN
+            'MATERIALIZED VIEW'
+        WHEN 'S' THEN
+            'SEQUENCE'
+        WHEN 'f' THEN
+            'FOREIGN TABLE'
+        WHEN 'p' THEN
+            'PARTITIONED TABLE'
+        ELSE
+            'UNKNOWN'
+        END
+    AS object_type,
+    pg_roles.rolname AS role,
+    coalesce(a.relacl, '{{}}'::text[]) AS privileges,
+    coalesce(b.attacl, '{{}}'::json) AS column_privileges
+FROM pg_class c
+CROSS JOIN pg_roles
+LEFT JOIN relacl a ON c.oid = a.oid AND pg_roles.rolname = a.rolname
+LEFT JOIN attacl_agg b ON c.oid = b.oid AND pg_roles.rolname = b.rolname
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+WHERE
+    c.relkind IN ('r', 'v', 'm', 'S', 'f', 'p')
+    AND n.nspname !~ '^pg_'
+    AND pg_table_is_visible(c.oid)
+    AND (a.relacl IS NOT NULL OR attacl IS NOT NULL)
+    {where_clause};
 
 -- name: drop_replication_slot
 SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_slots WHERE slot_name = %(slot)s));

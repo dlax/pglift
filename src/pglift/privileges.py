@@ -1,5 +1,6 @@
-from typing import TYPE_CHECKING, List, Sequence
+from typing import TYPE_CHECKING, List, Sequence, Type
 
+import psycopg.rows
 from psycopg import sql
 
 from . import db
@@ -10,23 +11,29 @@ if TYPE_CHECKING:
     from .models import system
 
 
-def inspect_default_acl(
+def inspect_privileges(
     ctx: BaseContext,
     instance: "system.Instance",
     database: str,
     roles: Sequence[str] = (),
+    defaults: bool = False,
 ) -> List[interface.Privilege]:
     args = {}
     where_clause = sql.SQL("")
     if roles:
-        where_clause = sql.SQL("WHERE pg_roles.rolname = ANY(%(roles)s)")
+        where_clause = sql.SQL("AND pg_roles.rolname = ANY(%(roles)s)")
         args["roles"] = list(roles)
+    return_class: Type[interface.Privilege]
+    if defaults:
+        privilege_query = "database_default_acl"
+        return_class = interface.Privilege
+    else:
+        privilege_query = "database_privileges"
+        return_class = interface.GeneralPrivilege
     with db.superuser_connect(ctx, instance, dbname=database) as cnx:
-        cur = cnx.execute(
-            db.query("database_default_acl", where_clause=where_clause), args
-        )
-        results = cur.fetchall()
-    return [interface.Privilege(**r) for r in results]
+        with cnx.cursor(row_factory=psycopg.rows.class_row(return_class)) as cur:
+            cur.execute(db.query(privilege_query, where_clause=where_clause), args)
+            return cur.fetchall()
 
 
 def get(
@@ -35,12 +42,14 @@ def get(
     *,
     databases: Sequence[str] = (),
     roles: Sequence[str] = (),
+    defaults: bool = False,
 ) -> List[interface.Privilege]:
-    """List default access privileges for databases of an instance.
+    """List access privileges for databases of an instance.
 
     :param databases: list of databases to inspect (all will be inspected if
         unspecified).
     :param roles: list of roles to restrict inspection on.
+    :param defaults: if ``True``, get default privileges.
 
     :raises ValueError: if an element of `databases` or `roles` does not
         exist.
@@ -67,5 +76,7 @@ def get(
     return [
         prvlg
         for database in databases
-        for prvlg in inspect_default_acl(ctx, instance, database, roles=roles)
+        for prvlg in inspect_privileges(
+            ctx, instance, database, roles=roles, defaults=defaults
+        )
     ]

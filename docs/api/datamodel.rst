@@ -39,5 +39,7 @@ Interface model
     :members:
 .. autoclass:: Privilege
     :members:
+.. autoclass:: GeneralPrivilege
+    :members:
 .. autoclass:: PGSetting
     :members:

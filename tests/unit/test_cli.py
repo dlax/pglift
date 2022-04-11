@@ -659,12 +659,13 @@ def test_instance_privileges(
                 "db2",
                 "-r",
                 "rol2",
+                "--default",
             ],
             obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
-        ctx, instance, databases=("db2",), roles=("rol2",)
+        ctx, instance, databases=("db2",), roles=("rol2",), defaults=True
     )
     assert json.loads(result.stdout) == [
         {
@@ -1091,12 +1092,13 @@ def test_role_privileges(
                 "--json",
                 "-d",
                 "db2",
+                "--default",
             ],
             obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
-        ctx, instance, databases=("db2",), roles=("rol2",)
+        ctx, instance, databases=("db2",), roles=("rol2",), defaults=True
     )
     role_describe.assert_called_once_with(ctx, instance, "rol2")
     assert json.loads(result.stdout) == [
@@ -1391,12 +1393,13 @@ def test_database_privileges(
                 "--json",
                 "-r",
                 "rol2",
+                "--default",
             ],
             obj=obj,
         )
     assert result.exit_code == 0, result.stdout
     privileges_get.assert_called_once_with(
-        ctx, instance, databases=("db2",), roles=("rol2",)
+        ctx, instance, databases=("db2",), roles=("rol2",), defaults=True
     )
     databases_describe.assert_called_once_with(ctx, instance, "db2")
     assert json.loads(result.stdout) == [

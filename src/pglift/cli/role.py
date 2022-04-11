@@ -102,6 +102,7 @@ def role_drop(ctx: Context, instance: system.Instance, name: str) -> None:
 @click.option(
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
+@click.option("--default", "defaults", is_flag=True, help="Display default privileges")
 @as_json_option
 @pass_instance
 @pass_console
@@ -112,13 +113,16 @@ def role_privileges(
     instance: system.Instance,
     name: str,
     databases: Sequence[str],
+    defaults: bool,
     as_json: bool,
 ) -> None:
-    """List default privileges of a role."""
+    """List privileges of a role."""
     with instances.running(ctx, instance):
         roles.describe(ctx, instance, name)  # check existence
         try:
-            prvlgs = privileges.get(ctx, instance, databases=databases, roles=(name,))
+            prvlgs = privileges.get(
+                ctx, instance, databases=databases, roles=(name,), defaults=defaults
+            )
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:

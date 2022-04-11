@@ -8,6 +8,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -400,9 +401,16 @@ class Privilege(Manifest):
 
     database: str
     schema_: str = Field(alias="schema")
-    role: str
     object_type: str
-    privileges: List[str]
+    role: str
+    privileges: Set[str]
+
+
+class GeneralPrivilege(Privilege):
+    """General access privilege"""
+
+    object_name: str
+    column_privileges: Dict[str, Set[str]]
 
 
 class PGSetting(Manifest):

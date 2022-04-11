@@ -388,6 +388,7 @@ def instance_backups(
     "-d", "--database", "databases", multiple=True, help="Database to inspect"
 )
 @click.option("-r", "--role", "roles", multiple=True, help="Role to inspect")
+@click.option("--default", "defaults", is_flag=True, help="Display default privileges")
 @as_json_option
 @pass_console
 @pass_ctx
@@ -397,12 +398,15 @@ def instance_privileges(
     instance: system.Instance,
     databases: Sequence[str],
     roles: Sequence[str],
+    defaults: bool,
     as_json: bool,
 ) -> None:
-    """List default privileges on INSTANCE"""
+    """List privileges on INSTANCE"""
     with instances.running(ctx, instance):
         try:
-            prvlgs = privileges.get(ctx, instance, databases=databases, roles=roles)
+            prvlgs = privileges.get(
+                ctx, instance, databases=databases, roles=roles, defaults=defaults
+            )
         except ValueError as e:
             raise click.ClickException(str(e))
     if as_json:
@@ -410,9 +414,13 @@ def instance_privileges(
             (i.dict(by_alias=True) for i in prvlgs), display=console.print_json
         )
     else:
+        if defaults:
+            title = f"Default privileges on instance {instance}"
+        else:
+            title = f"Privileges on instance {instance}"
         print_table_for(
             (i.dict(by_alias=True) for i in prvlgs),
-            title=f"Default privileges on instance {instance}",
+            title=title,
             display=console.print,
         )
 

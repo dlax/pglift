@@ -2,10 +2,10 @@ from typing import Iterator
 
 import pytest
 
-from pglift import instances, privileges
+from pglift import databases, instances, privileges
 from pglift.ctx import Context
 from pglift.models import system
-from pglift.models.interface import Privilege
+from pglift.models.interface import GeneralPrivilege, Privilege
 
 from . import execute
 from .conftest import DatabaseFactory, RoleFactory
@@ -46,14 +46,14 @@ def roles_and_privileges(
     )
 
 
-def test_get(ctx: Context, instance: system.Instance) -> None:
+def test_get_default(ctx: Context, instance: system.Instance) -> None:
     expected = [
         Privilege(
             database="db1",
             schema="public",
             role="rol1",
             object_type="TABLE",
-            privileges=[
+            privileges={
                 "DELETE",
                 "INSERT",
                 "REFERENCES",
@@ -61,20 +61,110 @@ def test_get(ctx: Context, instance: system.Instance) -> None:
                 "TRIGGER",
                 "TRUNCATE",
                 "UPDATE",
-            ],
+            },
         ),
         Privilege(
             database="db2",
             schema="public",
             role="rol2",
             object_type="FUNCTION",
-            privileges=["EXECUTE"],
+            privileges={"EXECUTE"},
         ),
     ]
-    prvlgs = privileges.get(ctx, instance)
+    prvlgs = privileges.get(ctx, instance, defaults=True)
     assert prvlgs == expected
-    assert privileges.get(ctx, instance, databases=["db1"], roles=["rol2"]) == []
     assert (
-        privileges.get(ctx, instance, databases=["db2"], roles=["rol2"])
+        privileges.get(ctx, instance, databases=["db1"], roles=["rol2"], defaults=True)
+        == []
+    )
+    assert (
+        privileges.get(ctx, instance, databases=["db2"], roles=["rol2"], defaults=True)
         == expected[-1:]
+    )
+
+
+def test_get_general(ctx: Context, instance: system.Instance) -> None:
+    databases.run(
+        ctx,
+        instance,
+        "CREATE TABLE table1 (x int, y varchar)",
+        dbnames=["db1", "db2"],
+    )
+    databases.run(
+        ctx,
+        instance,
+        "GRANT UPDATE ON table1 TO rol2; GRANT SELECT (x) ON table1 TO rol2",
+        dbnames=["db2"],
+    )
+    expected = [
+        GeneralPrivilege(
+            database="db1",
+            schema="public",
+            object_type="TABLE",
+            role="postgres",
+            privileges={
+                "INSERT",
+                "SELECT",
+                "UPDATE",
+                "DELETE",
+                "TRUNCATE",
+                "REFERENCES",
+                "TRIGGER",
+            },
+            object_name="table1",
+            column_privileges={},
+        ),
+        GeneralPrivilege(
+            database="db1",
+            schema="public",
+            object_type="TABLE",
+            role="rol1",
+            privileges={
+                "SELECT",
+                "UPDATE",
+                "DELETE",
+                "TRUNCATE",
+                "REFERENCES",
+                "TRIGGER",
+                "INSERT",
+            },
+            object_name="table1",
+            column_privileges={},
+        ),
+        GeneralPrivilege(
+            database="db2",
+            schema="public",
+            object_type="TABLE",
+            role="postgres",
+            privileges={
+                "INSERT",
+                "SELECT",
+                "UPDATE",
+                "DELETE",
+                "TRUNCATE",
+                "REFERENCES",
+                "TRIGGER",
+            },
+            object_name="table1",
+            column_privileges={},
+        ),
+        GeneralPrivilege(
+            database="db2",
+            schema="public",
+            object_type="TABLE",
+            role="rol2",
+            privileges={"UPDATE"},
+            object_name="table1",
+            column_privileges={"x": {"SELECT"}},
+        ),
+    ]
+    prvlgs = privileges.get(ctx, instance, defaults=False)
+    assert prvlgs == expected
+    assert (
+        privileges.get(ctx, instance, databases=["db1"], defaults=False)
+        == expected[:-2]
+    )
+    assert (
+        privileges.get(ctx, instance, databases=["db2"], defaults=False)
+        == expected[-2:]
     )
