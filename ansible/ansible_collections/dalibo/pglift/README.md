@@ -5,6 +5,13 @@ This collection provides a few roles and modules to configure and manage your
 PostgreSQL infrastructure based on [pglift](../../../../docs/index.rst).
 See the [tutorial](../../../../docs/ansible).
 
+## Dependencies
+
+To use this collection, pglift must be installed on the managed machine (the
+one hosting the PostgreSQL instances you want to manage with the pglift
+Ansible collection). For more information about how to install pglift, you can
+read and follow the [pglift documentation](../../../../docs/tutorials/install.rst)
+
 ## Tested with Ansible
 
 4.1
