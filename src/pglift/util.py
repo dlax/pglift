@@ -23,6 +23,10 @@ def template(*args: str) -> str:
     return path.read_text()
 
 
+def etc() -> Path:
+    return Path("/etc")
+
+
 def xdg_config_home() -> Path:
     return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 
@@ -38,7 +42,7 @@ def site_config(*parts: str) -> Optional[Path]:
     >>> print(site_config("postgresql", "pg_ident.conf"))  # doctest: +ELLIPSIS
     /.../pglift/data/postgresql/pg_ident.conf
     """
-    for basedir in (xdg_config_home(), Path("/etc")):
+    for basedir in (xdg_config_home(), etc()):
         config = (basedir / pkgname).joinpath(*parts)
         if config.exists():
             return config

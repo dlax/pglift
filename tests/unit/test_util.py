@@ -6,15 +6,12 @@ import pytest
 from pglift import util
 
 
-def test_xdg_config_home(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_xdg_config_home(
+    monkeypatch: pytest.MonkeyPatch, xdg_config_home: Path
+) -> None:
+    assert util.xdg_config_home() == xdg_config_home
     with monkeypatch.context() as m:
-        m.setenv("XDG_CONFIG_HOME", "/x/y")
-        assert util.xdg_config_home() == Path("/x/y")
-    with monkeypatch.context() as m:
-        try:
-            m.delenv("XDG_CONFIG_HOME")
-        except KeyError:
-            pass
+        m.delenv("XDG_CONFIG_HOME")
         m.setattr("pathlib.Path.home", lambda: Path("/ho/me"))
         assert util.xdg_config_home() == Path("/ho/me/.config")
 
