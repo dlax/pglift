@@ -356,7 +356,7 @@ class Database(Manifest):
     settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
         default=None,
         description=(
-            "Session defaults for a run-time configuration variables for the database. "
+            "Session defaults for run-time configuration variables for the database. "
             "Upon update, an empty (dict) value would reset all settings."
         ),
     )
