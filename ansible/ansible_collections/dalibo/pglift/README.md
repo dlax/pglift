@@ -1,6 +1,7 @@
 # Ansible Collection - dalibo.postgresql
 
 ## Description
+
 This collection provides a few roles and modules to configure and manage your
 PostgreSQL infrastructure based on [pglift](../../../../docs/index.rst).
 See the [tutorial](../../../../docs/ansible).
@@ -17,11 +18,14 @@ read and follow the [pglift documentation](../../../../docs/tutorials/install.rs
 4.1
 
 ## Included content
+
 ### modules
+
 - instance: manage pglift (PostgreSQL) instances
 - role: manage roles in a pglift instance
 
 ## Roadmap
+
 FIXME
 
 ## More information
@@ -37,5 +41,6 @@ General information:
 - [Changes impacting Contributors](https://github.com/ansible-collections/overview/issues/45)
 
 ## Licensing
+
 The code in this repository is developed and distributed under the GNU General
 Public License version 3. See LICENSE for details.
