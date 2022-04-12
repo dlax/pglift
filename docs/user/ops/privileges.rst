@@ -1,9 +1,6 @@
 Access privileges
 =================
 
-Command line interface
-----------------------
-
 The ``instance``, ``role`` and ``database`` command line entry points expose a
 ``privileges`` command that will list access privileges.
 
@@ -11,7 +8,7 @@ In psql, ``\dp`` and ``\ddp`` commands can be used to access existing assignment
 of privileges and default privileges respectively.
 
 Listing privileges
-^^^^^^^^^^^^^^^^^^
+------------------
 
 At instance level, ``pglift instance privileges <instance name> [<version>]``
 would list privileges for all roles and databases of the instance, unless a
@@ -86,7 +83,7 @@ For example, the following commands are equivalent:
 
 
 Alter privileges
-^^^^^^^^^^^^^^^^
+----------------
 
 To assign `privileges`_ settings to an object, sql query can be passed through
 the run command:
