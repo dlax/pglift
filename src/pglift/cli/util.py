@@ -14,6 +14,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -53,6 +54,8 @@ def prettify(value: Any) -> str:
     '1.0KiB'
     >>> prettify([None, 1, "foo"])
     'None, 1, foo'
+    >>> prettify({"z", "b", "a"})
+    'a, b, z'
     >>> prettify(None)
     ''
     >>> prettify({"foo": "bob"})
@@ -71,6 +74,12 @@ def _(value: ByteSize) -> str:
 def _(value: List[Any]) -> str:
     """Prettify a List value"""
     return ", ".join((str(x) for x in value))
+
+
+@prettify.register(set)
+def _(value: Set[Any]) -> str:
+    """Prettify a Set value"""
+    return prettify(sorted(value))
 
 
 @prettify.register(type(None))
