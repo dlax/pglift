@@ -373,7 +373,7 @@ class DetailedDatabase(Manifest):
     encoding: str
     collation: str
     ctype: str
-    acls: Optional[List[str]]
+    acls: List[str]
     size: ByteSize
     description: Optional[str]
     tablespace: Tablespace

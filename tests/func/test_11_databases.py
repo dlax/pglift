@@ -114,7 +114,7 @@ def test_list(
     db1.pop("size")
     db1["tablespace"].pop("size")
     assert db1 == {
-        "acls": None,
+        "acls": [],
         "collation": "C",
         "ctype": "C",
         "description": None,
