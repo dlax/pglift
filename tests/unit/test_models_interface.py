@@ -7,7 +7,7 @@ from pglift.prometheus import models as prometheus_models
 
 
 def test_privileges_sorted() -> None:
-    p = interface.GeneralPrivilege(
+    p = interface.Privilege(
         database="postgres",
         schema="main",
         object_type="table",

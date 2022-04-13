@@ -37,9 +37,9 @@ Interface model
     :members:
 .. autoclass:: Tablespace
     :members:
-.. autoclass:: Privilege
+.. autoclass:: DefaultPrivilege
     :members:
-.. autoclass:: GeneralPrivilege
+.. autoclass:: Privilege
     :members:
 .. autoclass:: PGSetting
     :members:

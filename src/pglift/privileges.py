@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Sequence, Type
+from typing import TYPE_CHECKING, List, Sequence, Union
 
 import psycopg.rows
 from psycopg import sql
@@ -17,19 +17,18 @@ def inspect_privileges(
     database: str,
     roles: Sequence[str] = (),
     defaults: bool = False,
-) -> List[interface.Privilege]:
+) -> Union[List[interface.DefaultPrivilege], List[interface.Privilege]]:
     args = {}
     where_clause = sql.SQL("")
     if roles:
         where_clause = sql.SQL("AND pg_roles.rolname = ANY(%(roles)s)")
         args["roles"] = list(roles)
-    return_class: Type[interface.Privilege]
     if defaults:
         privilege_query = "database_default_acl"
-        return_class = interface.Privilege
+        return_class = interface.DefaultPrivilege
     else:
         privilege_query = "database_privileges"
-        return_class = interface.GeneralPrivilege
+        return_class = interface.Privilege
     with db.superuser_connect(ctx, instance, dbname=database) as cnx:
         with cnx.cursor(row_factory=psycopg.rows.class_row(return_class)) as cur:
             cur.execute(db.query(privilege_query, where_clause=where_clause), args)
@@ -43,7 +42,7 @@ def get(
     databases: Sequence[str] = (),
     roles: Sequence[str] = (),
     defaults: bool = False,
-) -> List[interface.Privilege]:
+) -> Union[List[interface.DefaultPrivilege], List[interface.Privilege]]:
     """List access privileges for databases of an instance.
 
     :param databases: list of databases to inspect (all will be inspected if

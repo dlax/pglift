@@ -650,7 +650,7 @@ def test_instance_privileges(
     with patch(
         "pglift.privileges.get",
         return_value=[
-            interface.Privilege(
+            interface.DefaultPrivilege(
                 database="db2",
                 schema="public",
                 role="rol2",
@@ -1085,7 +1085,7 @@ def test_role_privileges(
     with patch(
         "pglift.privileges.get",
         return_value=[
-            interface.Privilege(
+            interface.DefaultPrivilege(
                 database="db2",
                 schema="public",
                 role="rol2",
@@ -1386,7 +1386,7 @@ def test_database_privileges(
     with patch(
         "pglift.privileges.get",
         return_value=[
-            interface.Privilege(
+            interface.DefaultPrivilege(
                 database="db2",
                 schema="public",
                 role="rol2",

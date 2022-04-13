@@ -377,8 +377,8 @@ class DetailedDatabase(Manifest):
         super().__init__(**kwargs)
 
 
-class Privilege(Manifest):
-    """Access privilege"""
+class DefaultPrivilege(Manifest):
+    """Default access privilege"""
 
     database: str
     schema_: str = Field(alias="schema")
@@ -391,8 +391,8 @@ class Privilege(Manifest):
         return sorted(value)
 
 
-class GeneralPrivilege(Privilege):
-    """General access privilege"""
+class Privilege(DefaultPrivilege):
+    """Access privilege"""
 
     object_name: str
     column_privileges: Dict[str, List[str]]

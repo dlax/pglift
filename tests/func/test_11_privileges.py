@@ -5,7 +5,7 @@ import pytest
 from pglift import databases, instances, privileges
 from pglift.ctx import Context
 from pglift.models import system
-from pglift.models.interface import GeneralPrivilege, Privilege
+from pglift.models.interface import DefaultPrivilege, Privilege
 
 from . import execute
 from .conftest import DatabaseFactory, RoleFactory
@@ -48,7 +48,7 @@ def roles_and_privileges(
 
 def test_get_default(ctx: Context, instance: system.Instance) -> None:
     expected = [
-        Privilege(
+        DefaultPrivilege(
             database="db1",
             schema="public",
             role="rol1",
@@ -63,7 +63,7 @@ def test_get_default(ctx: Context, instance: system.Instance) -> None:
                 "UPDATE",
             ],
         ),
-        Privilege(
+        DefaultPrivilege(
             database="db2",
             schema="public",
             role="rol2",
@@ -97,7 +97,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
         dbnames=["db2"],
     )
     expected = [
-        GeneralPrivilege(
+        Privilege(
             database="db1",
             schema="public",
             object_type="TABLE",
@@ -114,7 +114,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             object_name="table1",
             column_privileges={},
         ),
-        GeneralPrivilege(
+        Privilege(
             database="db1",
             schema="public",
             object_type="TABLE",
@@ -131,7 +131,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             object_name="table1",
             column_privileges={},
         ),
-        GeneralPrivilege(
+        Privilege(
             database="db2",
             schema="public",
             object_type="TABLE",
@@ -148,7 +148,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             object_name="table1",
             column_privileges={},
         ),
-        GeneralPrivilege(
+        Privilege(
             database="db2",
             schema="public",
             object_type="TABLE",
