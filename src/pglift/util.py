@@ -103,9 +103,13 @@ def generate_certificate(
 
 
 def generate_password(length: int = 32) -> str:
-    return "".join(
-        secrets.choice(string.ascii_letters + string.digits) for _ in range(length)
-    )
+    assert length >= 2
+    available_char = string.ascii_letters + string.digits
+    while True:
+        password = [secrets.choice(available_char) for _ in range(length)]
+        if any(c.isalpha() for c in password) and any(c.isdigit() for c in password):
+            break
+    return "".join(password)
 
 
 def short_version(version: int) -> str:

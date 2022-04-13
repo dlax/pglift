@@ -1,4 +1,5 @@
 import stat
+import string
 from pathlib import Path
 
 import pytest
@@ -64,3 +65,8 @@ def test_total_memory_error(tmp_path: Path) -> None:
     meminfo.touch()
     with pytest.raises(Exception, match="could not retrieve memory information from"):
         util.total_memory(meminfo)
+
+
+def test_generate_password() -> None:
+    pwd = util.generate_password(2)
+    assert set(pwd) & set(string.ascii_letters) and set(pwd) & set(string.digits)
