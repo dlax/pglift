@@ -6,6 +6,27 @@ from pglift.models import interface
 from pglift.prometheus import models as prometheus_models
 
 
+def test_privileges_sorted() -> None:
+    p = interface.GeneralPrivilege(
+        database="postgres",
+        schema="main",
+        object_type="table",
+        object_name="foo",
+        role="postgres",
+        privileges=["select", "delete", "update"],
+        column_privileges={"postgres": ["update", "delete", "reference"]},
+    )
+    assert p.dict() == {
+        "column_privileges": {"postgres": ["delete", "reference", "update"]},
+        "database": "postgres",
+        "object_name": "foo",
+        "object_type": "table",
+        "privileges": ["delete", "select", "update"],
+        "role": "postgres",
+        "schema_": "main",
+    }
+
+
 def test_instance_composite_service(
     ctx: Context, pg_version: str, prometheus: bool
 ) -> None:

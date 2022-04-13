@@ -8,7 +8,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Tuple,
     Type,
     TypeVar,
@@ -385,14 +384,26 @@ class Privilege(Manifest):
     schema_: str = Field(alias="schema")
     object_type: str
     role: str
-    privileges: Set[str]
+    privileges: List[str]
+
+    @validator("privileges")
+    def __sort_privileges_(cls, value: List[str]) -> List[str]:
+        return sorted(value)
 
 
 class GeneralPrivilege(Privilege):
     """General access privilege"""
 
     object_name: str
-    column_privileges: Dict[str, Set[str]]
+    column_privileges: Dict[str, List[str]]
+
+    @validator("column_privileges")
+    def __sort_column_privileges_(
+        cls, value: Dict[str, List[str]]
+    ) -> Dict[str, List[str]]:
+        for v in value.values():
+            v.sort()
+        return value
 
 
 class PGSetting(Manifest):

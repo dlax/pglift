@@ -53,22 +53,22 @@ def test_get_default(ctx: Context, instance: system.Instance) -> None:
             schema="public",
             role="rol1",
             object_type="TABLE",
-            privileges={
+            privileges=[
                 "DELETE",
-                "INSERT",
                 "REFERENCES",
+                "INSERT",
                 "SELECT",
-                "TRIGGER",
                 "TRUNCATE",
+                "TRIGGER",
                 "UPDATE",
-            },
+            ],
         ),
         Privilege(
             database="db2",
             schema="public",
             role="rol2",
             object_type="FUNCTION",
-            privileges={"EXECUTE"},
+            privileges=["EXECUTE"],
         ),
     ]
     prvlgs = privileges.get(ctx, instance, defaults=True)
@@ -102,15 +102,15 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             schema="public",
             object_type="TABLE",
             role="postgres",
-            privileges={
+            privileges=[
                 "INSERT",
-                "SELECT",
                 "UPDATE",
+                "SELECT",
                 "DELETE",
                 "TRUNCATE",
-                "REFERENCES",
                 "TRIGGER",
-            },
+                "REFERENCES",
+            ],
             object_name="table1",
             column_privileges={},
         ),
@@ -119,15 +119,15 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             schema="public",
             object_type="TABLE",
             role="rol1",
-            privileges={
+            privileges=[
                 "SELECT",
-                "UPDATE",
                 "DELETE",
+                "UPDATE",
                 "TRUNCATE",
                 "REFERENCES",
                 "TRIGGER",
                 "INSERT",
-            },
+            ],
             object_name="table1",
             column_privileges={},
         ),
@@ -136,7 +136,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             schema="public",
             object_type="TABLE",
             role="postgres",
-            privileges={
+            privileges=[
                 "INSERT",
                 "SELECT",
                 "UPDATE",
@@ -144,7 +144,7 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
                 "TRUNCATE",
                 "REFERENCES",
                 "TRIGGER",
-            },
+            ],
             object_name="table1",
             column_privileges={},
         ),
@@ -153,9 +153,9 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             schema="public",
             object_type="TABLE",
             role="rol2",
-            privileges={"UPDATE"},
+            privileges=["UPDATE"],
             object_name="table1",
-            column_privileges={"x": {"SELECT"}},
+            column_privileges={"x": ["SELECT"]},
         ),
     ]
     prvlgs = privileges.get(ctx, instance, defaults=False)
