@@ -299,6 +299,10 @@ def test_describe(
         "logging_collector": False,
         "shared_preload_libraries": "passwordcheck",
     }
+    if int(instance.version) <= 10:
+        assert im.data_checksums is None
+    else:
+        assert im.data_checksums is False
     assert im.state.name == "stopped"
     assert not im.surole_password
     assert im.extensions == ["passwordcheck"]
@@ -383,7 +387,15 @@ def test_standby(
         assert standby_instance.standby.for_
         assert standby_instance.standby.slot == slot
 
-        described = instances._describe(ctx, standby_instance).standby
+        surole = instance_manifest.surole(settings)
+        if surole.password:
+            with patch.dict(
+                "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
+            ):
+                described = instances._describe(ctx, standby_instance).standby
+        else:
+            described = instances._describe(ctx, standby_instance).standby
+
         assert described is not None
         assert described.for_ == standby_instance.standby.for_
         assert described.slot == standby_instance.standby.slot
@@ -551,6 +563,8 @@ def test_data_checksums(
         "data_checksums": ("disabled", "enabled"),
     }
 
+    assert instances._describe(ctx, instance).data_checksums
+
     # not explicitly disabled so still enabled
     manifest = manifest.copy(update={"data_checksums": None})
     result = instances.apply(ctx, manifest)
@@ -568,6 +582,7 @@ def test_data_checksums(
     assert changes == {
         "data_checksums": ("enabled", "disabled"),
     }
+    assert instances._describe(ctx, instance).data_checksums is False
 
     # re-enabled with instance running
     with instances.running(ctx, instance):
@@ -577,6 +592,7 @@ def test_data_checksums(
             match="could not alter data_checksums on a running instance",
         ):
             instances.apply(ctx, manifest)
+    assert instances._describe(ctx, instance).data_checksums is False
 
 
 def test_extensions(

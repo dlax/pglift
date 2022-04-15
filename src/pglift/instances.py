@@ -971,6 +971,12 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         replrole_password = roles.describe(ctx, instance, replrole).password
         extensions.update(installed_extensions(ctx, instance))
 
+    try:
+        data_checksums = get_data_checksums(ctx, instance)
+    except exceptions.UnsupportedError as e:
+        logger.warning(str(e))
+        data_checksums = None
+
     return interface.Instance(
         name=instance.name,
         version=instance.version,
@@ -980,6 +986,7 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         configuration=managed_config,
         surole_password=surole_password,
         replrole_password=replrole_password,
+        data_checksums=data_checksums,
         extensions=sorted(extensions),
         standby=standby,
         **services,
