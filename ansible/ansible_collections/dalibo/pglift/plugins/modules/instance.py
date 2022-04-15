@@ -131,12 +131,16 @@ needs_restart:
 from typing import Any, Dict
 
 import pydantic
+from ansible.errors import AnsibleError
 from ansible.module_utils.basic import AnsibleModule
 
-from pglift import instances, plugin_manager
-from pglift.ansible import AnsibleContext
-from pglift.models import helpers, interface
-from pglift.settings import Settings
+try:
+    from pglift import instances, plugin_manager
+    from pglift.ansible import AnsibleContext
+    from pglift.models import helpers, interface
+    from pglift.settings import Settings
+except ImportError:
+    raise AnsibleError("pglift must be installed to use this plugin")
 
 
 def run_module() -> None:
