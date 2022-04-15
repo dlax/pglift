@@ -703,7 +703,7 @@ def upgrade(
 
 
 def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
-    """Return True/False if data_checksums is enabled/disable on instance."""
+    """Return True/False if data_checksums is enabled/disabled on instance."""
     if status(ctx, instance) == Status.running:
         # Use SQL SHOW data_checksums since pg_checksums doesn't work if
         # instance is running.
