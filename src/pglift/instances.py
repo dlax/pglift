@@ -971,7 +971,7 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         replrole_password = roles.describe(ctx, instance, replrole).password
         extensions.update(installed_extensions(ctx, instance))
 
-    result = interface.Instance(
+    return interface.Instance(
         name=instance.name,
         version=instance.version,
         port=instance.port,
@@ -984,8 +984,6 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
         standby=standby,
         **services,
     )
-
-    return result
 
 
 def installed_extensions(
