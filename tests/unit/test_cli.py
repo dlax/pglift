@@ -871,6 +871,15 @@ def test_pgconf_edit(
     configure.assert_called_once_with(ctx, manifest, values={"bonjour": "bonsoir"})
     assert result.stderr == "bonjour: on -> 'matin\n"
 
+    with patch("click.edit", return_value=None) as edit, patch.object(
+        instances, "configure"
+    ) as configure:
+        result = runner.invoke(
+            cli, ["pgconf", f"--instance={instance}", "edit"], obj=obj
+        )
+    assert not configure.called
+    assert result.stderr == "no change\n"
+
 
 def test_role_create(
     ctx: Context, obj: Obj, instance: Instance, runner: CliRunner, running: MagicMock

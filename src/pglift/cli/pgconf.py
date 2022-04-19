@@ -122,7 +122,9 @@ def pgconf_edit(ctx: Context, instance: system.Instance) -> None:
     """Edit managed configuration."""
     actual_config = instance.config(managed_only=True)
     edited = click.edit(text="".join(actual_config.lines))
-    assert edited is not None
+    if edited is None:
+        click.echo("no change", err=True)
+        return
     config = pgtoolkit.conf.parse(io.StringIO(edited))
     values = config.as_dict()
     manifest = interface.Instance(name=instance.name, version=instance.version)
