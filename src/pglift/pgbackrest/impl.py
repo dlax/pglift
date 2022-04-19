@@ -405,3 +405,12 @@ def restore(
 
     cmd = restore_command(instance, settings, date=date, backup_set=label)
     ctx.run(cmd, check=True)
+
+
+def env_for(
+    instance: "system.Instance", settings: "PgBackRestSettings"
+) -> Dict[str, str]:
+    return {
+        "PGBACKREST_CONFIG": str(_configpath(instance, settings)),
+        "PGBACKREST_STANZA": _stanza(instance),
+    }

@@ -1088,6 +1088,8 @@ def env_for(
             [str(pg_ctl(instance.version, ctx=ctx).bindir)]
             + ([os.environ["PATH"]] if "PATH" in os.environ else [])
         )
+    for env_vars in ctx.hook.instance_env(ctx=ctx, instance=instance):
+        env.update(env_vars)
     return env
 
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import pluggy
 from pgtoolkit.conf import Configuration
@@ -70,3 +70,8 @@ def instance_start(ctx: "BaseContext", instance: "Instance") -> None:
 @hookspec  # type: ignore[misc]
 def instance_stop(ctx: "BaseContext", instance: "Instance") -> None:
     """Called when the PostgreSQL instance got stopped."""
+
+
+@hookspec  # type: ignore[misc]
+def instance_env(ctx: "BaseContext", instance: "Instance") -> Dict[str, str]:
+    """Return environment variables for instance defined by the plugin."""

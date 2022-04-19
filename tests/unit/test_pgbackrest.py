@@ -156,3 +156,14 @@ def test_instance_configure_cancelled_if_repo_exists(
                 creating=True,
             )
     enabled.assert_called_once_with(instance, settings)
+
+
+def test_env_for(
+    instance: Instance,
+    settings: Settings,
+    pgbackrest_settings: PgBackRestSettings,
+) -> None:
+    assert pgbackrest.env_for(instance, pgbackrest_settings) == {
+        "PGBACKREST_CONFIG": f"{settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
+        "PGBACKREST_STANZA": f"{instance.version}-{instance.name}",
+    }

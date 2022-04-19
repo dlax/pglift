@@ -527,7 +527,7 @@ def test_instance_exec(
 
 
 def test_instance_env(
-    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj, pgbackrest: bool
 ) -> None:
     r = runner.invoke(
         cli,
@@ -537,8 +537,13 @@ def test_instance_env(
     assert r.exit_code == 0, r
     bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     path = os.environ["PATH"]
-    assert r.stdout == (
-        f"PATH={bindir}:{path}\n"
+    expected = f"PATH={bindir}:{path}\n"
+    if pgbackrest:
+        expected += (
+            f"PGBACKREST_CONFIG={ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf\n"
+            f"PGBACKREST_STANZA={instance.version}-{instance.name}\n"
+        )
+    expected += (
         f"PGDATA={instance.datadir}\n"
         "PGHOST=/socks\n"
         f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}\n"
@@ -547,6 +552,7 @@ def test_instance_env(
         f"PSQLRC={instance.psqlrc}\n"
         f"PSQL_HISTORY={instance.psql_history}\n"
     )
+    assert r.stdout == expected
 
 
 def test_instance_logs(runner: CliRunner, instance: Instance, obj: Obj) -> None:

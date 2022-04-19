@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from .. import exceptions, hookimpl
 from ..models import system
@@ -70,6 +70,14 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
         True,
     ):
         impl.revert_setup(ctx, instance, settings, instance.config())
+
+
+@hookimpl  # type: ignore[misc]
+def instance_env(ctx: "BaseContext", instance: "system.Instance") -> Dict[str, str]:
+    pgbackrest_settings = impl.available(ctx)
+    if not pgbackrest_settings:
+        return {}
+    return impl.env_for(instance, pgbackrest_settings)
 
 
 @hookimpl  # type: ignore[misc]

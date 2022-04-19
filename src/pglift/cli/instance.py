@@ -288,7 +288,7 @@ def instance_exec(
 @instance_identifier(nargs=1)
 @pass_ctx
 def instance_env(ctx: Context, instance: system.Instance) -> None:
-    """Output environment variables suitable to connect to PostgreSQL INSTANCE.
+    """Output environment variables suitable to handle to PostgreSQL INSTANCE.
 
     This can be injected in shell using:
 

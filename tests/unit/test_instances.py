@@ -251,8 +251,8 @@ def test_drop(
     )
 
 
-def test_env_for(ctx: Context, instance: Instance) -> None:
-    assert instances.env_for(ctx, instance) == {
+def test_env_for(ctx: Context, instance: Instance, pgbackrest: bool) -> None:
+    expected_env = {
         "PGDATA": str(instance.datadir),
         "PGHOST": "/socks",
         "PGPASSFILE": str(ctx.settings.postgresql.auth.passfile),
@@ -261,9 +261,17 @@ def test_env_for(ctx: Context, instance: Instance) -> None:
         "PSQLRC": f"{instance.path}/.psqlrc",
         "PSQL_HISTORY": f"{instance.path}/.psql_history",
     }
+    if pgbackrest:
+        expected_env.update(
+            {
+                "PGBACKREST_CONFIG": f"{ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
+                "PGBACKREST_STANZA": f"{instance.version}-{instance.name}",
+            }
+        )
+    assert instances.env_for(ctx, instance) == expected_env
 
 
-def test_exec(ctx: Context, instance: Instance) -> None:
+def test_exec(ctx: Context, instance: Instance, pgbackrest: bool) -> None:
     with patch("os.execve") as patched, patch.dict(
         "os.environ", {"PGPASSWORD": "qwerty"}, clear=True
     ):
@@ -280,6 +288,14 @@ def test_exec(ctx: Context, instance: Instance) -> None:
         "PSQLRC": str(instance.psqlrc),
         "PSQL_HISTORY": str(instance.psql_history),
     }
+    if pgbackrest:
+        expected_env.update(
+            {
+                "PGBACKREST_CONFIG": f"{ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
+                "PGBACKREST_STANZA": f"{instance.version}-{instance.name}",
+            }
+        )
+
     bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     cmd = [
         f"{bindir}/psql",
@@ -291,21 +307,27 @@ def test_exec(ctx: Context, instance: Instance) -> None:
     patched.assert_called_once_with(f"{bindir}/psql", cmd, expected_env)
 
 
-def test_env(ctx: Context, instance: Instance) -> None:
+def test_env(ctx: Context, instance: Instance, pgbackrest: bool) -> None:
     bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     with patch.dict("os.environ", {"PATH": "/pg10/bin"}):
-        assert instances.env(ctx, instance) == "\n".join(
-            [
-                f"export PATH={bindir}:/pg10/bin",
-                f"export PGDATA={instance.datadir}",
-                "export PGHOST=/socks",
-                f"export PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
-                "export PGPORT=999",
-                "export PGUSER=postgres",
-                f"export PSQLRC={instance.psqlrc}",
-                f"export PSQL_HISTORY={instance.psql_history}",
+        expected_env = [
+            f"export PATH={bindir}:/pg10/bin",
+        ]
+        if pgbackrest:
+            expected_env += [
+                f"export PGBACKREST_CONFIG={ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
+                f"export PGBACKREST_STANZA={instance.version}-{instance.name}",
             ]
-        )
+        expected_env += [
+            f"export PGDATA={instance.datadir}",
+            "export PGHOST=/socks",
+            f"export PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
+            "export PGPORT=999",
+            "export PGUSER=postgres",
+            f"export PSQLRC={instance.psqlrc}",
+            f"export PSQL_HISTORY={instance.psql_history}",
+        ]
+        assert instances.env(ctx, instance) == "\n".join(expected_env)
 
 
 def test_exists(ctx: Context, instance: Instance) -> None:
