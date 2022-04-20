@@ -11,7 +11,7 @@ from psycopg import sql
 
 if TYPE_CHECKING:  # pragma: nocover
     from .ctx import BaseContext
-    from .models.system import PostgreSQLInstance
+    from .models.system import PostgreSQLInstance, Standby
     from .settings import PostgreSQLSettings
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
@@ -107,6 +107,15 @@ def superuser_connect(
         kwargs["password"] = password
         with connect(instance, postgresql_settings, **kwargs) as cnx:
             yield cnx
+
+
+@contextmanager
+def primary_connect(
+    standby: "Standby", *, dbname: str = "template1", **kwargs: Any
+) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
+    """Connect to the primary of standby."""
+    with connect_dsn(standby.for_, dbname=dbname, **kwargs) as cnx:
+        yield cnx
 
 
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:

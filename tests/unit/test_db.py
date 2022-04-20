@@ -76,3 +76,16 @@ def test_connect(instance: Instance, settings: Settings) -> None:
         f"dbname=postgres user=dba port=999 host=/socks passfile={passfile}",
         row_factory=psycopg.rows.dict_row,
     )
+
+
+def test_primary_connect(standby_instance: Instance, settings: Settings) -> None:
+    standby = standby_instance.standby
+    assert standby
+    with patch("psycopg.connect") as connect:
+        with db.primary_connect(standby):
+            pass
+    connect.assert_called_once_with(
+        "host=/tmp port=4242 user=pg",
+        dbname="template1",
+        row_factory=psycopg.rows.dict_row,
+    )
