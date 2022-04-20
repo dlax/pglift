@@ -76,7 +76,7 @@ class PresenceState(AutoStrEnum):
     absent = enum.auto()
 
 
-class InstanceListItem(BaseModel):
+class InstanceListItem(Manifest):
 
     name: str
     version: str
