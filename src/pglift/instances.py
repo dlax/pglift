@@ -930,7 +930,7 @@ def describe(
     is_running = status(ctx, instance) == Status.running
     if not is_running:
         logger.warning(
-            "Instance is not running, info about passwords and extensions may not be accurate",
+            "instance is not running, info about passwords and extensions may not be accurate",
         )
     return _describe(ctx, instance)
 
