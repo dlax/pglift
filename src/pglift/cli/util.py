@@ -365,7 +365,7 @@ def _list_instances(
     out = []
     iname, iversion = nameversion_from_id(incomplete)
     ctx = Context(settings=Settings())
-    for i in instances.list(ctx):
+    for i in instances.system_list(ctx):
         if iversion is not None and i.version.startswith(iversion):
             if i.name.startswith(iname):
                 out.append(

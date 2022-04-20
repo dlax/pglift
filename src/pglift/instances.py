@@ -1030,6 +1030,19 @@ def list(
 
     :raises ~exceptions.InvalidVersion: if specified version is unknown.
     """
+    for instance in system_list(ctx, version=version):
+        yield interface.InstanceListItem(
+            name=instance.name,
+            path=str(instance.path),
+            port=instance.port,
+            status=status(ctx, instance).name,
+            version=instance.version,
+        )
+
+
+def system_list(
+    ctx: "BaseContext", *, version: Optional[PostgreSQLVersion] = None
+) -> Iterator[system.Instance]:
     if version is not None:
         assert isinstance(version, PostgreSQLVersion)
         versions = [version.value]
@@ -1047,17 +1060,9 @@ def list(
             if not d.is_dir():
                 continue
             try:
-                instance = system.Instance.system_lookup(ctx, (d.name, ver))
+                yield system.Instance.system_lookup(ctx, (d.name, ver))
             except exceptions.InstanceNotFound:
-                continue
-
-            yield interface.InstanceListItem(
-                name=instance.name,
-                path=str(instance.path),
-                port=instance.port,
-                status=status(ctx, instance).name,
-                version=instance.version,
-            )
+                pass
 
 
 def env_for(
