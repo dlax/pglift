@@ -173,6 +173,9 @@ class Instance(Manifest):
             "If unspecified, fall back to site settings choice."
         ),
     )
+    locale: Optional[str] = Field(
+        default=None, description="Default locale", readOnly=True
+    )
 
     standby: Optional[Standby] = None
 

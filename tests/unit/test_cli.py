@@ -284,6 +284,7 @@ def test_instance_create(
         "new",
         f"--version={pg_version}",
         "--port=1234",
+        "--locale=fr_FR.UTF8",
         "--data-checksums",
         "--extension=unaccent",
         "--extension=pg_stat_statements",
@@ -296,6 +297,7 @@ def test_instance_create(
         "name": "new",
         "version": pg_version,
         "port": 1234,
+        "locale": "fr_FR.UTF8",
         "data_checksums": True,
         "extensions": ["unaccent", "pg_stat_statements"],
     }

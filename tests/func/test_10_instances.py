@@ -506,6 +506,22 @@ def test_logs(
         assert "database system is shut down" in logs[-1]
 
 
+def test_get_locale(
+    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+) -> None:
+    with instances.running(ctx, instance):
+        assert instances.get_locale(ctx, instance) == "C"
+    postgres_conf = instance.datadir / "postgresql.conf"
+    original_conf = postgres_conf.read_text()
+    with postgres_conf.open("a") as f:
+        f.write("\nlc_numeric = ''\n")
+    try:
+        with instances.running(ctx, instance):
+            assert instances.get_locale(ctx, instance) is None
+    finally:
+        postgres_conf.write_text(original_conf)
+
+
 @pytest.fixture
 def datachecksums_instance(
     ctx: Context,

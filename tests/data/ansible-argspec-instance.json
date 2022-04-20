@@ -17,6 +17,12 @@
     ],
     "type": "list"
   },
+  "locale": {
+    "description": [
+      "Default locale"
+    ],
+    "type": "str"
+  },
   "name": {
     "required": true,
     "type": "str"

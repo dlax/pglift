@@ -153,8 +153,9 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
         "auth_local": "trust",
         "auth_host": "reject",
     }
-    if initdb_settings.locale:
-        opts["locale"] = initdb_settings.locale
+    locale = manifest.locale or initdb_settings.locale
+    if locale is not None:
+        opts["locale"] = locale
     if manifest.data_checksums or (
         manifest.data_checksums is None and initdb_settings.data_checksums
     ):
@@ -702,6 +703,25 @@ def upgrade(
     return newinstance
 
 
+def get_locale(
+    ctx: "BaseContext", instance: system.PostgreSQLInstance
+) -> Optional[str]:
+    """Return the value of instance locale.
+
+    If locale subcategories are set to distinct values, return None.
+
+    The instance must be running.
+    """
+    locales = {
+        s.name: s.setting for s in settings(ctx, instance) if s.name.startswith("lc_")
+    }
+    values = set(locales.values())
+    if len(values) == 1:
+        return values.pop()
+    else:
+        return None
+
+
 def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
     """Return True/False if data_checksums is enabled/disabled on instance."""
     if status(ctx, instance) == Status.running:
@@ -928,7 +948,7 @@ def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Inst
     is_running = status(ctx, instance) == Status.running
     if not is_running:
         logger.warning(
-            "instance %s is not running, info about passwords and extensions may not be accurate",
+            "instance %s is not running, info about passwords, locale and extensions may not be accurate",
             instance,
         )
     return _get(ctx, instance)
@@ -962,6 +982,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         )
 
     surole_password = replrole_password = None
+    locale = None
     is_running = status(ctx, instance) == Status.running
     if is_running:
         if instance.standby is None:
@@ -969,6 +990,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
             surole_password = roles.get(ctx, instance, surole_name).password
             replrole = ctx.settings.postgresql.replrole
             replrole_password = roles.get(ctx, instance, replrole).password
+        locale = get_locale(ctx, instance)
         extensions.update(installed_extensions(ctx, instance))
 
     try:
@@ -986,6 +1008,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         configuration=managed_config,
         surole_password=surole_password,
         replrole_password=replrole_password,
+        locale=locale,
         data_checksums=data_checksums,
         extensions=sorted(extensions),
         standby=standby,

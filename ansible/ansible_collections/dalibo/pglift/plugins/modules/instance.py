@@ -47,6 +47,11 @@ options:
       - Settings for the PostgreSQL instance.
     type: dict
     required: false
+  locale:
+    description:
+      - Locale value for the PostgreSQL instance.
+    type: str
+    required: false
   prometheus_port:
     description:
       - TCP port for the web interface and telemetry of Prometheus
