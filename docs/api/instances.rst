@@ -25,3 +25,4 @@ instances:
 .. autofunction:: upgrade
 .. autofunction:: settings
 .. autofunction:: logs
+.. autofunction:: replication_lag

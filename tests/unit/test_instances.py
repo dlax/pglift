@@ -448,3 +448,10 @@ def test_check_pending_actions(
         in caplog.messages
     )
     reload.assert_called_once_with(ctx, instance)
+
+
+def test_replication_lag(
+    ctx: Context, instance: Instance, standby_instance: Instance
+) -> None:
+    with pytest.raises(TypeError, match="not a standby"):
+        instances.replication_lag(ctx, instance)

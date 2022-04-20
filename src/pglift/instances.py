@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import time
+from decimal import Decimal
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -24,6 +25,7 @@ import psycopg.sql
 from pgtoolkit import conf as pgconf
 from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
+from psycopg.conninfo import conninfo_to_dict
 from pydantic import SecretStr
 from typing_extensions import Literal
 
@@ -1208,3 +1210,43 @@ def logs(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> Iterator[st
             yield from f
     except OSError:
         raise exceptions.SystemError(f"failed to read {logfile} on instance {instance}")
+
+
+def replication_lag(
+    ctx: "BaseContext", instance: system.PostgreSQLInstance
+) -> Optional[Decimal]:
+    """Return the replication lag of a standby instance.
+
+    The instance must be running; if the primary is not running, None is
+    returned.
+
+    :raises TypeError: if the instance is not a standby.
+    """
+    if instance.standby is None:
+        raise TypeError(f"{instance} is not a standby")
+
+    try:
+        with db.primary_connect(instance.standby) as cnx:
+            row = cnx.execute("SELECT pg_current_wal_lsn() AS lsn").fetchone()
+    except psycopg.OperationalError as e:
+        logger.warning("failed to connect to primary (is it running?): %s", e)
+        return None
+    assert row is not None
+    primary_lsn = row["lsn"]
+
+    password = conninfo_to_dict(instance.standby.for_).get("password")
+    dsn = db.dsn(
+        instance,
+        ctx.settings.postgresql,
+        dbname="template1",
+        user=ctx.settings.postgresql.replrole,
+        password=password,
+    )
+    with db.connect_dsn(dsn, autocommit=True) as cnx:
+        row = cnx.execute(
+            "SELECT %s::pg_lsn - pg_last_wal_replay_lsn() AS lag", (primary_lsn,)
+        ).fetchone()
+    assert row is not None
+    lag = row["lag"]
+    assert isinstance(lag, Decimal)
+    return lag

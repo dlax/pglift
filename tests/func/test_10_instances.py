@@ -400,6 +400,9 @@ def test_standby(
         assert described.for_ == standby_instance.standby.for_
         assert described.slot == standby_instance.standby.slot
 
+        class OutOfSync(AssertionError):
+            pass
+
         try:
             with instances.running(ctx, standby_instance):
                 assert execute(
@@ -426,18 +429,27 @@ def test_standby(
                 )
 
                 @retry(
-                    retry=retry_if_exception_type(AssertionError),
+                    retry=retry_if_exception_type(OutOfSync),
                     wait=wait_fixed(1),
                     stop=stop_after_attempt(4),
                 )
                 def assert_replicated() -> None:
-                    assert execute(
+                    rlag = instances.replication_lag(ctx, standby_instance)
+                    assert rlag is not None
+                    row = execute(
                         ctx,
                         standby_instance,
                         "SELECT * FROM t",
                         role=replrole,
                         dbname="test",
-                    ) == [{"i": 42}]
+                    )
+                    if row[0] == {"i": 1}:
+                        assert rlag > 0
+                        raise OutOfSync
+                    assert row == [{"i": 42}]
+                    if rlag > 0:
+                        raise OutOfSync
+                    assert rlag == 0
 
                 assert_replicated()
 
