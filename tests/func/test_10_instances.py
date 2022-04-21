@@ -281,13 +281,13 @@ def test_apply(
     assert instances.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_describe(
+def test_get(
     ctx: Context,
     instance_manifest: interface.Instance,
     instance: system.Instance,
     log_directory: Path,
 ) -> None:
-    im = instances.describe(ctx, instance.name, instance.version)
+    im = instances.get(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
     config = im.configuration
@@ -309,7 +309,7 @@ def test_describe(
 
     if instance_manifest.surole_password:
         with instances.running(ctx, instance):
-            im = instances.describe(ctx, instance.name, instance.version)
+            im = instances.get(ctx, instance.name, instance.version)
             assert isinstance(im.surole_password, SecretStr)
 
 
@@ -392,9 +392,9 @@ def test_standby(
             with patch.dict(
                 "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
             ):
-                described = instances._describe(ctx, standby_instance).standby
+                described = instances._get(ctx, standby_instance).standby
         else:
-            described = instances._describe(ctx, standby_instance).standby
+            described = instances._get(ctx, standby_instance).standby
 
         assert described is not None
         assert described.for_ == standby_instance.standby.for_
@@ -563,7 +563,7 @@ def test_data_checksums(
         "data_checksums": ("disabled", "enabled"),
     }
 
-    assert instances._describe(ctx, instance).data_checksums
+    assert instances._get(ctx, instance).data_checksums
 
     # not explicitly disabled so still enabled
     manifest = manifest.copy(update={"data_checksums": None})
@@ -582,7 +582,7 @@ def test_data_checksums(
     assert changes == {
         "data_checksums": ("enabled", "disabled"),
     }
-    assert instances._describe(ctx, instance).data_checksums is False
+    assert instances._get(ctx, instance).data_checksums is False
 
     # re-enabled with instance running
     with instances.running(ctx, instance):
@@ -592,7 +592,7 @@ def test_data_checksums(
             match="could not alter data_checksums on a running instance",
         ):
             instances.apply(ctx, manifest)
-    assert instances._describe(ctx, instance).data_checksums is False
+    assert instances._get(ctx, instance).data_checksums is False
 
 
 def test_extensions(
@@ -610,7 +610,7 @@ def test_extensions(
         instances.restart(ctx, instance)
         assert r is not None
 
-        im = instances.describe(ctx, instance.name, instance.version)
+        im = instances.get(ctx, instance.name, instance.version)
         assert sorted(im.extensions) == [
             "passwordcheck",
             "pg_stat_statements",

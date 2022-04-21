@@ -665,7 +665,7 @@ def upgrade(
                     surole_password = entry.password
     new_manifest = interface.Instance.parse_obj(
         dict(
-            _describe(ctx, instance),
+            _get(ctx, instance),
             name=name or instance.name,
             version=version,
             port=port or instance.port,
@@ -922,10 +922,8 @@ def check_pending_actions(
     return needs_restart
 
 
-def describe(
-    ctx: "BaseContext", name: str, version: Optional[str]
-) -> interface.Instance:
-    """Return an instance described as a manifest."""
+def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Instance:
+    """Return the instance object with specified name and version."""
     instance = system.Instance.system_lookup(ctx, (name, version))
     is_running = status(ctx, instance) == Status.running
     if not is_running:
@@ -933,17 +931,17 @@ def describe(
             "instance %s is not running, info about passwords and extensions may not be accurate",
             instance,
         )
-    return _describe(ctx, instance)
+    return _get(ctx, instance)
 
 
-def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
+def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
     state = interface.InstanceState.from_pg_status(status(ctx, instance))
     services = {
         s.__class__.__service__: s
-        for s in ctx.hook.describe(ctx=ctx, instance=instance)
+        for s in ctx.hook.get(ctx=ctx, instance=instance)
         if s is not None
     }
     if instance.standby:
@@ -967,9 +965,9 @@ def _describe(ctx: "BaseContext", instance: system.Instance) -> interface.Instan
     is_running = status(ctx, instance) == Status.running
     if is_running and instance.standby is None:
         surole_name = ctx.settings.postgresql.surole.name
-        surole_password = roles.describe(ctx, instance, surole_name).password
+        surole_password = roles.get(ctx, instance, surole_name).password
         replrole = ctx.settings.postgresql.replrole
-        replrole_password = roles.describe(ctx, instance, replrole).password
+        replrole_password = roles.get(ctx, instance, replrole).password
         extensions.update(installed_extensions(ctx, instance))
 
     try:

@@ -27,8 +27,8 @@ manage PostgreSQL roles of an instance.
     Commands:
       alter       Alter a role in a PostgreSQL instance
       create      Create a role in a PostgreSQL instance
-      describe    Describe a role
       drop        Drop a role
+      get         Get the description of a role
       privileges  List default privileges of a role.
 
 Ansible module

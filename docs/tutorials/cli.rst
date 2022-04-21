@@ -88,7 +88,7 @@ Getting instance information:
 
 ::
 
-    $ pglift instance describe main
+    $ pglift instance get main
     name: main
     version: '13'
     port: 5456
@@ -121,7 +121,7 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift role -i 13/main describe dba
+    $ pglift role -i 13/main get dba
     name: dba
     password: '**********'
     pgpass: false
@@ -137,7 +137,7 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift role -i 13/main describe dba
+    $ pglift role -i 13/main get dba
     name: dba
     password: '**********'
     pgpass: false
@@ -158,7 +158,7 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift database -i 13/main describe myapp
+    $ pglift database -i 13/main get myapp
     name: myapp
     owner: dba
 

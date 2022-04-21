@@ -161,7 +161,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
-    assert roles.describe(ctx, instance, rolname).connection_limit == 5
+    assert roles.get(ctx, instance, rolname).connection_limit == 5
     with db.connect(
         instance,
         ctx.settings.postgresql,
@@ -175,7 +175,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
-    assert roles.describe(ctx, instance, rolname).connection_limit is None
+    assert roles.get(ctx, instance, rolname).connection_limit is None
 
 
 def test_alter_surole_password(
@@ -190,7 +190,7 @@ def test_alter_surole_password(
         ctx.settings.postgresql,
         user="postgres",
     )
-    surole = roles.describe(ctx, instance, "postgres")
+    surole = roles.get(ctx, instance, "postgres")
     surole = surole.copy(
         update={"password": instance_manifest.surole(ctx.settings).password}
     )
@@ -212,16 +212,16 @@ def test_alter_surole_password(
                 pass
 
 
-def test_describe(
+def test_get(
     ctx: Context,
     instance_manifest: interface.Instance,
     instance: system.Instance,
     role_factory: RoleFactory,
 ) -> None:
     with pytest.raises(exceptions.RoleNotFound, match="absent"):
-        roles.describe(ctx, instance, "absent")
+        roles.get(ctx, instance, "absent")
 
-    postgres = roles.describe(ctx, instance, "postgres")
+    postgres = roles.get(ctx, instance, "postgres")
     assert postgres is not None
     surole = instance_manifest.surole(ctx.settings)
     assert postgres.name == "postgres"
@@ -237,7 +237,7 @@ def test_describe(
         "r1",
         "LOGIN NOINHERIT VALID UNTIL '2051-07-29T00:00+00:00' IN ROLE pg_monitor CONNECTION LIMIT 10",
     )
-    r1 = roles.describe(ctx, instance, "r1")
+    r1 = roles.get(ctx, instance, "r1")
     assert r1.password is None
     assert not r1.inherit
     assert r1.login
@@ -263,7 +263,7 @@ def test_alter(
         roles.alter(ctx, instance, role)
     role_factory("alter", "IN ROLE pg_read_all_settings, pg_read_all_stats")
     roles.alter(ctx, instance, role)
-    described = roles.describe(ctx, instance, "alter").dict()
+    described = roles.get(ctx, instance, "alter").dict()
     described.pop("password").get_secret_value() == "<set>"
     expected = role.dict()
     del expected["password"]

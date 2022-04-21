@@ -11,6 +11,6 @@ PostgreSQL databases:
 .. autofunction:: apply
 .. autofunction:: exists
 .. autofunction:: list
-.. autofunction:: describe
+.. autofunction:: get
 .. autofunction:: drop
 .. autofunction:: run

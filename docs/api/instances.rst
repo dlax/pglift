@@ -7,7 +7,7 @@ Module :mod:`pglift.instances` exposes the following API to manipulate
 instances:
 
 .. autofunction:: apply
-.. autofunction:: describe
+.. autofunction:: get
 .. autofunction:: exists
 .. autofunction:: list
 .. autofunction:: drop

@@ -39,10 +39,10 @@ def apply(
     set_pgpass_entry_for(ctx, instance, role_manifest)
 
 
-def describe(
+def get(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
 ) -> interface.Role:
-    """Return a role described as a manifest.
+    """Return the role object with specified name.
 
     :raises ~pglift.exceptions.RoleNotFound: if no role with specified 'name' exists.
     """
@@ -174,7 +174,7 @@ def alter(
     """
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
-    actual_role = describe(ctx, instance, role.name)
+    actual_role = get(ctx, instance, role.name)
     in_roles = {
         "grant": set(role.in_roles) - set(actual_role.in_roles),
         "revoke": set(actual_role.in_roles) - set(role.in_roles),

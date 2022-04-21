@@ -59,7 +59,7 @@ def role_alter(
     """Alter a role in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Role, changes)
     with instances.running(ctx, instance):
-        values = roles.describe(ctx, instance, rolname).dict()
+        values = roles.get(ctx, instance, rolname).dict()
         values = deep_update(values, changes)
         altered = interface.Role.parse_obj(values)
         roles.apply(ctx, instance, altered)
@@ -76,15 +76,15 @@ def role_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> None:
         roles.apply(ctx, instance, role)
 
 
-@cli.command("describe")
+@cli.command("get")
 @click.argument("name")
 @pass_instance
 @pass_ctx
-def role_describe(ctx: Context, instance: system.Instance, name: str) -> None:
-    """Describe a role"""
+def role_get(ctx: Context, instance: system.Instance, name: str) -> None:
+    """Get the description of a role"""
     with instances.running(ctx, instance):
-        described = roles.describe(ctx, instance, name)
-    click.echo(described.yaml(exclude={"state"}), nl=False)
+        m = roles.get(ctx, instance, name)
+    click.echo(m.yaml(exclude={"state"}), nl=False)
 
 
 @cli.command("drop")
@@ -118,7 +118,7 @@ def role_privileges(
 ) -> None:
     """List privileges of a role."""
     with instances.running(ctx, instance):
-        roles.describe(ctx, instance, name)  # check existence
+        roles.get(ctx, instance, name)  # check existence
         try:
             prvlgs = privileges.get(
                 ctx, instance, databases=databases, roles=(name,), defaults=defaults

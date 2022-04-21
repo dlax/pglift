@@ -187,10 +187,10 @@ def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
         "backup",
         "backups",
         "create",
-        "describe",
         "drop",
         "env",
         "exec",
+        "get",
         "list",
         "logs",
         "privileges",
@@ -369,9 +369,9 @@ def test_instance_alter(
     altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(
         instances, "apply", return_value=(instance, {}, True)
-    ) as apply, patch.object(instances, "_describe", return_value=actual) as _describe:
+    ) as apply, patch.object(instances, "_get", return_value=actual) as _get:
         result = runner.invoke(cli, cmd, obj=obj)
-    _describe.assert_called_once_with(ctx, instance)
+    _get.assert_called_once_with(ctx, instance)
     apply.assert_called_once_with(ctx, altered)
     assert result.exit_code == 0, result.output
 
@@ -396,7 +396,7 @@ def test_instance_schema(runner: CliRunner, obj: Obj) -> None:
 
 
 @instance_arg_guessed_or_given
-def test_instance_describe(
+def test_instance_get(
     runner: CliRunner,
     ctx: Context,
     obj: Obj,
@@ -405,10 +405,10 @@ def test_instance_describe(
     args: List[str],
 ) -> None:
     manifest = interface.Instance(name="test")
-    with patch.object(instances, "describe", return_value=manifest) as describe:
-        result = runner.invoke(cli, ["instance", "describe"] + args, obj=obj)
+    with patch.object(instances, "get", return_value=manifest) as get:
+        result = runner.invoke(cli, ["instance", "get"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
-    describe.assert_called_once_with(ctx, "test", pg_version)
+    get.assert_called_once_with(ctx, "test", pg_version)
     assert "name: test" in result.output
 
 
@@ -949,7 +949,7 @@ def test_role_alter(
         in_roles=["pg_read_all_data", "pg_read_all_settings"],
     )
 
-    with patch.object(roles, "describe", return_value=actual) as describe, patch.object(
+    with patch.object(roles, "get", return_value=actual) as get, patch.object(
         roles, "apply"
     ) as apply:
         result = runner.invoke(
@@ -970,7 +970,7 @@ def test_role_alter(
             ],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "alterme")
+    get.assert_called_once_with(ctx, instance, "alterme")
     apply.assert_called_once_with(ctx, instance, altered)
     assert result.exit_code == 0, result.output
 
@@ -1009,18 +1009,18 @@ def test_role_apply(
     assert kwargs == {}
 
 
-def test_role_describe(
+def test_role_get(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
 ) -> None:
     with patch.object(
-        roles, "describe", side_effect=exceptions.RoleNotFound("absent")
-    ) as describe:
+        roles, "get", side_effect=exceptions.RoleNotFound("absent")
+    ) as get:
         result = runner.invoke(
             cli,
-            ["role", "-i", str(instance), "describe", "absent"],
+            ["role", "-i", str(instance), "get", "absent"],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "absent")
+    get.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1, (result, result.output)
     assert result.stderr.strip() == "Error: role 'absent' not found"
@@ -1029,7 +1029,7 @@ def test_role_describe(
 
     with patch.object(
         roles,
-        "describe",
+        "get",
         return_value=interface.Role.parse_obj(
             {
                 "name": "present",
@@ -1041,13 +1041,13 @@ def test_role_describe(
                 "in_roles": ["observers", "monitoring"],
             }
         ),
-    ) as describe:
+    ) as get:
         result = runner.invoke(
             cli,
-            ["role", "-i", instance.name, "describe", "present"],
+            ["role", "-i", instance.name, "get", "present"],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "present")
+    get.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     described = yaml.safe_load(result.stdout)
@@ -1108,7 +1108,7 @@ def test_role_privileges(
                 privileges=["EXECUTE"],
             ),
         ],
-    ) as privileges_get, patch.object(roles, "describe") as role_describe:
+    ) as privileges_get, patch.object(roles, "get") as roles_get:
         result = runner.invoke(
             cli,
             [
@@ -1128,7 +1128,7 @@ def test_role_privileges(
     privileges_get.assert_called_once_with(
         ctx, instance, databases=("db2",), roles=("rol2",), defaults=True
     )
-    role_describe.assert_called_once_with(ctx, instance, "rol2")
+    roles_get.assert_called_once_with(ctx, instance, "rol2")
     assert json.loads(result.stdout) == [
         {
             "database": "db2",
@@ -1187,9 +1187,9 @@ def test_database_alter(
     actual = interface.Database(name="alterme")
     altered = interface.Database(name="alterme", owner="dba")
 
-    with patch.object(
-        databases, "describe", return_value=actual
-    ) as describe, patch.object(databases, "apply") as apply:
+    with patch.object(databases, "get", return_value=actual) as get, patch.object(
+        databases, "apply"
+    ) as apply:
         result = runner.invoke(
             cli,
             [
@@ -1201,7 +1201,7 @@ def test_database_alter(
             ],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "alterme")
+    get.assert_called_once_with(ctx, instance, "alterme")
     apply.assert_called_once_with(ctx, instance, altered)
     assert result.exit_code == 0, result.output
 
@@ -1240,18 +1240,18 @@ def test_database_apply(
     assert kwargs == {}
 
 
-def test_database_describe(
+def test_database_get(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
 ) -> None:
     with patch.object(
-        databases, "describe", side_effect=exceptions.DatabaseNotFound("absent")
-    ) as describe:
+        databases, "get", side_effect=exceptions.DatabaseNotFound("absent")
+    ) as get:
         result = runner.invoke(
             cli,
-            ["database", "-i", str(instance), "describe", "absent"],
+            ["database", "-i", str(instance), "get", "absent"],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "absent")
+    get.assert_called_once_with(ctx, instance, "absent")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 1
     assert result.stderr.strip() == "Error: database 'absent' not found"
@@ -1260,15 +1260,15 @@ def test_database_describe(
 
     with patch.object(
         databases,
-        "describe",
+        "get",
         return_value=interface.Database(name="present", owner="dba"),
-    ) as describe:
+    ) as get:
         result = runner.invoke(
             cli,
-            ["database", "-i", instance.name, "describe", "present"],
+            ["database", "-i", instance.name, "get", "present"],
             obj=obj,
         )
-    describe.assert_called_once_with(ctx, instance, "present")
+    get.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     described = yaml.safe_load(result.stdout)
@@ -1409,7 +1409,7 @@ def test_database_privileges(
                 privileges=["EXECUTE"],
             ),
         ],
-    ) as privileges_get, patch.object(databases, "describe") as databases_describe:
+    ) as privileges_get, patch.object(databases, "get") as databases_get:
         result = runner.invoke(
             cli,
             [
@@ -1429,7 +1429,7 @@ def test_database_privileges(
     privileges_get.assert_called_once_with(
         ctx, instance, databases=("db2",), roles=("rol2",), defaults=True
     )
-    databases_describe.assert_called_once_with(ctx, instance, "db2")
+    databases_get.assert_called_once_with(ctx, instance, "db2")
     assert json.loads(result.stdout) == [
         {
             "database": "db2",

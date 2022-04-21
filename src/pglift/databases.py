@@ -34,10 +34,8 @@ def apply(
         alter(ctx, instance, database_manifest)
 
 
-def describe(
-    ctx: BaseContext, instance: "system.Instance", name: str
-) -> interface.Database:
-    """Return a database described as a manifest.
+def get(ctx: BaseContext, instance: "system.Instance", name: str) -> interface.Database:
+    """Return the database object with specified name.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
     """

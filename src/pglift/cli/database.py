@@ -62,7 +62,7 @@ def database_alter(
     """Alter a database in a PostgreSQL instance"""
     changes = helpers.unnest(interface.Database, changes)
     with instances.running(ctx, instance):
-        values = databases.describe(ctx, instance, dbname).dict()
+        values = databases.get(ctx, instance, dbname).dict()
         values = deep_update(values, changes)
         altered = interface.Database.parse_obj(values)
         databases.apply(ctx, instance, altered)
@@ -79,15 +79,15 @@ def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> No
         databases.apply(ctx, instance, database)
 
 
-@cli.command("describe")
+@cli.command("get")
 @click.argument("name")
 @pass_instance
 @pass_ctx
-def database_describe(ctx: Context, instance: system.Instance, name: str) -> None:
-    """Describe a database"""
+def database_get(ctx: Context, instance: system.Instance, name: str) -> None:
+    """Get the description of a database"""
     with instances.running(ctx, instance):
-        described = databases.describe(ctx, instance, name)
-    click.echo(described.yaml(exclude={"state"}), nl=False)
+        m = databases.get(ctx, instance, name)
+    click.echo(m.yaml(exclude={"state"}), nl=False)
 
 
 @cli.command("list")
@@ -143,7 +143,7 @@ def database_privileges(
 ) -> None:
     """List privileges on a database."""
     with instances.running(ctx, instance):
-        databases.describe(ctx, instance, name)  # check existence
+        databases.get(ctx, instance, name)  # check existence
         try:
             prvlgs = privileges.get(
                 ctx, instance, databases=(name,), roles=roles, defaults=defaults

@@ -42,7 +42,7 @@ def interface_model() -> Type[models.ServiceManifest]:
 
 
 @hookimpl  # type: ignore[misc]
-def describe(
+def get(
     ctx: "BaseContext", instance: "system.Instance"
 ) -> Optional[models.ServiceManifest]:
     try:

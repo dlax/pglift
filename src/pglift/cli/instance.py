@@ -145,7 +145,7 @@ def _instance_alter(
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
         """Alter PostgreSQL INSTANCE"""
         changes = helpers.unnest(composite_instance_model, changes)
-        values = instances._describe(ctx, instance).dict()
+        values = instances._get(ctx, instance).dict()
         values = deep_update(values, changes)
         altered = composite_instance_model.parse_obj(values)
         instances.apply(ctx, altered)
@@ -170,14 +170,14 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
     instances.promote(ctx, instance)
 
 
-@cli.command("describe")
+@cli.command("get")
 @instance_identifier(nargs=-1)
 @pass_ctx
-def instance_describe(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
-    """Describe PostgreSQL INSTANCE"""
+def instance_get(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
+    """Get the description of PostgreSQL INSTANCE"""
     for i in instance:
-        described = instances.describe(ctx, i.name, i.version)
-        click.echo(described.yaml(), nl=False)
+        m = instances.get(ctx, i.name, i.version)
+        click.echo(m.yaml(), nl=False)
 
 
 @cli.command("list")

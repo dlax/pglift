@@ -27,8 +27,8 @@ manage PostgreSQL databases of an instance.
     Commands:
       alter       Alter a database in a PostgreSQL instance
       create      Create a database in a PostgreSQL instance
-      describe    Describe a database
       drop        Drop a database
+      get         Get the description of a database
       list        List databases
       privileges  List default privileges on a database.
       run         Run given command on databases of a PostgreSQL instance

@@ -37,8 +37,8 @@ def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Any]
 
 
 @hookspec  # type: ignore[misc]
-def describe(ctx: "BaseContext", instance: "Instance") -> Optional["ServiceManifest"]:
-    """Describe the satellite service bound to specified instance."""
+def get(ctx: "BaseContext", instance: "Instance") -> Optional["ServiceManifest"]:
+    """Return the description the satellite service bound to specified instance."""
 
 
 @hookspec  # type: ignore[misc]

@@ -34,7 +34,7 @@ def test_create(
     assert not databases.exists(ctx, instance, database.name)
     databases.create(ctx, instance, database)
     try:
-        assert databases.describe(ctx, instance, database.name) == database.copy(
+        assert databases.get(ctx, instance, database.name) == database.copy(
             update={"owner": "postgres"}
         )
     finally:
@@ -45,7 +45,7 @@ def test_create(
     database = interface.Database(name="db2", owner="dba1")
     databases.create(ctx, instance, database)
     try:
-        assert databases.describe(ctx, instance, database.name) == database
+        assert databases.get(ctx, instance, database.name) == database
     finally:
         # Drop database in order to allow the role to be dropped in fixture.
         databases.drop(ctx, instance, database.name)
@@ -60,20 +60,18 @@ def test_apply(
     database = interface.Database(name="db2", settings={"work_mem": "1MB"})
     assert not databases.exists(ctx, instance, database.name)
     databases.apply(ctx, instance, database)
-    assert databases.describe(ctx, instance, database.name).settings == {
-        "work_mem": "1MB"
-    }
+    assert databases.get(ctx, instance, database.name).settings == {"work_mem": "1MB"}
 
     database_factory("apply")
     database = interface.Database(name="apply")
     databases.apply(ctx, instance, database)
-    assert databases.describe(ctx, instance, "apply").owner == "postgres"
+    assert databases.get(ctx, instance, "apply").owner == "postgres"
 
     role_factory("dbapply")
     database = interface.Database(name="apply", owner="dbapply")
     databases.apply(ctx, instance, database)
     try:
-        assert databases.describe(ctx, instance, "apply") == database
+        assert databases.get(ctx, instance, "apply") == database
     finally:
         databases.drop(ctx, instance, "apply")
 
@@ -83,17 +81,17 @@ def test_apply(
     assert not databases.exists(ctx, instance, database.name)
 
 
-def test_describe(
+def test_get(
     ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
 ) -> None:
     with pytest.raises(exceptions.DatabaseNotFound, match="absent"):
-        databases.describe(ctx, instance, "absent")
+        databases.get(ctx, instance, "absent")
 
     database_factory("describeme")
     execute(
         ctx, instance, "ALTER DATABASE describeme SET work_mem TO '3MB'", fetch=False
     )
-    database = databases.describe(ctx, instance, "describeme")
+    database = databases.get(ctx, instance, "describeme")
     assert database.name == "describeme"
     assert database.settings == {"work_mem": "3MB"}
 
@@ -137,7 +135,7 @@ def test_alter(
 
     database_factory("alterme")
     execute(ctx, instance, "ALTER DATABASE alterme SET work_mem TO '3MB'", fetch=False)
-    assert databases.describe(ctx, instance, "alterme") == database.copy(
+    assert databases.get(ctx, instance, "alterme") == database.copy(
         update={"settings": {"work_mem": "3MB"}}
     )
     role_factory("alterdba")
@@ -147,13 +145,13 @@ def test_alter(
         settings={"work_mem": None, "maintenance_work_mem": "9MB"},
     )
     databases.alter(ctx, instance, database)
-    assert databases.describe(ctx, instance, "alterme") == database.copy(
+    assert databases.get(ctx, instance, "alterme") == database.copy(
         update={"settings": {"maintenance_work_mem": "9MB"}}
     )
 
     database = interface.Database(name="alterme", settings={})
     databases.alter(ctx, instance, database)
-    assert databases.describe(ctx, instance, "alterme") == database.copy(
+    assert databases.get(ctx, instance, "alterme") == database.copy(
         update={"owner": "postgres", "settings": None}
     )
 

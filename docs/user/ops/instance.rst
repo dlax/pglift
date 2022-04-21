@@ -23,10 +23,10 @@ modification, deletion as well as status management (start, stop, restart).
       alter       Alter PostgreSQL INSTANCE
       backup      Back up PostgreSQL INSTANCE
       create      Initialize a PostgreSQL instance
-      describe    Describe PostgreSQL INSTANCE
       drop        Drop PostgreSQL INSTANCE
       env         Output environment variables suitable to connect to...
       exec        Execute command in the libpq environment for PostgreSQL...
+      get         Get the description of PostgreSQL INSTANCE
       list        List the available instances
       logs        Output INSTANCE logs
       privileges  List default privileges on INSTANCE

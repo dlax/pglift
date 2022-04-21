@@ -10,5 +10,5 @@ PostgreSQL roles:
 .. autofunction:: alter
 .. autofunction:: apply
 .. autofunction:: exists
-.. autofunction:: describe
+.. autofunction:: get
 .. autofunction:: drop
