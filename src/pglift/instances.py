@@ -1042,7 +1042,7 @@ def list(
 
 def system_list(
     ctx: "BaseContext", *, version: Optional[PostgreSQLVersion] = None
-) -> Iterator[system.Instance]:
+) -> Iterator[system.PostgreSQLInstance]:
     if version is not None:
         assert isinstance(version, PostgreSQLVersion)
         versions = [version.value]
@@ -1060,7 +1060,7 @@ def system_list(
             if not d.is_dir():
                 continue
             try:
-                yield system.Instance.system_lookup(ctx, (d.name, ver))
+                yield system.PostgreSQLInstance.system_lookup(ctx, (d.name, ver))
             except exceptions.InstanceNotFound:
                 pass
 
