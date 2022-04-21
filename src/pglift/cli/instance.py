@@ -171,13 +171,12 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 
 
 @cli.command("get")
-@instance_identifier(nargs=-1)
+@instance_identifier(nargs=1)
 @pass_ctx
-def instance_get(ctx: Context, instance: Tuple[system.Instance, ...]) -> None:
+def instance_get(ctx: Context, instance: system.Instance) -> None:
     """Get the description of PostgreSQL INSTANCE"""
-    for i in instance:
-        m = instances.get(ctx, i.name, i.version)
-        click.echo(m.yaml(), nl=False)
+    m = instances.get(ctx, instance.name, instance.version)
+    click.echo(m.yaml(), nl=False)
 
 
 @cli.command("list")
