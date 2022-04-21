@@ -1033,7 +1033,7 @@ def list(
     for instance in system_list(ctx, version=version):
         yield interface.InstanceListItem(
             name=instance.name,
-            path=str(instance.path),
+            path=instance.path,
             port=instance.port,
             status=status(ctx, instance).name,
             version=instance.version,
