@@ -117,6 +117,7 @@ def print_table_for(
     title: Optional[str] = None,
     *,
     display: Callable[[RenderableType], None] = rich.print,
+    **kwargs: Any,
 ) -> None:
     """Render a list of items as a table.
 
@@ -159,7 +160,7 @@ def print_table_for(
         rows.append(row)
     if not rows:
         return
-    table = Table(*headers, title=title)
+    table = Table(*headers, title=title, **kwargs)
     for row in rows:
         table.add_row(*row)
     display(table)

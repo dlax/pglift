@@ -80,14 +80,22 @@ def database_apply(ctx: Context, instance: system.Instance, file: IO[str]) -> No
 
 
 @cli.command("get")
+@as_json_option
 @click.argument("name")
 @pass_instance
+@pass_console
 @pass_ctx
-def database_get(ctx: Context, instance: system.Instance, name: str) -> None:
+def database_get(
+    ctx: Context, console: Console, instance: system.Instance, name: str, as_json: bool
+) -> None:
     """Get the description of a database"""
     with instances.running(ctx, instance):
-        m = databases.get(ctx, instance, name)
-    click.echo(m.yaml(exclude={"state"}), nl=False)
+        m = databases.get(ctx, instance, name).dict(by_alias=True)
+        del m["state"]
+    if as_json:
+        print_json_for(m, display=console.print_json)
+    else:
+        print_table_for([m], display=console.print, box=None)
 
 
 @cli.command("list")

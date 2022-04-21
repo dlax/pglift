@@ -171,12 +171,19 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 
 
 @cli.command("get")
+@as_json_option
 @instance_identifier(nargs=1)
+@pass_console
 @pass_ctx
-def instance_get(ctx: Context, instance: system.Instance) -> None:
+def instance_get(
+    ctx: Context, console: Console, instance: system.Instance, as_json: bool
+) -> None:
     """Get the description of PostgreSQL INSTANCE"""
-    m = instances.get(ctx, instance.name, instance.version)
-    click.echo(m.yaml(), nl=False)
+    m = instances.get(ctx, instance.name, instance.version).dict(by_alias=True)
+    if as_json:
+        print_json_for(m, display=console.print_json)
+    else:
+        print_table_for([m], display=console.print, box=None)
 
 
 @cli.command("list")

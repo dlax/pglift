@@ -406,10 +406,10 @@ def test_instance_get(
 ) -> None:
     manifest = interface.Instance(name="test")
     with patch.object(instances, "get", return_value=manifest) as get:
-        result = runner.invoke(cli, ["instance", "get"] + args, obj=obj)
+        result = runner.invoke(cli, ["instance", "get", "--json"] + args, obj=obj)
     assert result.exit_code == 0, (result, result.output)
     get.assert_called_once_with(ctx, "test", pg_version)
-    assert "name: test" in result.output
+    assert '"name": "test"' in result.output
 
 
 def test_instance_list(
@@ -1044,14 +1044,13 @@ def test_role_get(
     ) as get:
         result = runner.invoke(
             cli,
-            ["role", "-i", instance.name, "get", "present"],
+            ["role", "-i", instance.name, "get", "present", "--json"],
             obj=obj,
         )
     get.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
-    described = yaml.safe_load(result.stdout)
-    assert described == {
+    assert json.loads(result.stdout) == {
         "name": "present",
         "password": "**********",
         "pgpass": True,
@@ -1265,14 +1264,17 @@ def test_database_get(
     ) as get:
         result = runner.invoke(
             cli,
-            ["database", "-i", instance.name, "get", "present"],
+            ["database", "-i", instance.name, "get", "present", "--json"],
             obj=obj,
         )
     get.assert_called_once_with(ctx, instance, "present")
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
-    described = yaml.safe_load(result.stdout)
-    assert described == {"name": "present", "owner": "dba", "settings": None}
+    assert json.loads(result.stdout) == {
+        "name": "present",
+        "owner": "dba",
+        "settings": None,
+    }
 
 
 def test_database_list(

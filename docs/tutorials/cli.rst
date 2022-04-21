@@ -88,16 +88,19 @@ Getting instance information:
 
 ::
 
-    $ pglift instance get main
-    name: main
-    version: '13'
-    port: 5456
-    state: started
-    ssl: false
-    configuration: {}
-    standby: null
-    prometheus:
-      port: 9187
+    $ pglift instance get main --json
+    {
+      "name": main
+      "version": '13'
+      "port": 5456
+      "state": started
+      "ssl": false
+      "configuration": {}
+      "standby": null
+      "prometheus": {
+        "port": 9187
+      }
+    }
 
 .. note::
 
@@ -122,14 +125,8 @@ Adding and manipulating instance objects:
 ::
 
     $ pglift role -i 13/main get dba
-    name: dba
-    password: '**********'
-    pgpass: false
-    inherit: true
-    login: true
-    connection_limit: null
-    validity: null
-    in_roles: []
+    name  password    pgpass  inherit  login  superuser  replication  connection_limit  validity  in_roles
+    dba   **********  False   True     True   False      False
 
 ::
 
@@ -137,16 +134,21 @@ Adding and manipulating instance objects:
 
 ::
 
-    $ pglift role -i 13/main get dba
-    name: dba
-    password: '**********'
-    pgpass: false
-    inherit: true
-    login: true
-    connection_limit: 10
-    validity: null
-    in_roles:
-    - pg_monitor
+    $ pglift role -i 13/main get dba --json
+    {
+      "name": "dba",
+      "password": "**********",
+      "pgpass": false,
+      "inherit": true,
+      "login": true,
+      "superuser": false,
+      "replication": false,
+      "connection_limit": 10,
+      "validity": null,
+      "in_roles": [
+        "pg_monitor"
+      ]
+    }
 
 ::
 
@@ -159,8 +161,8 @@ Adding and manipulating instance objects:
 ::
 
     $ pglift database -i 13/main get myapp
-    name: myapp
-    owner: dba
+    name   owner  settings
+    myapp  dba
 
 ::
 
