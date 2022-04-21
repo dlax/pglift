@@ -960,7 +960,9 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     config = instance.config()
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
-    state = interface.InstanceState.from_pg_status(status(ctx, instance))
+    st = status(ctx, instance)
+    is_running = st == Status.running
+    state = interface.InstanceState.from_pg_status(st)
     services = {
         s.__class__.__service__: s
         for s in ctx.hook.get(ctx=ctx, instance=instance)
@@ -985,7 +987,6 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
 
     surole_password = replrole_password = None
     locale = None
-    is_running = status(ctx, instance) == Status.running
     if is_running:
         if instance.standby is None:
             surole_name = ctx.settings.postgresql.surole.name
