@@ -963,11 +963,12 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
 
     surole_password = replrole_password = None
     is_running = status(ctx, instance) == Status.running
-    if is_running and instance.standby is None:
-        surole_name = ctx.settings.postgresql.surole.name
-        surole_password = roles.get(ctx, instance, surole_name).password
-        replrole = ctx.settings.postgresql.replrole
-        replrole_password = roles.get(ctx, instance, replrole).password
+    if is_running:
+        if instance.standby is None:
+            surole_name = ctx.settings.postgresql.surole.name
+            surole_password = roles.get(ctx, instance, surole_name).password
+            replrole = ctx.settings.postgresql.replrole
+            replrole_password = roles.get(ctx, instance, replrole).password
         extensions.update(installed_extensions(ctx, instance))
 
     try:
