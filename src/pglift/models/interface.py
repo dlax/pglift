@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -128,7 +129,13 @@ class Instance(Manifest):
         return m  # type: ignore[no-any-return]
 
     class Standby(BaseModel):
-        _cli_config: ClassVar[Dict[str, CLIConfig]] = {"status": {"hide": True}}
+        _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+            "status": {"hide": True},
+            "replication_lag": {"hide": True},
+        }
+        _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
+            "replication_lag": {"hide": True}
+        }
 
         @enum.unique
         class State(AutoStrEnum):
@@ -145,6 +152,9 @@ class Instance(Manifest):
             default=State.demoted,
         )
         slot: Optional[str] = Field(description="replication slot name")
+        replication_lag: Optional[Decimal] = Field(
+            default=None, description="replication lag", readOnly=True
+        )
 
     name: str = Field(readOnly=True)
     version: Optional[settings.PostgreSQLVersion] = Field(

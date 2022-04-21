@@ -389,16 +389,24 @@ def test_standby(
 
         surole = instance_manifest.surole(settings)
         if surole.password:
-            with patch.dict(
-                "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
-            ):
-                described = instances._get(ctx, standby_instance).standby
-        else:
-            described = instances._get(ctx, standby_instance).standby
 
-        assert described is not None
-        assert described.for_ == standby_instance.standby.for_
-        assert described.slot == standby_instance.standby.slot
+            def get_stdby() -> Optional[interface.Instance.Standby]:
+                assert surole.password
+                with patch.dict(
+                    "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
+                ):
+                    return instances._get(ctx, standby_instance).standby
+
+        else:
+
+            def get_stdby() -> Optional[interface.Instance.Standby]:
+                return instances._get(ctx, standby_instance).standby
+
+        stdby = get_stdby()
+        assert stdby is not None
+        assert stdby.for_ == standby_instance.standby.for_
+        assert stdby.slot == standby_instance.standby.slot
+        assert stdby.replication_lag is not None
 
         class OutOfSync(AssertionError):
             pass
@@ -452,6 +460,10 @@ def test_standby(
                     assert rlag == 0
 
                 assert_replicated()
+
+                stdby = get_stdby()
+                assert stdby is not None
+                assert stdby.replication_lag == 0
 
                 instances.promote(ctx, standby_instance)
                 assert not standby_instance.standby

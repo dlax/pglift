@@ -949,9 +949,13 @@ def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Inst
     instance = system.Instance.system_lookup(ctx, (name, version))
     is_running = status(ctx, instance) == Status.running
     if not is_running:
+        missing_bits = ["local", "passwords", "extensions"]
+        if instance.standby is not None:
+            missing_bits.append("replication lag")
         logger.warning(
-            "instance %s is not running, info about passwords, locale and extensions may not be accurate",
+            "instance %s is not running, information about %s may not be accurate",
             instance,
+            f"{', '.join(missing_bits[:-1])} and {missing_bits[-1]}",
         )
     return _get(ctx, instance)
 
@@ -969,9 +973,13 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         if s is not None
     }
     if instance.standby:
-        standby = interface.Instance.Standby(
-            **{"for": instance.standby.for_, "slot": instance.standby.slot}
-        )
+        kw: Dict[str, Union[str, Decimal, None]] = {
+            "for": instance.standby.for_,
+            "slot": instance.standby.slot,
+        }
+        if is_running:
+            kw["replication_lag"] = replication_lag(ctx, instance)
+        standby = interface.Instance.Standby(**kw)
     else:
         standby = None
 
