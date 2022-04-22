@@ -4,14 +4,13 @@ PostgreSQL authentication
 In site settings, the ``postgresql.auth`` allow to configure PostgreSQL
 authentication. Default values are:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "auth": {
-      "local": "trust",
-      "host": "trust",
-      "passfile": "$HOME/.pgpass",
-      "password_command": null
-    },
+    auth:
+      local: trust
+      host: trust
+      passfile: $HOME/.pgpass
+      password_command: null
 
 For a production cluster it's recommended to set ``local`` and ``host``
 authentication to one of the supported `authentication methods`_.
