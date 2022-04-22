@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -56,14 +57,10 @@ def test_libpq_environ(ctx: Context, settings: Settings) -> None:
 
 
 def test_libpq_environ_password_command(ctx: Context, tmp_path: Path) -> None:
-    passcmd = tmp_path / "passcmd"
-    with passcmd.open("w") as f:
-        f.write("#!/bin/sh\necho foo")
-    passcmd.chmod(0o755)
     settings = PostgreSQLSettings.parse_obj(
         {
             "auth": {
-                "password_command": str(passcmd),
+                "password_command": [sys.executable, "-c", "print('foo')"],
                 "passfile": str(tmp_path / "pgpass"),
             }
         }

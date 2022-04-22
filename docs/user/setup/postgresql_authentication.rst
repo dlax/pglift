@@ -10,7 +10,7 @@ authentication. Default values are:
       local: trust
       host: trust
       passfile: $HOME/.pgpass
-      password_command: null
+      password_command: []
 
 For a production cluster it's recommended to set ``local`` and ``host``
 authentication to one of the supported `authentication methods`_.

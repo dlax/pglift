@@ -162,9 +162,9 @@ def settings(
         "pgpass", True
     ):
         assert "password_command" not in pgauth_obj
-        pgauth_obj["password_command"] = str(
-            tmp_path_factory.mktemp("home") / "passcmd"
-        )
+        pgauth_obj["password_command"] = [
+            str(tmp_path_factory.mktemp("home") / "passcmd")
+        ]
     if obj.get("service_manager") == "systemd" and not systemd_available:
         pytest.skip("systemd not functional")
 
@@ -270,12 +270,10 @@ def surole_password(settings: Settings) -> Optional[str]:
     if settings.postgresql.auth.local == "trust":
         return None
 
-    passcmdfile = (
-        pathlib.Path(settings.postgresql.auth.password_command)
-        if settings.postgresql.auth.password_command
-        else None
-    )
-    if passcmdfile:
+    password_command = settings.postgresql.auth.password_command
+    if password_command:
+        assert len(password_command) == 1
+        passcmdfile = pathlib.Path(password_command[0])
         with passcmdfile.open("w") as f:
             f.write("#!/bin/sh\necho s3kret\n")
         passcmdfile.chmod(0o700)
