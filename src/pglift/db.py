@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import re
 import sys
@@ -15,6 +16,7 @@ if TYPE_CHECKING:  # pragma: nocover
     from .settings import PostgreSQLSettings
 
 QUERIES = pathlib.Path(__file__).parent / "queries.sql"
+logger = logging.getLogger(__name__)
 
 
 def query(name: str, **kwargs: sql.Composable) -> sql.Composed:
@@ -53,11 +55,31 @@ def dsn(
     return psycopg.conninfo.make_conninfo(**kwargs)
 
 
+def obfuscate_conninfo(conninfo: str, **kwargs: Any) -> str:
+    """Return an obfuscated connection string with password hidden.
+
+    >>> obfuscate_conninfo("user=postgres password=foo")
+    'user=postgres password=********'
+    >>> obfuscate_conninfo("user=postgres", password="secret")
+    'user=postgres password=********'
+    >>> obfuscate_conninfo("port=5444")
+    'port=5444'
+    """
+    params = psycopg.conninfo.conninfo_to_dict(conninfo, **kwargs)
+    if "password" in params:
+        params["password"] = "*" * 8
+    return psycopg.conninfo.make_conninfo(**params)
+
+
 @contextmanager
 def connect_dsn(
     conninfo: str, autocommit: bool = False, **kwargs: Any
 ) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to specified database of `conninfo` dsn string"""
+    logger.debug(
+        "connecting to PostgreSQL instance with: %s",
+        obfuscate_conninfo(conninfo, **kwargs),
+    )
     conn = psycopg.connect(conninfo, row_factory=psycopg.rows.dict_row, **kwargs)
     if autocommit:
         conn.autocommit = True
