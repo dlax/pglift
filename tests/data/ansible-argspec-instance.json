@@ -11,6 +11,12 @@
     ],
     "type": "bool"
   },
+  "encoding": {
+    "description": [
+      "Character encoding of the PostgreSQL instance"
+    ],
+    "type": "str"
+  },
   "extensions": {
     "description": [
       "List of extensions to install in the instance"

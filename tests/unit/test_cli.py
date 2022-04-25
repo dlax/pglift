@@ -285,6 +285,7 @@ def test_instance_create(
         f"--version={pg_version}",
         "--port=1234",
         "--locale=fr_FR.UTF8",
+        "--encoding=LATIN1",
         "--data-checksums",
         "--extension=unaccent",
         "--extension=pg_stat_statements",
@@ -298,6 +299,7 @@ def test_instance_create(
         "version": pg_version,
         "port": 1234,
         "locale": "fr_FR.UTF8",
+        "encoding": "LATIN1",
         "data_checksums": True,
         "extensions": ["unaccent", "pg_stat_statements"],
     }

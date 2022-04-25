@@ -52,6 +52,11 @@ options:
       - Locale value for the PostgreSQL instance.
     type: str
     required: false
+  encoding:
+    description:
+      - Character encoding of the PostgreSQL instance.
+    type: str
+    required: false
   prometheus_port:
     description:
       - TCP port for the web interface and telemetry of Prometheus

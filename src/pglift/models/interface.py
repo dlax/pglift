@@ -186,6 +186,11 @@ class Instance(Manifest):
     locale: Optional[str] = Field(
         default=None, description="Default locale", readOnly=True
     )
+    encoding: Optional[str] = Field(
+        default=None,
+        description="Character encoding of the PostgreSQL instance",
+        readOnly=True,
+    )
 
     standby: Optional[Standby] = None
 

@@ -149,7 +149,6 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     opts: Dict[str, Union[str, Literal[True]]] = {
         "waldir": str(instance.waldir),
         "username": surole.name,
-        "encoding": "UTF8",
         # Set temporary auth methods, until the complete pg_hba.conf gets
         # deployed.
         "auth_local": "trust",
@@ -158,6 +157,9 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     locale = manifest.locale or initdb_settings.locale
     if locale is not None:
         opts["locale"] = locale
+    encoding = manifest.encoding or initdb_settings.encoding
+    if encoding is not None:
+        opts["encoding"] = encoding
     if manifest.data_checksums or (
         manifest.data_checksums is None and initdb_settings.data_checksums
     ):
@@ -724,6 +726,15 @@ def get_locale(
         return None
 
 
+def get_encoding(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> str:
+    """Return the value of instance encoding."""
+    with db.superuser_connect(ctx, instance) as cnx:
+        row = cnx.execute(db.query("instance_encoding")).fetchone()
+        assert row is not None
+        value = row["pg_encoding_to_char"]
+        return str(value)
+
+
 def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
     """Return True/False if data_checksums is enabled/disabled on instance."""
     if status(ctx, instance) == Status.running:
@@ -949,7 +960,7 @@ def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Inst
     instance = system.Instance.system_lookup(ctx, (name, version))
     is_running = status(ctx, instance) == Status.running
     if not is_running:
-        missing_bits = ["local", "passwords", "extensions"]
+        missing_bits = ["local", "encoding", "passwords", "extensions"]
         if instance.standby is not None:
             missing_bits.append("replication lag")
         logger.warning(
@@ -995,6 +1006,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
 
     surole_password = replrole_password = None
     locale = None
+    encoding = None
     if is_running:
         if instance.standby is None:
             surole_name = ctx.settings.postgresql.surole.name
@@ -1002,6 +1014,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
             replrole = ctx.settings.postgresql.replrole
             replrole_password = roles.get(ctx, instance, replrole).password
         locale = get_locale(ctx, instance)
+        encoding = get_encoding(ctx, instance)
         extensions.update(installed_extensions(ctx, instance))
 
     try:
@@ -1020,6 +1033,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         surole_password=surole_password,
         replrole_password=replrole_password,
         locale=locale,
+        encoding=encoding,
         data_checksums=data_checksums,
         extensions=sorted(extensions),
         standby=standby,

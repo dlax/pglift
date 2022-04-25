@@ -200,6 +200,9 @@ class InitdbSettings(BaseSettings):
     locale: Optional[str] = "C"
     """Instance locale as used by initdb."""
 
+    encoding: Optional[str] = "UTF8"
+    """Instance encoding as used by initdb."""
+
     data_checksums: bool = False
     """Use checksums on data pages."""
 

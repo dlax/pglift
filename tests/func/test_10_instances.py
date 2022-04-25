@@ -546,6 +546,11 @@ def test_get_locale(
         postgres_conf.write_text(original_conf)
 
 
+def test_get_encoding(ctx: Context, instance: system.Instance) -> None:
+    with instances.running(ctx, instance):
+        assert instances.get_encoding(ctx, instance) == "UTF8"
+
+
 @pytest.fixture
 def datachecksums_instance(
     ctx: Context,

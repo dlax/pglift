@@ -230,3 +230,6 @@ SELECT true FROM pg_drop_replication_slot((SELECT slot_name FROM pg_replication_
 
 -- name: create_replication_slot
 SELECT true FROM pg_create_physical_replication_slot(%(slot)s);
+
+-- name: instance_encoding
+SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname='template1';
