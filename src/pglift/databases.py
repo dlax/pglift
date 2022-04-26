@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def apply(
-    ctx: BaseContext, instance: "system.Instance", database_manifest: interface.Database
+    ctx: BaseContext,
+    instance: "system.PostgreSQLInstance",
+    database_manifest: interface.Database,
 ) -> None:
     """Apply state described by specified database manifest as a PostgreSQL instance.
 
@@ -34,7 +36,9 @@ def apply(
         alter(ctx, instance, database_manifest)
 
 
-def get(ctx: BaseContext, instance: "system.Instance", name: str) -> interface.Database:
+def get(
+    ctx: BaseContext, instance: "system.PostgreSQLInstance", name: str
+) -> interface.Database:
     """Return the database object with specified name.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
@@ -56,7 +60,7 @@ def get(ctx: BaseContext, instance: "system.Instance", name: str) -> interface.D
 
 
 def list(
-    ctx: BaseContext, instance: "system.Instance", dbnames: Sequence[str] = ()
+    ctx: BaseContext, instance: "system.PostgreSQLInstance", dbnames: Sequence[str] = ()
 ) -> List[interface.DetailedDatabase]:
     """List databases in instance.
 
@@ -77,7 +81,7 @@ def list(
 
 
 @task("dropping '{name}' database from instance {instance}")
-def drop(ctx: BaseContext, instance: "system.Instance", name: str) -> None:
+def drop(ctx: BaseContext, instance: "system.PostgreSQLInstance", name: str) -> None:
     """Drop a database from a primary instance.
 
     :raises ~pglift.exceptions.DatabaseNotFound: if no role with specified 'name' exists.
@@ -90,7 +94,7 @@ def drop(ctx: BaseContext, instance: "system.Instance", name: str) -> None:
         cnx.execute(db.query("database_drop", database=sql.Identifier(name)))
 
 
-def exists(ctx: BaseContext, instance: "system.Instance", name: str) -> bool:
+def exists(ctx: BaseContext, instance: "system.PostgreSQLInstance", name: str) -> bool:
     """Return True if named database exists in 'instance'.
 
     The instance should be running.
@@ -115,7 +119,9 @@ def options_and_args(
 
 @task("creating '{database.name}' database on instance {instance}")
 def create(
-    ctx: BaseContext, instance: "system.Instance", database: interface.Database
+    ctx: BaseContext,
+    instance: "system.PostgreSQLInstance",
+    database: interface.Database,
 ) -> None:
     """Create 'database' in 'instance'.
 
@@ -139,7 +145,9 @@ def create(
 
 @task("altering '{database.name}' database on instance {instance}")
 def alter(
-    ctx: BaseContext, instance: "system.Instance", database: interface.Database
+    ctx: BaseContext,
+    instance: "system.PostgreSQLInstance",
+    database: interface.Database,
 ) -> None:
     """Alter 'database' in 'instance'.
 
@@ -198,7 +206,7 @@ def alter(
 
 def run(
     ctx: BaseContext,
-    instance: "system.Instance",
+    instance: "system.PostgreSQLInstance",
     sql_command: str,
     *,
     dbnames: Sequence[str] = (),
