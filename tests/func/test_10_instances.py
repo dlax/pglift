@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 from typing import Iterator, List, NoReturn, Optional, Tuple, Type
 from unittest.mock import patch
@@ -17,7 +18,7 @@ from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import Settings
 
-from . import execute, reconfigure_instance
+from . import AuthType, execute, reconfigure_instance
 from .conftest import DatabaseFactory
 
 
@@ -79,7 +80,10 @@ def test_log_directory(
 
 
 def test_pgpass(
-    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    postgresql_auth: AuthType,
 ) -> None:
     port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
@@ -90,7 +94,7 @@ def test_pgpass(
         ]
         return entry
 
-    if instance_manifest.surole_password and ctx.settings.postgresql.surole.pgpass:
+    if postgresql_auth == AuthType.pgpass:
         assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
 
         with reconfigure_instance(ctx, instance_manifest, port=port + 1):
@@ -100,7 +104,10 @@ def test_pgpass(
 
 
 def test_connect(
-    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    postgresql_auth: AuthType,
 ) -> None:
     i = instance
     surole = instance_manifest.surole(ctx.settings)
@@ -110,35 +117,32 @@ def test_connect(
         "port": port,
         "user": surole.name,
     }
-
-    passfile = ctx.settings.postgresql.auth.passfile
-
-    password = None
-    if surole.password:
-        password = surole.password.get_secret_value()
-
     with instances.running(ctx, i):
-        if password is not None:
+        if postgresql_auth == AuthType.peer:
+            pass
+        elif postgresql_auth == AuthType.pgpass:
+            connargs["passfile"] = str(ctx.settings.postgresql.auth.passfile)
+        else:
             with pytest.raises(psycopg.OperationalError, match="no password supplied"):
                 with patch.dict("os.environ", clear=True):
                     psycopg.connect(**connargs).close()  # type: ignore[call-overload]
-            if password:
-                connargs["password"] = password
-            else:
-                connargs["passfile"] = str(passfile)
-        else:
-            connargs["passfile"] = str(passfile)
+            assert surole.password is not None
+            connargs["password"] = surole.password.get_secret_value()
         with psycopg.connect(**connargs) as conn:  # type: ignore[call-overload]
-            if password:
-                assert conn.pgconn.used_password
-            else:
+            if postgresql_auth == AuthType.peer:
                 assert not conn.pgconn.used_password
+            else:
+                assert conn.pgconn.used_password
 
 
-def test_hba(ctx: Context, instance: system.Instance) -> None:
+def test_hba(
+    ctx: Context, instance: system.Instance, postgresql_auth: AuthType
+) -> None:
     hba_path = instance.datadir / "pg_hba.conf"
     hba = hba_path.read_text().splitlines()
     auth = ctx.settings.postgresql.auth
+    if postgresql_auth == AuthType.peer:
+        assert "peer" in hba[0]
     assert (
         f"local   all             all                                     {auth.local}"
         in hba
@@ -149,10 +153,16 @@ def test_hba(ctx: Context, instance: system.Instance) -> None:
     )
 
 
-def test_ident(ctx: Context, instance: system.Instance) -> None:
+def test_ident(
+    ctx: Context, instance: system.Instance, postgresql_auth: AuthType
+) -> None:
     ident_path = instance.datadir / "pg_ident.conf"
     ident = ident_path.read_text().splitlines()
-    assert ident == ["# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"]
+    assert ident[0] == "# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"
+    if postgresql_auth == AuthType.peer:
+        assert re.match(r"^test\s+\w+\s+postgres$", ident[1])
+    else:
+        assert len(ident) == 1
 
 
 def test_start_stop_restart_running_stopped(
@@ -220,7 +230,7 @@ def test_apply(
     pg_version: str,
     tmp_path: Path,
     tmp_port_factory: Iterator[int],
-    surole_password: Optional[str],
+    surole_password: str,
     composite_instance_model: Type[interface.Instance],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -311,10 +321,9 @@ def test_get(
     assert not im.surole_password
     assert im.extensions == ["passwordcheck"]
 
-    if instance_manifest.surole_password:
-        with instances.running(ctx, instance):
-            im = instances.get(ctx, instance.name, instance.version)
-            assert isinstance(im.surole_password, SecretStr)
+    with instances.running(ctx, instance):
+        im = instances.get(ctx, instance.name, instance.version)
+        assert isinstance(im.surole_password, SecretStr)
 
 
 def test_list(ctx: Context, instance: system.Instance) -> None:
@@ -561,7 +570,7 @@ def datachecksums_instance(
     composite_instance_model: Type[interface.Instance],
     pg_version: str,
     tmp_port_factory: Iterator[int],
-    surole_password: Optional[str],
+    surole_password: str,
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
     manifest = composite_instance_model(
         name="datachecksums",

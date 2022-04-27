@@ -12,7 +12,7 @@ from pglift import db, exceptions, instances, roles, types
 from pglift.ctx import Context
 from pglift.models import interface, system
 
-from . import execute, reconfigure_instance
+from . import AuthType, execute, reconfigure_instance
 from .conftest import RoleFactory
 
 
@@ -179,8 +179,14 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
 
 def test_alter_surole_password(
-    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    postgresql_auth: AuthType,
 ) -> None:
+    if postgresql_auth == AuthType.peer:
+        pytest.skip(f"not applicable for auth:{postgresql_auth}")
+
     check_connect = functools.partial(
         db.connect,
         instance,
@@ -199,14 +205,13 @@ def test_alter_surole_password(
     finally:
         with patch.dict("os.environ", {"PGPASSWORD": "passw0rd_changed"}):
             roles.apply(ctx, instance, surole)
-        if ctx.settings.postgresql.auth.local != "trust":
-            with pytest.raises(
-                psycopg.OperationalError, match="password authentication failed"
-            ):
-                with check_connect(password="passw0rd_changed"):
-                    pass
-            with db.superuser_connect(ctx, instance):
+        with pytest.raises(
+            psycopg.OperationalError, match="password authentication failed"
+        ):
+            with check_connect(password="passw0rd_changed"):
                 pass
+        with db.superuser_connect(ctx, instance):
+            pass
 
 
 def test_get(

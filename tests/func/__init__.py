@@ -13,7 +13,7 @@ from pglift.types import Role
 
 
 class AuthType(str, enum.Enum):
-    trust = "trust"
+    peer = "peer"
     password_command = "password_command"
     pgpass = "pgpass"
 

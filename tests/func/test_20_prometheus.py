@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Iterator, Optional, Tuple, Type
+from typing import Dict, Iterator, Tuple, Type
 
 import pytest
 import requests
@@ -232,8 +232,8 @@ def test_drop_exists(
 def instance_no_prometheus(
     ctx: Context,
     pg_version: str,
-    surole_password: Optional[str],
-    replrole_password: Optional[str],
+    surole_password: str,
+    replrole_password: str,
     tmp_port_factory: Iterator[int],
     composite_instance_model: Type[interface.Instance],
 ) -> Iterator[system.Instance]:

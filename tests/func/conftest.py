@@ -125,8 +125,8 @@ def postgresql_settings(
         "passfile": str(passfile),
     }
     surole = {}
-    if postgresql_auth == AuthType.trust:
-        auth["local"] = "trust"
+    if postgresql_auth == AuthType.peer:
+        pass  # See also PeerAuthContext.
     elif postgresql_auth == AuthType.password_command:
         auth["password_command"] = [str(tmp_path_factory.mktemp("home") / "passcmd")]
     elif postgresql_auth == AuthType.pgpass:
@@ -199,11 +199,22 @@ def pg_version(request: Any, settings: Settings) -> str:
     return version
 
 
+class PeerAuthContext(NoSiteContext):
+    @classmethod
+    def site_config(cls, *parts: str) -> Optional[pathlib.Path]:
+        datadir = pathlib.Path(__file__).parent / "data"
+        fpath = datadir.joinpath(*parts)
+        if fpath.exists():
+            return fpath
+        return super().site_config(*parts)
+
+
 @pytest.fixture(scope="session")
-def ctx(settings: Settings) -> Context:
+def ctx(postgresql_auth: AuthType, settings: Settings) -> Context:
     logger = logging.getLogger("pglift")
     logger.setLevel(logging.DEBUG)
-    context = NoSiteContext(settings=settings)
+    cls = PeerAuthContext if postgresql_auth == AuthType.peer else NoSiteContext
+    context = cls(settings=settings)
     context.pm.trace.root.setwriter(print)
     context.pm.enable_tracing()
     return context
@@ -259,25 +270,21 @@ def tmp_port_factory() -> Iterator[int]:
 
 
 @pytest.fixture(scope="session")
-def surole_password(settings: Settings) -> Optional[str]:
-    if settings.postgresql.auth.local == "trust":
-        return None
-
-    password_command = settings.postgresql.auth.password_command
-    if password_command:
+def surole_password(postgresql_auth: AuthType, settings: Settings) -> str:
+    password = "s3kret"
+    if postgresql_auth == AuthType.password_command:
+        password_command = settings.postgresql.auth.password_command
         assert len(password_command) == 1
         passcmdfile = pathlib.Path(password_command[0])
         with passcmdfile.open("w") as f:
-            f.write("#!/bin/sh\necho s3kret\n")
+            f.write(f"#!/bin/sh\necho {password}\n")
         passcmdfile.chmod(0o700)
 
-    return "s3kret"
+    return password
 
 
 @pytest.fixture(scope="session")
-def replrole_password(settings: Settings) -> Optional[str]:
-    if settings.postgresql.auth.local == "trust":
-        return None
+def replrole_password(settings: Settings) -> str:
     return "r3pl"
 
 
@@ -290,8 +297,8 @@ def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
 def instance_manifest(
     ctx: Context,
     pg_version: str,
-    surole_password: Optional[str],
-    replrole_password: Optional[str],
+    surole_password: str,
+    replrole_password: str,
     tmp_port_factory: Iterator[int],
     composite_instance_model: Type[interface.Instance],
 ) -> interface.Instance:
