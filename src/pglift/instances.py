@@ -446,7 +446,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     super-user role's password, if any, and installing templated pg_hba.conf
     and pg_ident.conf.
 
-    This is a no-op if if pg_hba.conf's content matches the initial
+    This is a no-op if pg_hba.conf's content matches the initial
     configuration.
     """
     logger.info("configuring PostgreSQL authentication")
