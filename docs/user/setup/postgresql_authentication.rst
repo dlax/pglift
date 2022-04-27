@@ -56,5 +56,33 @@ Alternatively, you can configure a ``postgresql.auth.password_command`` option
 in site settings, it can be any user-managed executable command and `pglift`
 and must return the super-user role password as stdout.
 
+Setting up "peer" authentication
+--------------------------------
+
+The `peer authentication`_ is convenient but it needs additional setup when
+the local user name does not match PostgreSQL super-user role name, typically
+when not using the ``postgres`` system user in default configuration. In that
+case, a mapping_ is usually needed.
+
+Such a setup can be achieved by providing template files as documented above
+in order to map the local user running pglift (referred to as the `sysuser`)
+to PostgreSQL super-user role (typically ``postgres``), identified by
+``{surole}`` template variable:
+
+.. code-block:: none
+   :caption: pg_hba.conf
+
+    local    all    {surole}    peer    map=mymap
+    [...]
+
+.. code-block:: none
+   :caption: pg_ident.conf
+
+    # MAPNAME       SYSTEM-USERNAME         PG-USERNAME
+    mymap           {sysuser}               {surole}
+
+
 .. _`password file`: https://www.postgresql.org/docs/current/libpq-pgpass.html
 .. _`authentication methods`: https://www.postgresql.org/docs/current/auth-methods.html
+.. _`peer authentication`: https://www.postgresql.org/docs/current/auth-peer.html
+.. _`mapping`: https://www.postgresql.org/docs/current/auth-username-maps.html
