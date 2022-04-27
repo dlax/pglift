@@ -960,7 +960,7 @@ def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Inst
     instance = system.Instance.system_lookup(ctx, (name, version))
     is_running = status(ctx, instance) == Status.running
     if not is_running:
-        missing_bits = ["local", "encoding", "passwords", "extensions"]
+        missing_bits = ["locale", "encoding", "passwords", "extensions"]
         if instance.standby is not None:
             missing_bits.append("replication lag")
         logger.warning(
