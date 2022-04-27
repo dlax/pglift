@@ -180,7 +180,7 @@ epub_exclude_files = ["search.html"]
 # -- Options for intersphinx extension ---------------------------------------
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/", None),
+    "python": ("https://docs.python.org/3/", None),
     "pgtoolkit": ("https://pgtoolkit.readthedocs.io/en/latest/", None),
     "psycopg": ("https://www.psycopg.org/psycopg3/docs/", None),
 }
