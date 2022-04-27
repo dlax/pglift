@@ -1,11 +1,10 @@
-import copy
 import logging
 import pathlib
 import platform
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Any, Iterator, List, Optional, Set, Type
+from typing import Any, Dict, Iterator, List, Optional, Set, Type
 
 import pgtoolkit.conf
 import port_for
@@ -19,6 +18,7 @@ from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import (
     PgBackRestSettings,
+    PostgreSQLSettings,
     PostgreSQLVersion,
     PrometheusSettings,
     Settings,
@@ -26,7 +26,7 @@ from pglift.settings import (
     plugins,
 )
 
-from . import configure_instance, execute
+from . import AuthType, configure_instance, execute
 
 default_pg_version: Optional[str]
 try:
@@ -105,69 +105,58 @@ def systemd_requested(request: Any, systemd_available: bool) -> bool:
     return value
 
 
-settings_by_id = {
-    "defaults": {},
-    "postgresql_password_auth__surole_use_pgpass": {
-        "postgresql": {
-            "auth": {
-                "local": "password",
-                "host": "reject",
-            },
-            "surole": {
-                "pgpass": True,
-            },
-        },
-    },
-    "postgresql_password_auth__surole_password_command": {
-        "postgresql": {
-            "auth": {
-                "local": "password",
-                "host": "reject",
-            },
-            "surole": {
-                "pgpass": False,
-            },
-        },
-    },
-}
-ids, params = zip(*settings_by_id.items())
-ids = tuple(f"settings:{i}" for i in ids)
+@pytest.fixture(scope="session", params=list(AuthType), ids=lambda v: f"auth:{v}")
+def postgresql_auth(request: Any) -> AuthType:
+    assert isinstance(request.param, AuthType)
+    return request.param
 
 
-@pytest.fixture(scope="session", params=params, ids=ids)
+@pytest.fixture(scope="session")
+def postgresql_settings(
+    tmp_path_factory: pytest.TempPathFactory, postgresql_auth: AuthType
+) -> PostgreSQLSettings:
+    passfile = tmp_path_factory.mktemp("home") / ".pgpass"
+    passfile.touch(mode=0o600)
+    passfile.write_text("#hostname:port:database:username:password\n")
+    auth: Dict[str, Any] = {
+        "local": "password",
+        "host": "reject",
+        "passfile": str(passfile),
+    }
+    surole = {}
+    if postgresql_auth == AuthType.trust:
+        auth["local"] = "trust"
+    elif postgresql_auth == AuthType.password_command:
+        auth["password_command"] = [str(tmp_path_factory.mktemp("home") / "passcmd")]
+    elif postgresql_auth == AuthType.pgpass:
+        surole["pgpass"] = True
+    else:
+        raise AssertionError(f"unexpected {postgresql_auth}")
+    return PostgreSQLSettings.parse_obj(
+        {
+            "root": str(tmp_path_factory.mktemp("postgres")),
+            "auth": auth,
+            "surole": surole,
+        }
+    )
+
+
+@pytest.fixture(scope="session")
 def settings(
     request: Any,
+    postgresql_settings: PostgreSQLSettings,
     tmp_path_factory: pytest.TempPathFactory,
     systemd_requested: bool,
     systemd_available: bool,
     pgbackrest_available: bool,
     prometheus_available: bool,
 ) -> Settings:
-    passfile = tmp_path_factory.mktemp("home") / ".pgpass"
-    passfile.touch(mode=0o600)
-    passfile.write_text("#hostname:port:database:username:password\n")
-
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
-    obj = copy.deepcopy(request.param)
+    obj = {"prefix": str(prefix), "postgresql": postgresql_settings.dict()}
     if systemd_requested:
         obj.update({"service_manager": "systemd", "scheduler": "systemd"})
-    assert "prefix" not in obj
-    obj["prefix"] = str(prefix)
-    pg_obj = obj.setdefault("postgresql", {})
-    assert "root" not in pg_obj
-    pg_obj["root"] = str(tmp_path_factory.mktemp("postgres"))
-    pgauth_obj = pg_obj.setdefault("auth", {})
-    assert "passfile" not in pgauth_obj
-    pgauth_obj["passfile"] = str(passfile)
 
-    if pgauth_obj.get("local", "trust") != "trust" and not pg_obj.get("surole", {}).get(
-        "pgpass", True
-    ):
-        assert "password_command" not in pgauth_obj
-        pgauth_obj["password_command"] = [
-            str(tmp_path_factory.mktemp("home") / "passcmd")
-        ]
     if obj.get("service_manager") == "systemd" and not systemd_available:
         pytest.skip("systemd not functional")
 

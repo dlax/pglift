@@ -1,3 +1,4 @@
+import enum
 from contextlib import contextmanager
 from functools import partial
 from typing import Any, Iterator, List, Optional, overload
@@ -9,6 +10,12 @@ from pglift.ctx import BaseContext
 from pglift.models import interface
 from pglift.models.system import Instance
 from pglift.types import Role
+
+
+class AuthType(str, enum.Enum):
+    trust = "trust"
+    password_command = "password_command"
+    pgpass = "pgpass"
 
 
 def configure_instance(
