@@ -892,14 +892,14 @@ def create_or_drop_extensions(
             for extension in sorted(to_add):
                 cnx.execute(
                     psycopg.sql.SQL(
-                        "CREATE EXTENSION IF NOT EXISTS {extension}"
+                        "CREATE EXTENSION IF NOT EXISTS {extension} CASCADE"
                     ).format(extension=psycopg.sql.Identifier(extension))
                 )
             for extension in sorted(to_remove):
                 cnx.execute(
-                    psycopg.sql.SQL("DROP EXTENSION IF EXISTS {extension}").format(
-                        extension=psycopg.sql.Identifier(extension)
-                    )
+                    psycopg.sql.SQL(
+                        "DROP EXTENSION IF EXISTS {extension} CASCADE"
+                    ).format(extension=psycopg.sql.Identifier(extension))
                 )
 
 
