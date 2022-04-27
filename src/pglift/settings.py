@@ -178,9 +178,10 @@ class AuthSettings(BaseSettings):
         env_prefix = "postgresql_auth_"
 
     local: AuthMethod = "trust"
-    """Default authentication method for local TCP/IP connections"""
-    host: AuthMethod = "trust"
     """Default authentication method for local-socket connections."""
+
+    host: AuthMethod = "trust"
+    """Default authentication method for local TCP/IP connections."""
 
     passfile: Path = Path.home() / ".pgpass"
     """Path to .pgpass file."""
