@@ -474,7 +474,10 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     hba_path.write_text(hba)
 
     ident_path = instance.datadir / "pg_ident.conf"
-    ident = util.template("postgresql", "pg_ident.conf")
+    ident = util.template("postgresql", "pg_ident.conf").format(
+        surole=surole.name,
+        sysuser=ctx.settings.sysuser[0],
+    )
     ident_path.write_text(ident)
 
 
