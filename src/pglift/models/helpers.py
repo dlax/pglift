@@ -2,7 +2,18 @@ import enum
 import functools
 import inspect
 import typing
-from typing import Any, Callable, Dict, Iterator, Mapping, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import pydantic
 from pydantic.utils import lenient_issubclass
@@ -48,6 +59,13 @@ def parse_params_as(model_type: Type[T], params: Dict[str, Any]) -> T:
 
 
 DEFAULT = object()
+
+
+def choices_from_enum(e: Type[enum.Enum]) -> List[Any]:
+    if lenient_issubclass(e, StrEnum):
+        return list(e)
+    else:
+        return [v.value for v in e]
 
 
 def _decorators_from_model(
@@ -101,10 +119,7 @@ def _decorators_from_model(
                 try:
                     choices = cli_config["choices"]
                 except KeyError:
-                    if lenient_issubclass(ftype, StrEnum):
-                        choices = list(ftype)
-                    else:
-                        choices = [v.value for v in ftype]
+                    choices = choices_from_enum(ftype)
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
                 assert not _prefix, "only one nesting level is supported"
@@ -112,7 +127,15 @@ def _decorators_from_model(
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
-                attrs["metavar"] = metavar
+                try:
+                    (itemtype,) = ftype.__args__
+                except ValueError:
+                    pass
+                else:
+                    if lenient_issubclass(itemtype, enum.Enum):
+                        attrs["type"] = click.Choice(choices_from_enum(itemtype))
+                    else:
+                        attrs["metavar"] = metavar
             elif lenient_issubclass(ftype, pydantic.SecretStr):
                 attrs["prompt"] = description if description is not None else True
                 attrs["prompt_required"] = False

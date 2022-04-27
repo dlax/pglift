@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, SecretStr
 
 from pglift import pm, prometheus
 from pglift.models import helpers, interface
-from pglift.types import AnsibleConfig, CLIConfig, Manifest
+from pglift.types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
 
 
 class Gender(enum.Enum):
@@ -52,10 +52,17 @@ class Address(BaseModel):
         extra = "forbid"
 
 
+class Title(AutoStrEnum):
+    mr = enum.auto()
+    ms = enum.auto()
+    dr = enum.auto()
+
+
 class Person(BaseModel):
     name: str
     nickname: Optional[SecretStr]
     gender: Optional[Gender]
+    title: List[Title] = Field(default=[])
     age: Optional[int] = Field(description="age")
     address: Optional[Address]
     dob: Optional[datetime] = Field(
@@ -108,6 +115,7 @@ def test_parameters_from_model() -> None:
         "  --sort-keys\n"
         "  --nickname TEXT\n"
         "  --gender [M|F]\n"
+        "  --title [mr|ms|dr]\n"
         "  --age AGE                       Age.\n"
         "  --address-street STREET         Street lines.\n"
         "  --address-zip-code ZIP-CODE     ZIP code.\n"
@@ -136,6 +144,8 @@ def test_parameters_from_model() -> None:
             "--no-address-shared",
             "--indent=2",
             "--nickname",
+            "--title=ms",
+            "--title=dr",
         ],
         input="alc\nalc\n",
     )
@@ -155,6 +165,7 @@ def test_parameters_from_model() -> None:
         "gender": "F",
         "name": "alice",
         "nickname": "**********",
+        "title": ["ms", "dr"],
     }
 
 
@@ -291,6 +302,7 @@ def test_argspec_from_model() -> None:
     assert argspec == {
         "name": {"required": True, "type": "str"},
         "nickname": {"no_log": True, "type": "str"},
+        "title": {"default": [], "type": "list"},
         "gender": {"choices": ["M", "F"]},
         "age": {"type": "int", "description": ["age"]},
         "birthdate": {"description": ["date of birth"]},
