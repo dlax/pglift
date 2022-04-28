@@ -179,10 +179,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
 
 def test_alter_surole_password(
-    ctx: Context,
-    instance_manifest: interface.Instance,
-    instance: system.Instance,
-    surole_password: Optional[str],
+    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
 ) -> None:
     check_connect = functools.partial(
         db.connect,
