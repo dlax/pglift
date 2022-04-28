@@ -340,7 +340,7 @@ def test_list(ctx: Context, instance: system.Instance) -> None:
         not_instance_dir.rmdir()
 
 
-@pytest.mark.parametrize("slot", ["standby", None], ids=["with-slot", "no-slot"])
+@pytest.mark.parametrize("slot", ["standby", None], ids=["slot:yes", "slot:no"])
 def test_standby(
     ctx: Context,
     instance: system.Instance,
