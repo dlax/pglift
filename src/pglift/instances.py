@@ -996,15 +996,13 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     else:
         standby = None
 
-    extensions = set()
+    extensions = []
     if "shared_preload_libraries" in config:
-        extensions.update(
-            {
-                spl.strip()
-                for spl in str(config["shared_preload_libraries"]).split(",")
-                if spl.strip()
-            }
-        )
+        extensions += [
+            spl.strip()
+            for spl in str(config["shared_preload_libraries"]).split(",")
+            if spl.strip()
+        ]
 
     surole_password = replrole_password = None
     locale = None
@@ -1017,7 +1015,9 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
             replrole_password = roles.get(ctx, instance, replrole).password
         locale = get_locale(ctx, instance)
         encoding = get_encoding(ctx, instance)
-        extensions.update(installed_extensions(ctx, instance))
+        extensions += [
+            e for e in installed_extensions(ctx, instance) if e not in extensions
+        ]
 
     try:
         data_checksums = get_data_checksums(ctx, instance)
@@ -1037,7 +1037,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         locale=locale,
         encoding=encoding,
         data_checksums=data_checksums,
-        extensions=sorted(extensions),
+        extensions=extensions,
         standby=standby,
         **services,
     )
@@ -1052,7 +1052,7 @@ def installed_extensions(
         return [
             interface.Extension(r["extname"])
             for r in cnx.execute(
-                "SELECT extname FROM pg_extension WHERE extname != 'plpgsql'"
+                "SELECT extname FROM pg_extension WHERE extname != 'plpgsql' ORDER BY extname"
             )
         ]
 

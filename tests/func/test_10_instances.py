@@ -649,7 +649,7 @@ def test_extensions(
     assert config.shared_preload_libraries == "passwordcheck"
     with instances.running(ctx, instance):
         manifest = instance_manifest.copy(
-            update={"extensions": ["passwordcheck", "pg_stat_statements", "unaccent"]}
+            update={"extensions": ["pg_stat_statements", "unaccent", "passwordcheck"]}
         )
         r = instances.apply(ctx, manifest)
         instances.restart(ctx, instance)
@@ -663,7 +663,7 @@ def test_extensions(
         ]
 
         config = instance.config()
-        assert config.shared_preload_libraries == "passwordcheck, pg_stat_statements"
+        assert config.shared_preload_libraries == "pg_stat_statements, passwordcheck"
 
         def get_installed_extensions() -> List[str]:
             return [
@@ -674,6 +674,13 @@ def test_extensions(
         installed = get_installed_extensions()
         assert "pg_stat_statements" in installed
         assert "unaccent" in installed
+
+        # order of extensions as in shared_preload_libraries should be respected
+        assert instances._get(ctx, instance).extensions == [
+            "pg_stat_statements",
+            "passwordcheck",
+            "unaccent",
+        ]
 
         rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
         assert len(rows)
