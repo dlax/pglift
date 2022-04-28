@@ -139,6 +139,9 @@ def settings(
     request: Any,
     tmp_path_factory: pytest.TempPathFactory,
     systemd_requested: bool,
+    systemd_available: bool,
+    pgbackrest_available: bool,
+    prometheus_available: bool,
 ) -> Settings:
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
     passfile.touch(mode=0o600)
