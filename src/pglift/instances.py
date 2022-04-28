@@ -741,7 +741,9 @@ def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) 
         # Use SQL SHOW data_checksums since pg_checksums doesn't work if
         # instance is running.
         with db.superuser_connect(ctx, instance) as cnx:
-            value = cnx.execute("SHOW data_checksums").fetchall()[0]["data_checksums"]
+            row = cnx.execute("SHOW data_checksums").fetchone()
+            assert row is not None
+            value = row["data_checksums"]
             assert value in ("on", "off"), value
             return True if value == "on" else False
     version = int(instance.version)
