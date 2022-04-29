@@ -206,11 +206,17 @@ def cli(
 
 
 @cli.command("site-settings", hidden=True)
+@click.option(
+    "--schema", is_flag=True, help="Print the JSON Schema of site settings model."
+)
 @pass_console
 @pass_ctx
-def site_settings(ctx: Context, console: Console) -> None:
+def site_settings(ctx: Context, console: Console, schema: bool) -> None:
     """Show site settings."""
-    console.print_json(ctx.settings.json())
+    if schema:
+        console.print_json(Settings.schema_json())
+    else:
+        console.print_json(ctx.settings.json())
 
 
 @cli.command(
