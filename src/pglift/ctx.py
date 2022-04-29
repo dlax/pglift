@@ -1,8 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from . import cmd, plugin_manager
+from . import cmd, plugin_manager, util
 from ._compat import shlex_join
 from .settings import Settings
 from .types import CompletedProcess
@@ -46,6 +47,19 @@ class BaseContext(ABC):
         return a string value. Non-Interactive implementations (this one), will
         always return None.
         """
+        return None
+
+    @staticmethod
+    def site_config(*parts: str) -> Optional[Path]:
+        """Lookup for a configuration file path.
+
+        $XDG_CONFIG_HOME/pglift, /etc/pglift and then distribution data
+        directory are inspected in this order.
+        """
+        for hdlr in (util.etc_config, util.xdg_config, util.dist_config):
+            config = hdlr(*parts)
+            if config:
+                return config
         return None
 
 

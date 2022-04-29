@@ -7,12 +7,8 @@ import pytest
 from pglift import util
 
 
-def test_xdg_config_home(
-    monkeypatch: pytest.MonkeyPatch, xdg_config_home: Path
-) -> None:
-    assert util.xdg_config_home() == xdg_config_home
+def test_xdg_config_home(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
-        m.delenv("XDG_CONFIG_HOME")
         m.setattr("pathlib.Path.home", lambda: Path("/ho/me"))
         assert util.xdg_config_home() == Path("/ho/me/.config")
 
@@ -30,17 +26,19 @@ def test_xdg_data_home(monkeypatch: pytest.MonkeyPatch) -> None:
         assert util.xdg_data_home() == Path("/ho/me/.local/share")
 
 
-def test_site_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_xdg_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     configdir = tmp_path / "pglift"
     configdir.mkdir()
     configfile = configdir / "x"
     configfile.touch()
     with monkeypatch.context() as m:
         m.setenv("XDG_CONFIG_HOME", str(tmp_path))
-        assert util.site_config("x") == configfile
-    assert util.site_config("x") is None
+        assert util.xdg_config("x") == configfile
+    assert util.xdg_config("x") is None
 
-    pg_hba = util.site_config("postgresql", "pg_hba.conf")
+
+def test_dist_config() -> None:
+    pg_hba = util.dist_config("postgresql", "pg_hba.conf")
     assert pg_hba is not None
     assert pg_hba.parent == util.datapath / "postgresql"
 

@@ -290,7 +290,7 @@ def configure(
             f.write(original_content)
 
     site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": instance.name}
-    site_config_template = util.site_config("postgresql", "site.conf")
+    site_config_template = ctx.site_config("postgresql", "site.conf")
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
@@ -457,7 +457,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     auth_settings = ctx.settings.postgresql.auth
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
-    hba = util.template("postgresql", "pg_hba.conf").format(
+    hba = util.template(ctx, "postgresql", "pg_hba.conf").format(
         surole=surole.name,
         replrole=replrole.name,
         auth_local=auth_settings.local,
@@ -474,7 +474,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     hba_path.write_text(hba)
 
     ident_path = instance.datadir / "pg_ident.conf"
-    ident = util.template("postgresql", "pg_ident.conf").format(
+    ident = util.template(ctx, "postgresql", "pg_ident.conf").format(
         surole=surole.name,
         sysuser=ctx.settings.sysuser[0],
     )

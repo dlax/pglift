@@ -239,7 +239,10 @@ def test_site_settings(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     result = runner.invoke(cli, ["site-settings", "--schema"], obj=obj)
     assert result.exit_code == 0, result.stderr
     schema = json.loads(result.output)
-    assert schema == json.loads(ctx.settings.schema_json())
+    schema.pop("title")
+    expected = json.loads(ctx.settings.schema_json())
+    expected.pop("title")
+    assert schema == expected
 
 
 def test_site_configure(

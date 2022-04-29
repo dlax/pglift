@@ -26,6 +26,7 @@ from pglift.settings import (
     plugins,
 )
 
+from .. import NoSiteContext, NoSiteSettings
 from . import AuthType, configure_instance, execute
 
 default_pg_version: Optional[str]
@@ -167,7 +168,7 @@ def settings(
         obj["prometheus"] = {}
 
     try:
-        s = Settings.parse_obj(obj)
+        s = NoSiteSettings.parse_obj(obj)
     except pydantic.ValidationError as exc:
         pytest.skip(
             "; ".join(
@@ -202,7 +203,7 @@ def pg_version(request: Any, settings: Settings) -> str:
 def ctx(settings: Settings) -> Context:
     logger = logging.getLogger("pglift")
     logger.setLevel(logging.DEBUG)
-    context = Context(settings=settings)
+    context = NoSiteContext(settings=settings)
     context.pm.trace.root.setwriter(print)
     context.pm.enable_tracing()
     return context

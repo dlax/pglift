@@ -24,8 +24,7 @@ from pydantic.utils import lenient_issubclass
 from typing_extensions import Literal
 
 from . import __name__ as pkgname
-from . import exceptions, types
-from .util import site_config, xdg_data_home
+from . import exceptions, types, util
 
 try:
     from pydantic.env_settings import SettingsSourceCallable
@@ -52,7 +51,7 @@ def default_prefix(uid: int) -> Path:
     """
     if uid == 0:
         return Path("/")
-    return xdg_data_home() / pkgname
+    return util.xdg_data_home() / pkgname
 
 
 def default_sysuser() -> Tuple[str, str]:
@@ -348,7 +347,7 @@ class SystemdSettings(BaseSettings):
     class Config:
         env_prefix = "systemd_"
 
-    unit_path: Path = xdg_data_home() / "systemd" / "user"
+    unit_path: Path = util.xdg_data_home() / "systemd" / "user"
     """Base path where systemd units will be installed."""
 
     user: bool = True
@@ -368,7 +367,8 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in user or system
     config directory directory.
     """
-    fpath = site_config("settings.yaml")
+    assert isinstance(settings, Settings)
+    fpath = settings.site_settings()
     if fpath is None:
         return {}
     with fpath.open() as f:
@@ -452,6 +452,17 @@ class Settings(BaseSettings):
                 f"systemctl command not found, cannot use systemd for '{field.alias}' setting"
             )
         return v
+
+    @staticmethod
+    def site_settings() -> Optional[Path]:
+        """Return path to 'settings.yaml' if found in site configuration
+        directories.
+        """
+        for hdlr in (util.xdg_config, util.etc_config):
+            fpath = hdlr("settings.yaml")
+            if fpath is not None:
+                return fpath
+        return None
 
     class Config:
         @classmethod

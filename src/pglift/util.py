@@ -3,7 +3,7 @@ import secrets
 import string
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import humanize
 
@@ -11,14 +11,17 @@ from . import __name__ as pkgname
 from . import cmd, exceptions
 from .types import CommandRunner
 
+if TYPE_CHECKING:
+    from .ctx import BaseContext
+
 datapath = Path(__file__).parent / "data"
 
 
-def template(*args: str) -> str:
+def template(ctx: "BaseContext", *args: str) -> str:
     """Return the content of a configuration file template, either found in
     site configuration or in distribution data.
     """
-    path = site_config(*args)
+    path = ctx.site_config(*args)
     assert path is not None and path.exists(), f"{path} template file not found"
     return path.read_text()
 
@@ -35,21 +38,27 @@ def xdg_data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 
-def site_config(*parts: str) -> Optional[Path]:
-    """Return path to configuration file if found in site or distribution data
-    path.
+def etc_config(*parts: str) -> Optional[Path]:
+    """Lookup for a configuration file in /etc."""
+    config = (etc() / pkgname).joinpath(*parts)
+    if config.exists():
+        return config
+    return None
 
-    >>> print(site_config("postgresql", "pg_ident.conf"))  # doctest: +ELLIPSIS
-    /.../pglift/data/postgresql/pg_ident.conf
-    """
-    for basedir in (xdg_config_home(), etc()):
-        config = (basedir / pkgname).joinpath(*parts)
-        if config.exists():
-            return config
-    else:
-        config = datapath.joinpath(*parts)
-        if config.exists():
-            return config
+
+def xdg_config(*parts: str) -> Optional[Path]:
+    """Lookup for a configuration file in $XDG_CONFIG_HOME."""
+    config = (xdg_config_home() / pkgname).joinpath(*parts)
+    if config.exists():
+        return config
+    return None
+
+
+def dist_config(*parts: str) -> Optional[Path]:
+    """Lookup for a configuration file in distribution data."""
+    config = datapath.joinpath(*parts)
+    if config.exists():
+        return config
     return None
 
 

@@ -10,6 +10,8 @@ from pglift import exceptions
 from pglift.ctx import Context
 from pglift.settings import DataPath, PostgreSQLSettings, Settings, plugins
 
+from .. import NoSiteSettings
+
 
 def test_json_config_settings_source(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -35,16 +37,22 @@ def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     configdir.mkdir()
     settings_fpath = configdir / "settings.yaml"
     settings_fpath.write_text("prefix: /tmp")
-    with monkeypatch.context() as m:
-        m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
+    with patch(
+        "pglift.util.xdg_config", return_value=settings_fpath
+    ) as xdg_config, patch("pglift.util.etc_config") as etc_config:
         s = Settings()
     assert str(s.prefix) == "/tmp"
+    xdg_config.assert_called_once_with("settings.yaml")
+    assert not etc_config.called
 
     settings_fpath.write_text("hello")
-    with monkeypatch.context() as m:
-        m.setattr("pglift.settings.site_config", lambda *args: settings_fpath)
+    with patch(
+        "pglift.util.xdg_config", return_value=settings_fpath
+    ) as xdg_config, patch("pglift.util.etc_config") as etc_config:
         with pytest.raises(exceptions.SettingsError, match="expecting an object"):
             Settings()
+    xdg_config.assert_called_once_with("settings.yaml")
+    assert not etc_config.called
 
 
 def test_libpq_environ(ctx: Context, settings: Settings) -> None:
@@ -133,7 +141,7 @@ def test_postgresql_versions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 def test_systemd_systemctl() -> None:
     with patch("shutil.which", return_value=None) as which:
         with pytest.raises(ValidationError, match="systemctl command not found"):
-            Settings(service_manager="systemd")
+            NoSiteSettings(service_manager="systemd")
     which.assert_called_once_with("systemctl")
 
 
@@ -142,7 +150,7 @@ def test_systemd_sudo_user() -> None:
         with pytest.raises(
             ValidationError, match="'user' mode cannot be used with 'sudo'"
         ):
-            Settings.parse_obj(
+            NoSiteSettings.parse_obj(
                 {"service_manager": "systemd", "systemd": {"user": True, "sudo": True}}
             )
     which.assert_called_once_with("systemctl")
