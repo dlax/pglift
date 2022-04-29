@@ -109,6 +109,19 @@
     ],
     "type": "int"
   },
+  "temboard_password": {
+    "description": [
+      "Password of PostgreSQL role for temboard agent"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
+  "temboard_port": {
+    "description": [
+      "TCP port for the temboard-agent API"
+    ],
+    "type": "int"
+  },
   "replrole_password": {
     "description": [
       "Replication role password"

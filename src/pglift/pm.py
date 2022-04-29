@@ -18,6 +18,7 @@ class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
             "pgbackrest",
             "prometheus",
             "powa",
+            "temboard",
         )
         self = cls(pkgname)
         self.add_hookspecs(hookspecs)

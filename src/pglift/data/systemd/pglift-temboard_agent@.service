@@ -1,0 +1,11 @@
+[Unit]
+Description=temBoard agent for %i
+After=network.target pglift-postgresql@%i.service
+
+[Service]
+Type=simple
+{executeas}
+ExecStart={execpath} -c {configpath}
+
+[Install]
+WantedBy=multi-user.target

@@ -317,6 +317,8 @@ def test_instance_create(
     ]
     if ctx.settings.prometheus is not None:
         cmd.append("--prometheus-port=1212")
+    if ctx.settings.temboard is not None:
+        cmd.append("--temboard-port=2347")
     with patch.object(instances, "apply") as apply:
         result = runner.invoke(cli, cmd, obj=obj)
     expected = {
@@ -334,6 +336,8 @@ def test_instance_create(
     }
     if ctx.settings.prometheus is not None:
         expected["prometheus"] = {"port": 1212}
+    if ctx.settings.temboard is not None:
+        expected["temboard"] = {"port": 2347}
     e = composite_instance_model.parse_obj(expected)
     apply.assert_called_once_with(ctx, e)
     assert result.exit_code == 0, result
@@ -365,6 +369,9 @@ def test_instance_create_standby(
     }
     if ctx.settings.prometheus is not None:
         expected["prometheus"] = {"port": 9187}
+    if ctx.settings.temboard is not None:
+        expected["temboard"] = {"port": 2345}
+
     e = composite_instance_model.parse_obj(expected)
     apply.assert_called_once_with(ctx, e)
     assert result.exit_code == 0, result
@@ -384,6 +391,10 @@ def test_instance_apply(
     m: Dict[str, Any] = {"name": "test"}
     if ctx.settings.prometheus is not None:
         m["prometheus"] = {"password": "truite", "port": 1212}
+
+    if ctx.settings.temboard is not None:
+        m["temboard"] = {"port": 2347}
+
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump(m)
     manifest.write_text(content)
@@ -426,6 +437,11 @@ def test_instance_alter(
         actual_obj["prometheus"] = {"port": 1212}
         altered_obj["prometheus"] = {"port": 2121}
         cmd.append("--prometheus-port=2121")
+    if ctx.settings.temboard is not None:
+        actual_obj["temboard"] = {"port": 2347}
+        altered_obj["temboard"] = {"port": 2437}
+        cmd.append("--temboard-port=2437")
+
     actual = composite_instance_model.parse_obj(actual_obj)
     altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(instances, "apply") as apply, patch.object(

@@ -14,7 +14,7 @@ import pydantic
 import pytest
 from pgtoolkit.ctl import Status
 
-from pglift import _install, instances, pgbackrest, prometheus
+from pglift import _install, instances, pgbackrest, prometheus, temboard
 from pglift._compat import Protocol
 from pglift.ctx import Context
 from pglift.models import interface, system
@@ -24,6 +24,7 @@ from pglift.settings import (
     PostgreSQLVersion,
     PrometheusSettings,
     Settings,
+    TemboardSettings,
     _postgresql_bindir_version,
     plugins,
 )
@@ -120,6 +121,19 @@ def powa_available(pg_bindir: Tuple[pathlib.Path, str]) -> bool:
 
 
 @pytest.fixture(scope="session")
+def temboard_available() -> bool:
+    return shutil.which("temboard-agent") is not None
+
+
+@pytest.fixture(scope="session")
+def temboard_execpath() -> Optional[pathlib.Path]:
+    path = shutil.which("temboard-agent")
+    if path is not None:
+        return pathlib.Path(path)
+    return None
+
+
+@pytest.fixture(scope="session")
 def systemd_requested(request: Any, systemd_available: bool) -> bool:
     value = request.config.getoption("--systemd")
     assert isinstance(value, bool)
@@ -176,6 +190,8 @@ def settings(
     pgbackrest_available: bool,
     prometheus_execpath: Optional[pathlib.Path],
     powa_available: bool,
+    temboard_available: bool,
+    temboard_execpath: Optional[pathlib.Path],
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
@@ -194,6 +210,11 @@ def settings(
 
     if powa_available:
         obj["powa"] = {}
+
+    if temboard_available:
+        obj["temboard"] = {}
+        if temboard_execpath:
+            obj["temboard"] = {"execpath": temboard_execpath}
 
     try:
         s = Settings.parse_obj(obj)
@@ -291,6 +312,14 @@ def prometheus_settings(ctx: Context) -> PrometheusSettings:
     return settings
 
 
+@pytest.fixture
+def temboard_settings(ctx: Context) -> TemboardSettings:
+    settings = temboard.available(ctx)
+    if settings is None:
+        pytest.skip("temboard not available")
+    return settings
+
+
 @pytest.fixture(scope="session")
 def tmp_port_factory() -> Iterator[int]:
     """Return a generator producing available and distinct TCP ports."""
@@ -344,6 +373,11 @@ def prometheus_password() -> str:
 
 
 @pytest.fixture(scope="session")
+def temboard_password() -> str:
+    return "tembo@rd"
+
+
+@pytest.fixture(scope="session")
 def powa_password() -> str:
     return "P0w4"
 
@@ -365,6 +399,7 @@ def instance_manifest(
     surole_password: str,
     replrole_password: str,
     prometheus_password: str,
+    temboard_password: str,
     powa_password: str,
     log_directory: pathlib.Path,
     tmp_port_factory: Iterator[int],
@@ -372,6 +407,7 @@ def instance_manifest(
 ) -> interface.Instance:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
+    temboard_port = next(tmp_port_factory)
     return composite_instance_model.parse_obj(
         {
             "name": "test",
@@ -394,6 +430,10 @@ def instance_manifest(
                 "port": prometheus_port,
             },
             "powa": {"password": powa_password},
+            "temboard": {
+                "password": temboard_password,
+                "port": temboard_port,
+            },
         }
     )
 
@@ -435,6 +475,7 @@ def standby_manifest(
     surole_password: str,
     replrole_password: str,
     prometheus_password: str,
+    temboard_password: str,
     instance: system.Instance,
 ) -> interface.Instance:
     primary_conninfo = psycopg.conninfo.make_conninfo(
@@ -459,6 +500,10 @@ def standby_manifest(
             },
             "prometheus": {
                 "password": prometheus_password,
+                "port": next(tmp_port_factory),
+            },
+            "temboard": {
+                "password": temboard_password,
                 "port": next(tmp_port_factory),
             },
         }

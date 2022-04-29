@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Iterator, Optional, Type
+from typing import Any, Iterator, List, Optional, Type
 
 import pydantic
 import pytest
@@ -11,6 +11,8 @@ from pglift.models.system import Instance
 from pglift.prometheus import impl as prometheus_mod
 from pglift.prometheus import models as prometheus_models
 from pglift.settings import Settings
+from pglift.temboard import impl as temboard_mod
+from pglift.temboard import models as temboard_models
 from pglift.util import short_version
 
 
@@ -62,15 +64,42 @@ def prometheus_execpath(tmp_path: Path, prometheus: bool) -> Optional[Path]:
     return execpath
 
 
+@pytest.fixture(params=[True, False], ids=["temboard:yes", "temboard:no"])
+def temboard(request: Any) -> bool:
+    return request.param  # type: ignore[no-any-return]
+
+
+@pytest.fixture
+def need_temboard(temboard: bool) -> None:
+    if not temboard:
+        pytest.skip("needs temboard")
+
+
+@pytest.fixture
+def temboard_execpath(tmp_path: Path, temboard: bool) -> Optional[Path]:
+    if not temboard:
+        return None
+    execpath = tmp_path / "temboard-agent"
+    execpath.touch(0o700)
+    execpath.write_text("#!/bin/sh\nexit 1\n")
+    return execpath
+
+
 @pytest.fixture
 def settings(
-    tmp_path: Path, pgbackrest: bool, prometheus_execpath: Optional[Path]
+    tmp_path: Path,
+    pgbackrest: bool,
+    prometheus_execpath: Optional[Path],
+    temboard_execpath: Optional[Path],
 ) -> Settings:
     passfile = tmp_path / "pgass"
     passfile.touch()
     prometheus_settings = None
     if prometheus_execpath:
         prometheus_settings = {"execpath": prometheus_execpath}
+    temboard_settings = None
+    if temboard_execpath:
+        temboard_settings = {"execpath": temboard_execpath}
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
@@ -84,6 +113,7 @@ def settings(
             "systemd": {"unit_path": str(tmp_path / "systemd")},
             "pgbackrest": {} if pgbackrest else None,
             "prometheus": prometheus_settings,
+            "temboard": temboard_settings,
         }
     )
 
@@ -133,18 +163,30 @@ def instance_manifest(
 
 
 def _instance(name: str, version: str, settings: Settings) -> Instance:
+    # Services are looked-up in reverse order of plugin registration.
+    services: List[Any] = []
+
+    temboard = None
+    if settings.temboard is not None:
+        temboard_port = 2345
+        temboard = temboard_models.Service(
+            port=temboard_port, password=pydantic.SecretStr("dorade")
+        )
+        services.append(temboard)
+
     prometheus = None
     if settings.prometheus is not None:
         prometheus_port = 9817
         prometheus = prometheus_models.Service(
             port=prometheus_port, password=pydantic.SecretStr("truite")
         )
+        services.append(prometheus)
 
     instance = Instance(
         name=name,
         version=version,
         settings=settings,
-        services=[prometheus] if prometheus is not None else [],
+        services=services,
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
@@ -172,6 +214,24 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
         prometheus_config.write_text(
             f"DATA_SOURCE_NAME=dbname=postgres port={instance.port} host={settings.postgresql.socket_directory} user=monitoring sslmode=disable password=truite\n"
             f"PG_EXPORTER_WEB_LISTEN_ADDRESS=:{prometheus.port}"
+        )
+
+    if temboard:
+        assert settings.temboard is not None
+        temboard_config = temboard_mod._configpath(instance.qualname, settings.temboard)
+        temboard_config.parent.mkdir(parents=True, exist_ok=True)
+        temboard_config.write_text(
+            "\n".join(
+                [
+                    "[temboard]",
+                    f"port = {temboard.port}",
+                    "[postgresql]",
+                    f"port = {instance.port}",
+                    f"host = {settings.postgresql.socket_directory}",
+                    "user = temboardagent",
+                    "password = dorade",
+                ]
+            )
         )
 
     return instance

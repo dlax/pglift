@@ -13,6 +13,8 @@ RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/med
 RUN mkdir -p /etc/postgresql-common/createcluster.d/
 RUN echo "create_main_cluster = false" \
 	> /etc/postgresql-common/createcluster.d/no-main-cluster.conf
+RUN echo deb http://apt.dalibo.org/labs $(lsb_release -cs)-dalibo main > /etc/apt/sources.list.d/dalibo-labs.list
+RUN curl https://apt.dalibo.org/labs/debian-dalibo.asc | apt-key add -
 RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends postgresql-common
 RUN apt-get -qq update && \
@@ -29,6 +31,7 @@ RUN apt-get -qq update && \
 	pgbackrest \
 	prometheus-postgres-exporter \
 	tox \
+	temboard-agent \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home runner

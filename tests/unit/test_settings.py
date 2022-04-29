@@ -174,4 +174,5 @@ def test_plugins() -> None:
         "pgbackrest",
         "prometheus",
         "powa",
+        "temboard",
     }

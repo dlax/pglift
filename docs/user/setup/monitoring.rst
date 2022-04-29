@@ -64,6 +64,31 @@ Example task:
           port: 9871
 
 
+temBoard
+--------
+
+`pglift` provides support for `temBoard`_.
+
+This component can be enabled through site settings by defining a non-``null``
+``temboard`` key, e.g.:
+
+.. code-block:: yaml
+   :caption: settings.yaml
+
+    temboard: {}
+
+.. note::
+
+    `temBoard agent` must be **installed** on the system.
+
+The agent is configured automatically at instance creation. It must then be
+registered on the `temBoard UI`_ (created outside of `pglift`).
+
+You may find the secret key in temboard's configuration file as defined in
+``temboard.configpath`` setting (e.g.
+``$prefix/etc/temboard-agent/temboard-agent-14-main.conf``).
+
+
 PoWA
 ----
 
@@ -96,9 +121,5 @@ outside of `pglift`).
 .. _`PoWA`: https://powa.readthedocs.io/en/latest/
 .. _`Remote setup`: https://powa.readthedocs.io/en/latest/remote_setup.html
 .. _`registered`: https://powa.readthedocs.io/en/latest/components/powa-archivist/configuration.html#powa-register-server
-
-
-.. _`Prometheus postgres_exporter`: https://github.com/prometheus-community/postgres_exporter
-.. _`PoWA`: https://powa.readthedocs.io/en/latest/
-.. _`Remote setup`: https://powa.readthedocs.io/en/latest/remote_setup.html
-.. _`registered`: https://powa.readthedocs.io/en/latest/components/powa-archivist/configuration.html#powa-register-server
+.. _`temBoard`: https://temboard.readthedocs.io/en/latest/
+.. _`temBoard UI`: https://temboard.readthedocs.io/en/latest/temboard-howto/

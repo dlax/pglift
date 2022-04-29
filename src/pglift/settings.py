@@ -428,6 +428,67 @@ class PowaSettings(PluginSettings):
 
 
 @frozen
+class TemboardSettings(PluginSettings):
+    """Settings for temBoard agent"""
+
+    class Config:
+        env_prefix = "temboard_"
+
+    class Plugin(types.AutoStrEnum):
+        activity = enum.auto()
+        administration = enum.auto()
+        dashboard = enum.auto()
+        maintenance = enum.auto()
+        monitoring = enum.auto()
+        pgconf = enum.auto()
+        statements = enum.auto()
+
+    execpath: FilePath = Field(
+        default=Path("/usr/bin/temboard-agent"),
+        description="Path to the temboard-agent executable.",
+    )
+
+    role: str = Field(
+        default="temboardagent",
+        description="Name of the PostgreSQL roel for temBoard agent.",
+    )
+
+    configpath: ConfigPath = Field(
+        default=ConfigPath("temboard-agent/temboard-agent-{name}.conf"),
+        description="Path to the config file.",
+    )
+
+    pid_file: RunPath = Field(
+        default=RunPath("temboard-agent/temboard-agent-{name}.pid"),
+        description="Path to the PID file.",
+    )
+
+    users_path: ConfigPath = Field(
+        default=ConfigPath("temboard-agent/users-{name}"),
+        description="Path to the users/password file for the HTTP API.",
+    )
+
+    plugins: List[Plugin] = Field(
+        default=[
+            Plugin.monitoring,
+            Plugin.dashboard,
+            Plugin.activity,
+        ],
+        description="Plugins to load.",
+    )
+
+    ssl_cert_dir: ConfigPath = Field(
+        default=ConfigPath("temboard-agent"),
+        description="Path to directory where SSL certificate files will be written.",
+    )
+
+    home: DataPath = Field(
+        default=DataPath("temboard-agent/{name}"),
+        description="Path to agent home directory containing files used to store temporary data",
+    )
+
+
+@frozen
 class SystemdSettings(BaseSettings):
     """Systemd settings."""
 
@@ -499,6 +560,7 @@ class Settings(BaseSettings):
     pgbackrest: Optional[PgBackRestSettings] = None
     powa: Optional[PowaSettings] = None
     prometheus: Optional[PrometheusSettings] = None
+    temboard: Optional[TemboardSettings] = None
     systemd: SystemdSettings = SystemdSettings()
 
     service_manager: Optional[Literal["systemd"]] = None

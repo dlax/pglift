@@ -12,6 +12,9 @@ RUN tar xvf ${PGE_TGZ}
 RUN mv ${PGE_FNAME}/postgres_exporter /usr/bin/
 RUN dnf install -y gcc git openssl procps-ng python3-pip
 
+RUN dnf install -y https://yum.dalibo.org/labs/dalibo-labs-4-1.noarch.rpm
+RUN dnf install -y temboard-agent
+
 RUN pip3 install tox
 RUN useradd --create-home runner
 

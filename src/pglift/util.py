@@ -77,13 +77,17 @@ def with_header(content: str, header: str) -> str:
 
 
 def generate_certificate(
-    configdir: Path, *, run_command: CommandRunner = cmd.run
+    configdir: Path,
+    *,
+    run_command: CommandRunner = cmd.run,
+    cert_name: str = "server.crt",
+    key_name: str = "server.key",
 ) -> None:
-    """Generate a self-signed certificate for a PostgreSQL instance in
+    """Generate a self-signed certificate instance in
     `configdir`.
     """
-    certfile = configdir / "server.crt"
-    keyfile = configdir / "server.key"
+    certfile = configdir / cert_name
+    keyfile = configdir / key_name
     run_command(["openssl", "genrsa", "-out", str(keyfile), "2048"], check=True)
     keyfile.chmod(0o600)
     out = run_command(
@@ -111,12 +115,17 @@ def generate_certificate(
     certfile.chmod(0o600)
 
 
-def generate_password(length: int = 32) -> str:
+def generate_password(length: int = 32, letters: bool = True) -> str:
     assert length >= 2
-    available_char = string.ascii_letters + string.digits
+    available_char = string.digits
+    if letters:
+        available_char += string.ascii_letters
     while True:
         password = [secrets.choice(available_char) for _ in range(length)]
-        if any(c.isalpha() for c in password) and any(c.isdigit() for c in password):
+        has_digit = any(c.isdigit() for c in password)
+        if (not letters and has_digit) or (
+            letters and has_digit and any(c.isalpha() for c in password)
+        ):
             break
     return "".join(password)
 
