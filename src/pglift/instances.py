@@ -665,7 +665,7 @@ def upgrade(
 
     postgresql_settings = ctx.settings.postgresql
     surole = postgresql_settings.surole
-    surole_password = postgresql_settings.libpq_environ(ctx).get("PGPASSWORD")
+    surole_password = postgresql_settings.libpq_environ(ctx, instance).get("PGPASSWORD")
     if not surole_password and ctx.settings.postgresql.auth.passfile:
         with pgpass.edit(ctx.settings.postgresql.auth.passfile) as passfile:
             for entry in passfile:
@@ -697,7 +697,7 @@ def upgrade(
     ]
     if jobs is not None:
         cmd.extend(["--jobs", str(jobs)])
-    env = postgresql_settings.libpq_environ(ctx)
+    env = postgresql_settings.libpq_environ(ctx, instance)
     if surole_password:
         env.setdefault("PGPASSWORD", surole_password)
     try:
@@ -1125,7 +1125,7 @@ def env_for(
     If 'path' is True, also inject PostgreSQL binaries directory in PATH.
     """
     postgresql_settings = ctx.settings.postgresql
-    env = postgresql_settings.libpq_environ(ctx, base={})
+    env = postgresql_settings.libpq_environ(ctx, instance, base={})
     config = instance.config()
     try:
         host = config.unix_socket_directories.split(",")[0]  # type: ignore[union-attr]

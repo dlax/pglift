@@ -4,6 +4,7 @@ import platform
 import shutil
 import subprocess
 from datetime import datetime
+from textwrap import dedent
 from typing import Any, Dict, Iterator, List, Optional, Set, Type
 
 import pgtoolkit.conf
@@ -128,7 +129,10 @@ def postgresql_settings(
     if postgresql_auth == AuthType.peer:
         pass  # See also PeerAuthContext.
     elif postgresql_auth == AuthType.password_command:
-        auth["password_command"] = [str(tmp_path_factory.mktemp("home") / "passcmd")]
+        auth["password_command"] = [
+            str(tmp_path_factory.mktemp("home") / "passcmd"),
+            "{instance}",
+        ]
     elif postgresql_auth == AuthType.pgpass:
         surole["pgpass"] = True
     else:
@@ -274,10 +278,24 @@ def surole_password(postgresql_auth: AuthType, settings: Settings) -> str:
     password = "s3kret"
     if postgresql_auth == AuthType.password_command:
         password_command = settings.postgresql.auth.password_command
-        assert len(password_command) == 1
+        assert len(password_command) == 2
         passcmdfile = pathlib.Path(password_command[0])
         with passcmdfile.open("w") as f:
-            f.write(f"#!/bin/sh\necho {password}\n")
+            f.write(
+                dedent(
+                    f"""\
+                    #!/bin/sh
+                    instance=$1
+                    if [ ! "$instance" ]
+                    then
+                        echo "no instance given!!" >&2
+                        exit 1
+                    fi
+                    echo "retrieving password for $instance..." >&2
+                    echo {password}
+                    """
+                )
+            )
         passcmdfile.chmod(0o700)
 
     return password

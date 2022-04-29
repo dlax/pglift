@@ -33,6 +33,9 @@ except ImportError:
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
+    from .models.system import BaseInstance
+
+
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -272,7 +275,11 @@ class PostgreSQLSettings(BaseSettings):
     """Path to directory where postgres unix socket will be written."""
 
     def libpq_environ(
-        self, ctx: "BaseContext", *, base: Optional[Dict[str, str]] = None
+        self,
+        ctx: "BaseContext",
+        instance: "BaseInstance",
+        *,
+        base: Optional[Dict[str, str]] = None,
     ) -> Dict[str, str]:
         """Return a dict with libpq environment variables for authentication."""
         auth = self.auth
@@ -282,9 +289,13 @@ class PostgreSQLSettings(BaseSettings):
             env = base.copy()
         env.setdefault("PGPASSFILE", str(self.auth.passfile))
         if auth.password_command and "PGPASSWORD" not in env:
-            password = ctx.run(
-                auth.password_command, log_output=False, check=True
-            ).stdout.strip()
+            try:
+                cmd = [c.format(instance=instance) for c in auth.password_command]
+            except ValueError as e:
+                raise exceptions.SettingsError(
+                    f"failed to format auth.password_command: {e}"
+                ) from None
+            password = ctx.run(cmd, log_output=False, check=True).stdout.strip()
             if password:
                 env["PGPASSWORD"] = password
         return env

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from pglift import exceptions
 from pglift.ctx import Context
+from pglift.models.system import Instance
 from pglift.settings import DataPath, PostgreSQLSettings, Settings, plugins
 
 from .. import NoSiteSettings
@@ -55,27 +56,35 @@ def test_yaml_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert not etc_config.called
 
 
-def test_libpq_environ(ctx: Context, settings: Settings) -> None:
-    assert settings.postgresql.libpq_environ(ctx, base={}) == {
+def test_libpq_environ(ctx: Context, settings: Settings, instance: Instance) -> None:
+    assert settings.postgresql.libpq_environ(ctx, instance, base={}) == {
         "PGPASSFILE": str(settings.postgresql.auth.passfile)
     }
     assert settings.postgresql.libpq_environ(
-        ctx, base={"PGPASSFILE": "/var/lib/pgsql/pgpass"}
+        ctx, instance, base={"PGPASSFILE": "/var/lib/pgsql/pgpass"}
     ) == {"PGPASSFILE": "/var/lib/pgsql/pgpass"}
 
 
-def test_libpq_environ_password_command(ctx: Context, tmp_path: Path) -> None:
+def test_libpq_environ_password_command(
+    ctx: Context, instance: Instance, pg_version: str, tmp_path: Path
+) -> None:
     settings = PostgreSQLSettings.parse_obj(
         {
             "auth": {
-                "password_command": [sys.executable, "-c", "print('foo')"],
+                "password_command": [
+                    sys.executable,
+                    "-c",
+                    "import sys; print(f'{{sys.argv[1]}}-secret')",
+                    "{instance}",
+                    "--blah",
+                ],
                 "passfile": str(tmp_path / "pgpass"),
             }
         }
     )
-    assert settings.libpq_environ(ctx, base={}) == {
+    assert settings.libpq_environ(ctx, instance, base={}) == {
         "PGPASSFILE": str(tmp_path / "pgpass"),
-        "PGPASSWORD": "foo",
+        "PGPASSWORD": f"{pg_version}/test-secret",
     }
 
 

@@ -114,7 +114,9 @@ def superuser_connect(
     postgresql_settings = ctx.settings.postgresql
     kwargs["user"] = postgresql_settings.surole.name
     if "password" not in kwargs:
-        kwargs["password"] = postgresql_settings.libpq_environ(ctx).get("PGPASSWORD")
+        kwargs["password"] = postgresql_settings.libpq_environ(ctx, instance).get(
+            "PGPASSWORD"
+        )
     try:
         with connect(instance, postgresql_settings, **kwargs) as cnx:
             yield cnx

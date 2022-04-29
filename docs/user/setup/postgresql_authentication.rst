@@ -52,9 +52,32 @@ as all libpq operations would use it.
 Otherwise, the password is read from ``PGPASSWORD`` environment variable so
 this should be set in the environment running interactive commands.
 
-Alternatively, you can configure a ``postgresql.auth.password_command`` option
-in site settings, it can be any user-managed executable command and `pglift`
-and must return the super-user role password as stdout.
+Alternatively, one can use the ``password_command`` setting, with a value
+defining a user-managed shell command as a list of strings. At runtime, the
+command is templated with the instance object (which string representation
+would be something like ``14/main``). It must return the super-user role
+password as stdout.
+
+Examples:
+
+.. code-block:: yaml
+
+    auth:
+      password_command:
+        - jq
+        - -r
+        - .["{instance}"]
+        - /mnt/secrets/pglift.json
+
+.. code-block:: yaml
+
+    auth:
+      password_command:
+        - gpg
+        - -d
+        - /var/lib/pgsql/{instance.version}-{instance.name}_pgpassword.gpg
+
+
 
 Setting up "peer" authentication
 --------------------------------
