@@ -128,7 +128,11 @@ def test_connect(
                 connargs["passfile"] = str(passfile)
         else:
             connargs["passfile"] = str(passfile)
-        psycopg.connect(**connargs).close()  # type: ignore[call-overload]
+        with psycopg.connect(**connargs) as conn:  # type: ignore[call-overload]
+            if password:
+                assert conn.pgconn.used_password
+            else:
+                assert not conn.pgconn.used_password
 
 
 def test_hba(ctx: Context, instance: system.Instance) -> None:
