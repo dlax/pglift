@@ -124,7 +124,8 @@ def run(
     input: Optional[str] = None,
     redirect_output: bool = False,
     check: bool = False,
-    logger: Optional[Logger] = None,
+    stdout_logger: Optional[Logger] = None,
+    stderr_logger: Optional[Logger] = None,
     **kwargs: Any,
 ) -> CompletedProcess:
     """Run a command as a subprocess.
@@ -182,14 +183,14 @@ def run(
         prog = args[0]
 
     def process_stdout(out: str, prog: str = prog) -> None:
-        if logger:
-            logger.debug("%s: %s", prog, out.rstrip())
+        if stdout_logger:
+            stdout_logger.debug("%s: %s", prog, out.rstrip())
         if redirect_output:
             sys.stdout.write(out)
 
     def process_stderr(err: str, prog: str = prog) -> None:
-        if logger:
-            logger.debug("%s: %s", prog, err.rstrip())
+        if stderr_logger:
+            stderr_logger.debug("%s: %s", prog, err.rstrip())
         if redirect_output:
             sys.stderr.write(err)
 

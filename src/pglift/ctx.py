@@ -67,9 +67,16 @@ class Context(BaseContext):
     """Default execution context."""
 
     def run(
-        self, args: Sequence[str], log_command: bool = True, **kwargs: Any
+        self,
+        args: Sequence[str],
+        log_command: bool = True,
+        log_output: bool = True,
+        **kwargs: Any,
     ) -> CompletedProcess:
         """Execute a system command with :func:`pglift.cmd.run`."""
         if log_command:
             logger.debug(shlex_join(args))
-        return cmd.run(args, logger=logger, **kwargs)
+        stdout_logger = logger if log_output else None
+        return cmd.run(
+            args, stdout_logger=stdout_logger, stderr_logger=logger, **kwargs
+        )

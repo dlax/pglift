@@ -282,7 +282,9 @@ class PostgreSQLSettings(BaseSettings):
             env = base.copy()
         env.setdefault("PGPASSFILE", str(self.auth.passfile))
         if auth.password_command and "PGPASSWORD" not in env:
-            password = ctx.run(auth.password_command, check=True).stdout.strip()
+            password = ctx.run(
+                auth.password_command, log_output=False, check=True
+            ).stdout.strip()
             if password:
                 env["PGPASSWORD"] = password
         return env

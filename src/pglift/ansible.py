@@ -47,7 +47,11 @@ class AnsibleContext(BaseContext):
         super().__init__(settings=settings)
 
     def run(
-        self, args: Sequence[str], log_command: bool = True, **kwargs: Any
+        self,
+        args: Sequence[str],
+        log_command: bool = True,
+        log_output: bool = True,
+        **kwargs: Any,
     ) -> CompletedProcess:
         """Run a command through the Ansible module."""
         try:
