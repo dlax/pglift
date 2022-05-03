@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import click
 import click.exceptions
+import pydantic
 import rich.logging
 import rich.prompt
 import rich.text
@@ -26,6 +27,14 @@ from .util import Group, pass_console, pass_ctx
 
 logger = logging.getLogger(__name__)
 CONSOLE = Console()
+
+
+class InvalidSettingsError(click.ClickException):
+    """Failure to load site settings."""
+
+    def __init__(self, error: pydantic.ValidationError) -> None:
+        message = f"invalid site settings\n{error}"
+        super().__init__(message)
 
 
 class LogDisplayer:
@@ -67,7 +76,11 @@ class Obj:
     ) -> None:
         if context is None:
             cls = InteractiveCLIContext if interactive else CLIContext
-            context = cls(settings=Settings())
+            try:
+                settings = Settings()
+            except pydantic.ValidationError as e:
+                raise InvalidSettingsError(e)
+            context = cls(settings=settings)
         self.ctx = context
         self.displayer = displayer
         self.console = CONSOLE
@@ -94,7 +107,10 @@ class CLIGroup(Group):
         main_commands = super().list_commands(context)
         obj = context.obj
         if obj is None:
-            obj = context.ensure_object(Obj)
+            try:
+                obj = context.ensure_object(Obj)
+            except InvalidSettingsError:
+                return []
         plugins_commands = sorted(g.name for g in obj.ctx.hook.cli())
         return main_commands + list(self.submodules) + plugins_commands
 

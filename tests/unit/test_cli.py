@@ -205,6 +205,13 @@ def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
     ]
 
 
+def test_obj(monkeypatch: pytest.MonkeyPatch) -> None:
+    with monkeypatch.context() as m:
+        m.setenv("SETTINGS", json.dumps({"invalid": None}))
+        with pytest.raises(click.ClickException, match="invalid site settings"):
+            Obj()
+
+
 def test_cli(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(cli, obj=obj)
     assert result.exit_code == 0
