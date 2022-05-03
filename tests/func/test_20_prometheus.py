@@ -115,7 +115,7 @@ def request_metrics(port: int) -> requests.Response:
     return requests.get(f"http://0.0.0.0:{port}/metrics")
 
 
-@pytest.mark.usefixtures("prometheus_available")
+@pytest.mark.usefixtures("prometheus_settings")
 def test_start_stop(ctx: Context, instance: system.Instance) -> None:
     service = instance.service(models.Service)
     port = service.port
