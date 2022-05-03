@@ -1,4 +1,5 @@
 import pathlib
+from typing import Optional
 
 import pydantic
 import pytest
@@ -32,7 +33,10 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
 
 
 @pytest.mark.usefixtures("need_prometheus")
-def test_install_systemd_unit_template(ctx: Context) -> None:
+def test_install_systemd_unit_template(
+    ctx: Context, prometheus_execpath: Optional[pathlib.Path]
+) -> None:
+    assert prometheus_execpath
     install_systemd_unit_template(ctx)
     unit = ctx.settings.systemd.unit_path / "pglift-postgres_exporter@.service"
     assert unit.exists()
@@ -41,10 +45,7 @@ def test_install_systemd_unit_template(ctx: Context) -> None:
         f"EnvironmentFile=-{ctx.settings.prefix}/etc/prometheus/postgres_exporter-%i.conf"
         in lines
     )
-    assert (
-        "ExecStart=/usr/bin/prometheus-postgres-exporter $POSTGRES_EXPORTER_OPTS"
-        in lines
-    )
+    assert f"ExecStart={prometheus_execpath} $POSTGRES_EXPORTER_OPTS" in lines
     uninstall_systemd_unit_template(ctx)
     assert not unit.exists()
 

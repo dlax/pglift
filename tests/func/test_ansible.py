@@ -6,7 +6,7 @@ import secrets
 import socket
 import string
 import subprocess
-from typing import Callable, Dict, Iterator
+from typing import Callable, Dict, Iterator, Optional
 
 import psycopg
 import pytest
@@ -37,7 +37,7 @@ def call_playbook(
     tmp_path: pathlib.Path,
     ansible_env: Dict[str, str],
     pgbackrest_available: bool,
-    prometheus_available: bool,
+    prometheus_execpath: Optional[pathlib.Path],
 ) -> Iterator[Callable[[pathlib.Path], None]]:
     env = ansible_env.copy()
     env["ANSIBLE_VERBOSITY"] = "3"
@@ -55,9 +55,10 @@ def call_playbook(
     }
     if pgbackrest_available:
         settings["pgbackrest"] = {}
-    if not prometheus_available:
+    if prometheus_execpath:
+        settings["prometheus"] = {"execpath": str(prometheus_execpath)}
+    else:
         pytest.skip("prometheus not available")
-    settings["prometheus"] = {}
 
     with (tmp_path / "config.json").open("w") as f:
         json.dump(settings, f)

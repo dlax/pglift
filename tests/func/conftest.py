@@ -94,8 +94,12 @@ def pgbackrest_available() -> bool:
 
 
 @pytest.fixture(scope="session")
-def prometheus_available() -> bool:
-    return shutil.which("prometheus-postgres-exporter") is not None
+def prometheus_execpath() -> Optional[pathlib.Path]:
+    for name in ("prometheus-postgres-exporter", "postgres_exporter"):
+        path = shutil.which(name)
+        if path is not None:
+            return pathlib.Path(path)
+    return None
 
 
 @pytest.fixture(scope="session")
@@ -154,7 +158,7 @@ def settings(
     systemd_requested: bool,
     systemd_available: bool,
     pgbackrest_available: bool,
-    prometheus_available: bool,
+    prometheus_execpath: Optional[pathlib.Path],
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
@@ -168,8 +172,8 @@ def settings(
     if pgbackrest_available:
         obj["pgbackrest"] = {}
 
-    if prometheus_available:
-        obj["prometheus"] = {}
+    if prometheus_execpath:
+        obj["prometheus"] = {"execpath": prometheus_execpath}
 
     try:
         s = NoSiteSettings.parse_obj(obj)

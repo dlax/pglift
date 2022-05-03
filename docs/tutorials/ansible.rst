@@ -65,7 +65,8 @@ PostgreSQL instances, data and configuration files:
       root: $tmpdir/postgres
     pgbackrest:
      directory: $tmpdir/backups
-    prometheus: {}
+    prometheus:
+      execpath: /usr/bin/prometheus-postgres-exporter
     EOF
 
 ::

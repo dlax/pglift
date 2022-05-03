@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Iterator, Type
+from typing import Any, Iterator, Optional, Type
 
 import pytest
 from pgtoolkit.ctl import PGCtl
@@ -54,16 +54,31 @@ def need_prometheus(prometheus: bool) -> None:
 
 
 @pytest.fixture
-def settings(tmp_path: Path, pgbackrest: bool, prometheus: bool) -> Settings:
+def prometheus_execpath(tmp_path: Path, prometheus: bool) -> Optional[Path]:
+    if not prometheus:
+        return None
+    execpath = tmp_path / "postgres_exporter"
+    execpath.touch(0o700)
+    execpath.write_text("#!/bin/sh\nexit 1\n")
+    return execpath
+
+
+@pytest.fixture
+def settings(
+    tmp_path: Path, pgbackrest: bool, prometheus_execpath: Optional[Path]
+) -> Settings:
     passfile = tmp_path / "pgass"
     passfile.touch()
+    prometheus_settings = None
+    if prometheus_execpath:
+        prometheus_settings = {"execpath": prometheus_execpath}
     return NoSiteSettings.parse_obj(
         {
             "prefix": str(tmp_path),
             "postgresql": {"auth": {"passfile": str(passfile)}},
             "systemd": {"unit_path": str(tmp_path / "systemd")},
             "pgbackrest": {} if pgbackrest else None,
-            "prometheus": {} if prometheus else None,
+            "prometheus": prometheus_settings,
         }
     )
 

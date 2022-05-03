@@ -338,7 +338,7 @@ class PrometheusSettings(PluginSettings):
     class Config:
         env_prefix = "prometheus_"
 
-    execpath: FilePath = Path("/usr/bin/prometheus-postgres-exporter")
+    execpath: FilePath
     """Path to the postgres_exporter executable."""
 
     configpath: ConfigPath = ConfigPath("prometheus/postgres_exporter-{name}.conf")
