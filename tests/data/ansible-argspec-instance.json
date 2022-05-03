@@ -1,4 +1,16 @@
 {
+  "auth_host": {
+    "description": [
+      "Authentication method for local TCP/IP connections"
+    ],
+    "type": "str"
+  },
+  "auth_local": {
+    "description": [
+      "Authentication method for local-socket connections"
+    ],
+    "type": "str"
+  },
   "configuration": {
     "description": [
       "Settings for the PostgreSQL instance"

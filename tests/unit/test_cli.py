@@ -304,6 +304,7 @@ def test_instance_create(
         "--data-checksums",
         "--extension=unaccent",
         "--extension=pg_stat_statements",
+        "--auth-host=ident",
     ]
     if ctx.settings.prometheus is not None:
         cmd.append("--prometheus-port=1212")
@@ -317,6 +318,10 @@ def test_instance_create(
         "encoding": "LATIN1",
         "data_checksums": True,
         "extensions": ["unaccent", "pg_stat_statements"],
+        "auth": {
+            "local": None,
+            "host": "ident",
+        },
     }
     if ctx.settings.prometheus is not None:
         expected["prometheus"] = {"port": 1212}

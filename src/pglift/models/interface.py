@@ -212,6 +212,20 @@ class Instance(Manifest):
         readOnly=True,
     )
 
+    class Auth(BaseModel):
+        local: Optional[str] = Field(
+            default=None,
+            description="Authentication method for local-socket connections",
+            readOnly=True,
+        )
+        host: Optional[str] = Field(
+            default=None,
+            description="Authentication method for local TCP/IP connections",
+            readOnly=True,
+        )
+
+    auth: Optional[Auth] = None
+
     standby: Optional[Standby] = None
 
     extensions: List[Extension] = Field(

@@ -125,7 +125,6 @@ def postgresql_settings(
     passfile.write_text("#hostname:port:database:username:password\n")
     auth: Dict[str, Any] = {
         "local": "password",
-        "host": "reject",
         "passfile": str(passfile),
     }
     surole = {}
@@ -336,6 +335,9 @@ def instance_manifest(
             "name": "test",
             "version": pg_version,
             "port": port,
+            "auth": {
+                "host": "reject",
+            },
             "configuration": {
                 # Keep logs to stderr in tests so that they are captured by pytest.
                 "logging_collector": False,

@@ -136,19 +136,24 @@ def test_connect(
 
 
 def test_hba(
-    ctx: Context, instance: system.Instance, postgresql_auth: AuthType
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    instance: system.Instance,
+    postgresql_auth: AuthType,
 ) -> None:
     hba_path = instance.datadir / "pg_hba.conf"
     hba = hba_path.read_text().splitlines()
-    auth = ctx.settings.postgresql.auth
+    auth_settings = ctx.settings.postgresql.auth
+    auth_instance = instance_manifest.auth
+    assert auth_instance is not None
     if postgresql_auth == AuthType.peer:
         assert "peer" in hba[0]
     assert (
-        f"local   all             all                                     {auth.local}"
+        f"local   all             all                                     {auth_settings.local}"
         in hba
     )
     assert (
-        f"host    all             all             127.0.0.1/32            {auth.host}"
+        f"host    all             all             127.0.0.1/32            {auth_instance.host}"
         in hba
     )
 
