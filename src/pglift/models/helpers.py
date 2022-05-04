@@ -310,7 +310,12 @@ def argspec_from_model(
         if field.field_info.description:
             arg_spec.setdefault(
                 "description",
-                [s.strip() for s in field.field_info.description.split(".")],
+                list(
+                    filter(
+                        None,
+                        (s.strip() for s in field.field_info.description.split(".")),
+                    )
+                ),
             )
         spec[field.alias] = arg_spec
 

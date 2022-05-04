@@ -12,8 +12,7 @@
   "settings": {
     "description": [
       "Session defaults for run-time configuration variables for the database",
-      "Upon update, an empty (dict) value would reset all settings",
-      ""
+      "Upon update, an empty (dict) value would reset all settings"
     ],
     "required": false,
     "type": "dict"

@@ -6,8 +6,7 @@
   "data_checksums": {
     "description": [
       "Enable or disable data checksums",
-      "If unspecified, fall back to site settings choice",
-      ""
+      "If unspecified, fall back to site settings choice"
     ],
     "type": "bool"
   },
