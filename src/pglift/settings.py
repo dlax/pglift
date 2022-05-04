@@ -179,17 +179,23 @@ class AuthSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_auth_"
 
-    local: AuthMethod = "trust"
-    """Default authentication method for local-socket connections."""
+    local: AuthMethod = Field(
+        default="trust",
+        description="Default authentication method for local-socket connections.",
+    )
 
-    host: AuthMethod = "trust"
-    """Default authentication method for local TCP/IP connections."""
+    host: AuthMethod = Field(
+        default="trust",
+        description="Default authentication method for local TCP/IP connections.",
+    )
 
-    passfile: Path = Path.home() / ".pgpass"
-    """Path to .pgpass file."""
+    passfile: Path = Field(
+        default=Path.home() / ".pgpass", description="Path to .pgpass file."
+    )
 
-    password_command: List[str] = []
-    """An optional command to retrieve PGPASSWORD from"""
+    password_command: List[str] = Field(
+        default=[], description="An optional command to retrieve PGPASSWORD from"
+    )
 
 
 @frozen
@@ -199,14 +205,17 @@ class InitdbSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_initdb_"
 
-    locale: Optional[str] = "C"
-    """Instance locale as used by initdb."""
+    locale: Optional[str] = Field(
+        default="C", description="Instance locale as used by initdb."
+    )
 
-    encoding: Optional[str] = "UTF8"
-    """Instance encoding as used by initdb."""
+    encoding: Optional[str] = Field(
+        default="UTF8", description="Instance encoding as used by initdb."
+    )
 
-    data_checksums: bool = False
-    """Use checksums on data pages."""
+    data_checksums: bool = Field(
+        default=False, description="Use checksums on data pages."
+    )
 
 
 @frozen
@@ -216,11 +225,13 @@ class PostgreSQLSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_"
 
-    bindir: Optional[str] = bindir
-    """Default PostgreSQL bindir, templated by version."""
+    bindir: Optional[str] = Field(
+        default=bindir, description="Default PostgreSQL bindir, templated by version."
+    )
 
-    versions: Dict[str, PostgreSQLVersionSettings] = Field(default_factory=lambda: {})
-    """Available PostgreSQL versions."""
+    versions: Dict[str, PostgreSQLVersionSettings] = Field(
+        default_factory=lambda: {}, description="Available PostgreSQL versions."
+    )
 
     @root_validator
     def set_versions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -234,11 +245,14 @@ class PostgreSQLSettings(BaseSettings):
                     )
         return values
 
-    default_version: Optional[PostgreSQLVersion] = None
-    """Default PostgreSQL version to use, if unspecified."""
+    default_version: Optional[PostgreSQLVersion] = Field(
+        default=None, description="Default PostgreSQL version to use, if unspecified."
+    )
 
-    root: DataPath = DataPath("pgsql")
-    """Root directory for all managed instances."""
+    root: DataPath = Field(
+        default=DataPath("pgsql"),
+        description="Root directory for all managed instances.",
+    )
 
     initdb: InitdbSettings = InitdbSettings()
 
@@ -247,32 +261,43 @@ class PostgreSQLSettings(BaseSettings):
     @frozen
     class SuRole(BaseSettings):
         name: str = "postgres"
-        pgpass: bool = False
-        """Whether to store the password in .pgpass file."""
+        pgpass: bool = Field(
+            default=False, description="Whether to store the password in .pgpass file."
+        )
 
-    surole: SuRole = SuRole()
-    """Instance super-user role."""
+    surole: SuRole = Field(default=SuRole(), description="Instance super-user role.")
 
-    replrole: str = "replication"
-    """Instance replication role."""
+    replrole: str = Field(
+        default="replication", description="Instance replication role."
+    )
 
-    backuprole: str = "backup"
-    """Instance role used to backup."""
+    backuprole: str = Field(
+        default="backup", description="Instance role used to backup."
+    )
 
-    monitoringrole: str = "monitoring"
-    """Instance role used for monitoring."""
+    monitoringrole: str = Field(
+        default="monitoring", description="Instance role used for monitoring."
+    )
 
-    datadir: str = "data"
-    """Path segment from instance base directory to PGDATA directory."""
+    datadir: str = Field(
+        default="data",
+        description="Path segment from instance base directory to PGDATA directory.",
+    )
 
-    waldir: str = "wal"
-    """Path segment from instance base directory to WAL directory."""
+    waldir: str = Field(
+        default="wal",
+        description="Path segment from instance base directory to WAL directory.",
+    )
 
-    pid_directory: RunPath = RunPath("postgresql")
-    """Path to directory where postgres process PID file will be written."""
+    pid_directory: RunPath = Field(
+        default=RunPath("postgresql"),
+        description="Path to directory where postgres process PID file will be written.",
+    )
 
-    socket_directory: RunPath = RunPath("postgresql")
-    """Path to directory where postgres unix socket will be written."""
+    socket_directory: RunPath = Field(
+        default=RunPath("postgresql"),
+        description="Path to directory where postgres unix socket will be written.",
+    )
 
     def libpq_environ(
         self,
@@ -308,27 +333,37 @@ class PgBackRestSettings(PluginSettings):
     class Config:
         env_prefix = "pgbackrest_"
 
-    execpath: FilePath = Path("/usr/bin/pgbackrest")
-    """Path to the pbBackRest executable."""
-
-    configpath: ConfigPath = ConfigPath(
-        "pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
+    execpath: FilePath = Field(
+        default=Path("/usr/bin/pgbackrest"),
+        description="Path to the pbBackRest executable.",
     )
-    """Path to the config file."""
 
-    directory: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}")
-    """Path to the directory where backups are stored."""
-
-    logpath: DataPath = DataPath("pgbackrest/{instance.version}-{instance.name}/logs")
-    """Path where log files are stored."""
-
-    spoolpath: DataPath = DataPath(
-        "pgbackrest/{instance.version}-{instance.name}/spool"
+    configpath: ConfigPath = Field(
+        default=ConfigPath(
+            "pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
+        ),
+        description="Path to the config file.",
     )
-    """Spool path."""
 
-    lockpath: RunPath = RunPath("pgbackrest/{instance.version}-{instance.name}/lock")
-    """Path where lock files are stored."""
+    directory: DataPath = Field(
+        default=DataPath("pgbackrest/{instance.version}-{instance.name}"),
+        description="Path to the directory where backups are stored.",
+    )
+
+    logpath: DataPath = Field(
+        default=DataPath("pgbackrest/{instance.version}-{instance.name}/logs"),
+        description="Path where log files are stored.",
+    )
+
+    spoolpath: DataPath = Field(
+        default=DataPath("pgbackrest/{instance.version}-{instance.name}/spool"),
+        description="Spool path.",
+    )
+
+    lockpath: RunPath = Field(
+        default=RunPath("pgbackrest/{instance.version}-{instance.name}/lock"),
+        description="Path where lock files are stored.",
+    )
 
 
 @frozen
@@ -338,19 +373,22 @@ class PrometheusSettings(PluginSettings):
     class Config:
         env_prefix = "prometheus_"
 
-    execpath: FilePath
-    """Path to the postgres_exporter executable."""
+    execpath: FilePath = Field(description="Path to the postgres_exporter executable.")
 
-    configpath: ConfigPath = ConfigPath("prometheus/postgres_exporter-{name}.conf")
-    """Path to the config file."""
-
-    queriespath: ConfigPath = ConfigPath(
-        "prometheus/postgres_exporter_queries-{name}.yaml"
+    configpath: ConfigPath = Field(
+        default=ConfigPath("prometheus/postgres_exporter-{name}.conf"),
+        description="Path to the config file.",
     )
-    """Path to the queries file."""
 
-    pid_file: RunPath = RunPath("prometheus/{name}.pid")
-    """Path to directory where postgres_exporter process PID file will be written."""
+    queriespath: ConfigPath = Field(
+        default=ConfigPath("prometheus/postgres_exporter_queries-{name}.yaml"),
+        description="Path to the queries file.",
+    )
+
+    pid_file: RunPath = Field(
+        default=RunPath("prometheus/{name}.pid"),
+        description="Path to directory where postgres_exporter process PID file will be written.",
+    )
 
 
 @frozen
@@ -360,14 +398,20 @@ class SystemdSettings(BaseSettings):
     class Config:
         env_prefix = "systemd_"
 
-    unit_path: Path = util.xdg_data_home() / "systemd" / "user"
-    """Base path where systemd units will be installed."""
+    unit_path: Path = Field(
+        default=util.xdg_data_home() / "systemd" / "user",
+        description="Base path where systemd units will be installed.",
+    )
 
-    user: bool = True
-    """Use the system manager of the calling user, by passing --user to systemctl calls."""
+    user: bool = Field(
+        default=True,
+        description="Use the system manager of the calling user, by passing --user to systemctl calls.",
+    )
 
-    sudo: bool = False
-    """Run systemctl command with sudo; only applicable when 'user' is unset."""
+    sudo: bool = Field(
+        default=False,
+        description="Run systemctl command with sudo; only applicable when 'user' is unset.",
+    )
 
     @root_validator
     def __sudo_and_user(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -423,8 +467,10 @@ class Settings(BaseSettings):
     service_manager: Optional[Literal["systemd"]] = None
     scheduler: Optional[Literal["systemd"]] = None
 
-    prefix: Path = default_prefix(os.getuid())
-    """Path prefix for configuration and data files."""
+    prefix: Path = Field(
+        default=default_prefix(os.getuid()),
+        description="Path prefix for configuration and data files.",
+    )
 
     logpath: LogPath = LogPath()
 
