@@ -13,28 +13,8 @@ short_description: Manage Prometheus postgres_exporter for a PostgreSQL instance
 description:
 - "Manage Prometheus postgres_exporter for a PostgreSQL instance"
 
-options:
-  name:
-    type: str
-    required: true
-    description:
-      - Unique for the service on host. Can be a reference to the target
-        PostgreSQL instance, e.g. '13-main'.
-  dsn:
-    type: str
-    required: true
-    description:
-      - Connection information string for target PostgreSQL instance.
-  port:
-    type: str
-    required: true
-    description:
-      - TCP port for the web interface and telemetry.
-  state:
-    choices: [ present, absent ]
-    default: present
-    description:
-      - Should the service be present or absent?
+extends_documentation_fragment:
+- dalibo.pglift.postgres_exporter_options.options
 """
 
 EXAMPLES = """

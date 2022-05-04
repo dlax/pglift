@@ -13,31 +13,8 @@ short_description: Create, update and delete databases of a PostgreSQL server in
 description:
 - "Manage databases of a PostgreSQL server instance"
 
-options:
-  instance:
-    type: str
-    required: true
-    description:
-      - Instance fully qualified identifier as <version>/<name> or <name>,
-        when the version is to be guessed.
-  name:
-    type: str
-    required: true
-    description:
-      - Database name.
-  state:
-    choices: [ present, absent ]
-    default: present
-    description:
-      - Should the database be present or absent?
-  owner:
-    type: str
-    description:
-      - The role name of the user who will own the new database.
-  settings:
-    type: dict
-    description:
-      - Session defaults for run-time configuration variables for the database.
+extends_documentation_fragment:
+- dalibo.pglift.database_options.options
 """
 
 EXAMPLES = """

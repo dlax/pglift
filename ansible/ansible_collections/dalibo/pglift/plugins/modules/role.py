@@ -13,70 +13,8 @@ short_description: Create, update and delete roles of a PostgreSQL server instan
 description:
 - "Manage roles of a PostgreSQL server instance"
 
-options:
-  instance:
-    type: str
-    required: true
-    description:
-      - Instance fully qualified identifier as <version>/<name> or <name>,
-        when the version is to be guessed.
-  name:
-    type: str
-    required: true
-    description:
-      - Role name.
-  state:
-    choices: [ present, absent ]
-    default: present
-    description:
-      - Should the role be present or absent?
-  password:
-    type: str
-    required: false
-    description:
-      - Role password.
-  pgpass:
-    type: bool
-    required: false
-    description:
-      - If True, add an entry in password file for this role.
-  connection_limit:
-    type: int
-    required: false
-    description:
-      - How many concurrent connections the role can make.
-  in_roles:
-    type: list[str]
-    required: false
-    description:
-      - Roles to which the new role will be added as a new member.
-  inherit:
-    type: bool
-    required: false
-    default: true
-    description:
-      - Let the role inherits the privileges of the roles its is a member of.
-  login:
-    type: bool
-    required: false
-    default: false
-    description:
-      - Allow the role to log in.
-  validity:
-    type: timestamp
-    required: false
-    description:
-      - Sets a date and time after which the role's password is no longer valid.
-  replication:
-    type: bool
-    required: false
-    description:
-      - Replication role.
-  superuser:
-    type: bool
-    required: false
-    description:
-      - Super-user role.
+extends_documentation_fragment:
+- dalibo.pglift.role_options.options
 """
 
 EXAMPLES = """
