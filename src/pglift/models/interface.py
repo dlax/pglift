@@ -346,7 +346,7 @@ class Database(Manifest):
 
     name: str = Field(readOnly=True)
     owner: Optional[str] = Field(
-        description="the role name of the user who will own the new database"
+        description="the role name of the user who will own the database"
     )
     state: PresenceState = Field(default=PresenceState.present)
     settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(

@@ -5,7 +5,7 @@
   },
   "owner": {
     "description": [
-      "the role name of the user who will own the new database"
+      "the role name of the user who will own the database"
     ],
     "type": "str"
   },
