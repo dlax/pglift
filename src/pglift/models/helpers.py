@@ -298,19 +298,20 @@ def argspec_from_model(
                 elif origin_type is not None and issubclass(origin_type, list):
                     arg_spec["type"] = "list"
 
-            if field.required and not force_non_required:
-                arg_spec["required"] = True
+        if field.required and not force_non_required:
+            arg_spec.setdefault("required", True)
 
-            if not force_non_required and field.default is not None:
-                default = field.default
-                if lenient_issubclass(ftype, enum.Enum):
-                    default = default.value
-                arg_spec["default"] = default
+        if not force_non_required and field.default is not None:
+            default = field.default
+            if lenient_issubclass(ftype, enum.Enum):
+                default = default.value
+            arg_spec.setdefault("default", default)
 
-            if field.field_info.description:
-                arg_spec["description"] = [
-                    s.strip() for s in field.field_info.description.split(".")
-                ]
+        if field.field_info.description:
+            arg_spec.setdefault(
+                "description",
+                [s.strip() for s in field.field_info.description.split(".")],
+            )
         spec[field.alias] = arg_spec
 
     return spec
