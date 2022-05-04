@@ -161,8 +161,11 @@ def test_ansible(
         "host=/tmp user=bob password=s3kret dbname=db port=5433"
     ) as cnx:
         row = cnx.execute("SHOW work_mem").fetchone()
+        extensions = cnx.execute("SELECT extname FROM pg_extension").fetchall()
     assert row is not None
     assert row["work_mem"] == "3MB"
+    installed = [r["extname"] for r in extensions]
+    assert "unaccent" in installed
 
     # check preprod cluster & postgres_exporter
     preprod_dsn = (

@@ -1290,6 +1290,7 @@ def test_database_get(
     running.assert_called_once_with(ctx, instance)
     assert result.exit_code == 0
     assert json.loads(result.stdout) == {
+        "extensions": [],
         "name": "present",
         "owner": "dba",
         "settings": None,

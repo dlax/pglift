@@ -3,12 +3,15 @@ import pathlib
 import re
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, Iterator, List, Sequence, Tuple
 
 import psycopg.conninfo
 import psycopg.errors
 import psycopg.rows
 from psycopg import sql
+
+from .settings import EXTENSIONS_CONFIG
+from .types import Extension
 
 if TYPE_CHECKING:  # pragma: nocover
     from .ctx import BaseContext
@@ -145,3 +148,49 @@ def primary_connect(
 def default_notice_handler(diag: psycopg.errors.Diagnostic) -> None:
     if diag.message_primary is not None:
         sys.stderr.write(diag.message_primary + "\n")
+
+
+def installed_extensions(
+    ctx: "BaseContext",
+    instance: "PostgreSQLInstance",
+    dbname: str = "postgres",
+) -> List[Extension]:
+    """Return list of extensions installed in database using CREATE EXTENSION"""
+    with superuser_connect(ctx, instance, dbname=dbname) as cnx:
+        return [
+            Extension(r["extname"])
+            for r in cnx.execute(
+                "SELECT extname FROM pg_extension WHERE extname != 'plpgsql' ORDER BY extname"
+            )
+        ]
+
+
+def create_or_drop_extensions(
+    ctx: "BaseContext",
+    instance: "PostgreSQLInstance",
+    extensions: Sequence[Extension],
+    dbname: str = "postgres",
+) -> None:
+    """Create or drop extensions from 'dbname' database on instance.
+
+    We compare what is already installed to what is set in extensions.
+    The 'plpgsql' extension will not be dropped because it is meant to be installed
+    by default.
+    """
+    installed = installed_extensions(ctx, instance, dbname=dbname)
+    with superuser_connect(ctx, instance, autocommit=True, dbname=dbname) as cnx:
+        extensions = [e for e in extensions if EXTENSIONS_CONFIG[e][1]]
+        to_add = set(extensions) - set(installed)
+        to_remove = set(installed) - set(extensions)
+        for extension in sorted(to_add):
+            cnx.execute(
+                psycopg.sql.SQL(
+                    "CREATE EXTENSION IF NOT EXISTS {extension} CASCADE"
+                ).format(extension=psycopg.sql.Identifier(extension))
+            )
+        for extension in sorted(to_remove):
+            cnx.execute(
+                psycopg.sql.SQL("DROP EXTENSION IF EXISTS {extension} CASCADE").format(
+                    extension=psycopg.sql.Identifier(extension)
+                )
+            )

@@ -56,6 +56,7 @@ def get(
             for s in settings:
                 k, v = s.split("=", 1)
                 row["settings"][k.strip()] = pgconf.parse_value(v.strip())
+        row["extensions"] = db.installed_extensions(ctx, instance, dbname=name)
         return interface.Database.parse_obj(row)
 
 
@@ -142,6 +143,11 @@ def create(
         if database.settings is not None:
             alter(ctx, instance, database)
 
+    if database.extensions is not None:
+        db.create_or_drop_extensions(
+            ctx, instance, database.extensions, dbname=database.name
+        )
+
 
 @task("altering '{database.name}' database on instance {instance}")
 def alter(
@@ -202,6 +208,11 @@ def alter(
                         )
                     )
             cnx.commit()
+
+    if database.extensions is not None:
+        db.create_or_drop_extensions(
+            ctx, instance, database.extensions, dbname=database.name
+        )
 
 
 def run(

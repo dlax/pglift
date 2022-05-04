@@ -1,4 +1,10 @@
 {
+  "extensions": {
+    "description": [
+      "List of extensions to create in the database"
+    ],
+    "type": "list"
+  },
   "name": {
     "required": true,
     "type": "str"

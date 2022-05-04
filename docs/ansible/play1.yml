@@ -38,6 +38,8 @@
         owner: bob
         settings:
           work_mem: 3MB
+        extensions:
+          - unaccent
 
     - name: pre-production instance
       dalibo.pglift.instance:

@@ -339,6 +339,7 @@ class Database(Manifest):
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {
         "settings": {"hide": True},
         "state": {"hide": True},
+        "extensions": {"name": "extension"},
     }
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
         "settings": {"spec": {"type": "dict", "required": False}},
@@ -355,6 +356,10 @@ class Database(Manifest):
             "Session defaults for run-time configuration variables for the database. "
             "Upon update, an empty (dict) value would reset all settings."
         ),
+    )
+    extensions: List[Extension] = Field(
+        default_factory=list,
+        description="List of extensions to create in the database.",
     )
 
 

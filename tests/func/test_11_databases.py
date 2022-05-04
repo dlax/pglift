@@ -57,10 +57,16 @@ def test_apply(
     database_factory: DatabaseFactory,
     role_factory: RoleFactory,
 ) -> None:
-    database = interface.Database(name="db2", settings={"work_mem": "1MB"})
+    database = interface.Database(
+        name="db2",
+        settings={"work_mem": "1MB"},
+        extensions=[interface.Extension.unaccent],
+    )
     assert not databases.exists(ctx, instance, database.name)
     databases.apply(ctx, instance, database)
-    assert databases.get(ctx, instance, database.name).settings == {"work_mem": "1MB"}
+    db = databases.get(ctx, instance, database.name)
+    assert db.settings == {"work_mem": "1MB"}
+    assert db.extensions == [interface.Extension.unaccent]
 
     database_factory("apply")
     database = interface.Database(name="apply")
@@ -91,9 +97,13 @@ def test_get(
     execute(
         ctx, instance, "ALTER DATABASE describeme SET work_mem TO '3MB'", fetch=False
     )
+    execute(
+        ctx, instance, "CREATE EXTENSION unaccent", fetch=False, dbname="describeme"
+    )
     database = databases.get(ctx, instance, "describeme")
     assert database.name == "describeme"
     assert database.settings == {"work_mem": "3MB"}
+    assert database.extensions == [interface.Extension.unaccent]
 
 
 def test_list(
@@ -135,24 +145,32 @@ def test_alter(
 
     database_factory("alterme")
     execute(ctx, instance, "ALTER DATABASE alterme SET work_mem TO '3MB'", fetch=False)
+    execute(ctx, instance, "CREATE EXTENSION unaccent", fetch=False, dbname="alterme")
     assert databases.get(ctx, instance, "alterme") == database.copy(
-        update={"settings": {"work_mem": "3MB"}}
+        update={
+            "settings": {"work_mem": "3MB"},
+            "extensions": [interface.Extension.unaccent],
+        }
     )
     role_factory("alterdba")
     database = interface.Database(
         name="alterme",
         owner="alterdba",
         settings={"work_mem": None, "maintenance_work_mem": "9MB"},
+        extensions=[interface.Extension.pg_stat_statements],
     )
     databases.alter(ctx, instance, database)
     assert databases.get(ctx, instance, "alterme") == database.copy(
-        update={"settings": {"maintenance_work_mem": "9MB"}}
+        update={
+            "settings": {"maintenance_work_mem": "9MB"},
+            "extensions": [interface.Extension.pg_stat_statements],
+        }
     )
 
-    database = interface.Database(name="alterme", settings={})
+    database = interface.Database(name="alterme", settings={}, extensions=[])
     databases.alter(ctx, instance, database)
     assert databases.get(ctx, instance, "alterme") == database.copy(
-        update={"owner": "postgres", "settings": None}
+        update={"owner": "postgres", "settings": None, "extensions": []}
     )
 
 

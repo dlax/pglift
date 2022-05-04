@@ -872,38 +872,10 @@ def apply(
         needs_restart = False
 
     if not instance.standby:
-        create_or_drop_extensions(ctx, instance, manifest)
+        with running(ctx, instance):
+            db.create_or_drop_extensions(ctx, instance, manifest.extensions)
 
     return instance, changes, needs_restart
-
-
-def create_or_drop_extensions(
-    ctx: "BaseContext", instance: system.Instance, manifest: interface.Instance
-) -> None:
-    """Create or drop extensions in instance.
-
-    We compare what is already installed to what is set in manifest.extensions.
-    The 'plpgsql' extension will not be dropped because it is meant to be installed
-    by default.
-    """
-    with running(ctx, instance):
-        installed = installed_extensions(ctx, instance)
-        with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
-            extensions = [e for e in manifest.extensions if EXTENSIONS_CONFIG[e][1]]
-            to_add = set(extensions) - set(installed)
-            to_remove = set(installed) - set(extensions)
-            for extension in sorted(to_add):
-                cnx.execute(
-                    psycopg.sql.SQL(
-                        "CREATE EXTENSION IF NOT EXISTS {extension} CASCADE"
-                    ).format(extension=psycopg.sql.Identifier(extension))
-                )
-            for extension in sorted(to_remove):
-                cnx.execute(
-                    psycopg.sql.SQL(
-                        "DROP EXTENSION IF EXISTS {extension} CASCADE"
-                    ).format(extension=psycopg.sql.Identifier(extension))
-                )
 
 
 def check_pending_actions(
@@ -1019,7 +991,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         locale = get_locale(ctx, instance)
         encoding = get_encoding(ctx, instance)
         extensions += [
-            e for e in installed_extensions(ctx, instance) if e not in extensions
+            e for e in db.installed_extensions(ctx, instance) if e not in extensions
         ]
 
     try:
@@ -1044,20 +1016,6 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         standby=standby,
         **services,
     )
-
-
-def installed_extensions(
-    ctx: "BaseContext", instance: system.Instance
-) -> List[interface.Extension]:
-    """Return list of extensions installed in database using CREATE EXTENSION"""
-    assert status(ctx, instance) == Status.running
-    with db.superuser_connect(ctx, instance) as cnx:
-        return [
-            interface.Extension(r["extname"])
-            for r in cnx.execute(
-                "SELECT extname FROM pg_extension WHERE extname != 'plpgsql' ORDER BY extname"
-            )
-        ]
 
 
 @task("dropping PostgreSQL instance")
