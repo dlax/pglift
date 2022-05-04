@@ -1,5 +1,8 @@
 {
   "configuration": {
+    "description": [
+      "Settings for the PostgreSQL instance"
+    ],
     "required": false,
     "type": "dict"
   },
@@ -29,6 +32,9 @@
     "type": "str"
   },
   "name": {
+    "description": [
+      "Instance name"
+    ],
     "required": true,
     "type": "str"
   },
@@ -46,13 +52,17 @@
   },
   "replrole_password": {
     "description": [
-      "replication role password"
+      "Replication role password"
     ],
     "no_log": true,
     "type": "str"
   },
   "ssl": {
     "default": false,
+    "description": [
+      "Enable SSL",
+      "If True, enable SSL and generated a self-signed certificate"
+    ],
     "required": false,
     "type": "bool"
   },
@@ -64,7 +74,7 @@
   },
   "standby_slot": {
     "description": [
-      "replication slot name"
+      "Replication slot name"
     ],
     "type": "str"
   },
@@ -72,6 +82,9 @@
     "choices": [
       "demoted",
       "promoted"
+    ],
+    "description": [
+      "Instance standby state"
     ]
   },
   "state": {
@@ -87,7 +100,7 @@
   },
   "surole_password": {
     "description": [
-      "super-user role password"
+      "Super-user role password"
     ],
     "no_log": true,
     "type": "str"

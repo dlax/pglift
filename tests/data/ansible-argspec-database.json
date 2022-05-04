@@ -6,12 +6,15 @@
     "type": "list"
   },
   "name": {
+    "description": [
+      "Database name"
+    ],
     "required": true,
     "type": "str"
   },
   "owner": {
     "description": [
-      "the role name of the user who will own the database"
+      "The role name of the user who will own the database"
     ],
     "type": "str"
   },
@@ -28,6 +31,9 @@
       "present",
       "absent"
     ],
-    "default": "present"
+    "default": "present",
+    "description": [
+      "Database state"
+    ]
   }
 }

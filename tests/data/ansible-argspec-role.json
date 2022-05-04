@@ -1,37 +1,40 @@
 {
   "connection_limit": {
     "description": [
-      "how many concurrent connections the role can make"
+      "How many concurrent connections the role can make"
     ],
     "type": "int"
   },
   "in_roles": {
     "description": [
-      "list of roles to which the new role will be added as a new member"
+      "List of roles to which the new role will be added as a new member"
     ],
     "type": "list"
   },
   "inherit": {
     "default": true,
     "description": [
-      "let the role inherits the privileges of the roles its is a member of"
+      "Let the role inherits the privileges of the roles its is a member of"
     ],
     "type": "bool"
   },
   "login": {
     "default": false,
     "description": [
-      "allow the role to log in"
+      "Allow the role to log in"
     ],
     "type": "bool"
   },
   "name": {
+    "description": [
+      "Role name"
+    ],
     "required": true,
     "type": "str"
   },
   "password": {
     "description": [
-      "role password"
+      "Role password"
     ],
     "no_log": true,
     "type": "str"
@@ -39,14 +42,14 @@
   "pgpass": {
     "default": false,
     "description": [
-      "add an entry in password file for this role"
+      "Add an entry in password file for this role"
     ],
     "type": "bool"
   },
   "replication": {
     "default": false,
     "description": [
-      "replication role"
+      "Replication role"
     ],
     "type": "bool"
   },
@@ -55,18 +58,21 @@
       "present",
       "absent"
     ],
-    "default": "present"
+    "default": "present",
+    "description": [
+      "Role state"
+    ]
   },
   "superuser": {
     "default": false,
     "description": [
-      "superuser role"
+      "Superuser role"
     ],
     "type": "bool"
   },
   "validity": {
     "description": [
-      "sets a date and time after which the role's password is no longer valid"
+      "Sets a date and time after which the role's password is no longer valid"
     ]
   }
 }

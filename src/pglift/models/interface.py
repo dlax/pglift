@@ -105,7 +105,17 @@ class Instance(Manifest):
         "extensions": {"name": "extension"},
     }
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
-        "ssl": {"spec": {"type": "bool", "required": False, "default": False}},
+        "ssl": {
+            "spec": {
+                "type": "bool",
+                "required": False,
+                "default": False,
+                "description": [
+                    "Enable SSL",
+                    "If True, enable SSL and generated a self-signed certificate",
+                ],
+            }
+        },
         "configuration": {"spec": {"type": "dict", "required": False}},
     }
 
@@ -146,35 +156,45 @@ class Instance(Manifest):
 
         for_: str = Field(
             alias="for",
-            description="DSN of primary for streaming replication",
+            description="DSN of primary for streaming replication.",
         )
         status: State = Field(
-            default=State.demoted,
+            default=State.demoted, description=("Instance standby state.")
         )
-        slot: Optional[str] = Field(description="replication slot name")
+        slot: Optional[str] = Field(description="Replication slot name.")
         replication_lag: Optional[Decimal] = Field(
-            default=None, description="replication lag", readOnly=True
+            default=None, description="Replication lag.", readOnly=True
         )
 
-    name: str = Field(readOnly=True)
+    name: str = Field(readOnly=True, description=("Instance name."))
     version: Optional[settings.PostgreSQLVersion] = Field(
-        default=None, description="PostgreSQL version", readOnly=True
+        default=None, description="PostgreSQL version.", readOnly=True
     )
     port: Optional[int] = Field(
         default=None,
-        description="TCP port the postgresql instance will be listening to",
+        description="TCP port the postgresql instance will be listening to.",
     )
     state: InstanceState = Field(
         default=InstanceState.started,
-        description="Runtime state",
+        description="Runtime state.",
     )
-    ssl: Union[bool, Tuple[Path, Path]] = Field(default=False, title="SSL")
-    configuration: Dict[str, Any] = Field(default_factory=dict)
+    ssl: Union[bool, Tuple[Path, Path]] = Field(
+        default=False,
+        title="SSL",
+        description=(
+            "Enable SSL. "
+            "If True, enable SSL and generated a self-signed certificate. "
+            "If a list of [cert_file, key_file], enable SSL and use given certificate."
+        ),
+    )
+    configuration: Dict[str, Any] = Field(
+        default_factory=dict, description=("Settings for the PostgreSQL instance.")
+    )
     surole_password: Optional[SecretStr] = Field(
-        default=None, description="super-user role password", readOnly=True
+        default=None, description="Super-user role password.", readOnly=True
     )
     replrole_password: Optional[SecretStr] = Field(
-        default=None, description="replication role password", readOnly=True
+        default=None, description="Replication role password.", readOnly=True
     )
     data_checksums: Optional[bool] = Field(
         default=None,
@@ -184,11 +204,11 @@ class Instance(Manifest):
         ),
     )
     locale: Optional[str] = Field(
-        default=None, description="Default locale", readOnly=True
+        default=None, description="Default locale.", readOnly=True
     )
     encoding: Optional[str] = Field(
         default=None,
-        description="Character encoding of the PostgreSQL instance",
+        description="Character encoding of the PostgreSQL instance.",
         readOnly=True,
     )
 
@@ -196,7 +216,7 @@ class Instance(Manifest):
 
     extensions: List[Extension] = Field(
         default_factory=list,
-        description="List of extensions to install in the instance",
+        description="List of extensions to install in the instance.",
     )
 
     @validator("name")
@@ -308,29 +328,31 @@ class Role(Manifest):
         "state": {"hide": True},
     }
 
-    name: str = Field(readOnly=True)
-    password: Optional[SecretStr] = Field(default=None, description="role password")
+    name: str = Field(readOnly=True, description=("Role name."))
+    password: Optional[SecretStr] = Field(default=None, description="Role password.")
     pgpass: bool = Field(
-        default=False, description="add an entry in password file for this role"
+        default=False, description="Add an entry in password file for this role."
     )
     inherit: bool = Field(
         default=True,
-        description="let the role inherits the privileges of the roles its is a member of",
+        description="Let the role inherits the privileges of the roles its is a member of.",
     )
-    login: bool = Field(default=False, description="allow the role to log in")
-    superuser: bool = Field(default=False, description="superuser role")
-    replication: bool = Field(default=False, description="replication role")
+    login: bool = Field(default=False, description="Allow the role to log in.")
+    superuser: bool = Field(default=False, description="Superuser role.")
+    replication: bool = Field(default=False, description="Replication role.")
     connection_limit: Optional[int] = Field(
-        description="how many concurrent connections the role can make",
+        description="How many concurrent connections the role can make.",
     )
     validity: Optional[datetime] = Field(
-        description="sets a date and time after which the role's password is no longer valid"
+        description="Sets a date and time after which the role's password is no longer valid."
     )
     in_roles: List[str] = Field(
         default_factory=list,
-        description="list of roles to which the new role will be added as a new member",
+        description="List of roles to which the new role will be added as a new member.",
     )
-    state: PresenceState = Field(default=PresenceState.present)
+    state: PresenceState = Field(
+        default=PresenceState.present, description=("Role state.")
+    )
 
 
 class Database(Manifest):
@@ -344,12 +366,13 @@ class Database(Manifest):
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
         "settings": {"spec": {"type": "dict", "required": False}},
     }
-
-    name: str = Field(readOnly=True)
+    name: str = Field(readOnly=True, description=("Database name."))
     owner: Optional[str] = Field(
-        description="the role name of the user who will own the database"
+        description="The role name of the user who will own the database."
     )
-    state: PresenceState = Field(default=PresenceState.present)
+    state: PresenceState = Field(
+        default=PresenceState.present, description=("Database state.")
+    )
     settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
         default=None,
         description=(
