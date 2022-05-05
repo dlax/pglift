@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
 
 from typing_extensions import Protocol
 
-from .ctx import BaseContext
+from .ctx import BaseContext, SiteMixin
 from .types import CompletedProcess
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ class AnsibleLoggingHandler(logging.Handler):
             self._ansible_module.log(f"[record.levelname.lower()] {message}")
 
 
-class AnsibleContext(BaseContext):
+class AnsibleContext(SiteMixin, BaseContext):
     """Execution context that uses an Ansible module."""
 
     def __init__(self, module: _AnsibleModule, *, settings: "Settings") -> None:

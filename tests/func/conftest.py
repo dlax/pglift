@@ -27,7 +27,6 @@ from pglift.settings import (
     plugins,
 )
 
-from .. import NoSiteContext
 from . import AuthType, configure_instance, execute
 
 default_pg_version: Optional[str]
@@ -207,7 +206,7 @@ def pg_version(request: Any, settings: Settings) -> str:
     return version
 
 
-class PeerAuthContext(NoSiteContext):
+class PeerAuthContext(Context):
     @classmethod
     def site_config(cls, *parts: str) -> Optional[pathlib.Path]:
         datadir = pathlib.Path(__file__).parent / "data"
@@ -221,7 +220,7 @@ class PeerAuthContext(NoSiteContext):
 def ctx(postgresql_auth: AuthType, settings: Settings) -> Context:
     logger = logging.getLogger("pglift")
     logger.setLevel(logging.DEBUG)
-    cls = PeerAuthContext if postgresql_auth == AuthType.peer else NoSiteContext
+    cls = PeerAuthContext if postgresql_auth == AuthType.peer else Context
     context = cls(settings=settings)
     context.pm.trace.root.setwriter(print)
     context.pm.enable_tracing()

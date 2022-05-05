@@ -18,7 +18,7 @@ from typing_extensions import Literal
 
 from .. import __name__ as pkgname
 from .. import _install, version
-from ..ctx import Context
+from ..ctx import Context, SiteMixin
 from ..models import system
 from ..settings import Settings, SiteSettings
 from ..task import Displayer
@@ -49,7 +49,11 @@ class CLIContext(Context):
         return default
 
 
-class InteractiveCLIContext(CLIContext):
+class CLISiteContext(SiteMixin, CLIContext):
+    pass
+
+
+class InteractiveCLIContext(CLISiteContext):
     """An interactive CLI context that prompts for confirmation."""
 
     def confirm(self, message: str, default: bool) -> bool:
@@ -75,7 +79,7 @@ class Obj:
         interactive: bool = True,
     ) -> None:
         if context is None:
-            cls = InteractiveCLIContext if interactive else CLIContext
+            cls = InteractiveCLIContext if interactive else CLISiteContext
             try:
                 settings = SiteSettings()
             except pydantic.ValidationError as e:

@@ -51,16 +51,23 @@ class BaseContext(ABC):
 
     @staticmethod
     def site_config(*parts: str) -> Optional[Path]:
-        """Lookup for a configuration file path.
+        """Lookup for a configuration file path."""
+        return util.dist_config(*parts)
 
-        $XDG_CONFIG_HOME/pglift, /etc/pglift and then distribution data
-        directory are inspected in this order.
+
+class SiteMixin:
+    """Mixin to load data files from user or site locations."""
+
+    @classmethod
+    def site_config(cls, *parts: str) -> Optional[Path]:
+        """Lookup for a configuration file path in user or site configuration,
+        prior to distribution.
         """
-        for hdlr in (util.etc_config, util.xdg_config, util.dist_config):
+        for hdlr in (util.etc_config, util.xdg_config):
             config = hdlr(*parts)
             if config:
                 return config
-        return None
+        return BaseContext.site_config(*parts)
 
 
 class Context(BaseContext):
@@ -80,3 +87,7 @@ class Context(BaseContext):
         return cmd.run(
             args, stdout_logger=stdout_logger, stderr_logger=logger, **kwargs
         )
+
+
+class SiteContext(SiteMixin, Context):
+    pass

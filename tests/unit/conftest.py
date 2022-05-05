@@ -12,8 +12,6 @@ from pglift.prometheus import models as prometheus_models
 from pglift.settings import Settings
 from pglift.util import short_version
 
-from .. import NoSiteContext
-
 
 def pytest_addoption(parser: Any) -> None:
     parser.addoption(
@@ -102,7 +100,7 @@ def pg_version() -> str:
 
 @pytest.fixture
 def ctx(settings: Settings) -> Context:
-    return NoSiteContext(settings=settings)
+    return Context(settings=settings)
 
 
 @pytest.fixture
