@@ -213,12 +213,12 @@ class Instance(Manifest):
     )
 
     class Auth(BaseModel):
-        local: Optional[str] = Field(
+        local: Optional[settings.AuthLocalMethod] = Field(
             default=None,
             description="Authentication method for local-socket connections",
             readOnly=True,
         )
-        host: Optional[str] = Field(
+        host: Optional[settings.AuthHostMethod] = Field(
             default=None,
             description="Authentication method for local TCP/IP connections",
             readOnly=True,

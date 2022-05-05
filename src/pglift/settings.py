@@ -1,3 +1,4 @@
+import enum
 import grp
 import json
 import os
@@ -155,21 +156,39 @@ except EnvironmentError:
     bindir = None
 
 
-AuthMethod = Literal[
-    "trust",
-    "reject",
-    "md5",
-    "password",
-    "scram-sha-256",
-    "gss",
-    "sspi",
-    "ident",
-    "peer",
-    "pam",
-    "ldap",
-    "radius",
-    "cert",
-]
+class AuthLocalMethod(types.AutoStrEnum):
+    """Local authentication method"""
+
+    trust = enum.auto()
+    reject = enum.auto()
+    md5 = enum.auto()
+    password = enum.auto()
+    scram_sha_256 = "scram-sha-256"
+    gss = enum.auto()
+    sspi = enum.auto()
+    ident = enum.auto()
+    peer = enum.auto()
+    pam = enum.auto()
+    ldap = enum.auto()
+    radius = enum.auto()
+    cert = enum.auto()
+
+
+class AuthHostMethod(types.AutoStrEnum):
+    """Host authentication method"""
+
+    trust = enum.auto()
+    reject = enum.auto()
+    md5 = enum.auto()
+    password = enum.auto()
+    scram_sha_256 = "scram-sha-256"
+    gss = enum.auto()
+    sspi = enum.auto()
+    ident = enum.auto()
+    pam = enum.auto()
+    ldap = enum.auto()
+    radius = enum.auto()
+    cert = enum.auto()
 
 
 @frozen
@@ -179,12 +198,12 @@ class AuthSettings(BaseSettings):
     class Config:
         env_prefix = "postgresql_auth_"
 
-    local: AuthMethod = Field(
+    local: AuthLocalMethod = Field(
         default="trust",
         description="Default authentication method for local-socket connections.",
     )
 
-    host: AuthMethod = Field(
+    host: AuthHostMethod = Field(
         default="trust",
         description="Default authentication method for local TCP/IP connections.",
     )

@@ -457,8 +457,8 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     auth_settings = ctx.settings.postgresql.auth
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
     hba_path = instance.datadir / "pg_hba.conf"
-    auth_local: Union[str, Literal[True]] = auth_settings.local
-    auth_host: Union[str, Literal[True]] = auth_settings.host
+    auth_local = auth_settings.local
+    auth_host = auth_settings.host
     if manifest.auth:
         if manifest.auth.local:
             auth_local = manifest.auth.local

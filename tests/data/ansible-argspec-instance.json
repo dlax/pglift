@@ -1,15 +1,42 @@
 {
   "auth_host": {
+    "choices": [
+      "trust",
+      "reject",
+      "md5",
+      "password",
+      "scram-sha-256",
+      "gss",
+      "sspi",
+      "ident",
+      "pam",
+      "ldap",
+      "radius",
+      "cert"
+    ],
     "description": [
       "Authentication method for local TCP/IP connections"
-    ],
-    "type": "str"
+    ]
   },
   "auth_local": {
+    "choices": [
+      "trust",
+      "reject",
+      "md5",
+      "password",
+      "scram-sha-256",
+      "gss",
+      "sspi",
+      "ident",
+      "peer",
+      "pam",
+      "ldap",
+      "radius",
+      "cert"
+    ],
     "description": [
       "Authentication method for local-socket connections"
-    ],
-    "type": "str"
+    ]
   },
   "configuration": {
     "description": [
