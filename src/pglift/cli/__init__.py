@@ -20,7 +20,7 @@ from .. import __name__ as pkgname
 from .. import _install, version
 from ..ctx import Context
 from ..models import system
-from ..settings import Settings
+from ..settings import Settings, SiteSettings
 from ..task import Displayer
 from . import database, instance, pgconf, role
 from .util import Group, pass_console, pass_ctx
@@ -77,7 +77,7 @@ class Obj:
         if context is None:
             cls = InteractiveCLIContext if interactive else CLIContext
             try:
-                settings = Settings()
+                settings = SiteSettings()
             except pydantic.ValidationError as e:
                 raise InvalidSettingsError(e)
             context = cls(settings=settings)

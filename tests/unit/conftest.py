@@ -12,7 +12,7 @@ from pglift.prometheus import models as prometheus_models
 from pglift.settings import Settings
 from pglift.util import short_version
 
-from .. import NoSiteContext, NoSiteSettings
+from .. import NoSiteContext
 
 
 def pytest_addoption(parser: Any) -> None:
@@ -72,7 +72,7 @@ def settings(
     prometheus_settings = None
     if prometheus_execpath:
         prometheus_settings = {"execpath": prometheus_execpath}
-    return NoSiteSettings.parse_obj(
+    return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
             "postgresql": {"auth": {"passfile": str(passfile)}},
@@ -85,7 +85,7 @@ def settings(
 
 @pytest.fixture(scope="session")
 def pg_version() -> str:
-    s = NoSiteSettings().postgresql
+    s = Settings().postgresql
     assert s.bindir
     pg_bindir_template = s.bindir
     versions = s.versions

@@ -138,13 +138,13 @@ try:
     from pglift import instances, plugin_manager
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface
-    from pglift.settings import Settings
+    from pglift.settings import SiteSettings
 except ImportError:
     raise AnsibleError("pglift must be installed to use this plugin")
 
 
 def run_module() -> None:
-    settings = Settings()
+    settings = SiteSettings()
     pm = plugin_manager(settings)
     model_type = interface.Instance.composite(pm)
     argspec = helpers.argspec_from_model(model_type)

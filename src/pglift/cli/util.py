@@ -37,7 +37,7 @@ from .. import __name__ as pkgname
 from .. import exceptions, instances, task
 from ..ctx import Context
 from ..models import system
-from ..settings import PostgreSQLVersion, Settings
+from ..settings import PostgreSQLVersion, SiteSettings
 
 logger = logging.getLogger(pkgname)
 
@@ -365,7 +365,7 @@ def _list_instances(
     """Shell completion function for instance identifier <name> or <version>/<name>."""
     out = []
     iname, iversion = nameversion_from_id(incomplete)
-    ctx = Context(settings=Settings())
+    ctx = Context(settings=SiteSettings())
     for i in instances.system_list(ctx):
         if iversion is not None and i.version.startswith(iversion):
             if i.name.startswith(iname):

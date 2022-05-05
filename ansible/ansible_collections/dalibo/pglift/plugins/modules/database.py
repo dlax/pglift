@@ -61,7 +61,7 @@ try:
     from pglift import databases, instances, types
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface, system
-    from pglift.settings import Settings
+    from pglift.settings import SiteSettings
 except ImportError:
     raise AnsibleError("pglift must be installed to use this plugin")
 
@@ -83,7 +83,7 @@ def run_module() -> None:
     except pydantic.ValidationError as exc:
         module.fail_json(exc.errors())
 
-    ctx = AnsibleContext(module, settings=Settings())
+    ctx = AnsibleContext(module, settings=SiteSettings())
 
     result: Dict[str, str] = {}
 

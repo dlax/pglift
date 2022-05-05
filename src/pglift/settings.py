@@ -424,7 +424,7 @@ def yaml_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     """Load settings values 'settings.yaml' file if found in user or system
     config directory directory.
     """
-    assert isinstance(settings, Settings)
+    assert isinstance(settings, SiteSettings)
     fpath = settings.site_settings()
     if fpath is None:
         return {}
@@ -511,6 +511,16 @@ class Settings(BaseSettings):
                 f"systemctl command not found, cannot use systemd for '{field.alias}' setting"
             )
         return v
+
+
+@frozen
+class SiteSettings(Settings):
+    """Settings loaded from site-sources.
+
+    Load user or site settings from:
+    - 'settings.yaml' if found in user or system configuration directory, and,
+    - SETTINGS environment variable.
+    """
 
     @staticmethod
     def site_settings() -> Optional[Path]:

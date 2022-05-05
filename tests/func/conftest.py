@@ -27,7 +27,7 @@ from pglift.settings import (
     plugins,
 )
 
-from .. import NoSiteContext, NoSiteSettings
+from .. import NoSiteContext
 from . import AuthType, configure_instance, execute
 
 default_pg_version: Optional[str]
@@ -176,7 +176,7 @@ def settings(
         obj["prometheus"] = {"execpath": prometheus_execpath}
 
     try:
-        s = NoSiteSettings.parse_obj(obj)
+        s = Settings.parse_obj(obj)
     except pydantic.ValidationError as exc:
         pytest.skip(
             "; ".join(
