@@ -373,7 +373,7 @@ def configure(
 @contextlib.contextmanager
 def running(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     *,
     timeout: int = 10,
     run_hooks: bool = False,
@@ -409,7 +409,7 @@ def running(
 @contextlib.contextmanager
 def stopped(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     *,
     timeout: int = 10,
     run_hooks: bool = False,
@@ -483,7 +483,7 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
 
 def start(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     *,
     wait: bool = True,
     logfile: Optional[Path] = None,
@@ -555,7 +555,7 @@ def check_status(
 
 def stop(
     ctx: "BaseContext",
-    instance: Union[system.PostgreSQLInstance, system.Instance],
+    instance: system.PostgreSQLInstance,
     *,
     mode: str = "fast",
     wait: bool = True,
