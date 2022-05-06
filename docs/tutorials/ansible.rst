@@ -5,7 +5,9 @@ Using Ansible modules
 
 This tutorial illustrates the use of the Ansible modules shipped with pglift:
 ``dalibo.pglift.instance``, ``dalibo.pglift.database`` and
-``dalibo.pglift.role`` and ``dalibo.pglift.dsn_info``.
+``dalibo.pglift.role`` and ``dalibo.pglift.dsn_info``. It also demonstrates
+how to integrate these modules with other PostgreSQL-related community
+modules, namely `community.postgresql`_.
 
 .. note:: Documentation for each module can be obtained by using ``ansible-doc
    <modulename>`` (possibly after setting ``ANSIBLE_COLLECTIONS_PATHS`` as
@@ -181,6 +183,10 @@ configuration:
     :language: yaml
     :caption: docs/ansible/play2.yml
 
+As you can see you can feed third-party ansible modules (like
+``community.postgresql``) with libpq environment variables obtained by
+``dalibo.pglift.instance`` or ``dalibo.pglift.dsn_info``.
+
 ::
 
     (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars docs/ansible/play2.yml
@@ -250,3 +256,5 @@ Finally, in this last playbook, we drop all our instances:
     $ tree -L 2 $tmpdir/postgres
     /tmp/.../postgres
     └── 13
+
+.. _`community.postgresql`: https://galaxy.ansible.com/community/postgresql
