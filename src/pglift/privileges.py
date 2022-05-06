@@ -29,7 +29,7 @@ def inspect_privileges(
     else:
         privilege_query = "database_privileges"
         return_class = interface.Privilege
-    with db.superuser_connect(ctx, instance, dbname=database) as cnx:
+    with db.connect(ctx, instance, dbname=database) as cnx:
         with cnx.cursor(row_factory=psycopg.rows.class_row(return_class)) as cur:
             cur.execute(db.query(privilege_query, where_clause=where_clause), args)
             return cur.fetchall()
@@ -54,7 +54,7 @@ def get(
         exist.
     """
 
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cur = cnx.execute(db.query("database_list", where_clause=sql.SQL("")))
         existing_databases = [db["name"] for db in cur.fetchall()]
     if not databases:
@@ -65,7 +65,7 @@ def get(
             raise ValueError(f"database(s) not found: {', '.join(unknown_dbs)}")
 
     if roles:
-        with db.superuser_connect(ctx, instance) as cnx:
+        with db.connect(ctx, instance) as cnx:
             cur = cnx.execute(db.query("role_list_names"))
             existing_roles = [n["rolname"] for n in cur.fetchall()]
         unknown_roles = set(roles) - set(existing_roles)

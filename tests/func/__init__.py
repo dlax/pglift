@@ -78,11 +78,11 @@ def execute(
     **kwargs: Any,
 ) -> Optional[List[Any]]:
     if role is None:
-        connect = partial(db.superuser_connect, ctx)
+        connect = partial(db.connect, ctx)
     elif role.password:
         connect = partial(
             db.connect,
-            settings=ctx.settings.postgresql,
+            ctx,
             user=role.name,
             password=role.password.get_secret_value(),
         )

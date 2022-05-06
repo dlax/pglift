@@ -634,7 +634,7 @@ def reload(
 ) -> None:
     """Reload an instance."""
     logger.info("reloading instance %s", instance)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cnx.execute("SELECT pg_reload_conf()")
 
 
@@ -753,7 +753,7 @@ def get_locale(
 
 def get_encoding(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> str:
     """Return the value of instance encoding."""
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         row = cnx.execute(db.query("instance_encoding")).fetchone()
         assert row is not None
         value = row["pg_encoding_to_char"]
@@ -765,7 +765,7 @@ def get_data_checksums(ctx: "BaseContext", instance: system.PostgreSQLInstance) 
     if status(ctx, instance) == Status.running:
         # Use SQL SHOW data_checksums since pg_checksums doesn't work if
         # instance is running.
-        with db.superuser_connect(ctx, instance) as cnx:
+        with db.connect(ctx, instance) as cnx:
             row = cnx.execute("SHOW data_checksums").fetchone()
             assert row is not None
             value = row["data_checksums"]
@@ -930,7 +930,7 @@ def pending_restart(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> 
     """Return True if the instance is pending a restart to account for configuration changes."""
     if not is_running(ctx, instance):
         return False
-    with db.superuser_connect(ctx, instance) as cnx, cnx.cursor(
+    with db.connect(ctx, instance) as cnx, cnx.cursor(
         row_factory=psycopg.rows.args_row(bool)
     ) as cur:
         cur.execute("SELECT bool_or(pending_restart) FROM pg_settings")
@@ -1219,7 +1219,7 @@ def settings(
 
     The instance must be running.
     """
-    with db.superuser_connect(ctx, instance, dbname="template1") as cnx, cnx.cursor(
+    with db.connect(ctx, instance, dbname="template1") as cnx, cnx.cursor(
         row_factory=psycopg.rows.class_row(interface.PGSetting)
     ) as cur:
         cur.execute(interface.PGSetting._query)

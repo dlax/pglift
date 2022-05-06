@@ -70,7 +70,7 @@ def get(
     """
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         with cnx.cursor(row_factory=psycopg.rows.class_row(interface.Role)) as cur:
             cur.execute(db.query("role_inspect"), {"username": name})
             role = cur.fetchone()
@@ -92,7 +92,7 @@ def drop(ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str) -
         raise exceptions.InstanceReadOnlyError(instance)
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cnx.execute(db.query("role_drop", username=sql.Identifier(name)))
         cnx.commit()
     role = interface.Role(name=name, pgpass=False)
@@ -106,7 +106,7 @@ def exists(
 
     The instance should be running.
     """
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cur = cnx.execute(db.query("role_exists"), {"username": name})
         return cur.rowcount == 1
 
@@ -115,7 +115,7 @@ def has_password(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
 ) -> bool:
     """Return True if the role has a password set."""
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cur = cnx.execute(db.query("role_has_password"), {"username": name})
         haspassword = cur.fetchone()["haspassword"]  # type: ignore[index]
         assert isinstance(haspassword, bool)
@@ -180,7 +180,7 @@ def create(
     """
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         opts = options(cnx, role)
         cnx.execute(
             db.query("role_create", username=sql.Identifier(role.name), options=opts)
@@ -203,7 +203,7 @@ def alter(
         "grant": set(role.in_roles) - set(actual_role.in_roles),
         "revoke": set(actual_role.in_roles) - set(role.in_roles),
     }
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         opts = options(cnx, role, in_roles=False)
         cnx.execute(
             db.query(
@@ -234,7 +234,7 @@ def set_password_for(
         return
 
     logger.info("setting password for '%(username)s' role", {"username": role.name})
-    with db.superuser_connect(ctx, instance) as conn:
+    with db.connect(ctx, instance) as conn:
         conn.autocommit = True
         options = sql.SQL("PASSWORD {}").format(encrypt_password(conn, role))
         conn.execute(

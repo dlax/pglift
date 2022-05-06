@@ -8,6 +8,7 @@ import pytest
 from psycopg import sql
 
 from pglift import db
+from pglift.ctx import BaseContext
 from pglift.models.system import Instance
 from pglift.settings import Settings
 
@@ -64,9 +65,9 @@ def test_dsn_badarg(settings: Settings, instance: Instance) -> None:
         db.dsn(instance, settings.postgresql, port=123)
 
 
-def test_connect(instance: Instance, settings: Settings) -> None:
+def test_connect(ctx: BaseContext, instance: Instance, settings: Settings) -> None:
     with patch("psycopg.connect") as connect:
-        cnx = db.connect(instance, settings.postgresql, user="dba")
+        cnx = db.connect(ctx, instance, user="dba")
         assert not connect.called
         with cnx:
             pass

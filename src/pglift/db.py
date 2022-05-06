@@ -1,9 +1,10 @@
+import functools
 import logging
 import pathlib
 import re
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional, Sequence, Tuple
 
 import psycopg.conninfo
 import psycopg.errors
@@ -95,44 +96,39 @@ def connect_dsn(
 
 @contextmanager
 def connect(
+    ctx: "BaseContext",
     instance: "PostgreSQLInstance",
-    settings: "PostgreSQLSettings",
     *,
     dbname: str = "postgres",
     autocommit: bool = False,
+    user: Optional[str] = None,
+    password: Optional[str] = None,
     **kwargs: Any,
 ) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
-    """Connect to specified database of `instance` with `role`."""
-    conninfo = dsn(instance, settings, dbname=dbname, **kwargs)
-    with connect_dsn(conninfo, autocommit=autocommit) as cnx:
-        yield cnx
-
-
-@contextmanager
-def superuser_connect(
-    ctx: "BaseContext", instance: "PostgreSQLInstance", **kwargs: Any
-) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
-    if "user" in kwargs:
-        raise TypeError("unexpected 'user' argument")
     postgresql_settings = ctx.settings.postgresql
-    kwargs["user"] = postgresql_settings.surole.name
-    if "password" not in kwargs:
-        kwargs["password"] = postgresql_settings.libpq_environ(ctx, instance).get(
-            "PGPASSWORD"
-        )
+    if user is None:
+        user = postgresql_settings.surole.name
+        if password is None:
+            password = postgresql_settings.libpq_environ(ctx, instance).get(
+                "PGPASSWORD"
+            )
+
+    build_conninfo = functools.partial(
+        dsn, instance, postgresql_settings, dbname=dbname, user=user, **kwargs
+    )
+
+    conninfo = build_conninfo(password=password)
     try:
-        with connect(instance, postgresql_settings, **kwargs) as cnx:
+        with connect_dsn(conninfo, autocommit=autocommit) as cnx:
             yield cnx
     except psycopg.OperationalError:
         if kwargs.get("password"):
             raise
-        password = ctx.prompt(
-            f"Password for user {postgresql_settings.surole.name}", hide_input=True
-        )
+        password = ctx.prompt(f"Password for user {user}", hide_input=True)
         if not password:
             raise
-        kwargs["password"] = password
-        with connect(instance, postgresql_settings, **kwargs) as cnx:
+        conninfo = build_conninfo(password=password)
+        with connect_dsn(conninfo, autocommit=autocommit) as cnx:
             yield cnx
 
 
@@ -158,7 +154,7 @@ def installed_extensions(
     dbname: str = "postgres",
 ) -> List[Extension]:
     """Return list of extensions installed in database using CREATE EXTENSION"""
-    with superuser_connect(ctx, instance, dbname=dbname) as cnx:
+    with connect(ctx, instance, dbname=dbname) as cnx:
         return [
             Extension(r["extname"])
             for r in cnx.execute(
@@ -180,7 +176,7 @@ def create_or_drop_extensions(
     by default.
     """
     installed = installed_extensions(ctx, instance, dbname=dbname)
-    with superuser_connect(ctx, instance, autocommit=True, dbname=dbname) as cnx:
+    with connect(ctx, instance, autocommit=True, dbname=dbname) as cnx:
         extensions = [e for e in extensions if EXTENSIONS_CONFIG[e][1]]
         to_add = set(extensions) - set(installed)
         to_remove = set(installed) - set(extensions)

@@ -145,8 +145,8 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
     with db.connect(
+        ctx,
         instance,
-        ctx.settings.postgresql,
         dbname="template1",
         user=rolname,
         password="passw0rd",
@@ -170,8 +170,8 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     assert _role_in_pgpass(role)
     assert roles.get(ctx, instance, rolname).connection_limit == 5
     with db.connect(
+        ctx,
         instance,
-        ctx.settings.postgresql,
         dbname="template1",
         user=rolname,
         password="passw0rd_changed",
@@ -197,8 +197,8 @@ def test_alter_surole_password(
 
     check_connect = functools.partial(
         db.connect,
+        ctx,
         instance,
-        ctx.settings.postgresql,
         user="postgres",
     )
     surole = roles.get(ctx, instance, "postgres")
@@ -227,7 +227,7 @@ def test_alter_surole_password(
         ):
             with check_connect(password="passw0rd_changed"):
                 pass
-        with db.superuser_connect(ctx, instance):
+        with db.connect(ctx, instance):
             pass
 
 

@@ -53,7 +53,7 @@ def get(
     """
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         row = cnx.execute(db.query("database_inspect"), {"datname": name}).fetchone()
         assert row is not None
         settings = row.pop("settings")
@@ -81,7 +81,7 @@ def list(
         where_clause = sql.SQL("AND d.datname IN ({})").format(
             sql.SQL(", ").join((map(sql.Literal, dbnames)))
         )
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         with cnx.cursor(
             row_factory=psycopg.rows.class_row(interface.DetailedDatabase)
         ) as cur:
@@ -99,7 +99,7 @@ def drop(ctx: BaseContext, instance: "system.PostgreSQLInstance", name: str) -> 
         raise exceptions.InstanceReadOnlyError(instance)
     if not exists(ctx, instance, name):
         raise exceptions.DatabaseNotFound(name)
-    with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
+    with db.connect(ctx, instance, autocommit=True) as cnx:
         cnx.execute(db.query("database_drop", database=sql.Identifier(name)))
 
 
@@ -108,7 +108,7 @@ def exists(ctx: BaseContext, instance: "system.PostgreSQLInstance", name: str) -
 
     The instance should be running.
     """
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cur = cnx.execute(db.query("database_exists"), {"database": name})
         return cur.rowcount == 1
 
@@ -139,7 +139,7 @@ def create(
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
     options, args = options_and_args(database)
-    with db.superuser_connect(ctx, instance, autocommit=True) as cnx:
+    with db.connect(ctx, instance, autocommit=True) as cnx:
         cnx.execute(
             db.query(
                 "database_create",
@@ -179,7 +179,7 @@ def alter(
     else:
         owner = sql.Identifier(database.owner)
     options = sql.SQL("OWNER TO {}").format(owner)
-    with db.superuser_connect(ctx, instance) as cnx:
+    with db.connect(ctx, instance) as cnx:
         cnx.execute(
             db.query(
                 "database_alter",
@@ -190,7 +190,7 @@ def alter(
         cnx.commit()
 
     if database.settings is not None:
-        with db.superuser_connect(ctx, instance) as cnx:
+        with db.connect(ctx, instance) as cnx:
             if not database.settings:
                 # Empty input means reset all.
                 cnx.execute(
@@ -249,9 +249,7 @@ def run(
             dbnames and database.name not in dbnames
         ) or database.name in exclude_dbnames:
             continue
-        with db.superuser_connect(
-            ctx, instance, dbname=database.name, autocommit=True
-        ) as cnx:
+        with db.connect(ctx, instance, dbname=database.name, autocommit=True) as cnx:
             cnx.add_notice_handler(notice_handler)
             logger.info(
                 'running "%s" on %s database of %s',
