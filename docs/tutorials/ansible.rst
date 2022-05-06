@@ -5,7 +5,7 @@ Using Ansible modules
 
 This tutorial illustrates the use of the Ansible modules shipped with pglift:
 ``dalibo.pglift.instance``, ``dalibo.pglift.database`` and
-``dalibo.pglift.role``.
+``dalibo.pglift.role`` and ``dalibo.pglift.dsn_info``.
 
 .. note:: Documentation for each module can be obtained by using ``ansible-doc
    <modulename>`` (possibly after setting ``ANSIBLE_COLLECTIONS_PATHS`` as

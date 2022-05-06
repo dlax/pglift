@@ -86,7 +86,43 @@ class InstanceListItem(Manifest):
     status: str
 
 
-class Instance(Manifest):
+class BaseInstance(Manifest):
+    """PostgreSQL instance suitable for lookup"""
+
+    name: str = Field(readOnly=True, description=("Instance name."))
+    version: Optional[settings.PostgreSQLVersion] = Field(
+        default=None, description="PostgreSQL version.", readOnly=True
+    )
+
+    @validator("name")
+    def __validate_name_(cls, v: str) -> str:
+        """Validate 'name' field.
+
+        >>> Instance(name='without_dash')  # doctest: +ELLIPSIS
+        Instance(name='without_dash', ...)
+        >>> Instance(name='with-dash')
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        name
+          instance name must not contain dashes (type=value_error)
+        >>> Instance(name='with/slash')
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        name
+          instance name must not contain slashes (type=value_error)
+        """
+        # Avoid dash as this will break systemd instance unit.
+        if "-" in v:
+            raise ValueError("instance name must not contain dashes")
+        # Likewise, slash messes up with file paths.
+        if "/" in v:
+            raise ValueError("instance name must not contain slashes")
+        return v
+
+
+class Instance(BaseInstance):
     """PostgreSQL instance"""
 
     class Config(Manifest.Config):
@@ -166,10 +202,6 @@ class Instance(Manifest):
             default=None, description="Replication lag.", readOnly=True
         )
 
-    name: str = Field(readOnly=True, description=("Instance name."))
-    version: Optional[settings.PostgreSQLVersion] = Field(
-        default=None, description="PostgreSQL version.", readOnly=True
-    )
     port: Optional[int] = Field(
         default=None,
         description="TCP port the postgresql instance will be listening to.",
@@ -232,33 +264,6 @@ class Instance(Manifest):
         default_factory=list,
         description="List of extensions to install in the instance.",
     )
-
-    @validator("name")
-    def __validate_name_(cls, v: str) -> str:
-        """Validate 'name' field.
-
-        >>> Instance(name='without_dash')  # doctest: +ELLIPSIS
-        Instance(name='without_dash', ...)
-        >>> Instance(name='with-dash')
-        Traceback (most recent call last):
-            ...
-        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
-        name
-          instance name must not contain dashes (type=value_error)
-        >>> Instance(name='with/slash')
-        Traceback (most recent call last):
-            ...
-        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
-        name
-          instance name must not contain slashes (type=value_error)
-        """
-        # Avoid dash as this will break systemd instance unit.
-        if "-" in v:
-            raise ValueError("instance name must not contain dashes")
-        # Likewise, slash messes up with file paths.
-        if "/" in v:
-            raise ValueError("instance name must not contain slashes")
-        return v
 
     @root_validator
     def __port_not_in_configuration_(cls, values: Dict[str, Any]) -> Dict[str, Any]:

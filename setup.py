@@ -71,6 +71,8 @@ setup(
         "test": [
             "port-for",
             "psycopg[binary]",
+            # psycopg2 required by community.postgresql ansible module
+            "psycopg2-binary",
             "pytest",
             "pytest-cov",
             "requests",

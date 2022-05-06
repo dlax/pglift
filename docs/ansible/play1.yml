@@ -51,6 +51,18 @@
         prometheus_port: 9188
         surole_password: "{{ postgresql_surole_password }}"
 
+    - name: register preprod conninfo
+      dalibo.pglift.dsn_info:
+        name: preprod
+      register: preprod
+
+    - name: create database test on pre-production instance using community.postgresql module
+      community.postgresql.postgresql_db:
+        name: test
+        login_host: "{{ preprod.PGHOST }}"
+        login_port: "{{ preprod.PGPORT }}"
+      environment: "{{ preprod }}"
+
     - name: dev instance, not running at the moment
       dalibo.pglift.instance:
         name: dev

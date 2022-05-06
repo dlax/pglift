@@ -104,7 +104,7 @@ def cluster_name(dsn: str) -> str:
 
 @pytest.mark.parametrize(
     "module",
-    ["instance", "role", "database", "postgres_exporter"],
+    ["instance", "dsn_info", "role", "database", "postgres_exporter"],
     ids=lambda v: f"module:{v}",
 )
 def test_doc(module: str, ansible_env: Dict[str, str]) -> None:
@@ -168,9 +168,7 @@ def test_ansible(
     assert "unaccent" in installed
 
     # check preprod cluster & postgres_exporter
-    preprod_dsn = (
-        "host=/tmp user=postgres password=supers3kret dbname=postgres port=5434"
-    )
+    preprod_dsn = "host=/tmp user=postgres password=supers3kret dbname=test port=5434"
     assert cluster_name(preprod_dsn) == "preprod"
     socket.create_connection(("localhost", 9188), 1)
 
