@@ -74,7 +74,13 @@ def settings(
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
-            "postgresql": {"auth": {"passfile": str(passfile)}},
+            "postgresql": {
+                "auth": {
+                    "local": "peer",
+                    "host": "password",
+                    "passfile": str(passfile),
+                }
+            },
             "systemd": {"unit_path": str(tmp_path / "systemd")},
             "pgbackrest": {} if pgbackrest else None,
             "prometheus": prometheus_settings,
@@ -151,6 +157,8 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
             ]
         )
     )
+    (instance.datadir / "pg_hba.conf").write_text("# pg_hba.conf\n")
+    (instance.datadir / "pg_ident.conf").write_text("# pg_ident.conf\n")
     confdir = instance.datadir / "conf.pglift.d"
     confdir.mkdir()
     (confdir / "user.conf").write_text(f"bonjour = on\nbonjour_name= '{name}'\n")

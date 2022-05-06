@@ -27,7 +27,7 @@ from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
 from pydantic import SecretStr
 
-from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
+from . import cmd, conf, db, exceptions, roles, systemd, util
 from ._compat import Literal
 from .models import interface, system
 from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion
@@ -440,45 +440,34 @@ def stopped(
         start(ctx, instance, run_hooks=run_hooks)
 
 
-@hookimpl  # type: ignore[misc]
-def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None:
-    """Configure authentication for the PostgreSQL instance by setting
-    super-user role's password, if any, and installing templated pg_hba.conf
-    and pg_ident.conf.
-
-    This is a no-op if pg_hba.conf's content matches the initial
-    configuration.
-    """
+def configure_auth(
+    ctx: "BaseContext",
+    instance: system.PostgreSQLInstance,
+    auth: Optional[interface.Instance.Auth],
+    *,
+    surole: interface.Role,
+    replrole: interface.Role,
+) -> None:
+    """Configure authentication for the PostgreSQL instance."""
     logger.info("configuring PostgreSQL authentication")
-    surole = manifest.surole(ctx.settings)
-    replrole = manifest.replrole(ctx.settings)
     auth_settings = ctx.settings.postgresql.auth
-    sys_instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
-    hba_path = sys_instance.datadir / "pg_hba.conf"
+    hba_path = instance.datadir / "pg_hba.conf"
     auth_local = auth_settings.local
     auth_host = auth_settings.host
-    if manifest.auth:
-        if manifest.auth.local:
-            auth_local = manifest.auth.local
-        if manifest.auth.host:
-            auth_host = manifest.auth.host
+    if auth:
+        if auth.local:
+            auth_local = auth.local
+        if auth.host:
+            auth_host = auth.host
     hba = util.template(ctx, "postgresql", "pg_hba.conf").format(
         surole=surole.name,
         replrole=replrole.name,
         auth_local=auth_local,
         auth_host=auth_host,
     )
-    if hba_path.read_text() == hba:
-        return
-
-    if not sys_instance.standby:
-        # standby instances are read-only
-        with running(ctx, sys_instance):
-            roles.apply(ctx, sys_instance, replrole)
-
     hba_path.write_text(hba)
 
-    ident_path = sys_instance.datadir / "pg_ident.conf"
+    ident_path = instance.datadir / "pg_ident.conf"
     ident = util.template(ctx, "postgresql", "pg_ident.conf").format(
         surole=surole.name,
         sysuser=ctx.settings.sysuser[0],
@@ -850,6 +839,19 @@ def apply(
     )
 
     sys_instance = system.Instance.system_lookup(ctx, (instance.name, instance.version))
+
+    if _creating:
+        replrole = instance.replrole(ctx.settings)
+        if not sys_instance.standby:
+            # standby instances are read-only
+            logger.info("creating replication user %s", replrole.name)
+            with running(ctx, sys_instance):
+                roles.apply(ctx, sys_instance, replrole)
+        surole = instance.surole(ctx.settings)
+        configure_auth(
+            ctx, sys_instance, instance.auth, surole=surole, replrole=replrole
+        )
+
     is_running = status(ctx, sys_instance) == Status.running
 
     if instance.data_checksums is not None:
