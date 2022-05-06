@@ -62,6 +62,8 @@ configuration_changes:
 needs_restart:
   description: Whether the instance needs to be restarted or not
   type: bool
+env:
+    description: libpq environment variable used to connect to the instance
 """
 
 import sys
@@ -96,7 +98,7 @@ def run_module() -> None:
     ctx = AnsibleContext(module, settings=settings)
     assert ctx.pm == pm, f"inconsistent plugin manager used by {ctx} and argspec ({pm})"
 
-    result = {"changed": False, "instance": str(m)}
+    result = {"changed": False, "instance": str(m), "env": {}}
 
     if module.check_mode:
         module.exit_json(**result)
@@ -138,6 +140,11 @@ def run_module() -> None:
             before[k] = before_val
             after[k] = after_val
         result["diff"] = diff
+
+    if instance is None:
+        result["env"] = {}
+    else:
+        result["env"] = instances.env_for(ctx, instance, path=True)
 
     module.exit_json(**result)
 

@@ -16,12 +16,15 @@
         surole_password: "{{ postgresql_surole_password }}"
         extensions:
           - unaccent
+      register: prod
 
     - name: db, dropped
-      dalibo.pglift.database:
-        instance: prod
+      community.postgresql.postgresql_db:
         name: db
         state: absent
+        login_host: "{{ prod.env.PGHOST }}"
+        login_port: "{{ prod.env.PGPORT }}"
+      environment: "{{ prod.env }}"
 
     - name: bob, dropped
       dalibo.pglift.role:
