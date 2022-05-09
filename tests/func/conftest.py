@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from textwrap import dedent
-from typing import Any, Dict, Iterator, List, Optional, Set, Type
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type
 
 import pgtoolkit.conf
 import port_for
@@ -195,15 +195,21 @@ def settings(
 
 
 @pytest.fixture(scope="session")
-def pg_version(request: Any, settings: Settings) -> str:
+def pg_bindir(request: Any, settings: Settings) -> Tuple[pathlib.Path, str]:
     version = request.config.getoption("--pg-version")
     if version is None:
         pytest.skip("no PostgreSQL installation found")
     assert isinstance(version, str)
     assert settings.postgresql.bindir
-    if not pathlib.Path(settings.postgresql.bindir.format(version=version)).exists():
+    bindir = pathlib.Path(settings.postgresql.bindir.format(version=version))
+    if not bindir.exists():
         pytest.fail(f"PostgreSQL {version} not available", pytrace=False)
-    return version
+    return bindir, version
+
+
+@pytest.fixture(scope="session")
+def pg_version(pg_bindir: Tuple[pathlib.Path, str]) -> str:
+    return pg_bindir[1]
 
 
 class PeerAuthContext(Context):
