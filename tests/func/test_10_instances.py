@@ -300,12 +300,7 @@ def test_apply(
     assert instances.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_get(
-    ctx: Context,
-    instance_manifest: interface.Instance,
-    instance: system.Instance,
-    log_directory: Path,
-) -> None:
+def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> None:
     im = instances.get(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
@@ -548,9 +543,7 @@ def test_logs(
         assert "database system is shut down" in logs[-1]
 
 
-def test_get_locale(
-    ctx: Context, instance_manifest: interface.Instance, instance: system.Instance
-) -> None:
+def test_get_locale(ctx: Context, instance: system.Instance) -> None:
     with instances.running(ctx, instance):
         assert instances.get_locale(ctx, instance) == "C"
     postgres_conf = instance.datadir / "postgresql.conf"
