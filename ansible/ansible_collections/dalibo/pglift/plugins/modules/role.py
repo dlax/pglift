@@ -31,10 +31,11 @@ RETURN = """
 import sys
 from typing import Dict
 
-import pydantic
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 try:
+    import pydantic
+
     from pglift import instances, roles, types
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface, system

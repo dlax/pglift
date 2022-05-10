@@ -67,10 +67,11 @@ needs_restart:
 import sys
 from typing import Any, Dict
 
-import pydantic
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 try:
+    import pydantic
+
     from pglift import instances, plugin_manager
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface
