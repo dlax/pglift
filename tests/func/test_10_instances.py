@@ -570,12 +570,14 @@ def datachecksums_instance(
     tmp_port_factory: Iterator[int],
     surole_password: str,
 ) -> Iterator[Tuple[interface.Instance, system.Instance]]:
-    manifest = composite_instance_model(
-        name="datachecksums",
-        version=pg_version,
-        port=next(tmp_port_factory),
-        state=interface.InstanceState.stopped,
-        surole_password=surole_password,
+    manifest = composite_instance_model.parse_obj(
+        {
+            "name": "datachecksums",
+            "version": pg_version,
+            "port": next(tmp_port_factory),
+            "state": "stopped",
+            "surole_password": surole_password,
+        }
     )
     r = instances.apply(ctx, manifest)
     assert r
@@ -594,12 +596,7 @@ def test_data_checksums(
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
 
     # explicitly enabled
-    manifest = manifest.copy(
-        update={
-            "data_checksums": True,
-            "state": interface.InstanceState.stopped,
-        }
-    )
+    manifest.data_checksums = True
     if int(pg_version) < 12:
         with pytest.raises(
             exceptions.UnsupportedError,
@@ -622,7 +619,7 @@ def test_data_checksums(
     assert instances._get(ctx, instance).data_checksums
 
     # not explicitly disabled so still enabled
-    manifest = manifest.copy(update={"data_checksums": None})
+    manifest.data_checksums = None
     result = instances.apply(ctx, manifest)
     assert result
     _, changes, _ = result
@@ -630,7 +627,7 @@ def test_data_checksums(
     assert changes == {}
 
     # explicitly disabled
-    manifest = manifest.copy(update={"data_checksums": False})
+    manifest.data_checksums = False
     result = instances.apply(ctx, manifest)
     assert result
     _, changes, _ = result
@@ -642,7 +639,7 @@ def test_data_checksums(
 
     # re-enabled with instance running
     with instances.running(ctx, instance):
-        manifest = manifest.copy(update={"data_checksums": True})
+        manifest.data_checksums = True
         with pytest.raises(
             exceptions.InstanceStateError,
             match="could not alter data_checksums on a running instance",
@@ -659,10 +656,12 @@ def test_extensions(
     config = instance.config()
     assert config.shared_preload_libraries == "passwordcheck"
     with instances.running(ctx, instance):
-        manifest = instance_manifest.copy(
-            update={"extensions": ["pg_stat_statements", "unaccent", "passwordcheck"]}
+        instance_manifest.extensions = list(
+            map(
+                interface.Extension, ["pg_stat_statements", "unaccent", "passwordcheck"]
+            )
         )
-        r = instances.apply(ctx, manifest)
+        r = instances.apply(ctx, instance_manifest)
         instances.restart(ctx, instance)
         assert r is not None
 
@@ -696,8 +695,8 @@ def test_extensions(
         rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
         assert len(rows)
 
-        manifest = manifest.copy(update={"extensions": ["unaccent"]})
-        r = instances.apply(ctx, manifest)
+        instance_manifest.extensions = [interface.Extension.unaccent]
+        r = instances.apply(ctx, instance_manifest)
         instances.restart(ctx, instance)
         config = instance.config()
         assert "shared_preload_libraries" not in config
