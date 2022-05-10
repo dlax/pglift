@@ -26,20 +26,20 @@ EXAMPLES = """
 
 RETURN = """
 """
-
+import sys
 from typing import Dict
 
 import pydantic
-from ansible.errors import AnsibleError
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 try:
     from pglift import prometheus
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers
     from pglift.settings import SiteSettings
-except ImportError:
-    raise AnsibleError("pglift must be installed to use this plugin")
+except ImportError as e:
+    print(missing_required_lib(e.name), file=sys.stderr)
+    sys.exit(1)
 
 
 def run_module() -> None:
