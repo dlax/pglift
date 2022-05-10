@@ -224,7 +224,7 @@ class Instance(Manifest):
             readOnly=True,
         )
 
-    auth: Optional[Auth] = None
+    auth: Optional[Auth] = Field(default=None, writeOnly=True)
 
     standby: Optional[Standby] = None
 
