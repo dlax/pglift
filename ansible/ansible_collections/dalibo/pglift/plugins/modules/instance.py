@@ -66,21 +66,20 @@ env:
     description: libpq environment variable used to connect to the instance
 """
 
-import sys
 from typing import Any, Dict
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
+    check_required_libs,
+)
 
-try:
+with check_required_libs():
     import pydantic
 
     from pglift import instances, plugin_manager
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface
     from pglift.settings import SiteSettings
-except ImportError as e:
-    print(missing_required_lib(e.name), file=sys.stderr)
-    sys.exit(1)
 
 
 def run_module() -> None:

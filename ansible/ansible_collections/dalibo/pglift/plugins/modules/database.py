@@ -27,21 +27,21 @@ EXAMPLES = """
 
 RETURN = """
 """
-import sys
+
 from typing import Dict
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
+    check_required_libs,
+)
 
-try:
+with check_required_libs():
     import pydantic
 
     from pglift import databases, instances, types
     from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface, system
     from pglift.settings import SiteSettings
-except ImportError as e:
-    print(missing_required_lib(e.name), file=sys.stderr)
-    sys.exit(1)
 
 
 def run_module() -> None:

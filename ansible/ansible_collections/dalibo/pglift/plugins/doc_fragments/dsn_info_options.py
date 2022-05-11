@@ -1,14 +1,11 @@
-import sys
+from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
+    check_required_libs,
+)
 
-from ansible.module_utils.basic import missing_required_lib
-
-try:
+with check_required_libs():
     import yaml
 
     from pglift.models import helpers, interface
-except ImportError as e:
-    print(missing_required_lib(e.name), file=sys.stderr)
-    sys.exit(1)
 
 
 def build_doc() -> str:
