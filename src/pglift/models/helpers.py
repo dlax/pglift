@@ -137,7 +137,9 @@ def _decorators_from_model(
                     else:
                         attrs["metavar"] = metavar
             elif lenient_issubclass(ftype, pydantic.SecretStr):
-                attrs["prompt"] = description if description is not None else True
+                attrs["prompt"] = (
+                    description.rstrip(".") if description is not None else True
+                )
                 attrs["prompt_required"] = False
                 attrs["confirmation_prompt"] = True
                 attrs["hide_input"] = True
