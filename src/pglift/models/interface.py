@@ -206,10 +206,6 @@ class Instance(BaseInstance):
         default=None,
         description="TCP port the postgresql instance will be listening to.",
     )
-    state: InstanceState = Field(
-        default=InstanceState.started,
-        description="Runtime state.",
-    )
     ssl: Union[bool, Tuple[Path, Path]] = Field(
         default=False,
         title="SSL",
@@ -258,11 +254,16 @@ class Instance(BaseInstance):
 
     auth: Optional[Auth] = Field(default=None, exclude=True, writeOnly=True)
 
-    standby: Optional[Standby] = None
-
     extensions: List[Extension] = Field(
         default_factory=list,
         description="List of extensions to install in the instance.",
+    )
+
+    standby: Optional[Standby] = None
+
+    state: InstanceState = Field(
+        default=InstanceState.started,
+        description="Runtime state.",
     )
 
     @root_validator
@@ -349,9 +350,6 @@ class Role(Manifest):
 
     name: str = Field(readOnly=True, description=("Role name."))
     password: Optional[SecretStr] = Field(default=None, description="Role password.")
-    pgpass: bool = Field(
-        default=False, description="Add an entry in password file for this role."
-    )
     inherit: bool = Field(
         default=True,
         description="Let the role inherits the privileges of the roles its is a member of.",
@@ -368,6 +366,9 @@ class Role(Manifest):
     in_roles: List[str] = Field(
         default_factory=list,
         description="List of roles to which the new role will be added as a new member.",
+    )
+    pgpass: bool = Field(
+        default=False, description="Add an entry in password file for this role."
     )
     state: PresenceState = Field(
         default=PresenceState.present, description=("Role state.")
@@ -389,9 +390,6 @@ class Database(Manifest):
     owner: Optional[str] = Field(
         description="The role name of the user who will own the database."
     )
-    state: PresenceState = Field(
-        default=PresenceState.present, description=("Database state.")
-    )
     settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
         default=None,
         description=(
@@ -402,6 +400,9 @@ class Database(Manifest):
     extensions: List[Extension] = Field(
         default_factory=list,
         description="List of extensions to create in the database.",
+    )
+    state: PresenceState = Field(
+        default=PresenceState.present, description=("Database state.")
     )
 
 
