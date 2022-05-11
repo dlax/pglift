@@ -1,5 +1,6 @@
 import pytest
 from pgtoolkit import ctl
+from psycopg.conninfo import conninfo_to_dict
 
 from pglift import exceptions
 from pglift.ctx import Context
@@ -143,5 +144,9 @@ def test_postgresqlinstance_standby_for(
 ) -> None:
     assert not instance.standby
     assert standby_instance.standby
-    assert standby_instance.standby.for_ == "host=/tmp port=4242 user=pg"
+    assert conninfo_to_dict(standby_instance.standby.for_) == {
+        "host": "/tmp",
+        "port": "4242",
+        "user": "pg",
+    }
     assert standby_instance.standby.slot == "aslot"

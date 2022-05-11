@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+import psycopg.conninfo
 from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from pydantic import (
@@ -194,6 +195,9 @@ class Instance(BaseInstance):
             alias="for",
             description="DSN of primary for streaming replication.",
         )
+        password: Optional[SecretStr] = Field(
+            default=None, description="Password for the replication user."
+        )
         status: State = Field(
             default=State.demoted, description=("Instance standby state.")
         )
@@ -201,6 +205,47 @@ class Instance(BaseInstance):
         replication_lag: Optional[Decimal] = Field(
             default=None, description="Replication lag.", readOnly=True
         )
+
+        @validator("for_")
+        def __validate_for_(cls, value: str) -> str:
+            """Validate 'for' field.
+
+            >>> Instance.Standby.parse_obj({"for": "host=localhost"})
+            Standby(for_='host=localhost', password=None, status=<State.demoted: 'demoted'>, slot=None, replication_lag=None)
+            >>> Instance.Standby.parse_obj({"for": "hello"})
+            Traceback (most recent call last):
+                ...
+            pydantic.error_wrappers.ValidationError: 1 validation error for Standby
+            for
+              missing "=" after "hello" in connection info string
+             (type=value_error)
+            >>> Instance.Standby.parse_obj({"for": "host=localhost password=xx"})
+            Traceback (most recent call last):
+                ...
+            pydantic.error_wrappers.ValidationError: 1 validation error for Standby
+            for
+              connection string must not contain a password (type=value_error)
+            """
+            try:
+                conninfo = psycopg.conninfo.conninfo_to_dict(value)
+            except psycopg.ProgrammingError as e:
+                raise ValueError(str(e))
+            if "password" in conninfo:
+                raise ValueError("connection string must not contain a password")
+            return value
+
+        @property
+        def primary_conninfo(self) -> str:
+            """Connection string to the primary.
+
+            >>> s = Instance.Standby.parse_obj({"for": "host=primary port=5444", "password": "qwerty"})
+            >>> s.primary_conninfo
+            'host=primary port=5444 password=qwerty'
+            """
+            kw = {}
+            if self.password:
+                kw["password"] = self.password.get_secret_value()
+            return psycopg.conninfo.make_conninfo(self.for_, **kw)
 
     port: Optional[int] = Field(
         default=None,

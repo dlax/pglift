@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, TypeVar, Union
 
 import attr
+import psycopg.conninfo
+import pydantic
 from attr.validators import instance_of
 from pgtoolkit import ctl
 from pgtoolkit.conf import Configuration
@@ -95,6 +97,7 @@ class BaseInstance:
 class Standby:
     for_: str
     slot: Optional[str]
+    password: Optional[pydantic.SecretStr]
 
     T = TypeVar("T", bound="Standby")
 
@@ -105,15 +108,22 @@ class Standby:
         )
         if not (instance.datadir / standbyfile).exists():
             return None
+        config = instance.config()
         # primary_conninfo must be present here, otherwise this is considered
         # as an error
-        config = instance.config()
-        primary_conninfo = config["primary_conninfo"]
-        assert isinstance(primary_conninfo, str)
+        primary_conninfo = psycopg.conninfo.conninfo_to_dict(config["primary_conninfo"])  # type: ignore[arg-type]
+        try:
+            password = pydantic.SecretStr(primary_conninfo.pop("password"))
+        except KeyError:
+            password = None
         slot = config.get("primary_slot_name")
         if slot is not None:
             assert isinstance(slot, str), slot
-        return cls(for_=primary_conninfo, slot=slot or None)
+        return cls(
+            for_=psycopg.conninfo.make_conninfo(**primary_conninfo),
+            slot=slot or None,
+            password=password,
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)

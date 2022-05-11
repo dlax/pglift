@@ -111,6 +111,13 @@
     ],
     "type": "str"
   },
+  "standby_password": {
+    "description": [
+      "Password for the replication user"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "standby_slot": {
     "description": [
       "Replication slot name"

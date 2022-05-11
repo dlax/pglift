@@ -85,7 +85,7 @@ def test_primary_connect(standby_instance: Instance, settings: Settings) -> None
         with db.primary_connect(standby):
             pass
     connect.assert_called_once_with(
-        "host=/tmp port=4242 user=pg",
+        "user=pg host=/tmp port=4242",
         dbname="template1",
         row_factory=psycopg.rows.dict_row,
     )

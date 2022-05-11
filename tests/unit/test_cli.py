@@ -330,6 +330,37 @@ def test_instance_create(
     assert result.exit_code == 0, result
 
 
+def test_instance_create_standby(
+    runner: CliRunner,
+    ctx: Context,
+    obj: Obj,
+    composite_instance_model: Type[interface.Instance],
+) -> None:
+    cmd = [
+        "instance",
+        "create",
+        "stdby",
+        "--standby-for=port=1234 user=repli",
+        "--standby-slot=sloot",
+        "--standby-password=replicated",
+    ]
+    with patch.object(instances, "apply") as apply:
+        result = runner.invoke(cli, cmd, obj=obj)
+    expected = {
+        "name": "stdby",
+        "standby": {
+            "for": "port=1234 user=repli",
+            "slot": "sloot",
+            "password": "replicated",
+        },
+    }
+    if ctx.settings.prometheus is not None:
+        expected["prometheus"] = {"port": 9187}
+    e = composite_instance_model.parse_obj(expected)
+    apply.assert_called_once_with(ctx, e)
+    assert result.exit_code == 0, result
+
+
 def test_instance_apply(
     tmp_path: Path,
     runner: CliRunner,

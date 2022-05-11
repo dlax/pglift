@@ -141,6 +141,8 @@ def primary_connect(
     standby: "Standby", *, dbname: str = "template1", **kwargs: Any
 ) -> Iterator[psycopg.Connection[psycopg.rows.DictRow]]:
     """Connect to the primary of standby."""
+    if standby.password:
+        kwargs.setdefault("password", standby.password.get_secret_value())
     with connect_dsn(standby.for_, dbname=dbname, **kwargs) as cnx:
         yield cnx
 

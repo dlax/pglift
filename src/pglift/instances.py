@@ -25,7 +25,6 @@ import psycopg.sql
 from pgtoolkit import conf as pgconf
 from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
-from psycopg.conninfo import conninfo_to_dict
 from pydantic import SecretStr
 from typing_extensions import Literal
 
@@ -71,7 +70,7 @@ def systemd_unit(instance: system.BaseInstance) -> str:
 def init_replication(
     ctx: "BaseContext",
     instance: system.BaseInstance,
-    standby_for: str,
+    conninfo: str,
     slot: Optional[str],
 ) -> None:
     with tempfile.TemporaryDirectory() as _tmpdir:
@@ -96,17 +95,14 @@ def init_replication(
             "--progress",
             "--verbose",
             "--dbname",
-            standby_for,
+            conninfo,
             "--waldir",
             str(instance.waldir),
         ]
 
         if slot:
             cmd += ["--slot", slot]
-            with db.connect_dsn(
-                standby_for,
-                dbname="template1",
-            ) as cnx:
+            with db.connect_dsn(conninfo, dbname="template1") as cnx:
                 # ensure the replication slot does not exists
                 # otherwise --create-slot will raise an error
                 cnx.execute(db.query("drop_replication_slot"), {"slot": slot})
@@ -198,8 +194,9 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     )
     pgconfig.save()
 
-    if manifest.standby:
-        init_replication(ctx, instance, manifest.standby.for_, manifest.standby.slot)
+    standby = manifest.standby
+    if standby:
+        init_replication(ctx, instance, standby.primary_conninfo, standby.slot)
 
     instance.psqlrc.write_text(
         "\n".join(
@@ -968,9 +965,10 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         if s is not None
     }
     if instance.standby:
-        kw: Dict[str, Union[str, Decimal, None]] = {
+        kw: Dict[str, Any] = {
             "for": instance.standby.for_,
             "slot": instance.standby.slot,
+            "password": instance.standby.password,
         }
         if is_running:
             kw["replication_lag"] = replication_lag(ctx, instance)
@@ -1215,11 +1213,12 @@ def replication_lag(
 
     :raises TypeError: if the instance is not a standby.
     """
-    if instance.standby is None:
+    standby = instance.standby
+    if standby is None:
         raise TypeError(f"{instance} is not a standby")
 
     try:
-        with db.primary_connect(instance.standby) as cnx:
+        with db.primary_connect(standby) as cnx:
             row = cnx.execute("SELECT pg_current_wal_lsn() AS lsn").fetchone()
     except psycopg.OperationalError as e:
         logger.warning("failed to connect to primary (is it running?): %s", e)
@@ -1227,7 +1226,7 @@ def replication_lag(
     assert row is not None
     primary_lsn = row["lsn"]
 
-    password = conninfo_to_dict(instance.standby.for_).get("password")
+    password = standby.password.get_secret_value() if standby.password else None
     dsn = db.dsn(
         instance,
         ctx.settings.postgresql,

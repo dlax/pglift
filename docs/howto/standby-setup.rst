@@ -5,7 +5,9 @@ Creating a standby instance:
 
 ::
 
-    $ pglift instance create standby --standby-for <primary dsn>
+    $ pglift instance create standby --standby-for <primary dsn> --standby-password
+    Password for the replication user:
+    Repeat for confirmation:
 
 
 The ``--standby-for`` option should be a `connection string`_ to the primary

@@ -364,14 +364,19 @@ def test_standby(
 ) -> None:
     socket_directory = settings.postgresql.socket_directory
     replrole = instance_manifest.replrole(settings)
-    standby_for = f"host={socket_directory} port={instance.port} user={replrole.name}"
+    standby = {
+        "for": f"host={socket_directory} port={instance.port} user={replrole.name}",
+        "slot": slot,
+    }
     if replrole.password:
-        standby_for += f" password={replrole.password.get_secret_value()}"
-    standby_manifest = composite_instance_model(
-        name="standby",
-        version=pg_version,
-        port=next(tmp_port_factory),
-        standby=interface.Instance.Standby(**{"for": standby_for, "slot": slot}),
+        standby["password"] = replrole.password.get_secret_value()
+    standby_manifest = composite_instance_model.parse_obj(
+        {
+            "name": "standby",
+            "version": pg_version,
+            "port": next(tmp_port_factory),
+            "standby": standby,
+        }
     )
 
     def pg_replication_slots() -> List[str]:
@@ -418,6 +423,7 @@ def test_standby(
         stdby = get_stdby()
         assert stdby is not None
         assert stdby.for_ == standby_instance.standby.for_
+        assert stdby.password == replrole.password
         assert stdby.slot == standby_instance.standby.slot
         assert stdby.replication_lag is not None
 
