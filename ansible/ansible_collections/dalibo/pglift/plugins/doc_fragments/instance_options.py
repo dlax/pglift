@@ -1,12 +1,16 @@
-import yaml
-from ansible.errors import AnsibleError
+import sys
+
+from ansible.module_utils.basic import missing_required_lib
 
 try:
+    import yaml
+
     from pglift import plugin_manager
     from pglift.models import helpers, interface
     from pglift.settings import Settings
-except ImportError:
-    raise AnsibleError("pglift must be installed to use this plugin")
+except ImportError as e:
+    print(missing_required_lib(e.name), file=sys.stderr)
+    sys.exit(1)
 
 
 def build_doc() -> str:
