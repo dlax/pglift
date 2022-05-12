@@ -340,7 +340,13 @@ def setup_local(
     if not configpath.exists():
         # Create dedicated user but only if postgres_exporter
         # as never been initialized
-        if not instance.standby:
+        if instance.standby:
+            # TODO: https://gitlab.com/dalibo/pglift/-/issues/136
+            logger.warning(
+                "postgres_exporter setup on standby instance is not implemented"
+            )
+            return
+        else:
             password_ = util.generate_password()
             with instances.running(ctx, instance):
                 role = interface.Role(
