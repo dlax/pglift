@@ -349,8 +349,28 @@ def test_list(ctx: Context, instance: system.Instance) -> None:
         not_instance_dir.rmdir()
 
 
-@pytest.mark.parametrize("slot", ["standby", None], ids=["slot:yes", "slot:no"])
-def test_standby(
+def test_standby_instance(
+    ctx: Context,
+    instance: system.Instance,
+    replrole_password: str,
+    standby_manifest: interface.Instance,
+    standby_instance: system.Instance,
+) -> None:
+    assert standby_manifest.standby
+    slotname = standby_manifest.standby.slot
+    assert standby_instance.standby
+    assert standby_instance.standby.for_
+    assert (
+        standby_instance.standby.password
+        and standby_instance.standby.password.get_secret_value() == replrole_password
+    )
+    assert standby_instance.standby.slot == slotname
+    with instances.running(ctx, instance):
+        rows = execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
+    assert [r["slot_name"] for r in rows] == [slotname]
+
+
+def test_standby_replication(
     ctx: Context,
     instance: system.Instance,
     instance_manifest: interface.Instance,
@@ -360,30 +380,60 @@ def test_standby(
     database_factory: DatabaseFactory,
     composite_instance_model: Type[interface.Instance],
     pg_version: str,
-    slot: str,
+    standby_instance: system.Instance,
 ) -> None:
-    socket_directory = settings.postgresql.socket_directory
+    assert standby_instance.standby
+
+    surole = instance_manifest.surole(settings)
     replrole = instance_manifest.replrole(settings)
-    standby = {
-        "for": f"host={socket_directory} port={instance.port} user={replrole.name}",
-        "slot": slot,
-    }
-    if replrole.password:
-        standby["password"] = replrole.password.get_secret_value()
-    standby_manifest = composite_instance_model.parse_obj(
-        {
-            "name": "standby",
-            "version": pg_version,
-            "port": next(tmp_port_factory),
-            "standby": standby,
-        }
+
+    if surole.password:
+
+        def get_stdby() -> Optional[interface.Instance.Standby]:
+            assert surole.password
+            with patch.dict(
+                "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
+            ):
+                return instances._get(ctx, standby_instance).standby
+
+    else:
+
+        def get_stdby() -> Optional[interface.Instance.Standby]:
+            return instances._get(ctx, standby_instance).standby
+
+    class OutOfSync(AssertionError):
+        pass
+
+    @retry(
+        retry=retry_if_exception_type(psycopg.OperationalError),
+        wait=wait_fixed(1),
+        stop=stop_after_attempt(4),
     )
+    def assert_db_replicated() -> int:
+        row = execute(
+            ctx, standby_instance, "SELECT * FROM t", role=replrole, dbname="test"
+        )
+        return row[0]["i"]  # type: ignore[no-any-return]
 
-    def pg_replication_slots() -> List[str]:
-        rows = execute(ctx, instance, "SELECT slot_name FROM pg_replication_slots")
-        return [r["slot_name"] for r in rows]
+    @retry(
+        retry=retry_if_exception_type(OutOfSync),
+        wait=wait_fixed(1),
+        stop=stop_after_attempt(4),
+    )
+    def assert_replicated(expected: int) -> None:
+        rlag = instances.replication_lag(ctx, standby_instance)
+        assert rlag is not None
+        row = execute(
+            ctx, standby_instance, "SELECT * FROM t", role=replrole, dbname="test"
+        )
+        if row[0]["i"] != expected:
+            assert rlag > 0
+            raise OutOfSync
+        if rlag > 0:
+            raise OutOfSync
+        assert rlag == 0
 
-    with instances.running(ctx, instance):
+    with instances.running(ctx, instance), instances.running(ctx, standby_instance):
         database_factory("test")
         execute(
             ctx,
@@ -393,33 +443,6 @@ def test_standby(
             fetch=False,
             role=replrole,
         )
-        assert not pg_replication_slots()
-        r = instances.apply(ctx, standby_manifest)
-        assert r is not None
-        standby_instance = r[0]
-        if slot:
-            assert pg_replication_slots() == [slot]
-        else:
-            assert not pg_replication_slots()
-        assert standby_instance.standby
-        assert standby_instance.standby.for_
-        assert standby_instance.standby.slot == slot
-
-        surole = instance_manifest.surole(settings)
-        if surole.password:
-
-            def get_stdby() -> Optional[interface.Instance.Standby]:
-                assert surole.password
-                with patch.dict(
-                    "os.environ", {"PGPASSWORD": surole.password.get_secret_value()}
-                ):
-                    return instances._get(ctx, standby_instance).standby
-
-        else:
-
-            def get_stdby() -> Optional[interface.Instance.Standby]:
-                return instances._get(ctx, standby_instance).standby
-
         stdby = get_stdby()
         assert stdby is not None
         assert stdby.for_ == standby_instance.standby.for_
@@ -427,81 +450,40 @@ def test_standby(
         assert stdby.slot == standby_instance.standby.slot
         assert stdby.replication_lag is not None
 
-        class OutOfSync(AssertionError):
-            pass
+        assert execute(
+            ctx,
+            standby_instance,
+            "SELECT * FROM pg_is_in_recovery()",
+            role=replrole,
+            dbname="template1",
+        ) == [{"pg_is_in_recovery": True}]
 
-        try:
-            with instances.running(ctx, standby_instance):
-                assert execute(
-                    ctx,
-                    standby_instance,
-                    "SELECT * FROM pg_is_in_recovery()",
-                    role=replrole,
-                    dbname="template1",
-                ) == [{"pg_is_in_recovery": True}]
-                assert execute(
-                    ctx,
-                    standby_instance,
-                    "SELECT * FROM t",
-                    role=replrole,
-                    dbname="test",
-                ) == [{"i": 1}]
-                execute(
-                    ctx,
-                    instance,
-                    "UPDATE t SET i = 42",
-                    dbname="test",
-                    role=replrole,
-                    fetch=False,
-                )
+        assert_db_replicated() == 1
 
-                @retry(
-                    retry=retry_if_exception_type(OutOfSync),
-                    wait=wait_fixed(1),
-                    stop=stop_after_attempt(4),
-                )
-                def assert_replicated() -> None:
-                    rlag = instances.replication_lag(ctx, standby_instance)
-                    assert rlag is not None
-                    row = execute(
-                        ctx,
-                        standby_instance,
-                        "SELECT * FROM t",
-                        role=replrole,
-                        dbname="test",
-                    )
-                    if row[0] == {"i": 1}:
-                        assert rlag > 0
-                        raise OutOfSync
-                    assert row == [{"i": 42}]
-                    if rlag > 0:
-                        raise OutOfSync
-                    assert rlag == 0
+        execute(
+            ctx,
+            instance,
+            "UPDATE t SET i = 42",
+            dbname="test",
+            role=replrole,
+            fetch=False,
+        )
 
-                assert_replicated()
+        assert_replicated(42)
 
-                stdby = get_stdby()
-                assert stdby is not None
-                assert stdby.replication_lag == 0
+        stdby = get_stdby()
+        assert stdby is not None
+        assert stdby.replication_lag == 0
 
-                instances.promote(ctx, standby_instance)
-                assert not standby_instance.standby
-                assert execute(
-                    ctx,
-                    standby_instance,
-                    "SELECT * FROM pg_is_in_recovery()",
-                    role=replrole,
-                    dbname="template1",
-                ) == [{"pg_is_in_recovery": False}]
-        finally:
-            instances.drop(ctx, standby_instance)
-            if slot:
-                execute(
-                    ctx,
-                    instance,
-                    f"SELECT true FROM pg_drop_replication_slot('{slot}')",
-                )
-            assert not pg_replication_slots()
+        instances.promote(ctx, standby_instance)
+        assert not standby_instance.standby
+        assert execute(
+            ctx,
+            standby_instance,
+            "SELECT * FROM pg_is_in_recovery()",
+            role=replrole,
+            dbname="template1",
+        ) == [{"pg_is_in_recovery": False}]
 
 
 def test_instance_upgrade(

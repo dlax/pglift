@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type
 
 import pgtoolkit.conf
 import port_for
+import psycopg.conninfo
 import pydantic
 import pytest
 from pgtoolkit.ctl import Status
@@ -394,6 +395,53 @@ def instance(
     return system.Instance.system_lookup(
         ctx, (instance_manifest.name, instance_manifest.version)
     )
+
+
+@pytest.fixture(scope="session")
+def standby_manifest(
+    ctx: Context,
+    settings: Settings,
+    composite_instance_model: Type[interface.Instance],
+    tmp_port_factory: Iterator[int],
+    pg_version: str,
+    replrole_password: str,
+    instance: system.Instance,
+) -> interface.Instance:
+    primary_conninfo = psycopg.conninfo.make_conninfo(
+        host=settings.postgresql.socket_directory,
+        port=instance.port,
+        user=settings.postgresql.replrole,
+    )
+    return composite_instance_model.parse_obj(
+        {
+            "name": "standby",
+            "version": pg_version,
+            "port": next(tmp_port_factory),
+            "configuration": {
+                # Keep logs to stderr in tests so that they are captured by pytest.
+                "logging_collector": False,
+            },
+            "standby": {
+                "for": primary_conninfo,
+                "password": replrole_password,
+                "slot": "standby",
+            },
+            "prometheus": {"port": next(tmp_port_factory)},
+        }
+    )
+
+
+@pytest.fixture(scope="session")
+def standby_instance(
+    ctx: Context, standby_manifest: interface.Instance, instance: system.Instance
+) -> Iterator[system.Instance]:
+    with instances.running(ctx, instance):
+        r = instances.apply(ctx, standby_manifest)
+        assert r is not None
+    stdby_instance = r[0]
+    instances.stop(ctx, stdby_instance)
+    yield stdby_instance
+    instances.drop(ctx, stdby_instance)
 
 
 @pytest.fixture(scope="session")
