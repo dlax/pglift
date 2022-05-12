@@ -56,7 +56,9 @@
         name: preprod
       register: preprod
 
-    - name: create database test on pre-production instance using community.postgresql module
+    - name: |
+        create database test on pre-production instance using
+        community.postgresql module
       community.postgresql.postgresql_db:
         name: test
         login_host: "{{ preprod.PGHOST }}"
