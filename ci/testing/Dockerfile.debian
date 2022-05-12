@@ -10,10 +10,11 @@ RUN apt-get -qq update && \
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -c -s)-pgdg main" \
 	| tee /etc/apt/sources.list.d/pgdg.list
 RUN curl --output /etc/apt/trusted.gpg.d/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+RUN mkdir -p /etc/postgresql-common/createcluster.d/
+RUN echo "create_main_cluster = false" \
+	> /etc/postgresql-common/createcluster.d/no-main-cluster.conf
 RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends postgresql-common
-RUN echo "create_main_cluster = false" \
-	> /etc/postgresql-common/createcluster.conf
 RUN apt-get -qq update && \
 	apt-get -y install --no-install-recommends \
 	build-essential \
