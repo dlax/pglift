@@ -31,25 +31,14 @@ def test_directories(instance: system.Instance) -> None:
 def test_config(instance: system.Instance) -> None:
     postgresql_conf = instance.datadir / "postgresql.conf"
     assert postgresql_conf.exists()
-    locale_prefix = "lc_"
-    locale_settings = {}
     with postgresql_conf.open() as f:
         for line in f:
             if line.strip() == "include_dir = 'conf.pglift.d'":
                 continue
-            if line.startswith(locale_prefix):
-                key, value = line[len(locale_prefix) :].split(" = ", 1)
-                locale_settings[key] = value.split("#", 1)[0].strip()
-            else:
-                sline = line.lstrip()
-                assert not sline or sline.startswith(
-                    "#"
-                ), f"found uncommented line in postgresql.conf: {line}"
-
-    expected_locale_settings = dict.fromkeys(
-        ["messages", "monetary", "numeric", "time"], "'C'"
-    )
-    assert locale_settings == expected_locale_settings
+            sline = line.lstrip()
+            assert not sline or sline.startswith(
+                "#"
+            ), f"found uncommented line in postgresql.conf: {line}"
 
 
 def test_psqlrc(instance: system.Instance) -> None:
@@ -320,6 +309,10 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
         logdir = config.pop("log_directory")
         assert logdir == str(log_directory)
     assert config == {
+        "lc_messages": "C",
+        "lc_monetary": "C",
+        "lc_numeric": "C",
+        "lc_time": "C",
         "logging_collector": False,
         "shared_preload_libraries": "passwordcheck",
     }

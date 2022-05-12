@@ -172,8 +172,6 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
 
     # Possibly comment out everything in postgresql.conf, as in upstream
     # sample file, but in contrast with some distribution packages.
-    # However, keep lc_* parameters which are set by initdb, using
-    # initdb.locale setting.
     postgresql_conf = instance.datadir / "postgresql.conf"
     pgconfig = pgconf.Configuration(str(postgresql_conf))
     with postgresql_conf.open() as f:
@@ -184,7 +182,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     with pgconfig.edit() as entries:
         commented = set()
         for name, entry in entries.items():
-            if not entry.commented and not name.startswith("lc_"):
+            if not entry.commented:
                 entry.commented = True
                 commented.add(name)
     logger.debug(
@@ -831,6 +829,11 @@ def apply(
 
     configure_options = manifest.configuration or {}
     configure_options["port"] = manifest.port
+    locale = manifest.locale or ctx.settings.postgresql.initdb.locale
+    if locale:
+        for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
+            configure_options.setdefault(key, locale)
+
     changes, needs_restart = configure(
         ctx,
         manifest,
