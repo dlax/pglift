@@ -178,8 +178,19 @@ def instance_promote(ctx: Context, instance: system.Instance) -> None:
 def instance_get(
     ctx: Context, console: Console, instance: system.Instance, as_json: bool
 ) -> None:
-    """Get the description of PostgreSQL INSTANCE"""
-    m = instances.get(ctx, instance.name, instance.version).dict(by_alias=True)
+    """Get the description of PostgreSQL INSTANCE.
+
+    Unless --json is specified, 'configuration' and 'state' fields are not
+    shown as well as 'standby' information if INSTANCE is not a standby.
+    """
+    exclude = set()
+    if not as_json:
+        exclude.update(["configuration", "state"])
+        if not instance.standby:
+            exclude.add("standby")
+    m = instances.get(ctx, instance.name, instance.version).dict(
+        by_alias=True, exclude=exclude
+    )
     if as_json:
         print_json_for(m, display=console.print_json)
     else:

@@ -428,12 +428,29 @@ def test_instance_get(
     pg_version: str,
     args: List[str],
 ) -> None:
-    manifest = interface.Instance(name="test")
+    manifest = interface.Instance.parse_obj(
+        {
+            "name": "test",
+            "locale": "C",
+            "encoding": "UTF16",
+            "surole_password": "ahaha",
+            "standby": {"for": "host=primary"},
+        }
+    )
     with patch.object(instances, "get", return_value=manifest) as get:
-        result = runner.invoke(cli, ["instance", "get", "--json"] + args, obj=obj)
-    assert result.exit_code == 0, (result, result.output)
+        json_result = runner.invoke(cli, ["instance", "get", "--json"] + args, obj=obj)
     get.assert_called_once_with(ctx, "test", pg_version)
-    assert '"name": "test"' in result.output
+    assert json_result.exit_code == 0, (json_result, json_result.output)
+    assert '"name": "test"' in json_result.output
+
+    with patch.object(instances, "get", return_value=manifest) as get:
+        table_result = runner.invoke(cli, ["instance", "get"] + args, obj=obj)
+    get.assert_called_once_with(ctx, "test", pg_version)
+    assert table_result.exit_code == 0, (table_result, table_result.output)
+    assert table_result.output.splitlines() == [
+        " name  version  port  ssl    surole…  replro…  data_c…  locale  encodi…  exten… ",
+        " test                 False  ******…                    C       UTF16           ",
+    ]
 
 
 def test_instance_list(
