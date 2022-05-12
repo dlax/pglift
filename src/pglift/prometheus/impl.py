@@ -340,16 +340,17 @@ def setup_local(
     if not configpath.exists():
         # Create dedicated user but only if postgres_exporter
         # as never been initialized
-        password_ = util.generate_password()
-        with instances.running(ctx, instance):
-            role = interface.Role(
-                name=rolename,
-                password=password_,
-                login=True,
-                in_roles=["pg_monitor"],
-            )
-            if not instance.standby and not roles.exists(ctx, instance, role.name):
-                roles.create(ctx, instance, role)
+        if not instance.standby:
+            password_ = util.generate_password()
+            with instances.running(ctx, instance):
+                role = interface.Role(
+                    name=rolename,
+                    password=password_,
+                    login=True,
+                    in_roles=["pg_monitor"],
+                )
+                if not roles.exists(ctx, instance, role.name):
+                    roles.create(ctx, instance, role)
     else:
         # Get the password from config file
         password_ = password(instance.qualname, settings)
