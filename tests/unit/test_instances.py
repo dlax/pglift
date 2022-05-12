@@ -433,11 +433,16 @@ def test_check_pending_actions(
         instances, "settings", return_value=_settings
     ) as settings, patch.object(
         instances, "reload"
-    ) as reload, caplog.at_level(
+    ) as reload, patch.object(
+        ctx, "confirm", return_value=False
+    ) as confirm, caplog.at_level(
         logging.INFO
     ):
         needs_restart = instances.check_pending_actions(ctx, instance, changes)
         assert needs_restart
+    confirm.assert_called_once_with(
+        "Instance needs to be restarted; restart now?", True
+    )
     settings.assert_called_once()
     assert (
         f"instance {instance} needs restart due to parameter changes: needs_restart"

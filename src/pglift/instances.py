@@ -933,7 +933,7 @@ def check_pending_actions(
             needs_restart = True
 
     if needs_restart and ctx.confirm(
-        "Instance needs to be restarted; restart now?", False
+        "Instance needs to be restarted; restart now?", True
     ):
         restart(ctx, instance)
         needs_restart = False

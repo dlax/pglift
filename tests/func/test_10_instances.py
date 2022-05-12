@@ -257,6 +257,7 @@ def test_apply(
     assert i.exists()
     assert i.port == port
     assert changes["port"] == (None, port)
+    assert not needs_restart
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
@@ -284,7 +285,7 @@ def test_apply(
         "listen_addresses": (None, "*"),
         "autovacuum": (None, False),
     }
-    assert needs_restart
+    assert not needs_restart  # restarted automatically
     assert instances.status(ctx, i) == Status.running
 
     im.state = interface.InstanceState.stopped
