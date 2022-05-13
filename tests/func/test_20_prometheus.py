@@ -144,6 +144,30 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
             request_metrics(port)
 
 
+@pytest.mark.xfail(strict=True)
+def test_standby(
+    ctx: Context,
+    prometheus_settings: PrometheusSettings,
+    standby_instance: system.Instance,
+) -> None:
+    name = standby_instance.qualname
+    service = standby_instance.service(models.Service)
+    port = service.port
+    configpath = Path(str(prometheus_settings.configpath).format(name=name))
+    assert configpath.exists()
+    with instances.running(ctx, standby_instance, run_hooks=True):
+        if ctx.settings.service_manager == "systemd":
+            assert systemd.is_active(ctx, prometheus.systemd_unit(name))
+        try:
+            r = request_metrics(port)
+        except requests.ConnectionError as e:
+            raise AssertionError(f"HTTP connection failed: {e}") from None
+        r.raise_for_status()
+        assert r.ok
+        output = r.text
+        assert "pg_up 1" in output.splitlines()
+
+
 def test_start_stop_nonlocal(
     ctx: Context,
     prometheus_settings: PrometheusSettings,
