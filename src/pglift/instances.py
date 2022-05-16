@@ -880,12 +880,6 @@ def apply(
     ):
         promote(ctx, sys_instance)
 
-    if needs_restart and ctx.confirm(
-        "Instance needs to be restarted; restart now?", False
-    ):
-        restart(ctx, sys_instance)
-        needs_restart = False
-
     if not sys_instance.standby:
         with running(ctx, sys_instance):
             db.create_or_drop_extensions(ctx, sys_instance, instance.extensions)
