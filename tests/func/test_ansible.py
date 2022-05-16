@@ -72,6 +72,7 @@ def call_playbook(
         passwords = {
             "postgresql_surole_password": "supers3kret",
             "prod_bob_password": "s3kret",
+            "prometheus_role_password": "pr0m3th3u$",
         }
         yaml.dump(passwords, f)
     subprocess.check_call(["ansible-vault", "encrypt", str(tmp_path / "vars")], env=env)
@@ -138,7 +139,6 @@ def test_ansible(
         )
         assert cur.fetchall() == [
             {"role": "bob", "member_of": ["pg_read_all_stats", "pg_signal_backend"]},
-            {"role": "monitoring", "member_of": ["pg_monitor"]},
             {
                 "role": "pg_monitor",
                 "member_of": [
@@ -147,6 +147,7 @@ def test_ansible(
                     "pg_stat_scan_tables",
                 ],
             },
+            {"role": "prometheus", "member_of": ["pg_monitor"]},
         ]
         extensions = cnx.execute("SELECT extname FROM pg_extension").fetchall()
 

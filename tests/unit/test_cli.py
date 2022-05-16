@@ -374,7 +374,7 @@ def test_instance_apply(
 
     m: Dict[str, Any] = {"name": "test"}
     if ctx.settings.prometheus is not None:
-        m["prometheus"] = {"port": 1212}
+        m["prometheus"] = {"password": "truite", "port": 1212}
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump(m)
     manifest.write_text(content)

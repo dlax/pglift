@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Iterator, Optional, Type
 
+import pydantic
 import pytest
 from pgtoolkit.ctl import PGCtl
 
@@ -129,7 +130,9 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
     prometheus = None
     if settings.prometheus is not None:
         prometheus_port = 9817
-        prometheus = prometheus_models.Service(port=prometheus_port)
+        prometheus = prometheus_models.Service(
+            port=prometheus_port, password=pydantic.SecretStr("truite")
+        )
 
     instance = Instance(
         name=name,

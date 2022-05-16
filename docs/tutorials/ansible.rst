@@ -89,6 +89,7 @@ variables:
     $ cat << EOF | ansible-vault encrypt > $tmpdir/vars
     postgresql_surole_password: $(openssl rand -base64 9)
     prod_bob_password: $(openssl rand -base64 9)
+    prometheus_role_password: $(openssl rand -base64 9)
     EOF
 
 To view actual passwords:

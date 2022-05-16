@@ -12,10 +12,11 @@
           max_connections: 100
           shared_buffers: 1GB
           unix_socket_directories: /tmp
-        prometheus_port: 9186
         surole_password: "{{ postgresql_surole_password }}"
         extensions:
           - unaccent
+        prometheus_password: "{{ prometheus_role_password }}"
+        prometheus_port: 9186
       register: prod
 
     - name: db, dropped
@@ -46,5 +47,6 @@
         configuration:
           max_connections: 42
           unix_socket_directories: /tmp
-        prometheus_port: 9189
         surole_password: "{{ postgresql_surole_password }}"
+        prometheus_password: "{{ prometheus_role_password }}"
+        prometheus_port: 9189

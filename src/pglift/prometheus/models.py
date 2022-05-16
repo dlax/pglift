@@ -4,6 +4,7 @@ from typing import ClassVar, Dict, Optional
 import attr
 import psycopg
 import psycopg.conninfo
+import pydantic
 from pydantic import Field, SecretStr, validator
 
 from .. import types
@@ -19,11 +20,18 @@ class Service:
     port: int
     """TCP port for the web interface and telemetry."""
 
+    password: Optional[pydantic.SecretStr]
+
 
 class ServiceManifest(types.ServiceManifest, service_name="prometheus"):
     port: int = Field(
         default=default_port,
         description="TCP port for the web interface and telemetry of Prometheus",
+    )
+    password: Optional[pydantic.SecretStr] = Field(
+        default=None,
+        description="Password of PostgreSQL role for Prometheus postgres_exporter.",
+        writeOnly=True,
     )
 
 

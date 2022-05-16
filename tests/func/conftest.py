@@ -316,6 +316,11 @@ def replrole_password(settings: Settings) -> str:
 
 
 @pytest.fixture(scope="session")
+def prometheus_password() -> str:
+    return "prom3th3us"
+
+
+@pytest.fixture(scope="session")
 def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
     return interface.Instance.composite(ctx.pm)
 
@@ -331,6 +336,7 @@ def instance_manifest(
     pg_version: str,
     surole_password: str,
     replrole_password: str,
+    prometheus_password: str,
     log_directory: pathlib.Path,
     tmp_port_factory: Iterator[int],
     composite_instance_model: Type[interface.Instance],
@@ -354,7 +360,10 @@ def instance_manifest(
             "surole_password": surole_password,
             "replrole_password": replrole_password,
             "extensions": ["passwordcheck"],
-            "prometheus": {"port": prometheus_port},
+            "prometheus": {
+                "password": prometheus_password,
+                "port": prometheus_port,
+            },
         }
     )
 
@@ -391,6 +400,7 @@ def standby_manifest(
     tmp_port_factory: Iterator[int],
     pg_version: str,
     replrole_password: str,
+    prometheus_password: str,
     instance: system.Instance,
 ) -> interface.Instance:
     primary_conninfo = psycopg.conninfo.make_conninfo(
@@ -412,7 +422,10 @@ def standby_manifest(
                 "password": replrole_password,
                 "slot": "standby",
             },
-            "prometheus": {"port": next(tmp_port_factory)},
+            "prometheus": {
+                "password": prometheus_password,
+                "port": next(tmp_port_factory),
+            },
         }
     )
 

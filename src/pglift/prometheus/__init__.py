@@ -1,6 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Optional, Type
 
+import pydantic
+
 from .. import exceptions, hookimpl, systemd, util
 from . import impl, models
 from .impl import apply as apply
@@ -28,12 +30,18 @@ def system_lookup(
     settings = available(ctx)
     assert settings is not None
     try:
-        p = impl.port(instance.qualname, settings)
-    except exceptions.FileNotFoundError as exc:
-        logger.debug("failed to read postgres_exporter port for %s: %s", instance, exc)
+        port = impl.port(instance.qualname, settings)
+        passwd = impl.password(instance.qualname, settings)
+    except (exceptions.FileNotFoundError, exceptions.ConfigurationError) as exc:
+        logger.debug(
+            "failed to read postgres_exporter configuration for %s: %s", instance, exc
+        )
         return None
     else:
-        return models.Service(port=p)
+        password = None
+        if passwd is not None:
+            password = pydantic.SecretStr(passwd)
+        return models.Service(port=port, password=password)
 
 
 @hookimpl  # type: ignore[misc]

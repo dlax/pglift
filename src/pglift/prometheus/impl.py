@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 import psycopg
 import psycopg.conninfo
 
-from .. import cmd, exceptions, instances, roles, systemd, util
+from .. import cmd, exceptions, instances, roles, systemd
 from ..models import interface, system
 from ..task import task
 from .models import PostgresExporter, ServiceManifest, default_port
@@ -323,7 +323,7 @@ def setup_local(
     service = manifest.service(ServiceManifest)
     if service is None:
         return
-    rolename = ctx.settings.postgresql.monitoringrole
+    rolename = settings.role
     dsn = ["dbname=postgres"]
     if "port" in instance_config:
         dsn.append(f"port={instance_config.port}")
@@ -338,18 +338,12 @@ def setup_local(
         ctx, (manifest.name, manifest.version)
     )
     configpath = _configpath(instance.qualname, settings)
-    password_: Optional[str]
+    password_: Optional[str] = None
     if not configpath.exists():
-        # Create dedicated user but only if postgres_exporter
-        # as never been initialized
-        if instance.standby:
-            # TODO: https://gitlab.com/dalibo/pglift/-/issues/136
-            logger.warning(
-                "postgres_exporter setup on standby instance is not implemented"
-            )
-            return
-        else:
-            password_ = util.generate_password()
+        if service.password:
+            password_ = service.password.get_secret_value()
+        # Create dedicated user but only if postgres_exporter as never been initialized
+        if not instance.standby:
             with instances.running(ctx, instance):
                 role = interface.Role(
                     name=rolename,

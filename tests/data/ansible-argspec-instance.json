@@ -83,6 +83,13 @@
     ],
     "type": "int"
   },
+  "prometheus_password": {
+    "description": [
+      "Password of PostgreSQL role for Prometheus postgres_exporter"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "prometheus_port": {
     "description": [
       "TCP port for the web interface and telemetry of Prometheus"

@@ -294,10 +294,6 @@ class PostgreSQLSettings(BaseSettings):
         default="backup", description="Instance role used to backup."
     )
 
-    monitoringrole: str = Field(
-        default="monitoring", description="Instance role used for monitoring."
-    )
-
     datadir: str = Field(
         default="data",
         description="Path segment from instance base directory to PGDATA directory.",
@@ -393,6 +389,11 @@ class PrometheusSettings(PluginSettings):
         env_prefix = "prometheus_"
 
     execpath: FilePath = Field(description="Path to the postgres_exporter executable.")
+
+    role: str = Field(
+        default="prometheus",
+        description="Name of the PostgreSQL role for Prometheus postgres_exporter.",
+    )
 
     configpath: ConfigPath = Field(
         default=ConfigPath("prometheus/postgres_exporter-{name}.conf"),

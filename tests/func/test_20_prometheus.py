@@ -30,18 +30,22 @@ def config_dict(configpath: Path) -> Dict[str, str]:
 def test_configure(
     ctx: Context,
     prometheus_settings: PrometheusSettings,
+    prometheus_password: str,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     tmp_port_factory: Iterator[int],
 ) -> None:
     service = instance.service(models.Service)
+    assert (
+        service.password and service.password.get_secret_value() == prometheus_password
+    )
     name = instance.qualname
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
 
     prometheus_config = config_dict(configpath)
     dsn = prometheus_config["DATA_SOURCE_NAME"]
-    assert "user=monitoring" in dsn
+    assert "user=prometheus" in dsn
     assert f"port={instance.port}" in dsn
     port = service.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
@@ -69,7 +73,7 @@ def postgres_exporter(
     port = next(tmp_port_factory)
     name = "123-fo-o"
     role = interface.Role(
-        name="monitoring_tests",  # don't override monitoring Role
+        name="prometheus_tests",
         password=util.generate_password(),
     )
     dsn = f"dbname=postgres port={instance.port} user={role.name} sslmode=disable"
@@ -144,20 +148,24 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
             request_metrics(port)
 
 
-@pytest.mark.xfail(strict=True)
 def test_standby(
     ctx: Context,
+    prometheus_password: str,
     prometheus_settings: PrometheusSettings,
     standby_instance: system.Instance,
 ) -> None:
     name = standby_instance.qualname
     service = standby_instance.service(models.Service)
     port = service.port
+    assert (
+        service.password and service.password.get_secret_value() == prometheus_password
+    )
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
     assert configpath.exists()
     with instances.running(ctx, standby_instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
             assert systemd.is_active(ctx, prometheus.systemd_unit(name))
+        assert instances.status(ctx, standby_instance) == instances.Status.running
         try:
             r = request_metrics(port)
         except requests.ConnectionError as e:

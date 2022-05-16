@@ -12,11 +12,12 @@
           max_connections: 100
           shared_buffers: 1GB
           unix_socket_directories: /tmp
-        prometheus_port: 9186
         surole_password: "{{ postgresql_surole_password }}"
         extensions:
           - pg_stat_statements
           - unaccent
+        prometheus_password: "{{ prometheus_role_password }}"
+        prometheus_port: 9186
 
     - name: a role in production instance
       dalibo.pglift.role:
@@ -48,8 +49,9 @@
         state: started
         configuration:
           unix_socket_directories: /tmp
-        prometheus_port: 9188
         surole_password: "{{ postgresql_surole_password }}"
+        prometheus_password: "{{ prometheus_role_password }}"
+        prometheus_port: 9188
 
     - name: register preprod conninfo
       dalibo.pglift.dsn_info:
@@ -72,5 +74,6 @@
         state: stopped
         configuration:
           unix_socket_directories: /tmp
-        prometheus_port: 9189
         surole_password: "{{ postgresql_surole_password }}"
+        prometheus_password: "{{ prometheus_role_password }}"
+        prometheus_port: 9189
