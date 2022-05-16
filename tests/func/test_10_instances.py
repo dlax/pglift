@@ -22,21 +22,21 @@ from . import AuthType, execute, reconfigure_instance
 from .conftest import DatabaseFactory
 
 
-def test_init(
-    ctx: Context,
-    instance_initialized: system.PostgreSQLInstance,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    i = instance_initialized
-    assert i.datadir.exists()
-    assert i.waldir.exists()
-    postgresql_conf = i.datadir / "postgresql.conf"
+def test_directories(instance: system.Instance) -> None:
+    assert instance.datadir.exists()
+    assert instance.waldir.exists()
+    assert (instance.waldir / "archive_status").is_dir()
+
+
+def test_config(instance: system.Instance) -> None:
+    postgresql_conf = instance.datadir / "postgresql.conf"
     assert postgresql_conf.exists()
-    assert (i.waldir / "archive_status").is_dir()
     locale_prefix = "lc_"
     locale_settings = {}
     with postgresql_conf.open() as f:
         for line in f:
+            if line.strip() == "include_dir = 'conf.pglift.d'":
+                continue
             if line.startswith(locale_prefix):
                 key, value = line[len(locale_prefix) :].split(" = ", 1)
                 locale_settings[key] = value.split("#", 1)[0].strip()
@@ -51,14 +51,24 @@ def test_init(
     )
     assert locale_settings == expected_locale_settings
 
-    assert i.psqlrc.read_text().strip().splitlines() == [
-        f"\\set PROMPT1 '[{i}] %n@%~%R%x%# '",
+
+def test_psqlrc(instance: system.Instance) -> None:
+    assert instance.psqlrc.read_text().strip().splitlines() == [
+        f"\\set PROMPT1 '[{instance}] %n@%~%R%x%# '",
         "\\set PROMPT2 ' %R%x%# '",
     ]
 
-    if ctx.settings.service_manager == "systemd":
-        assert systemd.is_enabled(ctx, instances.systemd_unit(i))
 
+def test_systemd(ctx: Context, instance: system.Instance) -> None:
+    if ctx.settings.service_manager == "systemd":
+        assert systemd.is_enabled(ctx, instances.systemd_unit(instance))
+
+
+def test_reinit(
+    ctx: Context,
+    instance: system.PostgreSQLInstance,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Instance already exists, no-op.
     with monkeypatch.context() as m:
 
@@ -66,12 +76,12 @@ def test_init(
             raise AssertionError("unexpected called")
 
         m.setattr(instances, "pg_ctl", fail)
-        instances.init(ctx, interface.Instance(name=i.name, version=i.version))
+        instances.init(
+            ctx, interface.Instance(name=instance.name, version=instance.version)
+        )
 
 
-def test_log_directory(
-    ctx: Context, instance: system.Instance, log_directory: Path
-) -> None:
+def test_log_directory(instance: system.Instance, log_directory: Path) -> None:
     config = instance.config()
     assert isinstance(config.log_directory, str)
     instance_log_dir = Path(config.log_directory)

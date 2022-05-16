@@ -28,7 +28,7 @@ from pglift.settings import (
     plugins,
 )
 
-from . import AuthType, configure_instance, execute
+from . import AuthType, execute
 
 default_pg_version: Optional[str]
 try:
@@ -321,11 +321,17 @@ def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
 
 
 @pytest.fixture(scope="session")
+def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
+    return tmp_path_factory.mktemp("postgres-logs")
+
+
+@pytest.fixture(scope="session")
 def instance_manifest(
     ctx: Context,
     pg_version: str,
     surole_password: str,
     replrole_password: str,
+    log_directory: pathlib.Path,
     tmp_port_factory: Iterator[int],
     composite_instance_model: Type[interface.Instance],
 ) -> interface.Instance:
@@ -335,11 +341,13 @@ def instance_manifest(
         {
             "name": "test",
             "version": pg_version,
+            "state": "stopped",
             "port": port,
             "auth": {
                 "host": "reject",
             },
             "configuration": {
+                "log_directory": str(log_directory),
                 # Keep logs to stderr in tests so that they are captured by pytest.
                 "logging_collector": False,
             },
@@ -352,36 +360,19 @@ def instance_manifest(
 
 
 @pytest.fixture(scope="session")
-def instance_initialized(
-    ctx: Context, installed: None, instance_manifest: interface.Instance
-) -> system.PostgreSQLInstance:
+def instance(ctx: Context, instance_manifest: interface.Instance) -> system.Instance:
+    # Check status before initialization.
     assert instance_manifest.version is not None
     instance = system.BaseInstance.get(
         instance_manifest.name, instance_manifest.version, ctx
     )
     assert instances.status(ctx, instance) == Status.unspecified_datadir
-    instances.init(ctx, instance_manifest)
-    assert instances.status(ctx, instance) == Status.not_running
-    return system.PostgreSQLInstance.system_lookup(
-        ctx, (instance_manifest.name, instance_manifest.version)
-    )
-
-
-@pytest.fixture(scope="session")
-def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
-    return tmp_path_factory.mktemp("postgres-logs")
-
-
-@pytest.fixture(scope="session")
-def instance(
-    ctx: Context,
-    instance_manifest: interface.Instance,
-    instance_initialized: system.PostgreSQLInstance,
-    log_directory: pathlib.Path,
-) -> system.Instance:
+    r = instances.apply(ctx, instance_manifest)
+    assert r is not None
+    instance = r[0]
     # Limit postgresql.conf to uncommented entries to reduce pytest's output
     # due to --show-locals.
-    postgresql_conf = instance_initialized.datadir / "postgresql.conf"
+    postgresql_conf = instance.datadir / "postgresql.conf"
     postgresql_conf.write_text(
         "\n".join(
             line
@@ -389,12 +380,7 @@ def instance(
             if line.strip() and not line.strip().startswith("#")
         )
     )
-    configure_instance(
-        ctx, instance_manifest, creating=True, log_directory=str(log_directory)
-    )
-    return system.Instance.system_lookup(
-        ctx, (instance_manifest.name, instance_manifest.version)
-    )
+    return instance
 
 
 @pytest.fixture(scope="session")
