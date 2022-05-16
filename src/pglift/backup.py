@@ -71,7 +71,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    ctx = Context(settings=settings.Settings())
+    ctx = Context(settings=settings.SiteSettings())
     try:
         instance = system.PostgreSQLInstance.from_stanza(ctx, args.stanza)
     except ValueError as e:

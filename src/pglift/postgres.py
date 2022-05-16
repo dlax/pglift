@@ -21,7 +21,7 @@ def main(
 ) -> int:
     args = parser.parse_args(argv)
     if ctx is None:
-        ctx = Context(settings=settings.Settings())
+        ctx = Context(settings=settings.SiteSettings())
 
     try:
         instance = system.PostgreSQLInstance.from_stanza(ctx, args.instance)
