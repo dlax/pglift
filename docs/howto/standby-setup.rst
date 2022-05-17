@@ -18,6 +18,11 @@ If the primary is also a pglift instance, you must use the dedicated
 pglift will call `pg_basebackup`_ utility to create a standby. A replication
 slot can be specified with ``--standby-slot <slot name>``.
 
+.. note::
+   If Prometheus postgres_exporter was set up on the primary instance and is
+   wanted on the standby, don't forget to provide ``--prometheus-password``
+   option to the above command with the same password as on the primary
+   instance.
 
 Promoting a standby instance:
 
