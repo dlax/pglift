@@ -1168,7 +1168,7 @@ def settings(
 
     The instance must be running.
     """
-    with db.superuser_connect(ctx, instance) as cnx, cnx.cursor(
+    with db.superuser_connect(ctx, instance, dbname="template1") as cnx, cnx.cursor(
         row_factory=psycopg.rows.class_row(interface.PGSetting)
     ) as cur:
         cur.execute(interface.PGSetting._query)
