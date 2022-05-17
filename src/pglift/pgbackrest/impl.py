@@ -35,7 +35,7 @@ def make_cmd(
     instance: "system.BaseInstance", settings: "PgBackRestSettings", *args: str
 ) -> List[str]:
     configpath = _configpath(instance, settings)
-    stanza = _stanza(instance)
+    stanza = instance.qualname
     return [
         str(settings.execpath),
         f"--config={configpath}",
@@ -47,10 +47,6 @@ def _configpath(
     instance: "system.BaseInstance", settings: "PgBackRestSettings"
 ) -> Path:
     return Path(str(settings.configpath).format(instance=instance))
-
-
-def _stanza(instance: "system.BaseInstance") -> str:
-    return f"{instance.version}-{instance.name}"
 
 
 @overload
@@ -118,7 +114,7 @@ def setup(
     lockpath = Path(str(settings.lockpath).format(instance=instance))
     lockpath.mkdir(exist_ok=True, parents=True)
 
-    stanza = _stanza(instance)
+    stanza = instance.qualname
 
     # Always use string values so that this would match with actual config (on
     # disk) that's parsed later on.
@@ -412,5 +408,5 @@ def env_for(
 ) -> Dict[str, str]:
     return {
         "PGBACKREST_CONFIG": str(_configpath(instance, settings)),
-        "PGBACKREST_STANZA": _stanza(instance),
+        "PGBACKREST_STANZA": instance.qualname,
     }
