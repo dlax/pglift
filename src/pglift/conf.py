@@ -90,3 +90,21 @@ def create_log_directory(instance: "BaseInstance", path: Path) -> None:
 def remove_log_directory(instance: "BaseInstance", path: Path) -> None:
     if path.exists():
         shutil.rmtree(path)
+
+
+def merge_lists(first: str, second: str) -> str:
+    """Contatenate two coma separated lists eliminating duplicates.
+
+    >>> old = ""
+    >>> new = "foo"
+    >>> merge_lists(old, new)
+    'foo'
+
+    >>> old = "foo, bar, dude"
+    >>> new = "bar, truite"
+    >>> merge_lists(old, new)
+    'foo, bar, dude, truite'
+    """
+    first_list = [s.strip() for s in first.split(",") if s.strip()]
+    second_list = [s.strip() for s in second.split(",") if s.strip()]
+    return ", ".join(first_list + [s for s in second_list if s not in first_list])

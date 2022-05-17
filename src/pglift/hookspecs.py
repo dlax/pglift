@@ -47,6 +47,13 @@ def interface_model() -> Type["ServiceManifest"]:
 
 
 @hookspec  # type: ignore[misc]
+def instance_configuration(
+    ctx: "BaseContext", manifest: "interface.Instance"
+) -> Configuration:
+    """Called before the PostgreSQL instance configuration is written."""
+
+
+@hookspec  # type: ignore[misc]
 def instance_configure(
     ctx: "BaseContext",
     manifest: "interface.Instance",

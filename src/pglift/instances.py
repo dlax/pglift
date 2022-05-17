@@ -292,12 +292,22 @@ def configure(
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
-    spl = []
+    spl = ""
+    spl_list = []
     for extension in manifest.extensions:
         if EXTENSIONS_CONFIG[extension][0]:
-            spl.append(extension)
+            spl_list.append(extension)
+    spl = ", ".join(spl_list)
+
+    for r in ctx.hook.instance_configuration(ctx=ctx, manifest=manifest):
+        for k, v in r.entries.items():
+            if k == "shared_preload_libraries":
+                spl = conf.merge_lists(spl, v.value)
+            else:
+                confitems[k] = v.value
+
     if spl:
-        confitems["shared_preload_libraries"] = ", ".join(spl)
+        confitems["shared_preload_libraries"] = spl
 
     def format_values(
         confitems: Dict[str, Any], memtotal: float = util.total_memory()
