@@ -145,7 +145,7 @@ def _instance_alter(
     def command(ctx: Context, instance: system.Instance, **changes: Any) -> None:
         """Alter PostgreSQL INSTANCE"""
         changes = helpers.unnest(composite_instance_model, changes)
-        values = instances._get(ctx, instance).dict()
+        values = instances._get(ctx, instance).dict(exclude={"configuration"})
         values = deep_update(values, changes)
         altered = composite_instance_model.parse_obj(values)
         instances.apply(ctx, altered)
