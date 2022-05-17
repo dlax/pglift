@@ -163,3 +163,12 @@ def test_backup_restore(
         assert "backrest" in [r["datname"] for r in rows]
         rows = execute(ctx, instance, "SELECT * FROM t", dbname="backrest")
         assert set(r["s"] for r in rows) == {"created", "backup1"}
+
+    # With a label target, WALs are not replayed, just restore instance state
+    # at specified backup.
+    pgbackrest.restore(ctx, instance, pgbackrest_settings, label=backup1.label)
+    with instances.running(ctx, instance):
+        rows = execute(ctx, instance, "SELECT datname FROM pg_database")
+        assert "backrest" in [r["datname"] for r in rows]
+        rows = execute(ctx, instance, "SELECT * FROM t", dbname="backrest")
+        assert rows == [{"s": "created"}]

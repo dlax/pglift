@@ -375,7 +375,7 @@ def restore_command(
         target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
         args += ["--target-action=promote", "--type=time", f"--target={target}"]
     elif backup_set is not None:
-        args += ["--target-action=promote", f"--set={backup_set}"]
+        args += ["--target-action=promote", "--type=immediate", f"--set={backup_set}"]
     args.append("restore")
     return make_cmd(instance, settings, *args)
 

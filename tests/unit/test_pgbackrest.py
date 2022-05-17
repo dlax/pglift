@@ -145,6 +145,7 @@ def test_restore_command(
         "--delta",
         "--link-all",
         "--target-action=promote",
+        "--type=immediate",
         "--set=x",
         "restore",
     ]
