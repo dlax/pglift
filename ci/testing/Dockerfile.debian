@@ -23,6 +23,9 @@ RUN apt-get -qq update && \
 	python3-pip \
 	python3-venv \
 	postgresql-14 \
+	postgresql-14-pg-qualstats \
+	postgresql-14-pg-stat-kcache \
+	postgresql-14-powa \
 	pgbackrest \
 	prometheus-postgres-exporter \
 	tox \

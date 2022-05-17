@@ -96,6 +96,13 @@
     "no_log": true,
     "type": "str"
   },
+  "powa_password": {
+    "description": [
+      "Password of PostgreSQL role for PoWA"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "prometheus_port": {
     "description": [
       "TCP port for the web interface and telemetry of Prometheus"

@@ -69,8 +69,12 @@ ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
 class Extension(AutoStrEnum):
     """A PostgreSQL instance-level extension"""
 
+    btree_gist = enum.auto()
     passwordcheck = enum.auto()
+    pg_qualstats = enum.auto()
+    pg_stat_kcache = enum.auto()
     pg_stat_statements = enum.auto()
+    powa = enum.auto()
     unaccent = enum.auto()
 
 

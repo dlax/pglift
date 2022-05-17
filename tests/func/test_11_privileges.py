@@ -158,7 +158,9 @@ def test_get_general(ctx: Context, instance: system.Instance) -> None:
             column_privileges={"x": ["SELECT"]},
         ),
     ]
-    prvlgs = privileges.get(ctx, instance, defaults=False)
+    prvlgs = [
+        p for p in privileges.get(ctx, instance, defaults=False) if p.database != "powa"
+    ]
     assert prvlgs == expected
     assert (
         privileges.get(ctx, instance, databases=["db1"], defaults=False)

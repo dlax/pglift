@@ -8,6 +8,7 @@ def test_pluginmanager_get() -> None:
         "pglift.instances",
         "pglift.passfile",
         "pglift.pgbackrest",
+        "pglift.powa",
     }
 
 

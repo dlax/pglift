@@ -6,3 +6,4 @@ scheduler: systemd
 pgbackrest: {}
 prometheus:
   execpath: /usr/bin/prometheus-postgres-exporter
+powa: {}

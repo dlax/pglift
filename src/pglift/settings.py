@@ -115,8 +115,12 @@ class PluginSettings(BaseSettings):
 #  - the first one tells if the module needs to be added to shared_preload_libraries
 #  - the second one tells if the module is an extension (used with CREATE EXTENSION…)
 EXTENSIONS_CONFIG: Dict[types.Extension, Tuple[bool, bool]] = {
+    types.Extension.btree_gist: (False, True),
     types.Extension.passwordcheck: (True, False),
+    types.Extension.pg_qualstats: (True, True),
+    types.Extension.pg_stat_kcache: (True, True),
     types.Extension.pg_stat_statements: (True, True),
+    types.Extension.powa: (False, True),
     types.Extension.unaccent: (False, True),
 }
 
@@ -412,6 +416,18 @@ class PrometheusSettings(PluginSettings):
 
 
 @frozen
+class PowaSettings(PluginSettings):
+    """Settings for PoWA."""
+
+    class Config:
+        env_prefix = "powa_"
+
+    dbname: str = Field(default="powa", description="Name of the PoWA database")
+
+    role: str = Field(default="powa", description="Instance role used for PoWA.")
+
+
+@frozen
 class SystemdSettings(BaseSettings):
     """Systemd settings."""
 
@@ -481,6 +497,7 @@ class Settings(BaseSettings):
 
     postgresql: PostgreSQLSettings = PostgreSQLSettings()
     pgbackrest: Optional[PgBackRestSettings] = None
+    powa: Optional[PowaSettings] = None
     prometheus: Optional[PrometheusSettings] = None
     systemd: SystemdSettings = SystemdSettings()
 

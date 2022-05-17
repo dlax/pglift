@@ -170,4 +170,8 @@ def test_systemd_sudo_user() -> None:
 
 
 def test_plugins() -> None:
-    assert set(n for n, _ in plugins(Settings())) == {"pgbackrest", "prometheus"}
+    assert set(n for n, _ in plugins(Settings())) == {
+        "pgbackrest",
+        "prometheus",
+        "powa",
+    }

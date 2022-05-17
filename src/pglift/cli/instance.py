@@ -186,7 +186,7 @@ def instance_get(
     """
     exclude = set()
     if not as_json:
-        exclude.update(["configuration", "state"])
+        exclude.update(["configuration", "state", "powa"])
         if not instance.standby:
             exclude.add("standby")
     m = instances.get(ctx, instance.name, instance.version).dict(

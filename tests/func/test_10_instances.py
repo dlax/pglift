@@ -316,7 +316,7 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
         "lc_numeric": "C",
         "lc_time": "C",
         "logging_collector": False,
-        "shared_preload_libraries": "passwordcheck",
+        "shared_preload_libraries": "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache",
     }
     if int(instance.version) <= 10:
         assert im.data_checksums is None
@@ -324,7 +324,12 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
         assert im.data_checksums is False
     assert im.state.name == "stopped"
     assert not im.surole_password
-    assert im.extensions == ["passwordcheck"]
+    assert im.extensions == [
+        "passwordcheck",
+        "pg_qualstats",
+        "pg_stat_statements",
+        "pg_stat_kcache",
+    ]
     assert not im.pending_restart
 
     with instances.running(ctx, instance):
@@ -643,7 +648,10 @@ def test_extensions(
 ) -> None:
     old_extensions = instance_manifest.extensions
     config = instance.config()
-    assert config.shared_preload_libraries == "passwordcheck"
+    assert (
+        config.shared_preload_libraries
+        == "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache"
+    )
     with instances.running(ctx, instance):
         instance_manifest.extensions = list(
             map(
@@ -657,12 +665,17 @@ def test_extensions(
         im = instances.get(ctx, instance.name, instance.version)
         assert sorted(im.extensions) == [
             "passwordcheck",
+            "pg_qualstats",
+            "pg_stat_kcache",
             "pg_stat_statements",
             "unaccent",
         ]
 
         config = instance.config()
-        assert config.shared_preload_libraries == "pg_stat_statements, passwordcheck"
+        assert (
+            config.shared_preload_libraries
+            == "pg_stat_statements, passwordcheck, pg_qualstats, pg_stat_kcache"
+        )
 
         def get_installed_extensions() -> List[str]:
             return [
@@ -678,6 +691,8 @@ def test_extensions(
         assert instances._get(ctx, instance).extensions == [
             "pg_stat_statements",
             "passwordcheck",
+            "pg_qualstats",
+            "pg_stat_kcache",
             "unaccent",
         ]
 
@@ -688,7 +703,6 @@ def test_extensions(
         r = instances.apply(ctx, instance_manifest)
         instances.restart(ctx, instance)
         config = instance.config()
-        assert "shared_preload_libraries" not in config
         installed = get_installed_extensions()
         assert "pg_stat_statements" not in installed
         assert "unaccent" in installed

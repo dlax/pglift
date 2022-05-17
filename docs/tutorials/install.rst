@@ -60,7 +60,7 @@ be needed:
 - ``postgresql``
 - ``pgbackrest``
 - ``prometheus-postgres-exporter``
-
+- ``powa`` (with ``pg_qualstats`` and ``pg_stat_kcache``)
 
 Shell completion
 ----------------

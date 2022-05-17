@@ -103,6 +103,23 @@ def prometheus_execpath() -> Optional[pathlib.Path]:
 
 
 @pytest.fixture(scope="session")
+def powa_available(pg_bindir: Tuple[pathlib.Path, str]) -> bool:
+    pg_config = pg_bindir[0] / "pg_config"
+    result = subprocess.run(
+        [pg_config, "--pkglibdir"],
+        stdout=subprocess.PIPE,
+        check=True,
+        universal_newlines=True,
+    )
+    pkglibdir = pathlib.Path(result.stdout.strip())
+    return (
+        (pkglibdir / "pg_qualstats.so").exists()
+        and (pkglibdir / "pg_stat_kcache.so").exists()
+        and (pkglibdir / "powa.so").exists()
+    )
+
+
+@pytest.fixture(scope="session")
 def systemd_requested(request: Any, systemd_available: bool) -> bool:
     value = request.config.getoption("--systemd")
     assert isinstance(value, bool)
@@ -158,6 +175,7 @@ def settings(
     systemd_available: bool,
     pgbackrest_available: bool,
     prometheus_execpath: Optional[pathlib.Path],
+    powa_available: bool,
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
@@ -173,6 +191,9 @@ def settings(
 
     if prometheus_execpath:
         obj["prometheus"] = {"execpath": prometheus_execpath}
+
+    if powa_available:
+        obj["powa"] = {}
 
     try:
         s = Settings.parse_obj(obj)
@@ -323,6 +344,11 @@ def prometheus_password() -> str:
 
 
 @pytest.fixture(scope="session")
+def powa_password() -> str:
+    return "P0w4"
+
+
+@pytest.fixture(scope="session")
 def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
     return interface.Instance.composite(ctx.pm)
 
@@ -339,6 +365,7 @@ def instance_manifest(
     surole_password: str,
     replrole_password: str,
     prometheus_password: str,
+    powa_password: str,
     log_directory: pathlib.Path,
     tmp_port_factory: Iterator[int],
     composite_instance_model: Type[interface.Instance],
@@ -366,6 +393,7 @@ def instance_manifest(
                 "password": prometheus_password,
                 "port": prometheus_port,
             },
+            "powa": {"password": powa_password},
         }
     )
 
