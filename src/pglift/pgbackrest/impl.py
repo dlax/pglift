@@ -367,13 +367,15 @@ def restore_command(
         "--delta",
         "--link-all",
     ]
-    if date is not None or backup_set is not None:
-        args.append("--target-action=promote")
-        if date is not None:
-            target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
-            args.extend(["--type=time", f"--target={target}"])
-        if backup_set is not None:
-            args.append(f"--set={backup_set}")
+    if date is not None and backup_set is not None:
+        raise exceptions.UnsupportedError(
+            "date and backup_set are not expected to be both specified"
+        )
+    elif date is not None:
+        target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+        args += ["--target-action=promote", "--type=time", f"--target={target}"]
+    elif backup_set is not None:
+        args += ["--target-action=promote", f"--set={backup_set}"]
     args.append("restore")
     return make_cmd(instance, settings, *args)
 

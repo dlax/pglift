@@ -101,11 +101,25 @@ def test_restore_command(
     pgbackrest_settings: PgBackRestSettings,
     instance: Instance,
 ) -> None:
+    with pytest.raises(exceptions.UnsupportedError):
+        pgbackrest.restore_command(
+            instance, pgbackrest_settings, date=datetime.now(), backup_set="sunset"
+        )
+
+    assert pgbackrest.restore_command(instance, pgbackrest_settings) == [
+        "/usr/bin/pgbackrest",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
+        f"--stanza={pg_version}-test",
+        "--log-level-console=info",
+        "--delta",
+        "--link-all",
+        "restore",
+    ]
+
     assert pgbackrest.restore_command(
         instance,
         pgbackrest_settings,
         date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc),
-        backup_set="x",
     ) == [
         "/usr/bin/pgbackrest",
         f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
@@ -116,6 +130,21 @@ def test_restore_command(
         "--target-action=promote",
         "--type=time",
         "--target=2003-01-01 00:00:00.000000+0000",
+        "restore",
+    ]
+
+    assert pgbackrest.restore_command(
+        instance,
+        pgbackrest_settings,
+        backup_set="x",
+    ) == [
+        "/usr/bin/pgbackrest",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
+        f"--stanza={pg_version}-test",
+        "--log-level-console=info",
+        "--delta",
+        "--link-all",
+        "--target-action=promote",
         "--set=x",
         "restore",
     ]
