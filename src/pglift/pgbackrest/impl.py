@@ -153,20 +153,16 @@ def setup(
 
     directory.mkdir(exist_ok=True, parents=True)
 
-    base_cmd = make_cmd(instance, settings)
-
     configdir = instance.datadir
     confd = conf_info(configdir)[0]
     pgconfigfile = confd / "pgbackrest.conf"
     if not pgconfigfile.exists():
-        pgconfig = pgconf.Configuration()
-        pgconfig.archive_command = " ".join(base_cmd + ["archive-push", "%p"])
-        pgconfig.archive_mode = "on"
-        pgconfig.max_wal_senders = 3
-        pgconfig.wal_level = "replica"
-
-        with pgconfigfile.open("w") as f:
-            pgconfig.save(f)
+        config_template = ctx.site_config("postgresql", "pgbackrest.conf")
+        if config_template is not None:
+            pgconfig = config_template.read_text().format(
+                execpath=settings.execpath, configpath=configpath, stanza=stanza
+            )
+            pgconfigfile.write_text(pgconfig)
 
 
 @setup.revert("deconfiguring pgBackRest")
