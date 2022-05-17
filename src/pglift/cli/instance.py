@@ -158,7 +158,8 @@ def _instance_alter(
 @pass_ctx
 def instance_apply(ctx: Context, file: IO[str]) -> None:
     """Apply manifest as a PostgreSQL instance"""
-    instance = interface.Instance.parse_yaml(file)
+    model = interface.Instance.composite(ctx.pm)
+    instance = model.parse_yaml(file)
     instances.apply(ctx, instance)
 
 
