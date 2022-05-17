@@ -110,7 +110,7 @@ def test_setup(
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
 
-@retry(reraise=True, wait=wait_fixed(1), stop=stop_after_attempt(3))
+@retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
 def request_metrics(port: int) -> requests.Response:
     return requests.get(f"http://0.0.0.0:{port}/metrics")
 
