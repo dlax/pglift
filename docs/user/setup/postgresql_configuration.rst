@@ -1,3 +1,5 @@
+.. _`postgresql-site-configuration`:
+
 PostgreSQL configuration
 ========================
 

@@ -11,3 +11,4 @@ various aspects of deployment operations.
     postgresql_configuration
     postgresql_authentication
     systemd
+    pgbackrest
