@@ -112,7 +112,7 @@ def test_configure(
     with postgresql_conf.open("w") as f:
         f.write("bonjour_name = 'overridden'\n")
 
-    changes, needs_restart = instances.configure(
+    changes = instances.configure(
         ctx,
         instance_manifest,
         values=dict(
@@ -156,7 +156,7 @@ def test_configure(
     assert config.bonjour_name == "overridden"
     assert config.cluster_name == "test"
 
-    changes, needs_restart = instances.configure(
+    changes = instances.configure(
         ctx,
         instance_manifest,
         ssl=True,
@@ -176,7 +176,7 @@ def test_configure(
         site_configfpath.stat().st_mtime,
         user_configfpath.stat().st_mtime,
     )
-    changes, needs_restart = instances.configure(
+    changes = instances.configure(
         ctx, instance_manifest, values=dict(listen_address="*"), ssl=True
     )
     assert changes == {}
@@ -187,7 +187,7 @@ def test_configure(
     )
     assert mtime_before == mtime_after
 
-    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest, ssl=True)
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -199,7 +199,7 @@ def test_configure(
     )
     for fpath in ssl:
         fpath.touch()
-    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=ssl)
+    changes = instances.configure(ctx, instance_manifest, ssl=ssl)
     assert changes == {
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
@@ -212,14 +212,14 @@ def test_configure(
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest, ssl=True)
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
         "ssl_key_file": (str(key_file), None),
     }
 
     # disable ssl
-    changes, needs_restart = instances.configure(ctx, instance_manifest, ssl=False)
+    changes = instances.configure(ctx, instance_manifest, ssl=False)
     assert changes == {
         "ssl": (True, None),
     }
@@ -424,9 +424,6 @@ def test_check_pending_actions(
         "needs_reload": ("before", "after"),
     }
 
-    needs_restart = instances.check_pending_actions(ctx, instance, changes)
-    assert not needs_restart  # not running
-
     with patch.object(
         instances, "status", return_value=instances.Status.running
     ), patch.object(
@@ -438,8 +435,7 @@ def test_check_pending_actions(
     ) as confirm, caplog.at_level(
         logging.INFO
     ):
-        needs_restart = instances.check_pending_actions(ctx, instance, changes)
-        assert needs_restart
+        instances.check_pending_actions(ctx, instance, changes)
     confirm.assert_called_once_with(
         "Instance needs to be restarted; restart now?", True
     )

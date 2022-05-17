@@ -252,12 +252,11 @@ def test_apply(
     )
     r = instances.apply(ctx, im)
     assert r is not None
-    i, changes, needs_restart = r
+    i, changes = r
     assert i is not None
     assert i.exists()
     assert i.port == port
     assert changes["port"] == (None, port)
-    assert not needs_restart
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
@@ -266,9 +265,8 @@ def test_apply(
     im.state = interface.InstanceState.started
     r = instances.apply(ctx, im)
     assert r is not None
-    i, changes, needs_restart = r
+    i, changes = r
     assert not changes
-    assert not needs_restart
     assert instances.status(ctx, i) == Status.running
 
     im.configuration["listen_addresses"] = "*"  # requires restart
@@ -280,12 +278,11 @@ def test_apply(
         in caplog.messages
     )
     assert r is not None
-    i, changes, needs_restart = r
+    i, changes = r
     assert changes == {
         "listen_addresses": (None, "*"),
         "autovacuum": (None, False),
     }
-    assert not needs_restart  # restarted automatically
     assert instances.status(ctx, i) == Status.running
 
     im.state = interface.InstanceState.stopped
@@ -602,7 +599,7 @@ def test_data_checksums(
 
     result = instances.apply(ctx, manifest)
     assert result
-    _, changes, _ = result
+    _, changes = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
     assert changes == {
         "data_checksums": ("disabled", "enabled"),
@@ -614,7 +611,7 @@ def test_data_checksums(
     manifest.data_checksums = None
     result = instances.apply(ctx, manifest)
     assert result
-    _, changes, _ = result
+    _, changes = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
     assert changes == {}
 
@@ -622,7 +619,7 @@ def test_data_checksums(
     manifest.data_checksums = False
     result = instances.apply(ctx, manifest)
     assert result
-    _, changes, _ = result
+    _, changes = result
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
     assert changes == {
         "data_checksums": ("enabled", "disabled"),

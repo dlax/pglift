@@ -59,9 +59,6 @@ instance:
 configuration_changes:
   description: Changes to PostgreSQL instance configuration
   type: dict
-needs_restart:
-  description: Whether the instance needs to be restarted or not
-  type: bool
 env:
     description: libpq environment variable used to connect to the instance
 """
@@ -114,16 +111,14 @@ def run_module() -> None:
             result["changed"] = True
             instance = None
         else:
-            instance, changes, needs_restart = apply_result
+            instance, changes = apply_result
             if changes:
                 result["changed"] = True
                 result["configuration_changes"] = changes
-                result["needs_restart"] = needs_restart
     elif apply_result:  # Created
-        instance, changes, needs_restart = apply_result
+        instance, changes = apply_result
         result["changed"] = True
         result["configuration_changes"] = changes
-        result["needs_restart"] = needs_restart
     else:
         instance = None
 

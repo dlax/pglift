@@ -838,7 +838,7 @@ def test_pgconf_set(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
     with patch.object(
-        instances, "configure", return_value=({"foo": ("baz", "bar")}, False)
+        instances, "configure", return_value={"foo": ("baz", "bar")}
     ) as configure:
         result = runner.invoke(
             cli,
@@ -869,7 +869,7 @@ def test_pgconf_set(
     with patch.object(
         instances,
         "configure",
-        return_value=({"bonjour_name": ("test", "changed")}, False),
+        return_value={"bonjour_name": ("test", "changed")},
     ) as configure:
         result = runner.invoke(
             cli,
@@ -912,7 +912,7 @@ def test_pgconf_remove(
     assert "'fsync' not found in managed configuration" in result.stderr
 
     with patch.object(
-        instances, "configure", return_value=({"bonjour_name": ("test", None)}, False)
+        instances, "configure", return_value={"bonjour_name": ("test", None)}
     ) as configure:
         result = runner.invoke(
             cli,
@@ -930,7 +930,7 @@ def test_pgconf_edit(
 ) -> None:
     user_conf = instance.datadir / "conf.pglift.d" / "user.conf"
     with patch("click.edit", return_value="bonjour = bonsoir\n") as edit, patch.object(
-        instances, "configure", return_value=({"bonjour": ("on", "'matin")}, False)
+        instances, "configure", return_value={"bonjour": ("on", "'matin")}
     ) as configure:
         result = runner.invoke(
             cli,

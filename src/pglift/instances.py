@@ -239,7 +239,7 @@ def configure(
     ssl: Union[bool, Tuple[Path, Path]] = False,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
     _creating: bool = False,
-) -> Tuple[ConfigChanges, bool]:
+) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
     `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
@@ -348,7 +348,6 @@ def configure(
             with user_conffile.open("w") as f:
                 user_config.save(f)
 
-    needs_restart = False
     if _creating:
         write_configs()
     i_config = site_config + user_config
@@ -360,13 +359,13 @@ def configure(
         sys_instance = system.Instance.system_lookup(
             ctx, (manifest.name, manifest.version)
         )
-        needs_restart = check_pending_actions(ctx, sys_instance, changes)
+        check_pending_actions(ctx, sys_instance, changes)
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         conf.create_log_directory(sys_instance, logdir)
 
-    return changes, needs_restart
+    return changes
 
 
 @contextlib.contextmanager
@@ -801,7 +800,7 @@ def set_data_checksums(
     )
 
 
-ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges, bool]]
+ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges]]
 
 
 def apply(
@@ -842,7 +841,7 @@ def apply(
         for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
             configure_options.setdefault(key, locale)
 
-    changes, needs_restart = configure(
+    changes = configure(
         ctx,
         instance,
         ssl=instance.ssl,
@@ -884,22 +883,20 @@ def apply(
         with running(ctx, sys_instance):
             db.create_or_drop_extensions(ctx, sys_instance, instance.extensions)
 
-    return sys_instance, changes, needs_restart
+    return sys_instance, changes
 
 
 def check_pending_actions(
     ctx: "BaseContext", instance: system.Instance, changes: ConfigChanges
-) -> bool:
+) -> None:
     """Check if any of the changes require a reload or a restart.
 
     The instance is automatically reloaded if needed.
     The user is prompted for confirmation if a restart is needed.
-    This function will return True if the instance needs to be restarted and
-    the user doesn't accept the restart.
     """
     is_running = status(ctx, instance) == Status.running
     if not is_running:
-        return False
+        return
 
     if "port" in changes:
         needs_restart = True
@@ -936,9 +933,6 @@ def check_pending_actions(
         "Instance needs to be restarted; restart now?", True
     ):
         restart(ctx, instance)
-        needs_restart = False
-
-    return needs_restart
 
 
 def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Instance:
