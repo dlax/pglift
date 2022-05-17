@@ -27,7 +27,7 @@ from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
 from pydantic import SecretStr
 
-from . import cmd, conf, db, exceptions, roles, systemd, util
+from . import cmd, conf, databases, db, exceptions, roles, systemd, util
 from ._compat import Literal
 from .models import interface, system
 from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion
@@ -884,6 +884,10 @@ def apply(
     if not sys_instance.standby:
         with running(ctx, sys_instance):
             db.create_or_drop_extensions(ctx, sys_instance, instance.extensions)
+            for a_role in instance.roles:
+                roles.apply(ctx, sys_instance, a_role)
+            for a_database in instance.databases:
+                databases.apply(ctx, sys_instance, a_database)
 
     return sys_instance, changes
 

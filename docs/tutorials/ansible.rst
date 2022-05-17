@@ -4,10 +4,10 @@ Using Ansible modules
 .. highlight:: console
 
 This tutorial illustrates the use of the Ansible modules shipped with pglift:
-``dalibo.pglift.instance``, ``dalibo.pglift.database`` and
-``dalibo.pglift.role`` and ``dalibo.pglift.dsn_info``. It also demonstrates
-how to integrate these modules with other PostgreSQL-related community
-modules, namely `community.postgresql`_.
+``dalibo.pglift.instance``, ``dalibo.pglift.database``, ``dalibo.pglift.role``,
+``dalibo.pglift.postgres_exporter̀`` and ``dalibo.pglift.dsn_info``. It also
+demonstrates how to integrate these modules with other PostgreSQL-related
+community modules, namely `community.postgresql`_.
 
 .. note:: Documentation for each module can be obtained by using ``ansible-doc
    <modulename>`` (possibly after setting ``ANSIBLE_COLLECTIONS_PATHS`` as
@@ -15,11 +15,11 @@ modules, namely `community.postgresql`_.
 
    ::
 
-       $ ansible-doc dalibo.pglift.role
-       > DALIBO.PGLIFT.ROLE
-       (.../ansible/ansible_collections/dalibo/pglift/plugins/modules/role.py)
+       $ ansible-doc dalibo.pglift.instance
+       > DALIBO.PGLIFT.INSTANCE
+       (.../ansible/ansible_collections/dalibo/pglift/plugins/modules/instance.py)
 
-       Manage roles of a PostgreSQL server instance
+       Manage a PostgreSQL server instance
 
        OPTIONS (= is mandatory):
 

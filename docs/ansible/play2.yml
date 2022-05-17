@@ -20,18 +20,16 @@
       register: prod
 
     - name: db, dropped
-      community.postgresql.postgresql_db:
+      dalibo.pglift.database:
         name: db
         state: absent
-        login_host: "{{ prod.env.PGHOST }}"
-        login_port: "{{ prod.env.PGPORT }}"
-      environment: "{{ prod.env }}"
-
-    - name: bob, dropped
-      dalibo.pglift.role:
         instance: prod
+
+    - name: role bob, dropped
+      dalibo.pglift.role:
         name: bob
         state: absent
+        instance: prod
 
     - name: pre-production instance, now dropped
       dalibo.pglift.instance:

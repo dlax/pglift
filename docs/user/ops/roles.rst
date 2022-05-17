@@ -53,3 +53,8 @@ Example task:
           in_roles:
             - pg_read_all_stats
             - pg_signal_backend
+
+It's also possible to use the ``instance`` module within ``dalibo.pglift``
+collection as the main entry point to manage your PostgreSQL ``role``. Some
+examples about managing roles directly with the Ansible instance module are
+available under the :ref:`dedicated documentation <instance-module>`.

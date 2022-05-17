@@ -18,29 +18,23 @@
           - unaccent
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9186
-
-    - name: a role in production instance
-      dalibo.pglift.role:
-        instance: prod
-        name: bob
-        password: "{{ prod_bob_password }}"
-        pgpass: false
-        login: true
-        connection_limit: 10
-        validity: '2025-01-01T00:00'
-        in_roles:
-          - pg_read_all_stats
-          - pg_signal_backend
-
-    - name: a database in production instance
-      dalibo.pglift.database:
-        instance: prod
-        name: db
-        owner: bob
-        settings:
-          work_mem: 3MB
-        extensions:
-          - unaccent
+        roles:
+          - name: bob
+            login: true
+            password: "{{ prod_bob_password }}"
+            pgpass: false
+            connection_limit: 10
+            validity: '2025-01-01T00:00'
+            in_roles:
+              - pg_read_all_stats
+              - pg_signal_backend
+        databases:
+          - name: db
+            owner: bob
+            settings:
+              work_mem: 3MB
+            extensions:
+              - unaccent
 
     - name: pre-production instance
       dalibo.pglift.instance:

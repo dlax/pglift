@@ -123,6 +123,72 @@ class BaseInstance(Manifest):
         return v
 
 
+class Role(Manifest):
+    """PostgreSQL role"""
+
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "in_roles": {"name": "in-role"},
+        "state": {"hide": True},
+    }
+
+    name: str = Field(readOnly=True, description=("Role name."))
+    password: Optional[SecretStr] = Field(default=None, description="Role password.")
+    inherit: bool = Field(
+        default=True,
+        description="Let the role inherits the privileges of the roles its is a member of.",
+    )
+    login: bool = Field(default=False, description="Allow the role to log in.")
+    superuser: bool = Field(default=False, description="Superuser role.")
+    replication: bool = Field(default=False, description="Replication role.")
+    connection_limit: Optional[int] = Field(
+        description="How many concurrent connections the role can make.",
+    )
+    validity: Optional[datetime] = Field(
+        description="Sets a date and time after which the role's password is no longer valid."
+    )
+    in_roles: List[str] = Field(
+        default_factory=list,
+        description="List of roles to which the new role will be added as a new member.",
+    )
+    pgpass: bool = Field(
+        default=False, description="Add an entry in password file for this role."
+    )
+    state: PresenceState = Field(
+        default=PresenceState.present, description=("Role state.")
+    )
+
+
+class Database(Manifest):
+    """PostgreSQL database"""
+
+    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
+        "settings": {"hide": True},
+        "state": {"hide": True},
+        "extensions": {"name": "extension"},
+    }
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
+        "settings": {"spec": {"type": "dict", "required": False}},
+    }
+    name: str = Field(readOnly=True, description=("Database name."))
+    owner: Optional[str] = Field(
+        description="The role name of the user who will own the database."
+    )
+    settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
+        default=None,
+        description=(
+            "Session defaults for run-time configuration variables for the database. "
+            "Upon update, an empty (dict) value would reset all settings."
+        ),
+    )
+    extensions: List[Extension] = Field(
+        default_factory=list,
+        description="List of extensions to create in the database.",
+    )
+    state: PresenceState = Field(
+        default=PresenceState.present, description=("Database state.")
+    )
+
+
 class Instance(BaseInstance):
     """PostgreSQL instance"""
 
@@ -142,6 +208,8 @@ class Instance(BaseInstance):
         "ssl": {"hide": True},
         "configuration": {"hide": True},
         "extensions": {"name": "extension"},
+        "roles": {"hide": True},
+        "databases": {"hide": True},
     }
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
         "ssl": {
@@ -313,6 +381,18 @@ class Instance(BaseInstance):
         default=InstanceState.started,
         description="Runtime state.",
     )
+    databases: List["Database"] = Field(
+        default_factory=list,
+        description="Databases",
+        exclude=True,
+        writeOnly=True,
+    )
+    roles: List["Role"] = Field(
+        default_factory=list,
+        description="Roles",
+        exclude=True,
+        writeOnly=True,
+    )
 
     pending_restart: bool = Field(
         default=False,
@@ -398,72 +478,6 @@ class InstanceBackup(Manifest):
     date_stop: datetime
     type: Literal["incr", "diff", "full"]
     databases: str
-
-
-class Role(Manifest):
-    """PostgreSQL role"""
-
-    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
-        "in_roles": {"name": "in-role"},
-        "state": {"hide": True},
-    }
-
-    name: str = Field(readOnly=True, description=("Role name."))
-    password: Optional[SecretStr] = Field(default=None, description="Role password.")
-    inherit: bool = Field(
-        default=True,
-        description="Let the role inherits the privileges of the roles its is a member of.",
-    )
-    login: bool = Field(default=False, description="Allow the role to log in.")
-    superuser: bool = Field(default=False, description="Superuser role.")
-    replication: bool = Field(default=False, description="Replication role.")
-    connection_limit: Optional[int] = Field(
-        description="How many concurrent connections the role can make.",
-    )
-    validity: Optional[datetime] = Field(
-        description="Sets a date and time after which the role's password is no longer valid."
-    )
-    in_roles: List[str] = Field(
-        default_factory=list,
-        description="List of roles to which the new role will be added as a new member.",
-    )
-    pgpass: bool = Field(
-        default=False, description="Add an entry in password file for this role."
-    )
-    state: PresenceState = Field(
-        default=PresenceState.present, description=("Role state.")
-    )
-
-
-class Database(Manifest):
-    """PostgreSQL database"""
-
-    _cli_config: ClassVar[Dict[str, CLIConfig]] = {
-        "settings": {"hide": True},
-        "state": {"hide": True},
-        "extensions": {"name": "extension"},
-    }
-    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
-        "settings": {"spec": {"type": "dict", "required": False}},
-    }
-    name: str = Field(readOnly=True, description=("Database name."))
-    owner: Optional[str] = Field(
-        description="The role name of the user who will own the database."
-    )
-    settings: Optional[Dict[str, Optional[pgconf.Value]]] = Field(
-        default=None,
-        description=(
-            "Session defaults for run-time configuration variables for the database. "
-            "Upon update, an empty (dict) value would reset all settings."
-        ),
-    )
-    extensions: List[Extension] = Field(
-        default_factory=list,
-        description="List of extensions to create in the database.",
-    )
-    state: PresenceState = Field(
-        default=PresenceState.present, description=("Database state.")
-    )
 
 
 class Tablespace(BaseModel):

@@ -250,6 +250,11 @@ def test_apply(
         prometheus={"port": prometheus_port},
         surole_password=surole_password,
         restart_on_changes=False,
+        roles=[{"name": "bob"}],
+        databases=[
+            {"name": "db1"},
+            {"name": "db2", "owner": "bob", "extensions": ["unaccent"]},
+        ],
     )
     r = instances.apply(ctx, im)
     assert r is not None
@@ -270,6 +275,13 @@ def test_apply(
     assert not changes
     assert instances.status(ctx, i) == Status.running
     assert not instances.pending_restart(ctx, i)
+
+    with instances.running(ctx, i):
+        assert databases.exists(ctx, i, "db1")
+        assert databases.exists(ctx, i, "db2")
+        db = databases.get(ctx, i, "db2")
+        assert db.extensions == [interface.Extension.unaccent]
+        assert db.owner == "bob"
 
     im.configuration["listen_addresses"] = "*"  # requires restart
     im.configuration["autovacuum"] = False  # requires reload

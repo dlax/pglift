@@ -50,3 +50,8 @@ Example task:
           instance: myinstance
           name: myapp
           owner: dba
+
+It's also possible to use the ``instance`` module within ``dalibo.pglift``
+collection as the main entry point to manage your PostgreSQL ``database``. Some
+examples about managing databases directly with the Ansible instance module are
+available under the :ref:`dedicated documentation <instance-module>`.

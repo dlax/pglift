@@ -43,13 +43,16 @@ Most commands take an ``INSTANCE`` argument in the form of
 ``<version>/<name>`` where ``<version>/`` might be omitted. If there is only
 one instance on system, the argument is optional.
 
+.. _instance-module:
+
 Ansible module
 --------------
 
 The ``instance`` module within ``dalibo.pglift`` collection is the main entry
-point for instance management through Ansible.
+point for instance management through Ansible. This module also handles roles and
+databases objects related to the instance.
 
-Example task:
+Example task (without databases and roles):
 
 .. code-block:: yaml
 
@@ -62,3 +65,37 @@ Example task:
           configuration:
             shared_buffers: 1GB
           prometheus_port: 9182
+          roles:
+          databases:
+            - name: myapp
+              owner: dba
+
+Example task (with databases and roles):
+
+.. code-block:: yaml
+
+    tasks:
+      - name: my instance
+        dalibo.pglift.instance:
+          name: myapp
+          port: 5455
+          ssl: true
+          configuration:
+            shared_buffers: 1GB
+          prometheus_port: 9182
+          roles:
+            - name: dba
+              pgpass: true
+              login: true
+              connection_limit: 10
+              validity: '2025-01-01T00:00'
+              in_roles:
+                - pg_read_all_stats
+            - name: simple_user
+              connection_limit: 10
+              validity: '2025-01-01T00:00'
+          databases:
+            - name: myapp
+              owner: dba
+            - name: db
+              owner: simple_user
