@@ -658,7 +658,9 @@ def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> Non
 
 
 @pytest.mark.usefixtures("need_pgbackrest")
-def test_instance_backups(runner: CliRunner, instance: Instance, obj: Obj) -> None:
+def test_instance_backups(
+    runner: CliRunner, instance: Instance, settings: Settings, ctx: Context, obj: Obj
+) -> None:
     bck = interface.InstanceBackup(
         label="foo",
         size=12,
@@ -695,6 +697,26 @@ def test_instance_backups(runner: CliRunner, instance: Instance, obj: Obj) -> No
         "00:00:00",
         "00:00:00",
         "prod",
+    ]
+
+    with patch.object(pgbackrest, "iter_backups", return_value=[bck]) as iter_backups:
+        result = runner.invoke(
+            cli,
+            ["instance", "backups", str(instance), "--json"],
+            obj=obj,
+        )
+    assert result.exit_code == 0, result
+    iter_backups.assert_called_once_with(ctx, instance, settings.pgbackrest)
+    assert json.loads(result.stdout) == [
+        {
+            "databases": "postgres, prod",
+            "date_start": "2012-01-01T00:00:00",
+            "date_stop": "2012-01-02T00:00:00",
+            "label": "foo",
+            "repo_size": 13,
+            "size": 12,
+            "type": "incr",
+        }
     ]
 
 

@@ -381,6 +381,7 @@ def instance_restore(
 
 
 @cli.command("backups")
+@as_json_option
 @instance_identifier(nargs=1)
 @pass_pgbackrest_settings
 @pass_console
@@ -390,14 +391,20 @@ def instance_backups(
     console: Console,
     settings: PgBackRestSettings,
     instance: system.Instance,
+    as_json: bool,
 ) -> None:
     """List available backups for INSTANCE"""
     backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
-    print_table_for(
-        (i.dict(by_alias=True) for i in backups),
-        title=f"Available backups for instance {instance}",
-        display=console.print,
-    )
+    if as_json:
+        print_json_for(
+            (i.dict(by_alias=True) for i in backups), display=console.print_json
+        )
+    else:
+        print_table_for(
+            (i.dict(by_alias=True) for i in backups),
+            title=f"Available backups for instance {instance}",
+            display=console.print,
+        )
 
 
 @cli.command("privileges")
