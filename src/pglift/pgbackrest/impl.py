@@ -366,13 +366,14 @@ def restore_command(
         # directories itself, without the need to clean them up beforehand.
         "--delta",
         "--link-all",
-        "--target-action=promote",
     ]
-    if date is not None:
-        target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
-        args.extend(["--type=time", f"--target={target}"])
-    if backup_set is not None:
-        args.append(f"--set={backup_set}")
+    if date is not None or backup_set is not None:
+        args.append("--target-action=promote")
+        if date is not None:
+            target = date.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+            args.extend(["--type=time", f"--target={target}"])
+        if backup_set is not None:
+            args.append(f"--set={backup_set}")
     args.append("restore")
     return make_cmd(instance, settings, *args)
 

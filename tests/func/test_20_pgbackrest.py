@@ -96,12 +96,20 @@ def test_backup_restore(
     ).exists()
 
     database_factory("backrest")
+    execute(
+        ctx,
+        instance,
+        "CREATE TABLE t AS (SELECT 'created' as s)",
+        dbname="backrest",
+        fetch=False,
+    )
 
     before = datetime.now()
     assert not latest_backup.exists()
     with instances.running(ctx, instance):
-        rows = execute(ctx, instance, "SELECT datname FROM pg_database")
-        assert "backrest" in [r["datname"] for r in rows]
+        rows = execute(ctx, instance, "SELECT * FROM t", dbname="backrest")
+        assert rows == [{"s": "created"}]
+
         pgbackrest.backup(
             ctx,
             instance,
@@ -112,9 +120,25 @@ def test_backup_restore(
         pgbackrest.expire(ctx, instance, pgbackrest_settings)
         # TODO: check some result from 'expire' command here.
 
+        execute(
+            ctx,
+            instance,
+            "INSERT INTO t(s) VALUES ('backup1')",
+            dbname="backrest",
+            fetch=False,
+        )
+
         time.sleep(1)
         (record,) = execute(ctx, instance, "SELECT current_timestamp", fetch=True)
         before_drop = record["current_timestamp"]
+
+        execute(
+            ctx,
+            instance,
+            "INSERT INTO t(s) VALUES ('before-drop')",
+            dbname="backrest",
+            fetch=False,
+        )
 
         execute(ctx, instance, "DROP DATABASE backrest", autocommit=True, fetch=False)
 
@@ -124,7 +148,18 @@ def test_backup_restore(
     assert backup1.date_start.replace(tzinfo=None) > before
     assert backup1.date_stop > backup1.date_start
 
+    # With no target (date or label option), restore *and* apply WALs, thus
+    # getting back to the same state as before the restore, i.e. 'backrest'
+    # database dropped.
+    pgbackrest.restore(ctx, instance, pgbackrest_settings)
+    with instances.running(ctx, instance):
+        rows = execute(ctx, instance, "SELECT datname FROM pg_database")
+        assert "backrest" not in [r["datname"] for r in rows]
+
+    # With a date target, WALs are applied until that date.
     pgbackrest.restore(ctx, instance, pgbackrest_settings, date=before_drop)
     with instances.running(ctx, instance):
         rows = execute(ctx, instance, "SELECT datname FROM pg_database")
         assert "backrest" in [r["datname"] for r in rows]
+        rows = execute(ctx, instance, "SELECT * FROM t", dbname="backrest")
+        assert set(r["s"] for r in rows) == {"created", "backup1"}
