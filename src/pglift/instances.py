@@ -732,6 +732,10 @@ def get_locale(
     if len(values) == 1:
         return values.pop()
     else:
+        logger.debug(
+            "cannot determine instance locale, settings are heterogeneous: %s",
+            ", ".join(f"{n}: {s}" for n, s in sorted(locales.items())),
+        )
         return None
 
 
