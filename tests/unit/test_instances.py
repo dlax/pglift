@@ -424,6 +424,7 @@ def test_check_pending_actions(
         "needs_reload": ("before", "after"),
     }
 
+    restart_on_changes = True
     with patch.object(
         instances, "status", return_value=instances.Status.running
     ), patch.object(
@@ -435,9 +436,9 @@ def test_check_pending_actions(
     ) as confirm, caplog.at_level(
         logging.INFO
     ):
-        instances.check_pending_actions(ctx, instance, changes)
+        instances.check_pending_actions(ctx, instance, changes, restart_on_changes)
     confirm.assert_called_once_with(
-        "Instance needs to be restarted; restart now?", True
+        "Instance needs to be restarted; restart now?", restart_on_changes
     )
     settings.assert_called_once()
     assert (

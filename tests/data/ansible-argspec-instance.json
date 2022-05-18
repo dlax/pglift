@@ -96,6 +96,13 @@
     "no_log": true,
     "type": "str"
   },
+  "restart_on_changes": {
+    "default": true,
+    "description": [
+      "Whether or not to automatically restart the instance to account for configuration changes"
+    ],
+    "type": "bool"
+  },
   "ssl": {
     "default": false,
     "description": [

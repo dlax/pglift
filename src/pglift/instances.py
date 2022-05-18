@@ -359,7 +359,7 @@ def configure(
         sys_instance = system.Instance.system_lookup(
             ctx, (manifest.name, manifest.version)
         )
-        check_pending_actions(ctx, sys_instance, changes)
+        check_pending_actions(ctx, sys_instance, changes, manifest.restart_on_changes)
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
@@ -887,7 +887,10 @@ def apply(
 
 
 def check_pending_actions(
-    ctx: "BaseContext", instance: system.Instance, changes: ConfigChanges
+    ctx: "BaseContext",
+    instance: system.Instance,
+    changes: ConfigChanges,
+    restart_on_changes: bool,
 ) -> None:
     """Check if any of the changes require a reload or a restart.
 
@@ -930,7 +933,7 @@ def check_pending_actions(
             needs_restart = True
 
     if needs_restart and ctx.confirm(
-        "Instance needs to be restarted; restart now?", True
+        "Instance needs to be restarted; restart now?", restart_on_changes
     ):
         restart(ctx, instance)
 

@@ -137,6 +137,7 @@ class Instance(BaseInstance):
         "state": {
             "choices": [InstanceState.started.value, InstanceState.stopped.value]
         },
+        "restart_on_changes": {"hide": True},
         "ssl": {"hide": True},
         "configuration": {"hide": True},
         "extensions": {"name": "extension"},
@@ -309,6 +310,13 @@ class Instance(BaseInstance):
     state: InstanceState = Field(
         default=InstanceState.started,
         description="Runtime state.",
+    )
+
+    restart_on_changes: bool = Field(
+        default=True,
+        description="Whether or not to automatically restart the instance to account for configuration changes.",
+        exclude=True,
+        writeOnly=True,
     )
 
     @root_validator
