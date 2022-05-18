@@ -8,41 +8,85 @@ The ``pglift instance`` command line entry point exposes ``backup`` and
 ``restore`` commands to respectively perform instance-level backup and
 restoration using selected PITR tool, currently pgBackRest_.
 
+Assuming we have a ``main`` instance running:
+
 .. code-block:: console
 
-    $ pglift instance backup --help
-    Usage: pglift instance backup [OPTIONS] NAME [VERSION]
+    $ pglift instance status main
+    running
 
-      Back up a PostgreSQL instance
+The ``instance backup`` command can be used as follows:
 
-    Options:
-      --type [full|incr|diff]  Backup type
-      --purge                  Purge old backups
-      --help                   Show this message and exit.
-    $ pglift instance restore --help
-    Usage: pglift instance restore [OPTIONS] NAME [VERSION]
+.. code-block:: console
 
-      Restore a PostgreSQL instance
+    $ pglift instance backup main
+    INFO     backing up instance with pgBackRest
 
-    Options:
-      --label TEXT                    Label of backup to restore
-      --date [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
-                                      Date of backup to restore
-      --help                          Show this message and exit.
+The type of backup (full, incremental or differential) can be specified
+through ``--type [full|incr|diff]`` option. By default, an incremental backup
+would be performed, unless no prior backup exists in which case pgBackRest
+will switch to a full backup.
 
 The ``backups`` command can be used to list available backups:
 
 .. code-block:: console
 
     $ pglift instance backups main
-                                                         Available backups for instance 14/main
-     ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    │ label                             │ size    │ repo_size │ date_start                │ date_stop                 │ type │ databases           │
-    └───────────────────────────────────┴─────────┴───────────┴───────────────────────────┴───────────────────────────┴──────┴─────────────────────┘
-    │ 20220323-152037F                  │ 41.7MiB │ 5.3MiB    │ 2022-03-23 15:20:37+01:00 │ 2022-03-23 15:20:46+01:00 │ full │ db, myapp, postgres │
-    │ 20220323-151809F_20220323-151849D │ 25.3MiB │ 3.2MiB    │ 2022-03-23 15:18:49+01:00 │ 2022-03-23 15:18:50+01:00 │ diff │ postgres            │
-    │ 20220323-151809F                  │ 25.3MiB │ 3.2MiB    │ 2022-03-23 15:18:09+01:00 │ 2022-03-23 15:18:15+01:00 │ full │ postgres            │
-    └───────────────────────────────────┴─────────┴───────────┴───────────────────────────┴───────────────────────────┴──────┴─────────────────────┘
+                                                     Available backups for instance 14/main
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ label                             ┃ size    ┃ repo_size ┃ date_start                ┃ date_stop                 ┃ type ┃ databases              ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ 20220518-102816F_20220518-103636I │ 49.4MiB │ 5.1MiB    │ 2022-05-18 10:36:36+02:00 │ 2022-05-18 10:36:39+02:00 │ incr │ myapp, postgres        │
+    │ 20220518-102816F_20220518-103527I │ 73.0MiB │ 7.0MiB    │ 2022-05-18 10:35:27+02:00 │ 2022-05-18 10:35:31+02:00 │ incr │ bench, myapp, postgres │
+    │ 20220518-102816F                  │ 49.4MiB │ 5.1MiB    │ 2022-05-18 10:28:16+02:00 │ 2022-05-18 10:28:21+02:00 │ full │ bench, postgres        │
+    └───────────────────────────────────┴─────────┴───────────┴───────────────────────────┴───────────────────────────┴──────┴────────────────────────┘
+
+
+To restore the PostgreSQL instance, use ``instance restore`` command (the
+instance must not be running):
+
+.. code-block:: console
+
+    $ pglift instance stop main
+    $ pglift instance restore main
+    INFO     restoring instance with pgBackRest
+
+With no option, the ``restore`` action will use the latest backup and replay
+all available WAL.
+
+With ``--label`` option, the ``restore`` action does not replay WAL and the
+instance is restored at its state targeted by specified label.
+
+.. code-block:: console
+
+    $ pglift instance restore main --label 20220518-102816F_20220518-103527I
+    INFO     restoring instance with pgBackRest
+
+
+.. code-block:: console
+
+    $ pglift database list
+    ┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ name      ┃ owner    ┃ encoding ┃ collation ┃ ctype ┃ acls                    ┃ size    ┃ description             ┃ tablespace       ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ bench     │ postgres │ UTF8     │ C         │ C     │                         │ 23.6MiB │                         │ name: pg_default │
+    │           │          │          │           │       │                         │         │                         │ location:        │
+    │           │          │          │           │       │                         │         │                         │ size: 72.6MiB    │
+    │ myapp     │ postgres │ UTF8     │ C         │ C     │                         │ 23.6MiB │                         │ name: pg_default │
+    │           │          │          │           │       │                         │         │                         │ location:        │
+    │           │          │          │           │       │                         │         │                         │ size: 72.6MiB    │
+    │ postgres  │ postgres │ UTF8     │ C         │ C     │                         │ 8.6MiB  │ default administrative  │ name: pg_default │
+    │           │          │          │           │       │                         │         │ connection database     │ location:        │
+    │           │          │          │           │       │                         │         │                         │ size: 72.6MiB    │
+    │ template1 │ postgres │ UTF8     │ C         │ C     │ =c/postgres,            │ 8.4MiB  │ default template for    │ name: pg_default │
+    │           │          │          │           │       │ postgres=CTc/postgres   │         │ new databases           │ location:        │
+    │           │          │          │           │       │                         │         │                         │ size: 72.6MiB    │
+    └───────────┴──────────┴──────────┴───────────┴───────┴─────────────────────────┴─────────┴─────────────────────────┴──────────────────┘
+
+.. note::
+   Often when performing instance restore, it can be useful to examine
+   pgBackRest command output. This can be achieved by setting the log-level to
+   DEBUG in ``pglift`` command (e.g. ``pglift -L debug instance restore``).
 
 Scheduled backups
 -----------------
