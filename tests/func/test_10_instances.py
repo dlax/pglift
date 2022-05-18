@@ -642,6 +642,7 @@ def test_extensions(
     instance_manifest: interface.Instance,
     instance: system.Instance,
 ) -> None:
+    old_extensions = instance_manifest.extensions
     config = instance.config()
     assert config.shared_preload_libraries == "passwordcheck"
     with instances.running(ctx, instance):
@@ -692,3 +693,6 @@ def test_extensions(
         installed = get_installed_extensions()
         assert "pg_stat_statements" not in installed
         assert "unaccent" in installed
+    # reset extensions
+    instance_manifest.extensions = old_extensions
+    instances.apply(ctx, instance_manifest)
