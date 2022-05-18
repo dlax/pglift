@@ -342,7 +342,7 @@ def setup_local(
     if not configpath.exists():
         if service.password:
             password_ = service.password.get_secret_value()
-        # Create dedicated user but only if postgres_exporter as never been initialized
+        # Create dedicated user but only if postgres_exporter has never been initialized
         if not instance.standby:
             with instances.running(ctx, instance):
                 role = interface.Role(
