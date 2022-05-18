@@ -259,42 +259,44 @@ def stop(ctx: "BaseContext", name: str, settings: "PrometheusSettings") -> None:
 
 
 def apply(
-    ctx: "BaseContext", manifest: PostgresExporter, settings: "PrometheusSettings"
+    ctx: "BaseContext",
+    postgres_exporter: PostgresExporter,
+    settings: "PrometheusSettings",
 ) -> None:
-    """Apply state described by specified manifest as a postgres_exporter
+    """Apply state described by specified interface model as a postgres_exporter
     service for a non-local instance.
 
     :raises exceptions.InstanceStateError: if the target instance exists on system.
     """
     try:
-        system.PostgreSQLInstance.from_stanza(ctx, manifest.name)
+        system.PostgreSQLInstance.from_stanza(ctx, postgres_exporter.name)
     except (ValueError, exceptions.InstanceNotFound):
         pass
     else:
         raise exceptions.InstanceStateError(
-            f"instance '{manifest.name}' exists locally"
+            f"instance '{postgres_exporter.name}' exists locally"
         )
 
-    if manifest.state == PostgresExporter.State.absent:
-        drop(ctx, manifest.name)
+    if postgres_exporter.state == PostgresExporter.State.absent:
+        drop(ctx, postgres_exporter.name)
     else:
         # TODO: detect if setup() actually need to be called by comparing
         # manifest with system state.
         password = None
-        if manifest.password:
-            password = manifest.password.get_secret_value()
+        if postgres_exporter.password:
+            password = postgres_exporter.password.get_secret_value()
         setup(
             ctx,
-            manifest.name,
+            postgres_exporter.name,
             settings,
-            dsn=manifest.dsn,
+            dsn=postgres_exporter.dsn,
             password=password,
-            port=manifest.port,
+            port=postgres_exporter.port,
         )
-        if manifest.state == PostgresExporter.State.started:
-            start(ctx, manifest.name, settings)
-        elif manifest.state == PostgresExporter.State.stopped:
-            stop(ctx, manifest.name, settings)
+        if postgres_exporter.state == PostgresExporter.State.started:
+            start(ctx, postgres_exporter.name, settings)
+        elif postgres_exporter.state == PostgresExporter.State.stopped:
+            stop(ctx, postgres_exporter.name, settings)
 
 
 @task("dropping postgres_exporter service")

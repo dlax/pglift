@@ -19,21 +19,22 @@ logger = logging.getLogger(__name__)
 def apply(
     ctx: BaseContext,
     instance: "system.PostgreSQLInstance",
-    database_manifest: interface.Database,
+    database: interface.Database,
 ) -> None:
-    """Apply state described by specified database manifest as a PostgreSQL instance.
+    """Apply state described by specified interface model as a PostgreSQL database.
 
     The instance should be running.
     """
-    if database_manifest.state == interface.PresenceState.absent:
-        if exists(ctx, instance, database_manifest.name):
-            drop(ctx, instance, database_manifest.name)
+    name = database.name
+    if database.state == interface.PresenceState.absent:
+        if exists(ctx, instance, name):
+            drop(ctx, instance, name)
         return None
 
-    if not exists(ctx, instance, database_manifest.name):
-        create(ctx, instance, database_manifest)
+    if not exists(ctx, instance, name):
+        create(ctx, instance, database)
     else:
-        alter(ctx, instance, database_manifest)
+        alter(ctx, instance, database)
 
 
 def get(

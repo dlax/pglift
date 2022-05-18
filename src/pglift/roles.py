@@ -19,24 +19,23 @@ logger = logging.getLogger(__name__)
 
 
 def apply(
-    ctx: "BaseContext",
-    instance: "system.PostgreSQLInstance",
-    role_manifest: interface.Role,
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
 ) -> None:
-    """Apply state described by specified role manifest as a PostgreSQL instance.
+    """Apply state described by specified interface model as a PostgreSQL role.
 
     The instance should be running.
     """
-    if role_manifest.state == interface.PresenceState.absent:
-        if exists(ctx, instance, role_manifest.name):
-            drop(ctx, instance, role_manifest.name)
-        return None
+    name = role.name
+    if role.state == interface.PresenceState.absent:
+        if exists(ctx, instance, name):
+            drop(ctx, instance, name)
+        return
 
-    if not exists(ctx, instance, role_manifest.name):
-        create(ctx, instance, role_manifest)
+    if not exists(ctx, instance, name):
+        create(ctx, instance, role)
     else:
-        alter(ctx, instance, role_manifest)
-    set_pgpass_entry_for(ctx, instance, role_manifest)
+        alter(ctx, instance, role)
+    set_pgpass_entry_for(ctx, instance, role)
 
 
 def get(

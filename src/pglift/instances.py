@@ -801,9 +801,9 @@ ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges, bool]]
 
 
 def apply(
-    ctx: "BaseContext", manifest: interface.Instance, *, _creating: bool = False
+    ctx: "BaseContext", instance: interface.Instance, *, _creating: bool = False
 ) -> ApplyResult:
-    """Apply state described by specified manifest as a PostgreSQL instance.
+    """Apply state described by interface model as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
     instance may be created or updated or dropped.
@@ -817,45 +817,45 @@ def apply(
     will be done automatically.
     """
     States = interface.InstanceState
-    state = manifest.state
+    state = instance.state
 
     if state == States.absent:
-        if exists(ctx, manifest.name, manifest.version):
+        if exists(ctx, instance.name, instance.version):
             drop(
                 ctx,
-                system.Instance.system_lookup(ctx, (manifest.name, manifest.version)),
+                system.Instance.system_lookup(ctx, (instance.name, instance.version)),
             )
         return None
 
-    if not exists(ctx, manifest.name, manifest.version):
+    if not exists(ctx, instance.name, instance.version):
         _creating = True
-        init(ctx, manifest)
+        init(ctx, instance)
 
-    configure_options = manifest.configuration or {}
-    configure_options["port"] = manifest.port
-    locale = manifest.locale or ctx.settings.postgresql.initdb.locale
+    configure_options = instance.configuration or {}
+    configure_options["port"] = instance.port
+    locale = instance.locale or ctx.settings.postgresql.initdb.locale
     if locale:
         for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
             configure_options.setdefault(key, locale)
 
     changes, needs_restart = configure(
         ctx,
-        manifest,
-        ssl=manifest.ssl,
+        instance,
+        ssl=instance.ssl,
         values=configure_options,
         _creating=_creating,
     )
 
-    sys_instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    sys_instance = system.Instance.system_lookup(ctx, (instance.name, instance.version))
     is_running = status(ctx, sys_instance) == Status.running
 
-    if manifest.data_checksums is not None:
+    if instance.data_checksums is not None:
         actual_data_checksums = get_data_checksums(ctx, sys_instance)
-        if actual_data_checksums != manifest.data_checksums:
-            set_data_checksums(ctx, sys_instance, manifest.data_checksums)
+        if actual_data_checksums != instance.data_checksums:
+            set_data_checksums(ctx, sys_instance, instance.data_checksums)
             changes["data_checksums"] = (
                 "enabled" if actual_data_checksums else "disabled",
-                "enabled" if manifest.data_checksums else "disabled",
+                "enabled" if instance.data_checksums else "disabled",
             )
 
     if state == States.stopped:
@@ -867,11 +867,11 @@ def apply(
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
-    StandbyState = manifest.Standby.State
+    StandbyState = instance.Standby.State
 
     if (
-        manifest.standby
-        and manifest.standby.status == StandbyState.promoted
+        instance.standby
+        and instance.standby.status == StandbyState.promoted
         and sys_instance.standby is not None
     ):
         promote(ctx, sys_instance)
@@ -884,7 +884,7 @@ def apply(
 
     if not sys_instance.standby:
         with running(ctx, sys_instance):
-            db.create_or_drop_extensions(ctx, sys_instance, manifest.extensions)
+            db.create_or_drop_extensions(ctx, sys_instance, instance.extensions)
 
     return sys_instance, changes, needs_restart
 
