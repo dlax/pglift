@@ -61,7 +61,6 @@ View all parameters:
     $ pglift pgconf -i main show
     archive_command = '/usr/bin/pgbackrest --config=/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p'
     archive_mode = on
-    max_wal_senders = 3
     wal_level = 'replica'
     cluster_name = 'main'
     shared_buffers = '128MB'
