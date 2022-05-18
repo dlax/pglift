@@ -1,5 +1,6 @@
 import logging
 import shlex
+import urllib.parse
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -110,6 +111,35 @@ def password(name: str, settings: "PrometheusSettings") -> Optional[str]:
     return value
 
 
+def make_uri(
+    *,
+    user: str = "",
+    password: str = "",
+    port: str = "5432",
+    dbname: str = "",
+    **kw: str,
+) -> str:
+    """Return a libpq compatible uri for the given dsn object
+
+    Note: key=value form DSN doesn't work with a unix socket host.
+    Also for socket hosts, the host must be given in the uri params
+    (after '?').
+
+    >>> make_uri(**{'host': '/socket/path', 'dbname': 'somedb'})
+    'postgresql://:5432/somedb?host=%2Fsocket%2Fpath'
+    >>> make_uri(**{'host': '/socket/path'})
+    'postgresql://:5432?host=%2Fsocket%2Fpath'
+    >>> make_uri(**{'host': '/socket/path', 'user': 'someone', 'dbname': 'somedb', 'connect_timeout': '10', 'password': 'secret'})
+    'postgresql://someone:secret@:5432/somedb?host=%2Fsocket%2Fpath&connect_timeout=10'
+    """
+    userspec = user
+    userspec += f":{password}" if password else ""
+    userspec += "@" if userspec else ""
+    netloc = f"{userspec}:{port}"
+    query = urllib.parse.urlencode(kw)
+    return urllib.parse.urlunsplit(("postgresql", netloc, dbname, query, None))
+
+
 @task("setting up Prometheus postgres_exporter service")
 def setup(
     ctx: "BaseContext",
@@ -127,9 +157,8 @@ def setup(
     :param password: connection password.
     :param port: TCP port for the web interface and telemetry of postgres_exporter.
     """
-    if password is not None:
-        dsn += f" password={password}"
-    config = [f"DATA_SOURCE_NAME={dsn.strip()}"]
+    uri = make_uri(**psycopg.conninfo.conninfo_to_dict(dsn, password=password))
+    config = [f"DATA_SOURCE_NAME={uri}"]
     appname = f"postgres_exporter-{name}"
     log_options = ["--log.level=info"]
     if ctx.settings.service_manager == "systemd":

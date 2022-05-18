@@ -16,7 +16,7 @@ from pglift.prometheus import models
 from pglift.settings import PrometheusSettings
 
 from . import reconfigure_instance
-from .conftest import RoleFactory
+from .conftest import DatabaseFactory, RoleFactory
 
 
 def config_dict(configpath: Path) -> Dict[str, str]:
@@ -45,8 +45,8 @@ def test_configure(
 
     prometheus_config = config_dict(configpath)
     dsn = prometheus_config["DATA_SOURCE_NAME"]
-    assert "user=prometheus" in dsn
-    assert f"port={instance.port}" in dsn
+    assert "postgresql://prometheus" in dsn
+    assert f":{instance.port}" in dsn
     port = service.port
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
@@ -57,7 +57,7 @@ def test_configure(
     with reconfigure_instance(ctx, instance_manifest, port=new_port):
         new_prometheus_config = config_dict(configpath)
         dsn = new_prometheus_config["DATA_SOURCE_NAME"]
-        assert f"port={new_port}" in dsn
+        assert f":{new_port}" in dsn
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ def test_setup(
     configpath = Path(str(prometheus_settings.configpath).format(name=name))
 
     prometheus_config = config_dict(configpath)
-    assert f"port={instance.port}" in prometheus_config["DATA_SOURCE_NAME"]
+    assert f":{instance.port}" in prometheus_config["DATA_SOURCE_NAME"]
     assert prometheus_config["PG_EXPORTER_WEB_LISTEN_ADDRESS"] == f":{port}"
 
 
@@ -120,12 +120,16 @@ def request_metrics(port: int) -> requests.Response:
 
 
 @pytest.mark.usefixtures("prometheus_settings")
-def test_start_stop(ctx: Context, instance: system.Instance) -> None:
+def test_start_stop(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
     service = instance.service(models.Service)
     port = service.port
 
     if ctx.settings.service_manager == "systemd":
         assert systemd.is_enabled(ctx, prometheus.systemd_unit(instance.qualname))
+
+    database_factory("newdb")
 
     with instances.running(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
