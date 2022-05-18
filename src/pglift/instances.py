@@ -915,7 +915,7 @@ def check_pending_actions(
                 continue
             if p.context == "postmaster":
                 pending_restart.add(pname)
-            elif p.context == "sighup":
+            else:
                 pending_reload.add(pname)
 
         if pending_reload:
