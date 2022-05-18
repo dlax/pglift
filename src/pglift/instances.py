@@ -130,7 +130,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     if exists(ctx, manifest.name, manifest.version):
         return None
 
-    instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
+    sys_instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
 
     # Would raise SystemError if requested postgresql binaries are not
     # available or if versions mismatch.
@@ -143,7 +143,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     settings.socket_directory.mkdir(parents=True, exist_ok=True)
 
     opts: Dict[str, Union[str, Literal[True]]] = {
-        "waldir": str(instance.waldir),
+        "waldir": str(sys_instance.waldir),
         "username": surole.name,
         # Set temporary auth methods, until the complete pg_hba.conf gets
         # deployed.
@@ -166,13 +166,13 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
         with tempfile.NamedTemporaryFile("w") as pwfile:
             pwfile.write(surole_password.get_secret_value())
             pwfile.flush()
-            pgctl.init(instance.datadir, pwfile=pwfile.name, **opts)
+            pgctl.init(sys_instance.datadir, pwfile=pwfile.name, **opts)
     else:
-        pgctl.init(instance.datadir, **opts)
+        pgctl.init(sys_instance.datadir, **opts)
 
     # Possibly comment out everything in postgresql.conf, as in upstream
     # sample file, but in contrast with some distribution packages.
-    postgresql_conf = instance.datadir / "postgresql.conf"
+    postgresql_conf = sys_instance.datadir / "postgresql.conf"
     pgconfig = pgconf.Configuration(str(postgresql_conf))
     with postgresql_conf.open() as f:
         includes = builtins.list(pgconfig.parse(f))
@@ -194,12 +194,12 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
 
     standby = manifest.standby
     if standby:
-        init_replication(ctx, instance, standby.primary_conninfo, standby.slot)
+        init_replication(ctx, sys_instance, standby.primary_conninfo, standby.slot)
 
-    instance.psqlrc.write_text(
+    sys_instance.psqlrc.write_text(
         "\n".join(
             [
-                f"\\set PROMPT1 '[{instance}] %n@%~%R%x%# '",
+                f"\\set PROMPT1 '[{sys_instance}] %n@%~%R%x%# '",
                 "\\set PROMPT2 ' %R%x%# '",
             ]
         )
@@ -207,7 +207,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     )
 
     if ctx.settings.service_manager == "systemd":
-        systemd.enable(ctx, systemd_unit(instance))
+        systemd.enable(ctx, systemd_unit(sys_instance))
 
     return None
 
@@ -215,13 +215,13 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
 @init.revert("deleting PostgreSQL instance")
 def revert_init(ctx: "BaseContext", manifest: interface.Instance) -> None:
     """Un-initialize a PostgreSQL instance."""
-    instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
+    sys_instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
     if ctx.settings.service_manager == "systemd":
-        systemd.disable(ctx, systemd_unit(instance), now=True)
+        systemd.disable(ctx, systemd_unit(sys_instance), now=True)
 
     settings = ctx.settings.postgresql
-    if instance.path.exists():
-        shutil.rmtree(instance.path)
+    if sys_instance.path.exists():
+        shutil.rmtree(sys_instance.path)
     pgroot = settings.root
     if pgroot.exists():
         try:
@@ -255,10 +255,10 @@ def configure(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
-    instance = system.PostgreSQLInstance.system_lookup(
+    sys_instance = system.PostgreSQLInstance.system_lookup(
         ctx, (manifest.name, manifest.version)
     )
-    configdir = instance.datadir
+    configdir = sys_instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     confd, include = conf.info(configdir)
     if not confd.exists():
@@ -284,7 +284,9 @@ def configure(
             f.write(f"{include}\n\n")
             f.write(original_content)
 
-    site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": instance.name}
+    site_confitems: Dict[str, Optional[pgconf.Value]] = {
+        "cluster_name": sys_instance.name
+    }
     site_config_template = ctx.site_config("postgresql", "site.conf")
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
@@ -320,7 +322,7 @@ def configure(
     def make_config(
         fpath: Path, items: Dict[str, Optional[pgconf.Value]]
     ) -> Tuple[pgconf.Configuration, ConfigChanges]:
-        config = conf.make(instance.name, **items)
+        config = conf.make(sys_instance.name, **items)
 
         config_before = {}
         if fpath.exists():
@@ -355,12 +357,14 @@ def configure(
     )
     if not _creating:
         write_configs()
-        instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
-        needs_restart = check_pending_actions(ctx, instance, changes)
+        sys_instance = system.Instance.system_lookup(
+            ctx, (manifest.name, manifest.version)
+        )
+        needs_restart = check_pending_actions(ctx, sys_instance, changes)
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        conf.create_log_directory(instance, logdir)
+        conf.create_log_directory(sys_instance, logdir)
 
     return changes, needs_restart
 
@@ -450,8 +454,8 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     surole = manifest.surole(ctx.settings)
     replrole = manifest.replrole(ctx.settings)
     auth_settings = ctx.settings.postgresql.auth
-    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
-    hba_path = instance.datadir / "pg_hba.conf"
+    sys_instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    hba_path = sys_instance.datadir / "pg_hba.conf"
     auth_local = auth_settings.local
     auth_host = auth_settings.host
     if manifest.auth:
@@ -468,14 +472,14 @@ def instance_configure(ctx: "BaseContext", manifest: interface.Instance) -> None
     if hba_path.read_text() == hba:
         return
 
-    if not instance.standby:
+    if not sys_instance.standby:
         # standby instances are read-only
-        with running(ctx, instance):
-            roles.apply(ctx, instance, replrole)
+        with running(ctx, sys_instance):
+            roles.apply(ctx, sys_instance, replrole)
 
     hba_path.write_text(hba)
 
-    ident_path = instance.datadir / "pg_ident.conf"
+    ident_path = sys_instance.datadir / "pg_ident.conf"
     ident = util.template(ctx, "postgresql", "pg_ident.conf").format(
         surole=surole.name,
         sysuser=ctx.settings.sysuser[0],
@@ -842,13 +846,13 @@ def apply(
         _creating=_creating,
     )
 
-    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
-    is_running = status(ctx, instance) == Status.running
+    sys_instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    is_running = status(ctx, sys_instance) == Status.running
 
     if manifest.data_checksums is not None:
-        actual_data_checksums = get_data_checksums(ctx, instance)
+        actual_data_checksums = get_data_checksums(ctx, sys_instance)
         if actual_data_checksums != manifest.data_checksums:
-            set_data_checksums(ctx, instance, manifest.data_checksums)
+            set_data_checksums(ctx, sys_instance, manifest.data_checksums)
             changes["data_checksums"] = (
                 "enabled" if actual_data_checksums else "disabled",
                 "enabled" if manifest.data_checksums else "disabled",
@@ -856,10 +860,10 @@ def apply(
 
     if state == States.stopped:
         if is_running:
-            stop(ctx, instance)
+            stop(ctx, sys_instance)
     elif state == States.started:
         if not is_running:
-            start(ctx, instance)
+            start(ctx, sys_instance)
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
@@ -868,21 +872,21 @@ def apply(
     if (
         manifest.standby
         and manifest.standby.status == StandbyState.promoted
-        and instance.standby is not None
+        and sys_instance.standby is not None
     ):
-        promote(ctx, instance)
+        promote(ctx, sys_instance)
 
     if needs_restart and ctx.confirm(
         "Instance needs to be restarted; restart now?", False
     ):
-        restart(ctx, instance)
+        restart(ctx, sys_instance)
         needs_restart = False
 
-    if not instance.standby:
-        with running(ctx, instance):
-            db.create_or_drop_extensions(ctx, instance, manifest.extensions)
+    if not sys_instance.standby:
+        with running(ctx, sys_instance):
+            db.create_or_drop_extensions(ctx, sys_instance, manifest.extensions)
 
-    return instance, changes, needs_restart
+    return sys_instance, changes, needs_restart
 
 
 def check_pending_actions(
