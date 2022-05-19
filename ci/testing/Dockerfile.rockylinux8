@@ -3,10 +3,13 @@ RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x
 RUN dnf -qy module disable postgresql
 RUN dnf install -y postgresql10-server postgresql10-contrib pgbackrest
 WORKDIR /tmp
+ARG PGE_VERSION=0.10.1
+ARG PGE_FNAME=postgres_exporter-${PGE_VERSION}.linux-amd64
+ARG PGE_TGZ=${PGE_FNAME}.tar.gz
 RUN curl -O -L \
-	https://github.com/prometheus-community/postgres_exporter/releases/download/v0.8.0/postgres_exporter_v0.8.0_linux-amd64.tar.gz
-RUN tar xvf postgres_exporter_v0.8.0_linux-amd64.tar.gz
-RUN mv postgres_exporter_v0.8.0_linux-amd64/postgres_exporter /usr/bin/
+	https://github.com/prometheus-community/postgres_exporter/releases/download/v${PGE_VERSION}/${PGE_TGZ}
+RUN tar xvf ${PGE_TGZ}
+RUN mv ${PGE_FNAME}/postgres_exporter /usr/bin/
 RUN dnf install -y gcc git openssl procps-ng python3-pip
 
 RUN pip3 install tox
