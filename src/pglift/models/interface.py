@@ -137,6 +137,7 @@ class Instance(BaseInstance):
         "state": {
             "choices": [InstanceState.started.value, InstanceState.stopped.value]
         },
+        "pending_restart": {"hide": True},
         "restart_on_changes": {"hide": True},
         "ssl": {"hide": True},
         "configuration": {"hide": True},
@@ -155,6 +156,7 @@ class Instance(BaseInstance):
             }
         },
         "configuration": {"spec": {"type": "dict", "required": False}},
+        "pending_restart": {"hide": True},
     }
 
     _T = TypeVar("_T", bound="Instance")
@@ -312,6 +314,11 @@ class Instance(BaseInstance):
         description="Runtime state.",
     )
 
+    pending_restart: bool = Field(
+        default=False,
+        description="Whether the instance needs a restart to account for configuration changes.",
+        readOnly=True,
+    )
     restart_on_changes: bool = Field(
         default=True,
         description="Whether or not to automatically restart the instance to account for configuration changes.",

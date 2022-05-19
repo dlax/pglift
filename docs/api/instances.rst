@@ -19,6 +19,7 @@ instances:
 .. autofunction:: reload
 .. autofunction:: status
 .. autofunction:: check_status
+.. autofunction:: pending_restart
 .. autofunction:: running
 .. autofunction:: stopped
 .. autofunction:: promote

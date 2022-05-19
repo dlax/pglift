@@ -249,6 +249,7 @@ def test_apply(
         configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
         surole_password=surole_password,
+        restart_on_changes=False,
     )
     r = instances.apply(ctx, im)
     assert r is not None
@@ -268,6 +269,7 @@ def test_apply(
     i, changes = r
     assert not changes
     assert instances.status(ctx, i) == Status.running
+    assert not instances.pending_restart(ctx, i)
 
     im.configuration["listen_addresses"] = "*"  # requires restart
     im.configuration["autovacuum"] = False  # requires reload
@@ -284,6 +286,7 @@ def test_apply(
         "autovacuum": (None, False),
     }
     assert instances.status(ctx, i) == Status.running
+    assert instances.pending_restart(ctx, i)
 
     im.state = interface.InstanceState.stopped
     instances.apply(ctx, im)
@@ -321,10 +324,12 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
     assert im.state.name == "stopped"
     assert not im.surole_password
     assert im.extensions == ["passwordcheck"]
+    assert not im.pending_restart
 
     with instances.running(ctx, instance):
         im = instances.get(ctx, instance.name, instance.version)
         assert isinstance(im.surole_password, SecretStr)
+        assert not im.pending_restart
 
 
 def test_list(ctx: Context, instance: system.Instance) -> None:

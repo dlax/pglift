@@ -479,8 +479,8 @@ def test_instance_get(
     get.assert_called_once_with(ctx, "test", pg_version)
     assert table_result.exit_code == 0, (table_result, table_result.output)
     assert table_result.output.splitlines() == [
-        " name  version  port  ssl    surole…  replro…  data_c…  locale  encodi…  exten… ",
-        " test                 False  ******…                    C       UTF16           ",
+        " name  versi…  port  ssl    surol…  replr…  data…  locale  enco…  exten…  pend… ",
+        " test                False  *****…                 C       UTF16          False ",
     ]
 
 

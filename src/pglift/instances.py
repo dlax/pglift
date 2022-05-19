@@ -888,6 +888,21 @@ def apply(
     return sys_instance, changes
 
 
+def pending_restart(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
+    """Return True if the instance is pending a restart to account for configuration changes.
+
+    The instance must be running.
+    """
+    assert status(ctx, instance) == Status.running
+    with db.superuser_connect(ctx, instance) as cnx, cnx.cursor(
+        row_factory=psycopg.rows.args_row(bool)
+    ) as cur:
+        cur.execute("SELECT bool_or(pending_restart) FROM pg_settings")
+        row = cur.fetchone()
+        assert row is not None
+        return row
+
+
 def check_pending_actions(
     ctx: "BaseContext",
     instance: system.Instance,
@@ -945,7 +960,13 @@ def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Inst
     instance = system.Instance.system_lookup(ctx, (name, version))
     is_running = status(ctx, instance) == Status.running
     if not is_running:
-        missing_bits = ["locale", "encoding", "passwords", "extensions"]
+        missing_bits = [
+            "locale",
+            "encoding",
+            "passwords",
+            "extensions",
+            "pending_restart",
+        ]
         if instance.standby is not None:
             missing_bits.append("replication lag")
         logger.warning(
@@ -991,6 +1012,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     surole_password = replrole_password = None
     locale = None
     encoding = None
+    pending_rst = False
     if is_running:
         if instance.standby is None:
             surole_name = ctx.settings.postgresql.surole.name
@@ -1002,6 +1024,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         extensions += [
             e for e in db.installed_extensions(ctx, instance) if e not in extensions
         ]
+        pending_rst = pending_restart(ctx, instance)
 
     try:
         data_checksums = get_data_checksums(ctx, instance)
@@ -1014,6 +1037,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         version=instance.version,
         port=instance.port,
         state=state,
+        pending_restart=pending_rst,
         ssl=config.get("ssl", False),
         configuration=managed_config,
         surole_password=surole_password,
