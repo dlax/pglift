@@ -26,9 +26,9 @@ from pgtoolkit import conf as pgconf
 from pgtoolkit import ctl, pgpass
 from pgtoolkit.ctl import Status as Status
 from pydantic import SecretStr
-from typing_extensions import Literal
 
 from . import cmd, conf, db, exceptions, hookimpl, roles, systemd, util
+from ._compat import Literal
 from .models import interface, system
 from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion
 from .task import task

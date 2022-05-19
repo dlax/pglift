@@ -3,9 +3,8 @@ from contextlib import contextmanager
 from functools import partial
 from typing import Any, Iterator, List, Optional, overload
 
-from typing_extensions import Literal
-
 from pglift import db, instances
+from pglift._compat import Literal
 from pglift.ctx import BaseContext
 from pglift.models import interface
 from pglift.models.system import Instance

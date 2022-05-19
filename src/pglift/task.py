@@ -17,10 +17,9 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Protocol
-
 from . import __name__ as pkgname
 from . import exceptions
+from ._compat import Protocol
 
 A = TypeVar("A", bound=Callable[..., Any])
 

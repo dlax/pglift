@@ -14,10 +14,10 @@ import rich.text
 import rich.tree
 from rich.console import Console
 from rich.highlighter import NullHighlighter
-from typing_extensions import Literal
 
 from .. import __name__ as pkgname
 from .. import _install, version
+from .._compat import Literal
 from ..ctx import Context, SiteMixin
 from ..models import system
 from ..settings import Settings, SiteSettings

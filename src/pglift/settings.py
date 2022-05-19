@@ -22,10 +22,10 @@ import yaml
 from pydantic import BaseSettings, Field, FilePath, root_validator, validator
 from pydantic.fields import ModelField
 from pydantic.utils import lenient_issubclass
-from typing_extensions import Literal
 
 from . import __name__ as pkgname
 from . import exceptions, types, util
+from ._compat import Literal
 
 try:
     from pydantic.env_settings import SettingsSourceCallable

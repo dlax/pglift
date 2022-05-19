@@ -20,7 +20,8 @@ import psycopg.errors
 import yaml
 from pgtoolkit import conf as pgconf
 from pydantic import BaseModel, SecretStr
-from typing_extensions import Protocol, TypedDict
+
+from ._compat import Protocol, TypedDict
 
 if TYPE_CHECKING:
     CompletedProcess = subprocess.CompletedProcess[str]

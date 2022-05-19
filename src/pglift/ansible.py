@@ -1,8 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
 
-from typing_extensions import Protocol
-
+from ._compat import Protocol
 from .ctx import BaseContext, SiteMixin
 from .types import CompletedProcess
 

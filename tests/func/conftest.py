@@ -13,9 +13,9 @@ import psycopg.conninfo
 import pydantic
 import pytest
 from pgtoolkit.ctl import Status
-from typing_extensions import Protocol
 
 from pglift import _install, instances, pgbackrest, prometheus
+from pglift._compat import Protocol
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.settings import (

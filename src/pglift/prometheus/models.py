@@ -5,9 +5,9 @@ import attr
 import psycopg
 import psycopg.conninfo
 from pydantic import Field, SecretStr, validator
-from typing_extensions import Final
 
 from .. import types
+from .._compat import Final
 
 default_port: Final = 9187
 

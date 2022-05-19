@@ -28,9 +28,9 @@ from pydantic import (
     root_validator,
     validator,
 )
-from typing_extensions import Literal
 
 from .. import settings
+from .._compat import Literal
 from ..types import AnsibleConfig, AutoStrEnum, CLIConfig
 from ..types import Extension as Extension
 from ..types import Manifest, ServiceManifest

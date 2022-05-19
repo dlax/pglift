@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union, ov
 
 from dateutil.tz import gettz
 from pgtoolkit import conf as pgconf
-from typing_extensions import Literal
 
 from .. import exceptions, instances, roles, util
+from .._compat import Literal
 from ..conf import info as conf_info
 from ..models import interface
 from ..task import task

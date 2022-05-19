@@ -17,8 +17,8 @@ from typing import (
 
 import pydantic
 from pydantic.utils import lenient_issubclass
-from typing_extensions import Literal
 
+from .._compat import Literal
 from ..types import AnsibleArgSpec, StrEnum
 
 Callback = Callable[..., Any]
