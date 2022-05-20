@@ -17,7 +17,9 @@ def test_postgresql_systemd_unit_template(ctx: Context) -> None:
     for line in lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
-            assert re.match(r"^.+/python(3)? -m pglift.postgres %i$", execstart)
+            assert re.match(
+                r"^.+/python(3(.[0-9]*))? -m pglift.postgres %i$", execstart
+            )
             break
     else:
         raise AssertionError("ExecStart line not found")
@@ -33,7 +35,7 @@ def test_postgresql_backup_systemd_templates(ctx: Context) -> None:
     for line in service_lines:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
-            assert re.match(r"^.+/python(3)? -m pglift.backup %i$", execstart)
+            assert re.match(r"^.+/python(3(.[0-9]*)?)? -m pglift.backup %i$", execstart)
             break
     else:
         raise AssertionError("ExecStart line not found")
