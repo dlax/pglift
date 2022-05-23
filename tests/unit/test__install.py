@@ -18,7 +18,7 @@ def test_postgresql_systemd_unit_template(ctx: Context) -> None:
         if line.startswith("ExecStart"):
             execstart = line.split("=", 1)[-1]
             assert re.match(
-                r"^.+/python(3(.[0-9]*))? -m pglift.postgres %i$", execstart
+                r"^.+/python(3(.[0-9]*)?)? -m pglift.postgres %i$", execstart
             )
             break
     else:
