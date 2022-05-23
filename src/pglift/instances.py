@@ -796,19 +796,16 @@ def set_data_checksums(
     )
 
 
-ApplyResult = Union[None, Tuple[system.Instance, ConfigChanges]]
-
-
 def apply(
     ctx: "BaseContext", instance: interface.Instance, *, _creating: bool = False
-) -> ApplyResult:
+) -> Optional[bool]:
     """Apply state described by interface model as a PostgreSQL instance.
 
     Depending on the previous state and existence of the target instance, the
     instance may be created or updated or dropped.
 
-    Unless the target state is 'absent', return an
-    :class:`~pglift.model.Instance` object along with configuration changes.
+    Return True, if changes were applied, False if no change is needed, and
+    None if the instance got dropped.
 
     If configuration changes are detected and the instance was previously
     running, the server will be reloaded automatically; if a restart is
@@ -824,11 +821,14 @@ def apply(
                 ctx,
                 system.Instance.system_lookup(ctx, (instance.name, instance.version)),
             )
-        return None
+            return None
+        return False
 
+    changed = False
     if not exists(ctx, instance.name, instance.version):
         _creating = True
         init(ctx, instance)
+        changed = True
 
     configure_options = instance.configuration or {}
     configure_options["port"] = instance.port
@@ -844,6 +844,7 @@ def apply(
         values=configure_options,
         _creating=_creating,
     )
+    changed = changed or bool(changes)
 
     sys_instance = system.Instance.system_lookup(ctx, (instance.name, instance.version))
 
@@ -864,18 +865,21 @@ def apply(
     if instance.data_checksums is not None:
         actual_data_checksums = get_data_checksums(ctx, sys_instance)
         if actual_data_checksums != instance.data_checksums:
+            if instance.data_checksums:
+                logger.info("enabling data checksums")
+            else:
+                logger.info("disabling data checksums")
             set_data_checksums(ctx, sys_instance, instance.data_checksums)
-            changes["data_checksums"] = (
-                "enabled" if actual_data_checksums else "disabled",
-                "enabled" if instance.data_checksums else "disabled",
-            )
+            changed = True
 
     if state == States.stopped:
         if is_running:
             stop(ctx, sys_instance)
+            changed = True
     elif state == States.started:
         if not is_running:
             start(ctx, sys_instance)
+            changed = True
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover
 
@@ -892,11 +896,14 @@ def apply(
         with running(ctx, sys_instance):
             db.create_or_drop_extensions(ctx, sys_instance, instance.extensions)
             for a_role in instance.roles:
-                roles.apply(ctx, sys_instance, a_role)
+                changed = roles.apply(ctx, sys_instance, a_role) is not False or changed
             for a_database in instance.databases:
-                databases.apply(ctx, sys_instance, a_database)
+                changed = (
+                    databases.apply(ctx, sys_instance, a_database) is not False
+                    or changed
+                )
 
-    return sys_instance, changes
+    return changed
 
 
 def pending_restart(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:

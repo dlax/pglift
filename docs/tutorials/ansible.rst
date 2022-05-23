@@ -203,18 +203,6 @@ As you can see you can feed third-party ansible modules (like
     ok: [localhost]
 
     TASK [dev instance, started, with SSL] *******************************************************************
-    --- before: 13/dev
-    +++ after: 13/dev
-    @@ -1,5 +1,5 @@
-     {
-    -    "max_connections": null,
-    -    "port": 5444,
-    -    "ssl": null
-    +    "max_connections": 42,
-    +    "port": 5455,
-    +    "ssl": true
-     }
-
     changed: [localhost]
 
     PLAY RECAP ***********************************************************************************************

@@ -372,13 +372,12 @@ def instance_manifest(
 def instance(ctx: Context, instance_manifest: interface.Instance) -> system.Instance:
     # Check status before initialization.
     assert instance_manifest.version is not None
-    instance = system.BaseInstance.get(
+    baseinstance = system.BaseInstance.get(
         instance_manifest.name, instance_manifest.version, ctx
     )
-    assert instances.status(ctx, instance) == Status.unspecified_datadir
-    r = instances.apply(ctx, instance_manifest)
-    assert r is not None
-    instance = r[0]
+    assert instances.status(ctx, baseinstance) == Status.unspecified_datadir
+    assert instances.apply(ctx, instance_manifest)
+    instance = system.Instance.system_lookup(ctx, baseinstance)
     # Limit postgresql.conf to uncommented entries to reduce pytest's output
     # due to --show-locals.
     postgresql_conf = instance.datadir / "postgresql.conf"
@@ -435,9 +434,10 @@ def standby_instance(
     ctx: Context, standby_manifest: interface.Instance, instance: system.Instance
 ) -> Iterator[system.Instance]:
     with instances.running(ctx, instance):
-        r = instances.apply(ctx, standby_manifest)
-        assert r is not None
-    stdby_instance = r[0]
+        instances.apply(ctx, standby_manifest)
+    stdby_instance = system.Instance.system_lookup(
+        ctx, (standby_manifest.name, standby_manifest.version)
+    )
     instances.stop(ctx, stdby_instance)
     yield stdby_instance
     instances.drop(ctx, stdby_instance)

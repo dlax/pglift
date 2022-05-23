@@ -285,9 +285,8 @@ def instance_no_prometheus(
             "prometheus": None,
         }
     )
-    r = instances.apply(ctx, im)
-    assert r is not None
-    instance = r[0]
+    instances.apply(ctx, im)
+    instance = system.Instance.system_lookup(ctx, ("noprom", pg_version))
     yield instance
     instances.drop(ctx, instance)
 

@@ -63,8 +63,6 @@ env:
     description: libpq environment variable used to connect to the instance
 """
 
-from typing import Any, Dict
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
@@ -73,9 +71,9 @@ from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
 with check_required_libs():
     import pydantic
 
-    from pglift import instances, plugin_manager
+    from pglift import exceptions, instances, plugin_manager
     from pglift.ansible import AnsibleContext
-    from pglift.models import helpers, interface
+    from pglift.models import helpers, interface, system
     from pglift.settings import SiteSettings
 
 
@@ -99,46 +97,21 @@ def run_module() -> None:
     if module.check_mode:
         module.exit_json(**result)
 
-    instance_exists = instances.exists(ctx, m.name, m.version)
-
     try:
-        apply_result = instances.apply(ctx, m)
+        changed = instances.apply(ctx, m)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
-    if instance_exists:
-        if not apply_result:  # Dropped
-            result["changed"] = True
-            instance = None
+    result["changed"] = changed is not False
+
+    if changed is not None:
+        try:
+            instance = system.PostgreSQLInstance.system_lookup(ctx, (m.name, m.version))
+        except exceptions.InstanceNotFound:
+            # Instance probably got dropped in a previous task.
+            pass
         else:
-            instance, changes = apply_result
-            if changes:
-                result["changed"] = True
-                result["configuration_changes"] = changes
-    elif apply_result:  # Created
-        instance, changes = apply_result
-        result["changed"] = True
-        result["configuration_changes"] = changes
-    else:
-        instance = None
-
-    if module._diff:
-        diff: Dict[str, Any] = {}
-        before = diff["before"] = {}
-        after = diff["after"] = {}
-        # TODO: use configuration file path instead
-        diff["before_header"] = diff["after_header"] = str(instance or m)
-        for k, (before_val, after_val) in result.get(  # type: ignore[attr-defined]
-            "configuration_changes", {}
-        ).items():
-            before[k] = before_val
-            after[k] = after_val
-        result["diff"] = diff
-
-    if instance is None:
-        result["env"] = {}
-    else:
-        result["env"] = instances.env_for(ctx, instance, path=True)
+            result["env"] = instances.env_for(ctx, instance, path=True)
 
     module.exit_json(**result)
 

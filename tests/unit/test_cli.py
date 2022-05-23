@@ -378,10 +378,7 @@ def test_instance_apply(
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump(m)
     manifest.write_text(content)
-    mock_instance = object()
-    with patch.object(
-        instances, "apply", return_value=(mock_instance, {}, False)
-    ) as apply:
+    with patch.object(instances, "apply") as apply:
         result = runner.invoke(cli, ["instance", "apply", "-f", str(manifest)], obj=obj)
     assert result.exit_code == 0, (result, result.output)
     apply.assert_called_once_with(ctx, composite_instance_model.parse_obj(m))
@@ -422,9 +419,9 @@ def test_instance_alter(
         cmd.append("--prometheus-port=2121")
     actual = composite_instance_model.parse_obj(actual_obj)
     altered = composite_instance_model.parse_obj(altered_obj)
-    with patch.object(
-        instances, "apply", return_value=(instance, {}, True)
-    ) as apply, patch.object(instances, "_get", return_value=actual) as _get:
+    with patch.object(instances, "apply") as apply, patch.object(
+        instances, "_get", return_value=actual
+    ) as _get:
         result = runner.invoke(cli, cmd, obj=obj)
     _get.assert_called_once_with(ctx, instance)
     apply.assert_called_once_with(ctx, altered)

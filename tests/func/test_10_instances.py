@@ -256,23 +256,19 @@ def test_apply(
             {"name": "db2", "owner": "bob", "extensions": ["unaccent"]},
         ],
     )
-    r = instances.apply(ctx, im)
-    assert r is not None
-    i, changes = r
-    assert i is not None
+    assert instances.apply(ctx, im)
+    i = system.Instance.system_lookup(ctx, ("test_apply", pg_version))
     assert i.exists()
     assert i.port == port
-    assert changes["port"] == (None, port)
     pgconfig = i.config()
     assert pgconfig
     assert pgconfig.ssl
 
+    assert not instances.apply(ctx, im)  # no-op
+
     assert instances.status(ctx, i) == Status.not_running
     im.state = interface.InstanceState.started
-    r = instances.apply(ctx, im)
-    assert r is not None
-    i, changes = r
-    assert not changes
+    assert instances.apply(ctx, im)
     assert instances.status(ctx, i) == Status.running
     assert not instances.pending_restart(ctx, i)
 
@@ -286,27 +282,20 @@ def test_apply(
     im.configuration["listen_addresses"] = "*"  # requires restart
     im.configuration["autovacuum"] = False  # requires reload
     with caplog.at_level(logging.DEBUG, logger="pgflit"):
-        r = instances.apply(ctx, im)
+        assert instances.apply(ctx, im)
     assert (
         f"instance {i} needs restart due to parameter changes: listen_addresses"
         in caplog.messages
     )
-    assert r is not None
-    i, changes = r
-    assert changes == {
-        "listen_addresses": (None, "*"),
-        "autovacuum": (None, False),
-    }
     assert instances.status(ctx, i) == Status.running
     assert instances.pending_restart(ctx, i)
 
     im.state = interface.InstanceState.stopped
-    instances.apply(ctx, im)
+    assert instances.apply(ctx, im)
     assert instances.status(ctx, i) == Status.not_running
 
     im.state = interface.InstanceState.absent
-    r = instances.apply(ctx, im)
-    assert r is None
+    assert instances.apply(ctx, im) is None
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()
     assert instances.status(ctx, i) == Status.unspecified_datadir
@@ -585,9 +574,8 @@ def datachecksums_instance(
             "surole_password": surole_password,
         }
     )
-    r = instances.apply(ctx, manifest)
-    assert r
-    instance = r[0]
+    instances.apply(ctx, manifest)
+    instance = system.Instance.system_lookup(ctx, ("datachecksums", pg_version))
     yield manifest, instance
     instances.drop(ctx, instance)
 
@@ -596,6 +584,7 @@ def test_data_checksums(
     ctx: Context,
     pg_version: str,
     datachecksums_instance: Tuple[interface.Instance, system.Instance],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     manifest, instance = datachecksums_instance
 
@@ -611,36 +600,29 @@ def test_data_checksums(
                 "11": r"^PostgreSQL <= 11 doesn't have pg_checksums to enable data checksums$",
             }[pg_version],
         ):
-            result = instances.apply(ctx, manifest)
+            instances.apply(ctx, manifest)
         return
 
-    result = instances.apply(ctx, manifest)
-    assert result
-    _, changes = result
+    with caplog.at_level(logging.INFO, logger="pglift.instances"):
+        assert instances.apply(ctx, manifest)
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
-    assert changes == {
-        "data_checksums": ("disabled", "enabled"),
-    }
+    assert "enabling data checksums" in caplog.messages
+    caplog.clear()
 
     assert instances._get(ctx, instance).data_checksums
 
     # not explicitly disabled so still enabled
     manifest.data_checksums = None
-    result = instances.apply(ctx, manifest)
-    assert result
-    _, changes = result
+    assert instances.apply(ctx, manifest) is False
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
-    assert changes == {}
 
     # explicitly disabled
     manifest.data_checksums = False
-    result = instances.apply(ctx, manifest)
-    assert result
-    _, changes = result
+    with caplog.at_level(logging.INFO, logger="pglift.instances"):
+        assert instances.apply(ctx, manifest)
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
-    assert changes == {
-        "data_checksums": ("enabled", "disabled"),
-    }
+    assert "disabling data checksums" in caplog.messages
+    caplog.clear()
     assert instances._get(ctx, instance).data_checksums is False
 
     # re-enabled with instance running
