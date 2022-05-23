@@ -34,20 +34,25 @@ def test_in_pgpass(ctx: Context, instance: Instance, passfile: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "role, pgpass",
+    "role, changed, pgpass",
     [
-        (Role("alice"), "*:999:*:edgar:fbi\n"),
-        (Role("bob", "secret"), "*:999:*:edgar:fbi\n"),
-        (Role("charles", pgpass=True), "*:999:*:edgar:fbi\n"),
-        (Role("danny", "sss", True), "*:999:*:danny:sss\n*:999:*:edgar:fbi\n"),
-        (Role("edgar", "cia", True), "*:999:*:edgar:cia\n"),
-        (Role("edgar", None, False), ""),
+        (Role("alice"), False, "*:999:*:edgar:fbi\n"),
+        (Role("bob", "secret"), False, "*:999:*:edgar:fbi\n"),
+        (Role("charles", pgpass=True), False, "*:999:*:edgar:fbi\n"),
+        (Role("danny", "sss", True), True, "*:999:*:danny:sss\n*:999:*:edgar:fbi\n"),
+        (Role("edgar", "cia", True), True, "*:999:*:edgar:cia\n"),
+        (Role("edgar", None, False), True, ""),
     ],
 )
 def test_set_pgpass_entry_for(
-    ctx: Context, instance: Instance, passfile: Path, role: Role, pgpass: str
+    ctx: Context,
+    instance: Instance,
+    passfile: Path,
+    role: Role,
+    changed: bool,
+    pgpass: str,
 ) -> None:
-    roles.set_pgpass_entry_for(ctx, instance, role)
+    assert roles.set_pgpass_entry_for(ctx, instance, role) == changed
     assert passfile.read_text() == pgpass
 
 

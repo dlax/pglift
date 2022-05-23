@@ -233,8 +233,11 @@ def in_pgpass(
 
 def set_pgpass_entry_for(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
-) -> None:
-    """Add, update or remove a password file entry for 'role' of 'instance'."""
+) -> bool:
+    """Add, update or remove a password file entry for 'role' of 'instance'.
+
+    Return True if any change got applied.
+    """
 
     port = instance.port
     username = role.name
@@ -251,13 +254,15 @@ def set_pgpass_entry_for(
                         {"username": username, "passfile": passfile},
                     )
                     f.lines.remove(entry)
+                    return True
                 elif password is not None:
                     logger.info(
                         "updating password for '%(username)s' in %(passfile)s",
                         {"username": username, "passfile": passfile},
                     )
                     entry.password = password
-                break
+                    return True
+                return False
         else:
             if role.pgpass and password is not None:
                 logger.info(
@@ -267,3 +272,5 @@ def set_pgpass_entry_for(
                 entry = pgpass.PassEntry("*", port, "*", username, password)
                 f.lines.append(entry)
                 f.sort()
+                return True
+            return False
