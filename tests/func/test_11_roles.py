@@ -231,6 +231,7 @@ def test_get(
         assert postgres.password is not None
         if surole.pgpass:
             assert postgres.pgpass is not None
+        assert roles.get(ctx, instance, "postgres", password=False).password is None
     assert postgres.login
     assert postgres.superuser
     assert postgres.replication

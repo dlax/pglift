@@ -39,7 +39,11 @@ def apply(
 
 
 def get(
-    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
+    ctx: "BaseContext",
+    instance: "system.PostgreSQLInstance",
+    name: str,
+    *,
+    password: bool = True,
 ) -> interface.Role:
     """Return the role object with specified name.
 
@@ -54,6 +58,8 @@ def get(
             assert role is not None
     if in_pgpass(ctx, instance, name):
         role.pgpass = True
+    if not password:
+        role.password = None
     return role
 
 
