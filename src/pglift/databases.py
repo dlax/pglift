@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
@@ -20,8 +20,11 @@ def apply(
     ctx: BaseContext,
     instance: "system.PostgreSQLInstance",
     database: interface.Database,
-) -> None:
+) -> Optional[bool]:
     """Apply state described by specified interface model as a PostgreSQL database.
+
+    Return True, if changes were applied, False if no change is needed, and
+    None if the database got dropped.
 
     The instance should be running.
     """
@@ -29,12 +32,16 @@ def apply(
     if database.state == interface.PresenceState.absent:
         if exists(ctx, instance, name):
             drop(ctx, instance, name)
-        return None
+            return None
+        return False
 
     if not exists(ctx, instance, name):
         create(ctx, instance, database)
-    else:
-        alter(ctx, instance, database)
+        return True
+
+    actual = get(ctx, instance, name)
+    alter(ctx, instance, database)
+    return get(ctx, instance, name) != actual
 
 
 def get(

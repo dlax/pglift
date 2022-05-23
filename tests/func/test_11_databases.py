@@ -63,19 +63,20 @@ def test_apply(
         extensions=[interface.Extension.unaccent],
     )
     assert not databases.exists(ctx, instance, database.name)
-    databases.apply(ctx, instance, database)
+    assert databases.apply(ctx, instance, database)
     db = databases.get(ctx, instance, database.name)
     assert db.settings == {"work_mem": "1MB"}
     assert db.extensions == [interface.Extension.unaccent]
+    assert databases.apply(ctx, instance, database) is False  # no-op
 
     database_factory("apply")
     database = interface.Database(name="apply")
-    databases.apply(ctx, instance, database)
+    assert databases.apply(ctx, instance, database) is False  # no-op
     assert databases.get(ctx, instance, "apply").owner == "postgres"
 
     role_factory("dbapply")
     database = interface.Database(name="apply", owner="dbapply")
-    databases.apply(ctx, instance, database)
+    assert databases.apply(ctx, instance, database)
     try:
         assert databases.get(ctx, instance, "apply") == database
     finally:
@@ -83,7 +84,7 @@ def test_apply(
 
     database = interface.Database(name="db2", state="absent")
     assert databases.exists(ctx, instance, database.name)
-    databases.apply(ctx, instance, database)
+    assert databases.apply(ctx, instance, database) is None
     assert not databases.exists(ctx, instance, database.name)
 
 
