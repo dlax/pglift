@@ -804,9 +804,9 @@ def apply(
     :class:`~pglift.model.Instance` object along with configuration changes.
 
     If configuration changes are detected and the instance was previously
-    running, the third item of the return tuple will contain True if the
-    server needs to be restarted. If the server needs to be reloaded, this
-    will be done automatically.
+    running, the server will be reloaded automatically; if a restart is
+    needed, the user will be prompted in case of interactive usage or this
+    will be performed automatically if 'restart_on_changes' is set to True.
     """
     States = interface.InstanceState
     state = instance.state
