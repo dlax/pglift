@@ -412,8 +412,8 @@ def test_standby_replication(
 
     @retry(
         retry=retry_if_exception_type(psycopg.OperationalError),
-        wait=wait_fixed(1),
-        stop=stop_after_attempt(4),
+        wait=wait_fixed(2),
+        stop=stop_after_attempt(5),
     )
     def assert_db_replicated() -> int:
         row = execute(
@@ -423,8 +423,8 @@ def test_standby_replication(
 
     @retry(
         retry=retry_if_exception_type(OutOfSync),
-        wait=wait_fixed(1),
-        stop=stop_after_attempt(4),
+        wait=wait_fixed(2),
+        stop=stop_after_attempt(5),
     )
     def assert_replicated(expected: int) -> None:
         rlag = instances.replication_lag(ctx, standby_instance)
