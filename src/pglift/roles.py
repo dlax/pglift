@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import psycopg.pq
 import psycopg.rows
@@ -20,8 +20,13 @@ logger = logging.getLogger(__name__)
 
 def apply(
     ctx: "BaseContext", instance: "system.PostgreSQLInstance", role: interface.Role
-) -> None:
+) -> Optional[bool]:
     """Apply state described by specified interface model as a PostgreSQL role.
+
+    Return True, if changes were applied, False if no change is needed, and
+    None if the role got dropped. In case it's not possible to inspect changed
+    role, possibly due to the super-user password being modified, return True
+    with a warning logged.
 
     The instance should be running.
     """
@@ -29,13 +34,27 @@ def apply(
     if role.state == interface.PresenceState.absent:
         if exists(ctx, instance, name):
             drop(ctx, instance, name)
-        return
+            return None
+        return False
 
     if not exists(ctx, instance, name):
         create(ctx, instance, role)
+        set_pgpass_entry_for(ctx, instance, role)
+        return True
     else:
+        actual = get(ctx, instance, name, password=False)
         alter(ctx, instance, role)
-    set_pgpass_entry_for(ctx, instance, role)
+        if set_pgpass_entry_for(ctx, instance, role):
+            return True
+        try:
+            return get(ctx, instance, name, password=False) != actual
+        except psycopg.OperationalError as e:
+            logger.warning(
+                "failed to retrieve new role %s, possibly due to password being modified: %s",
+                name,
+                e,
+            )
+            return True
 
 
 def get(

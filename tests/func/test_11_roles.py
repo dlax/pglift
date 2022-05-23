@@ -1,5 +1,6 @@
 import datetime
 import functools
+import logging
 import pathlib
 from typing import Iterator, Optional, Union
 from unittest.mock import patch
@@ -121,25 +122,26 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
     role = interface.Role(name=rolname)
     assert not roles.exists(ctx, instance, role.name)
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
     assert not roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
+    assert roles.apply(ctx, instance, role) is False  # no-op
 
     role = interface.Role(name=rolname, state="absent")
     assert roles.exists(ctx, instance, role.name)
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role) is None
     assert not roles.exists(ctx, instance, role.name)
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
 
     role = interface.Role(
         name=rolname, login=True, password=SecretStr("passw0rd"), pgpass=True
     )
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
     with db.connect(
@@ -151,6 +153,11 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     ):
         pass
 
+    role.password = SecretStr("changed")
+    assert roles.apply(ctx, instance, role)
+    role.password = None
+    assert not roles.apply(ctx, instance, role)
+
     role = interface.Role(
         name=rolname,
         login=True,
@@ -158,7 +165,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
         pgpass=True,
         connection_limit=5,
     )
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert _role_in_pgpass(role)
     assert roles.get(ctx, instance, rolname).connection_limit == 5
@@ -172,7 +179,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
         pass
 
     role = interface.Role(name=rolname, pgpass=False)
-    roles.apply(ctx, instance, role)
+    assert roles.apply(ctx, instance, role)
     assert roles.has_password(ctx, instance, role.name)
     assert not _role_in_pgpass(role)
     assert roles.get(ctx, instance, rolname).connection_limit is None
@@ -183,6 +190,7 @@ def test_alter_surole_password(
     instance_manifest: interface.Instance,
     instance: system.Instance,
     postgresql_auth: AuthType,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     if postgresql_auth == AuthType.peer:
         pytest.skip(f"not applicable for auth:{postgresql_auth}")
@@ -198,13 +206,22 @@ def test_alter_surole_password(
         update={"password": instance_manifest.surole(ctx.settings).password}
     )
     role = surole.copy(update={"password": SecretStr("passw0rd_changed")})
-    roles.apply(ctx, instance, role)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="pgflit.roles"):
+        assert roles.apply(ctx, instance, role)
+    if postgresql_auth == AuthType.password_command:
+        assert (
+            "failed to retrieve new role postgres, possibly due to password"
+            in caplog.messages[0]
+        )
+    else:
+        assert not caplog.messages
     try:
         with check_connect(password="passw0rd_changed"):
             pass
     finally:
         with patch.dict("os.environ", {"PGPASSWORD": "passw0rd_changed"}):
-            roles.apply(ctx, instance, surole)
+            assert roles.apply(ctx, instance, surole)
         with pytest.raises(
             psycopg.OperationalError, match="password authentication failed"
         ):

@@ -29,8 +29,6 @@ EXAMPLES = """
 RETURN = """
 """
 
-from typing import Dict
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
@@ -64,7 +62,7 @@ def run_module() -> None:
 
     ctx = AnsibleContext(module, settings=SiteSettings())
 
-    result: Dict[str, str] = {}
+    result = {"changed": False}
 
     if module.check_mode:
         module.exit_json(**result)
@@ -72,10 +70,11 @@ def run_module() -> None:
     try:
         instance = system.Instance.system_lookup(ctx, (i_name, i_version))
         with instances.running(ctx, instance):
-            roles.apply(ctx, instance, role)
+            changed = roles.apply(ctx, instance, role)
     except Exception as exc:
         module.fail_json(msg=f"Error {exc}", **result)
 
+    result["changed"] = changed is not False
     module.exit_json(**result)
 
 
