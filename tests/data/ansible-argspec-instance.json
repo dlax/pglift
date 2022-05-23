@@ -110,7 +110,7 @@
     "type": "str"
   },
   "restart_on_changes": {
-    "default": true,
+    "default": false,
     "description": [
       "Whether or not to automatically restart the instance to account for configuration changes"
     ],

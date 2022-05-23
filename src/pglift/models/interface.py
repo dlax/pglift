@@ -400,7 +400,7 @@ class Instance(BaseInstance):
         readOnly=True,
     )
     restart_on_changes: bool = Field(
-        default=True,
+        default=False,
         description="Whether or not to automatically restart the instance to account for configuration changes.",
         exclude=True,
         writeOnly=True,
