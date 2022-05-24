@@ -85,3 +85,12 @@ def cli() -> "click.Command":
     from .cli import pgbackrest
 
     return pgbackrest
+
+
+@hookimpl  # type: ignore[misc]
+def instance_cli(group: "click.Group") -> None:
+    from .cli import instance_backup, instance_backups, instance_restore
+
+    group.add_command(instance_backup)
+    group.add_command(instance_backups)
+    group.add_command(instance_restore)

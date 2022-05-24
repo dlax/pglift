@@ -1,17 +1,14 @@
-from datetime import datetime
-from functools import partial
 from typing import IO, Any, Callable, Dict, List, Optional, Sequence, Tuple, Type
 
 import click
 from pydantic.utils import deep_update
 from rich.console import Console
 
-from .. import instances, privileges, task, types
+from .. import instances, privileges, task
 from ..ctx import Context
 from ..instances import Status
 from ..models import helpers, interface, system
-from ..pgbackrest import impl as pgbackrest_mod
-from ..settings import PgBackRestSettings, PostgreSQLVersion
+from ..settings import PostgreSQLVersion
 from .util import (
     Command,
     Group,
@@ -19,7 +16,6 @@ from .util import (
     as_json_option,
     foreground_option,
     instance_lookup,
-    pass_component_settings,
     pass_console,
     pass_ctx,
     print_json_for,
@@ -61,6 +57,7 @@ class InstanceCommands(Group):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._composite_instance_commands: Dict[str, CommandFactory] = {}
+        self._plugin_commands_loaded = False
 
     def command_with_composite_instance(
         self, name: str
@@ -73,12 +70,41 @@ class InstanceCommands(Group):
 
         return decorator
 
+    def _load_plugins_commands(self, context: click.Context) -> bool:
+        if self._plugin_commands_loaded:
+            return False
+
+        obj = context.obj
+        if obj is None:
+            from . import InvalidSettingsError, Obj
+
+            try:
+                obj = context.ensure_object(Obj)
+            except InvalidSettingsError:
+                return False
+
+        if obj is None:
+            return False
+
+        obj.ctx.hook.instance_cli(group=self)
+        self._plugin_commands_loaded = True
+        return True
+
+    def add_command(self, cmd: click.Command, name: Optional[str] = None) -> None:
+        name = name or cmd.name
+        assert (
+            name not in self.commands
+        ), f"instance command '{name}' already registered"
+        super().add_command(cmd, name)
+
     def list_commands(self, context: click.Context) -> List[str]:
+        self._load_plugins_commands(context)
         return sorted(
             super().list_commands(context) + list(self._composite_instance_commands)
         )
 
     def get_command(self, context: click.Context, name: str) -> Optional[click.Command]:
+        self._load_plugins_commands(context)
         try:
             factory = self._composite_instance_commands[name]
         except KeyError:
@@ -327,84 +353,6 @@ def instance_logs(ctx: Context, instance: system.Instance) -> None:
     """
     for line in instances.logs(ctx, instance):
         click.echo(line, nl=False)
-
-
-pass_pgbackrest_settings = partial(
-    pass_component_settings, pgbackrest_mod, "pgbackrest"
-)
-
-
-@cli.command("backup")
-@instance_identifier(nargs=1)
-@click.option(
-    "--type",
-    "backup_type",
-    type=click.Choice([t.name for t in types.BackupType]),
-    default=types.BackupType.default().name,
-    help="Backup type",
-    callback=lambda ctx, param, value: types.BackupType(value),
-)
-@pass_pgbackrest_settings
-@pass_ctx
-def instance_backup(
-    ctx: Context,
-    settings: PgBackRestSettings,
-    instance: system.Instance,
-    backup_type: types.BackupType,
-) -> None:
-    """Back up PostgreSQL INSTANCE"""
-    pgbackrest_mod.backup(ctx, instance, settings, type=backup_type)
-
-
-@cli.command("restore")
-@instance_identifier(nargs=1)
-@click.option("--label", help="Label of backup to restore")
-@click.option("--date", type=click.DateTime(), help="Date of backup to restore")
-@pass_pgbackrest_settings
-@pass_console
-@pass_ctx
-def instance_restore(
-    ctx: Context,
-    console: Console,
-    settings: PgBackRestSettings,
-    instance: system.Instance,
-    label: Optional[str],
-    date: Optional[datetime],
-) -> None:
-    """Restore PostgreSQL INSTANCE"""
-    instances.check_status(ctx, instance, Status.not_running)
-    if label is not None and date is not None:
-        raise click.BadArgumentUsage(
-            "--label and --date arguments are mutually exclusive"
-        )
-    pgbackrest_mod.restore(ctx, instance, settings, label=label, date=date)
-
-
-@cli.command("backups")
-@as_json_option
-@instance_identifier(nargs=1)
-@pass_pgbackrest_settings
-@pass_console
-@pass_ctx
-def instance_backups(
-    ctx: Context,
-    console: Console,
-    settings: PgBackRestSettings,
-    instance: system.Instance,
-    as_json: bool,
-) -> None:
-    """List available backups for INSTANCE"""
-    backups = pgbackrest_mod.iter_backups(ctx, instance, settings)
-    if as_json:
-        print_json_for(
-            (i.dict(by_alias=True) for i in backups), display=console.print_json
-        )
-    else:
-        print_table_for(
-            (i.dict(by_alias=True) for i in backups),
-            title=f"Available backups for instance {instance}",
-            display=console.print,
-        )
 
 
 @cli.command("privileges")

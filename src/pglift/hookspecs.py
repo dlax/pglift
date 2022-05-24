@@ -32,6 +32,11 @@ def cli() -> "click.Command":
 
 
 @hookspec  # type: ignore[misc]
+def instance_cli(group: "click.Group") -> None:
+    """Extend 'group' with extra commands from the plugin."""
+
+
+@hookspec  # type: ignore[misc]
 def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Any]:
     """Look up for the satellite service object on system that matches specified instance."""
 
