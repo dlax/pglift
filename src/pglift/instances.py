@@ -238,6 +238,7 @@ def configure(
     *,
     ssl: Union[bool, Tuple[Path, Path]] = False,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
+    run_hooks: bool = True,
     _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
@@ -351,9 +352,14 @@ def configure(
     if _creating:
         write_configs()
     i_config = site_config + user_config
-    ctx.hook.instance_configure(
-        ctx=ctx, manifest=manifest, config=i_config, changes=changes, creating=_creating
-    )
+    if run_hooks:
+        ctx.hook.instance_configure(
+            ctx=ctx,
+            manifest=manifest,
+            config=i_config,
+            changes=changes,
+            creating=_creating,
+        )
     if not _creating:
         write_configs()
         sys_instance = system.Instance.system_lookup(
@@ -676,6 +682,7 @@ def upgrade(
         )
     )
     init(ctx, new_manifest)
+    configure(ctx, new_manifest, _creating=True, run_hooks=False)
     newinstance = system.Instance.system_lookup(
         ctx, (new_manifest.name, new_manifest.version)
     )
