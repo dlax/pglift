@@ -195,13 +195,15 @@ def settings(
 
 
 @pytest.fixture(scope="session")
-def pg_bindir(request: Any, settings: Settings) -> Tuple[pathlib.Path, str]:
+def pg_bindir(
+    request: Any, postgresql_settings: PostgreSQLSettings
+) -> Tuple[pathlib.Path, str]:
     version = request.config.getoption("--pg-version")
     if version is None:
         pytest.skip("no PostgreSQL installation found")
     assert isinstance(version, str)
-    assert settings.postgresql.bindir
-    bindir = pathlib.Path(settings.postgresql.bindir.format(version=version))
+    assert postgresql_settings.bindir
+    bindir = pathlib.Path(postgresql_settings.bindir.format(version=version))
     if not bindir.exists():
         pytest.fail(f"PostgreSQL {version} not available", pytrace=False)
     return bindir, version
