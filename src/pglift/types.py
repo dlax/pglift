@@ -1,12 +1,15 @@
 import enum
 import json
+import socket
 import subprocess
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -124,6 +127,29 @@ class AnsibleConfig(TypedDict, total=False):
     hide: bool
     choices: List[str]
     spec: AnsibleArgSpec
+
+
+class Port(int):
+    """Port field type."""
+
+    P = TypeVar("P", bound="Port")
+
+    @classmethod
+    def __get_validators__(cls: Type[P]) -> Iterator[Callable[..., P]]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls: Type[P], value: Any) -> P:
+        return cls(value)
+
+    def available(self) -> bool:
+        """Return True if this port is free to use."""
+        with socket.socket() as s:
+            try:
+                s.bind(("", self))
+            except socket.error:
+                return False
+        return True
 
 
 class Manifest(BaseModel):

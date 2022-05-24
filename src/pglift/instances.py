@@ -844,6 +844,7 @@ def apply(
     changed = False
     if not exists(ctx, instance.name, instance.version):
         _creating = True
+        interface.validate_ports(instance)
         init(ctx, instance)
         changed = True
 

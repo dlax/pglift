@@ -9,6 +9,7 @@ from pydantic import Field, SecretStr, validator
 
 from .. import types
 from .._compat import Final
+from ..types import Port
 
 default_port: Final = 9187
 
@@ -24,8 +25,8 @@ class Service:
 
 
 class ServiceManifest(types.ServiceManifest, service_name="prometheus"):
-    port: int = Field(
-        default=default_port,
+    port: Port = Field(
+        default=Port(default_port),
         description="TCP port for the web interface and telemetry of Prometheus",
     )
     password: Optional[pydantic.SecretStr] = Field(

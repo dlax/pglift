@@ -7,6 +7,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -24,21 +25,52 @@ from pydantic import (
     DirectoryPath,
     Field,
     SecretStr,
+    ValidationError,
     create_model,
     root_validator,
     validator,
 )
+from pydantic.error_wrappers import ErrorWrapper
+from pydantic.utils import lenient_issubclass
 
 from .. import settings
 from .._compat import Final, Literal
 from ..types import AnsibleConfig, AutoStrEnum, CLIConfig
 from ..types import Extension as Extension
-from ..types import Manifest, ServiceManifest
+from ..types import Manifest, Port, ServiceManifest
 
 if TYPE_CHECKING:
     from ..pm import PluginManager
 
 default_port: Final = 5432
+
+
+def validate_ports(model: BaseModel) -> None:
+    """Walk fields of 'model', checking those with type Port if their value is
+    available.
+    """
+
+    def _validate(
+        model: BaseModel, *, loc: Tuple[str, ...] = ()
+    ) -> Iterator[ErrorWrapper]:
+        cls = model.__class__
+        for name, field in cls.__fields__.items():
+            value = getattr(model, name)
+            if value is None:
+                continue
+            ftype = field.outer_type_
+            if lenient_issubclass(ftype, BaseModel):
+                yield from _validate(value, loc=loc + (name,))
+            elif lenient_issubclass(ftype, Port):
+                assert isinstance(value, Port)
+                if not value.available():
+                    yield ErrorWrapper(
+                        ValueError(f"port {value} already in use"), loc + (name,)
+                    )
+
+    errors = list(_validate(model))
+    if errors:
+        raise ValidationError(errors, model.__class__)
 
 
 class InstanceState(AutoStrEnum):
@@ -323,8 +355,8 @@ class Instance(BaseInstance):
                 kw["password"] = self.password.get_secret_value()
             return psycopg.conninfo.make_conninfo(self.for_, **kw)
 
-    port: int = Field(
-        default=default_port,
+    port: Port = Field(
+        default=Port(default_port),
         description="TCP port the postgresql instance will be listening to.",
     )
     ssl: Union[bool, Tuple[Path, Path]] = Field(

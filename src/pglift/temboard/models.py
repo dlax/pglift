@@ -20,8 +20,8 @@ class Service:
 
 
 class ServiceManifest(types.ServiceManifest, service_name="temboard"):
-    port: int = Field(
-        default=default_port,
+    port: types.Port = Field(
+        default=types.Port(default_port),
         description="TCP port for the temboard-agent API.",
     )
     password: Optional[SecretStr] = Field(

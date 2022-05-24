@@ -17,6 +17,8 @@ from typing import (
     cast,
 )
 
+import pydantic
+
 from . import __name__ as pkgname
 from . import exceptions
 from ._compat import Protocol
@@ -116,11 +118,13 @@ def transaction() -> Iterator[None]:
     try:
         yield
     except BaseException as exc:
+        # Only log internal errors, i.e. those not coming from user
+        # cancellation or invalid input data.
         if isinstance(exc, KeyboardInterrupt):
             if Task._calls:
                 logger.warning("%s interrupted", Task._calls[-1][0])
-        elif not isinstance(exc, exceptions.Cancelled):
-            logger.exception(str(exc))
+        elif not isinstance(exc, (pydantic.ValidationError, exceptions.Cancelled)):
+            logger.warning(str(exc))
         assert Task._calls is not None
         while True:
             try:

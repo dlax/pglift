@@ -19,7 +19,7 @@ import pydantic
 from pydantic.utils import deep_update, lenient_issubclass
 
 from .._compat import Literal
-from ..types import AnsibleArgSpec, StrEnum
+from ..types import AnsibleArgSpec, Port, StrEnum
 
 Callback = Callable[..., Any]
 ModelType = Type[pydantic.BaseModel]
@@ -251,6 +251,7 @@ def parameters_from_model(
 PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], AnsibleArgSpec] = {
     bool: {"type": "bool"},
     float: {"type": "float"},
+    Port: {"type": "int"},
     int: {"type": "int"},
     str: {"type": "str"},
     pydantic.SecretStr: {"type": "str", "no_log": True},
@@ -306,6 +307,8 @@ def argspec_from_model(
             default = field.default
             if lenient_issubclass(ftype, enum.Enum):
                 default = default.value
+            elif lenient_issubclass(ftype, Port):
+                default = int(default)
             arg_spec.setdefault("default", default)
 
         if field.field_info.description:
