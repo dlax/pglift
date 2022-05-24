@@ -1085,7 +1085,8 @@ def test_role_apply(
     running: MagicMock,
 ) -> None:
     manifest = tmp_path / "manifest.yml"
-    content = yaml.dump({"name": "roltest", "pgpass": True})
+    m = {"name": "roltest", "pgpass": True}
+    content = yaml.dump(m)
     manifest.write_text(content)
     with patch.object(roles, "apply") as apply:
         result = runner.invoke(
@@ -1094,13 +1095,8 @@ def test_role_apply(
             obj=obj,
         )
     assert result.exit_code == 0
-    apply.assert_called_once()
+    apply.assert_called_once_with(ctx, instance, interface.Role.parse_obj(m))
     running.assert_called_once_with(ctx, instance)
-    (call_ctx, call_instance, call_role), kwargs = apply.call_args
-    assert call_ctx == ctx
-    assert call_instance == instance
-    assert call_role.name == "roltest"
-    assert kwargs == {}
 
 
 def test_role_get(
@@ -1315,7 +1311,8 @@ def test_database_apply(
     running: MagicMock,
 ) -> None:
     manifest = tmp_path / "manifest.yml"
-    content = yaml.dump({"name": "dbtest"})
+    m = {"name": "dbtest"}
+    content = yaml.dump(m)
     manifest.write_text(content)
     with patch.object(databases, "apply") as apply:
         result = runner.invoke(
@@ -1324,13 +1321,8 @@ def test_database_apply(
             obj=obj,
         )
     assert result.exit_code == 0
-    apply.assert_called_once()
+    apply.assert_called_once_with(ctx, instance, interface.Database.parse_obj(m))
     running.assert_called_once_with(ctx, instance)
-    (call_ctx, call_instance, call_database), kwargs = apply.call_args
-    assert call_ctx == ctx
-    assert call_instance == instance
-    assert call_database.name == "dbtest"
-    assert kwargs == {}
 
 
 def test_database_get(
