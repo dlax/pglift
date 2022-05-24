@@ -102,7 +102,8 @@ Finally, run:
 
 ::
 
-    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars docs/ansible/play1.yml
+    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
+        docs/ansible/play1.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -190,7 +191,8 @@ As you can see you can feed third-party ansible modules (like
 
 ::
 
-    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars docs/ansible/play2.yml
+    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
+        docs/ansible/play2.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -225,7 +227,8 @@ Finally, in this last playbook, we drop all our instances:
 
 ::
 
-    (.venv) $ ansible-playbook docs/ansible/play3.yml
+    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
+        docs/ansible/play3.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
