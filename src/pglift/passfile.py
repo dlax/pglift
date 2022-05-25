@@ -40,15 +40,17 @@ def instance_configure(
     else:
         if port is None:
             port = config.get("port", 5432)
+        if old_port is None:
+            old_port = 5432
+    assert isinstance(old_port, int)
     assert isinstance(port, int), port
 
     surole = manifest.surole(ctx.settings)
     passfile = ctx.settings.postgresql.auth.passfile
     with pgpass.edit(passfile) as f:
         surole_entry = None
-        if old_port is not None and old_port != port:
+        if old_port != port:
             # Port changed, update all entries matching the old value.
-            assert isinstance(old_port, int)
             for entry in f:
                 if entry.matches(port=old_port):
                     if entry.matches(username=surole.name):
