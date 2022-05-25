@@ -12,3 +12,4 @@ various aspects of deployment operations.
     postgresql_authentication
     systemd
     pgbackrest
+    monitoring

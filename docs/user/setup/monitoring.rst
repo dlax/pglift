@@ -6,14 +6,26 @@ Instance monitoring can be handled by Prometheus and/or PoWA.
 Prometheus
 ----------
 
-A service for `Prometheus postgres_exporter`_ can be deployed at instance
-creation.
+Prometheus satellite component can be enabled through site settings by
+defining a ``prometheus`` key with at least `execpath` field set, e.g.:
+
+.. code-block:: yaml
+   :caption: settings.yaml
+
+    prometheus:
+      execpath: /usr/bin/prometheus-postgres-exporter
+
+.. note::
+   Use ``pglift site-settings --schema`` (possibly piped through ``jq
+   .definitions.PrometheusSettings``) to retrieve possible settings for the
+   ``prometheus`` section.
 
 .. note::
 
     `Prometheus postgres_exporter`_ must be **installed** on the system.
-    Prometheus also needs to be **enabled** via the :ref:`site settings
-    <settings>`.
+
+A service for `Prometheus postgres_exporter`_ will be deployed at instance
+creation.
 
 Command line interface
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -55,10 +67,16 @@ Example task:
 PoWA
 ----
 
-In `pglift`, `PoWA`_ is meant to be used in `Remote setup`_ mode.
+In `pglift`, `PoWA`_ is meant to be used in `Remote setup`_ mode (ie. stats
+data collected from a remote server).
 
-The extensions for collecting stats for `PoWA`_ are configured and installed
-at instance creation.
+This component can be enabled through site settings by defining a non-``null``
+``powa`` key, e.g.:
+
+.. code-block:: yaml
+   :caption: settings.yaml
+
+    powa: {}
 
 .. note::
 
@@ -66,11 +84,18 @@ at instance creation.
     `pg_stat_kcache`, `pg_qualstats`) must be **installed** (via packages) on
     the system.
 
-.. note::
-    PoWA needs to be **enabled** via the :ref:`site settings<settings>`.
+The extensions for collecting stats for `PoWA`_ are configured and installed
+automatically at instance creation.
 
-Once created the instance can be `registered`_ on the PoWA repository.
+Once created the instance can be `registered`_ on the PoWA repository (created
+outside of `pglift`).
 
+
+
+.. _`Prometheus postgres_exporter`: https://github.com/prometheus-community/postgres_exporter
+.. _`PoWA`: https://powa.readthedocs.io/en/latest/
+.. _`Remote setup`: https://powa.readthedocs.io/en/latest/remote_setup.html
+.. _`registered`: https://powa.readthedocs.io/en/latest/components/powa-archivist/configuration.html#powa-register-server
 
 
 .. _`Prometheus postgres_exporter`: https://github.com/prometheus-community/postgres_exporter

@@ -13,4 +13,3 @@ interfaces (command-line, Ansible, Python).
     databases
     privileges
     backup
-    monitoring
