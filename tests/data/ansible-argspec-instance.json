@@ -84,6 +84,7 @@
     "type": "str"
   },
   "port": {
+    "default": 5432,
     "description": [
       "TCP port the postgresql instance will be listening to"
     ],

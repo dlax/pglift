@@ -487,7 +487,7 @@ def test_instance_get(
     assert table_result.exit_code == 0, (table_result, table_result.output)
     assert table_result.output.splitlines() == [
         " name  versi…  port  ssl    surol…  replr…  data…  locale  enco…  exten…  pend… ",
-        " test                False  *****…                 C       UTF16          False ",
+        " test          5432  False  *****…                 C       UTF16          False ",
     ]
 
 

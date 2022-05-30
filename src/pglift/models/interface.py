@@ -30,13 +30,15 @@ from pydantic import (
 )
 
 from .. import settings
-from .._compat import Literal
+from .._compat import Final, Literal
 from ..types import AnsibleConfig, AutoStrEnum, CLIConfig
 from ..types import Extension as Extension
 from ..types import Manifest, ServiceManifest
 
 if TYPE_CHECKING:
     from ..pm import PluginManager
+
+default_port: Final = 5432
 
 
 class InstanceState(AutoStrEnum):
@@ -321,8 +323,8 @@ class Instance(BaseInstance):
                 kw["password"] = self.password.get_secret_value()
             return psycopg.conninfo.make_conninfo(self.for_, **kw)
 
-    port: Optional[int] = Field(
-        default=None,
+    port: int = Field(
+        default=default_port,
         description="TCP port the postgresql instance will be listening to.",
     )
     ssl: Union[bool, Tuple[Path, Path]] = Field(
