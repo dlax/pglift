@@ -89,16 +89,16 @@
     ],
     "type": "int"
   },
-  "prometheus_password": {
+  "powa_password": {
     "description": [
-      "Password of PostgreSQL role for Prometheus postgres_exporter"
+      "Password of PostgreSQL role for PoWA"
     ],
     "no_log": true,
     "type": "str"
   },
-  "powa_password": {
+  "prometheus_password": {
     "description": [
-      "Password of PostgreSQL role for PoWA"
+      "Password of PostgreSQL role for Prometheus postgres_exporter"
     ],
     "no_log": true,
     "type": "str"
