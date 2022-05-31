@@ -52,8 +52,14 @@ def test_pgbackrest_teardown(
     directory = pathlib.Path(
         str(pgbackrest_settings.directory).format(instance=instance)
     )
+    lockpath = pathlib.Path(str(pgbackrest_settings.lockpath).format(instance=instance))
+    spoolpath = pathlib.Path(
+        str(pgbackrest_settings.spoolpath).format(instance=instance)
+    )
     assert not configpath.exists()
     assert not directory.exists()
+    assert not lockpath.exists()
+    assert not spoolpath.exists()
 
 
 def test_prometheus_teardown(

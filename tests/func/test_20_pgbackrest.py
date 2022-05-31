@@ -48,6 +48,11 @@ def test_configure(
     assert "pg1-user = backup" in lines
     assert directory.exists()
 
+    lockpath = Path(str(pgbackrest_settings.lockpath).format(instance=instance))
+    spoolpath = Path(str(pgbackrest_settings.spoolpath).format(instance=instance))
+    assert lockpath.exists()
+    assert spoolpath.exists()
+
     lines = ctx.settings.postgresql.auth.passfile.read_text().splitlines()
     assert any(line.startswith(f"*:{instance.port}:*:backup:") for line in lines)
 

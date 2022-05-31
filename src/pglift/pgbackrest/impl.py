@@ -175,9 +175,17 @@ def revert_setup(
     """Un-setup pgBackRest"""
     configpath = _configpath(instance, settings)
     directory = Path(str(settings.directory).format(instance=instance))
+    lockpath = Path(str(settings.lockpath).format(instance=instance))
+    spoolpath = Path(str(settings.spoolpath).format(instance=instance))
 
     if configpath.exists():
         configpath.unlink()
+
+    if lockpath.exists():
+        shutil.rmtree(lockpath)
+
+    if spoolpath.exists():
+        shutil.rmtree(spoolpath)
 
     try:
         shutil.rmtree(directory)
