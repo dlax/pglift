@@ -4,6 +4,7 @@ import os
 import pathlib
 import tempfile
 import time
+from contextlib import contextmanager
 from functools import singledispatch, wraps
 from types import ModuleType
 from typing import (
@@ -416,31 +417,50 @@ foreground_option = click.option(
 )
 
 
+@contextmanager
+def command_logging(logdir: pathlib.Path) -> Iterator[None]:
+    logdir.mkdir(parents=True, exist_ok=True)
+    logfilename = f"{time.time()}.log"
+    logfile = logdir / logfilename
+    try:
+        handler = logging.FileHandler(logfile)
+    except OSError:
+        # Might be, e.g. PermissionError, if log file path is not writable.
+        logfile = pathlib.Path(
+            tempfile.NamedTemporaryFile(prefix="pglift", suffix=logfilename).name
+        )
+        handler = logging.FileHandler(logfile)
+    formatter = logging.Formatter(
+        fmt="%(levelname)-8s - %(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    keep_logfile = False
+    try:
+        yield None
+    except (click.Abort, click.ClickException, click.exceptions.Exit):
+        raise
+    except Exception:
+        keep_logfile = True
+        logger.exception("an unexpected error occurred")
+        raise click.ClickException(
+            "an unexpected error occurred, this is probably a bug; "
+            f"details can be found at {logfile}"
+        )
+    finally:
+        if not keep_logfile:
+            os.unlink(logfile)
+            if next(logfile.parent.iterdir(), None) is None:
+                logfile.parent.rmdir()
+
+
 class Command(click.Command):
     def invoke(self, context: click.Context) -> Any:
         ctx = context.obj.ctx
         displayer = context.obj.displayer
         logger = logging.getLogger(pkgname)
-        logdir = ctx.settings.logpath
-        logdir.mkdir(parents=True, exist_ok=True)
-        logfilename = f"{time.time()}.log"
-        logfile = logdir / logfilename
-        try:
-            handler = logging.FileHandler(logfile)
-        except OSError:
-            # Might be, e.g. PermissionError, if log file path is not writable.
-            logfile = pathlib.Path(
-                tempfile.NamedTemporaryFile(prefix="pglift", suffix=logfilename).name
-            )
-            handler = logging.FileHandler(logfile)
-        formatter = logging.Formatter(
-            fmt="%(levelname)-8s - %(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        keep_logfile = False
-        try:
+        with command_logging(ctx.settings.logpath):
             try:
                 with task.displayer_installed(displayer):
                     return super().invoke(context)
@@ -456,26 +476,12 @@ class Command(click.Command):
                     if e.stdout:
                         msg += f"\n{e.stdout}"
                 raise click.ClickException(msg)
-            except (click.ClickException, click.Abort, click.exceptions.Exit):
-                raise
             except pydantic.ValidationError as e:
                 logger.debug("a validation error occurred", exc_info=True)
                 raise click.ClickException(str(e))
             except psycopg.OperationalError as e:
                 logger.debug("an operational error occurred", exc_info=True)
                 raise click.ClickException(str(e).strip())
-            except Exception:
-                keep_logfile = True
-                logger.exception("an unexpected error occurred")
-                raise click.ClickException(
-                    "an unexpected error occurred, this is probably a bug; "
-                    f"details can be found at {logfile}"
-                )
-        finally:
-            if not keep_logfile:
-                os.unlink(logfile)
-                if next(logfile.parent.iterdir(), None) is None:
-                    logfile.parent.rmdir()
 
 
 class Group(click.Group):
