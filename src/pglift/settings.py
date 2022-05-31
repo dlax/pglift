@@ -509,7 +509,11 @@ class Settings(BaseSettings):
         description="Path prefix for configuration and data files.",
     )
 
-    logpath: LogPath = LogPath()
+    logpath: LogPath = Field(
+        default=LogPath(),
+        description="Directory where temporary log files from command executions will be stored",
+        title="CLI log directory",
+    )
 
     sysuser: Tuple[str, str] = Field(
         default_factory=default_sysuser,
