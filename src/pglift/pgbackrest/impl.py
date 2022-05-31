@@ -353,7 +353,7 @@ def iter_backups(
             date_start=dtstart.replace(tzinfo=gettz()),
             date_stop=dtstop.replace(tzinfo=gettz()),
             type=backup["type"],
-            databases=", ".join(databases),
+            databases=databases,
         )
 
 

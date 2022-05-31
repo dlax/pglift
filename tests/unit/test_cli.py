@@ -665,7 +665,7 @@ def test_instance_backups(
         date_start=datetime.datetime(2012, 1, 1),
         date_stop=datetime.datetime(2012, 1, 2),
         type="incr",
-        databases="postgres, prod",
+        databases=["postgres", "prod"],
     )
     with patch.object(pgbackrest, "iter_backups", return_value=[bck]) as iter_backups:
         result = runner.invoke(
@@ -706,7 +706,7 @@ def test_instance_backups(
     iter_backups.assert_called_once_with(ctx, instance, settings.pgbackrest)
     assert json.loads(result.stdout) == [
         {
-            "databases": "postgres, prod",
+            "databases": ["postgres", "prod"],
             "date_start": "2012-01-01T00:00:00",
             "date_stop": "2012-01-02T00:00:00",
             "label": "foo",

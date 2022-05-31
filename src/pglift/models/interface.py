@@ -477,7 +477,7 @@ class InstanceBackup(Manifest):
     date_start: datetime
     date_stop: datetime
     type: Literal["incr", "diff", "full"]
-    databases: str
+    databases: List[str]
 
 
 class Tablespace(BaseModel):
