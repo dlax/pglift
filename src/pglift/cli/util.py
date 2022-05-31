@@ -419,7 +419,9 @@ foreground_option = click.option(
 
 @contextmanager
 def command_logging(logdir: pathlib.Path) -> Iterator[None]:
-    logdir.mkdir(parents=True, exist_ok=True)
+    logdir_exists = logdir.exists()
+    if not logdir_exists:
+        logdir.mkdir(parents=True)
     logfilename = f"{time.time()}.log"
     logfile = logdir / logfilename
     try:
@@ -451,8 +453,8 @@ def command_logging(logdir: pathlib.Path) -> Iterator[None]:
     finally:
         if not keep_logfile:
             os.unlink(logfile)
-            if next(logfile.parent.iterdir(), None) is None:
-                logfile.parent.rmdir()
+            if not logdir_exists and next(logdir.iterdir(), None) is None:
+                logdir.rmdir()
 
 
 class Command(click.Command):

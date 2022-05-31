@@ -69,15 +69,24 @@ def cmd(ctx: click.Context, error: str) -> None:
         ctx.exit(1)
 
 
-def test_command_error(runner: CliRunner, obj: Obj) -> None:
+@pytest.mark.parametrize(
+    "logpath_exists", [False, True], ids=lambda v: f"logpath_exists:{v}"
+)
+def test_command_error(runner: CliRunner, obj: Obj, logpath_exists: bool) -> None:
+    logpath = obj.ctx.settings.logpath
+    if logpath_exists:
+        logpath.mkdir()
     result = runner.invoke(cmd, ["error"], obj=obj)
     assert result.exit_code == 1
     assert (
         result.stderr
         == "Error: Command '['bad', 'cmd']' returned non-zero exit status 1.\nerrs\noutput\n"
     )
-    logpath = obj.ctx.settings.logpath
     assert not list(logpath.glob("*.log"))
+    if logpath_exists:
+        assert logpath.exists()
+    else:
+        assert not logpath.exists()
 
 
 def test_command_cancelled(runner: CliRunner, obj: Obj) -> None:
