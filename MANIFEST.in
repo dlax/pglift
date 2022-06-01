@@ -7,6 +7,7 @@ include .codespellrc
 include .codespell-exclude-file
 include .flake8
 include mypy.ini
+include pytest.ini
 
 recursive-include src py.typed *.conf *.service *.timer *.sql
 recursive-include docs *.rst conf.py Makefile .gitignore
