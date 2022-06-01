@@ -9,54 +9,49 @@ This tutorial illustrates the use of the Ansible modules shipped with pglift:
 demonstrates how to integrate these modules with other PostgreSQL-related
 community modules, namely `community.postgresql`_.
 
-.. note:: Documentation for each module can be obtained by using ``ansible-doc
-   <modulename>`` (possibly after setting ``ANSIBLE_COLLECTIONS_PATHS`` as
-   described below); e.g.:
-
-   ::
-
-       $ ansible-doc dalibo.pglift.instance
-       > DALIBO.PGLIFT.INSTANCE
-       (.../ansible/ansible_collections/dalibo/pglift/plugins/modules/instance.py)
-
-       Manage a PostgreSQL server instance
-
-       OPTIONS (= is mandatory):
-
-       [...]
-
-
-First, ``ansible`` needs to be installed in the :ref:`development environment
-<devenv>`:
-
-::
-
-    (.venv) $ pip install ansible
-
 .. note::
    Ansible modules require Python 3 so, depending on the Ansible version being
    used, one may need to configure managed machines to use Python 3 through
    the ``ansible_python_interpreter`` inventory variable or ``-e``
    command-line option.
 
-The following playbook installs and configures 3 PostgreSQL instances on
-localhost; the first two ones are *started* while the third one is not.
+Setup
+-----
 
-.. literalinclude:: ../ansible/play1.yml
-    :language: yaml
-    :caption: docs/ansible/play1.yml
+In the following we consider two nodes (or machines): the ``control`` node,
+where Ansible commands or playbooks will be executed and, the ``managed`` node
+where operations should apply:
 
-To exercice this playbook on a regular user, the system configuration first
-needs to be adjusted in order to define a writable directory to host
-PostgreSQL instances, data and configuration files:
-
+On the ``control`` node, Ansible needs to be installed and the collection
+should be available in path, for instance, if you have a local checkout of
+pglift repository:
 ::
 
-    $ tmpdir=$(mktemp -d)
+    user@control:~$ export ANSIBLE_COLLECTIONS_PATHS="~/src/pglift/ansible/"
 
+On the ``control`` node, documentation for each module can be obtained by
+using ``ansible-doc <modulename>``, e.g.:
 ::
 
-    $ cat > ~/.config/pglift/settings.yaml << EOF
+    user@control:~$ ansible-doc dalibo.pglift.instance
+    > DALIBO.PGLIFT.INSTANCE
+    (.../ansible/ansible_collections/dalibo/pglift/plugins/modules/instance.py)
+
+    Manage a PostgreSQL server instance
+
+    OPTIONS (= is mandatory):
+
+    [...]
+
+On the ``managed`` node, pglift needs to be :ref:`installed <install>`.
+
+On the ``managed`` node, we configure pglift through :ref:`site settings
+<settings>` by defining a writable directory to host PostgreSQL instances,
+data and configuration files (we use a temporary directory in this tutorial):
+::
+
+    user@managed:~$ tmpdir=$(mktemp -d)
+    user@managed:~$ cat > ~/.config/pglift/settings.yaml << EOF
     prefix: $tmpdir
     service_manager: systemd
     scheduler: systemd
@@ -71,22 +66,18 @@ PostgreSQL instances, data and configuration files:
       execpath: /usr/bin/prometheus-postgres-exporter
     EOF
 
-::
-
-    $ export ANSIBLE_COLLECTIONS_PATHS="./ansible/"
-
 .. note::
    If using `systemd` as service manager and/or scheduler as in above example,
    an extra installation step is needed as documented :ref:`here
    <systemd_install>`.
 
-The passwords for `postgres` and `bob` users can be encrypted using ansible
-vault, `ansible-vault encrypt` will ask for a passphrase used to encrypt
-variables:
+Back on the ``control`` node, we will define passwords for the `postgres` user
+and other roles used in the following playbooks; these will be stored and
+encrypted with Ansible vault:
 
 ::
 
-    $ cat << EOF | ansible-vault encrypt > $tmpdir/vars
+    user@control:~$ cat << EOF | ansible-vault encrypt > pglift-vars
     postgresql_surole_password: $(openssl rand -base64 9)
     prod_bob_password: $(openssl rand -base64 9)
     prometheus_role_password: $(openssl rand -base64 9)
@@ -96,14 +87,28 @@ To view actual passwords:
 
 ::
 
-    ansible-vault view $tmpdir/vars
+    user@control:~$ ansible-vault view pglift-vars
+
+Initial deployment
+------------------
+
+The following playbook installs and configures 3 PostgreSQL instances on the
+``managed`` node; the first two instances are *started* while the third one is
+not:
+
+.. literalinclude:: ../ansible/play1.yml
+    :language: yaml
+    :caption: play1.yml
+
+.. note::
+   The ``hosts`` field in this playbook use ``localhost`` for testing purpose
+   and should be adapted to actual ``managed`` node.
 
 Finally, run:
 
 ::
 
-    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
-        docs/ansible/play1.yml
+    user@control:~$ ansible-playbook --extra-vars pglift-vars --ask-vault-password play1.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -121,11 +126,11 @@ Finally, run:
     PLAY RECAP ***********************************************************************************************
     localhost                  : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 
-We can see our instances installed and running:
+We can see our instances installed and running on the ``managed`` node:
 
 ::
 
-    $ tree -L 3 $tmpdir/postgres
+    user@managed:~$ tree -L 3 $tmpdir/postgres
     /tmp/.../postgres
     └── 13
         ├── dev
@@ -137,7 +142,7 @@ We can see our instances installed and running:
         └── prod
             ├── data
             └── wal
-    $ ps xf
+    user@managed:~$ ps xf
     [...]
     26856 ?        Ss     0:00  \_ /usr/lib/postgresql/13/bin/postgres -D /tmp/.../postgres/13/prod/data
     26858 ?        Ss     0:00  |   \_ postgres: prod: checkpointer
@@ -158,7 +163,7 @@ pgBackRest is set up and initialized for started instances:
 
 ::
 
-    $ tree -L 2  $tmpdir/backups/backup
+    user@managed:~$ tree -L 2  $tmpdir/backups/backup
     /tmp/.../backups/backup
     ├── 13-preprod
     │   ├── backup.info
@@ -170,12 +175,15 @@ pgBackRest is set up and initialized for started instances:
 And a systemd timer has been added for our instances:
 ::
 
-    $ systemctl --user list-timers
+    user@managed:~$ systemctl --user list-timers
     NEXT                          LEFT    LAST PASSED UNIT                               ACTIVATES
     Sat 2021-04-03 00:00:00 CEST  7h left n/a  n/a    postgresql-backup@13-preprod.timer postgresql-backup@13-preprod.service
     Sat 2021-04-03 00:00:00 CEST  7h left n/a  n/a    postgresql-backup@13-prod.timer    postgresql-backup@13-prod.service
 
     2 timers listed.
+
+Instances update
+----------------
 
 In the following version of our previous playbook, we are dropping the "preprod"
 instance and set the "dev" one to be ``started`` while changing a bit its
@@ -183,7 +191,7 @@ configuration:
 
 .. literalinclude:: ../ansible/play2.yml
     :language: yaml
-    :caption: docs/ansible/play2.yml
+    :caption: play2.yml
 
 As you can see you can feed third-party ansible modules (like
 ``community.postgresql``) with libpq environment variables obtained by
@@ -191,8 +199,7 @@ As you can see you can feed third-party ansible modules (like
 
 ::
 
-    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
-        docs/ansible/play2.yml
+    user@control:~$ ansible-playbook --extra-vars pglift-vars --ask-vault-password play2.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -212,23 +219,25 @@ As you can see you can feed third-party ansible modules (like
 
 ::
 
-    $ tree -L 2 $tmpdir/postgres
+    user@managed:~$ tree -L 2 $tmpdir/postgres
     /tmp/.../postgres
     └── 13
         ├── dev
         └── prod
 
 
+Cleanup
+-------
+
 Finally, in this last playbook, we drop all our instances:
 
 .. literalinclude:: ../ansible/play3.yml
     :language: yaml
-    :caption: docs/ansible/play3.yml
+    :caption: play3.yml
 
 ::
 
-    (.venv) $ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password \
-        docs/ansible/play3.yml
+    user@control:~$ ansible-playbook --extra-vars @$tmpdir/vars --ask-vault-password play3.yml
     PLAY [my postgresql instances] ***************************************************************************
 
     TASK [Gathering Facts] ***********************************************************************************
@@ -245,7 +254,7 @@ Finally, in this last playbook, we drop all our instances:
 
 ::
 
-    $ tree -L 2 $tmpdir/postgres
+    user@managed:~$ tree -L 2 $tmpdir/postgres
     /tmp/.../postgres
     └── 13
 
