@@ -16,7 +16,7 @@ from typing import (
 )
 
 import pydantic
-from pydantic.utils import lenient_issubclass
+from pydantic.utils import deep_update, lenient_issubclass
 
 from .._compat import Literal
 from ..types import AnsibleArgSpec, StrEnum
@@ -37,7 +37,7 @@ except AttributeError:  # Python < 3.8
 
 def unnest(model_type: Type[T], params: Dict[str, Any]) -> Dict[str, Any]:
     obj: Dict[str, Any] = {}
-    known_fields = {f.alias or f.name for f in model_type.__fields__.values()}
+    known_fields = {(f.alias or f.name): f for f in model_type.__fields__.values()}
     for k, v in params.items():
         if v is None:
             continue
@@ -45,9 +45,12 @@ def unnest(model_type: Type[T], params: Dict[str, Any]) -> Dict[str, Any]:
             obj[k] = v
         elif "_" in k:
             p, subk = k.split("_", 1)
-            if p not in known_fields:
+            try:
+                field = known_fields[p]
+            except KeyError:
                 raise ValueError(k)
-            obj.setdefault(p, {})[subk] = v
+            nested = unnest(field.type_, {subk: v})
+            obj[p] = deep_update(obj.get(p, {}), nested)
         else:
             raise ValueError(k)
     return obj
@@ -114,8 +117,9 @@ def _decorators_from_model(
                     choices = choices_from_enum(ftype)
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
-                assert not _parents, "only one nesting level is supported"
-                yield from _decorators_from_model(ftype, operation, _parents=(argname,))
+                yield from _decorators_from_model(
+                    ftype, operation, _parents=_parents + (argname,)
+                )
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True

@@ -27,6 +27,11 @@ class Country(enum.Enum):
     UnitedKindom = "gb"
 
 
+class Location(BaseModel):
+    long_: float = Field(alias="long", description="longitude")
+    lat: float = Field(description="latitude")
+
+
 class Address(BaseModel):
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {
         "building": {"hide": True},
@@ -49,6 +54,7 @@ class Address(BaseModel):
     primary: bool = Field(
         default=False, description="is this person's primary address?"
     )
+    coords: Optional[Location] = Field(default=None, description="coordinates")
 
     class Config:
         extra = "forbid"
@@ -126,6 +132,8 @@ def test_parameters_from_model() -> None:
         "  --address-shared / --no-address-shared\n"
         "                                  Is this a collocation?\n"
         "  --address-primary               Is this person's primary address?\n"
+        "  --address-coords-long LONG      Longitude.\n"
+        "  --address-coords-lat LAT        Latitude.\n"
         "  --birthdate BIRTHDATE           Date of birth.\n"
         "  --indent INTEGER\n"
         "  --help                          Show this message and exit.\n"
@@ -142,6 +150,8 @@ def test_parameters_from_model() -> None:
             "--address-town=paris",
             "--address-country=fr",
             "--address-primary",
+            "--address-coords-long=12.3",
+            "--address-coords-lat=9.87",
             "--birthdate=1981-02-18T01:02",
             "--no-address-shared",
             "--indent=2",
@@ -157,6 +167,7 @@ def test_parameters_from_model() -> None:
             "building": None,
             "city": "paris",
             "country": "fr",
+            "coords": {"lat": 9.87, "long_": 12.3},
             "street": ["bd montparnasse", "far far away"],
             "zip_code": 0,
             "primary": True,
@@ -239,6 +250,8 @@ def test_unnest() -> None:
         "address_street": ["bd montparnasse"],
         "address_zip_code": 0,
         "address_shared": True,
+        "address_coords_long": 0,
+        "address_coords_lat": 1.2,
     }
     assert helpers.unnest(Person, params) == {
         "name": "alice",
@@ -246,6 +259,7 @@ def test_unnest() -> None:
         "gender": "F",
         "address": {
             "city": "paris",
+            "coords": {"long": 0, "lat": 1.2},
             "country": "fr",
             "street": ["bd montparnasse"],
             "zip_code": 0,
@@ -321,6 +335,14 @@ def test_argspec_from_model() -> None:
         "address_primary": {
             "type": "bool",
             "description": ["is this person's primary address?"],
+        },
+        "address_coords_long": {
+            "type": "float",
+            "description": ["longitude"],
+        },
+        "address_coords_lat": {
+            "type": "float",
+            "description": ["latitude"],
         },
     }
 
