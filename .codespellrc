@@ -1,0 +1,3 @@
+[codespell]
+exclude-file = .codespell-exclude-file
+skip = .eggs,.git,.mypy_cache,.tox,.venv,./docs/_build,htmlcov
