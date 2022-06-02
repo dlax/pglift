@@ -13,6 +13,8 @@ from pglift import pm, prometheus
 from pglift.models import helpers, interface
 from pglift.types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
 
+from . import click_result_traceback
+
 
 class Gender(enum.Enum):
     male = "M"
@@ -105,7 +107,7 @@ def test_parameters_from_model() -> None:
 
     runner = CliRunner(mix_stderr=False)
     result = runner.invoke(add_person, ["--help"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, click_result_traceback(result)
     assert result.stdout == (
         "Usage: add-person [OPTIONS] NAME\n"
         "\n"
@@ -149,7 +151,7 @@ def test_parameters_from_model() -> None:
         ],
         input="alc\nalc\n",
     )
-    assert result.exit_code == 0, result
+    assert result.exit_code == 0, click_result_traceback(result)
     assert json.loads(result.stderr) == {
         "address": {
             "building": None,
@@ -214,7 +216,7 @@ def test_parameters_from_model_no_parse() -> None:
             "--birthdate=1981-02-18T01:02",
         ],
     )
-    assert result.exit_code == 0, result
+    assert result.exit_code == 0, click_result_traceback(result)
     assert json.loads(result.stdout) == {
         "address_city": "paris",
         "address_country": "fr",
