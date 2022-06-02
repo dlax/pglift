@@ -246,6 +246,7 @@ def parameters_from_model(
 
 PYDANTIC2ANSIBLE: Mapping[Union[Type[Any], str], AnsibleArgSpec] = {
     bool: {"type": "bool"},
+    float: {"type": "float"},
     int: {"type": "int"},
     str: {"type": "str"},
     pydantic.SecretStr: {"type": "str", "no_log": True},
