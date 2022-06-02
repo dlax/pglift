@@ -69,7 +69,7 @@ def choices_from_enum(e: Type[enum.Enum]) -> List[Any]:
 
 
 def _decorators_from_model(
-    model_type: ModelType, operation: Operation, *, _prefix: str = ""
+    model_type: ModelType, operation: Operation, *, _parents: Tuple[str, ...] = ()
 ) -> Iterator[Tuple[Tuple[str, str], Callable[[Callback], Callback]]]:
     """Yield click.{argument,option} decorators corresponding to fields of
     a pydantic model type along with respective callback argument name and
@@ -91,24 +91,16 @@ def _decorators_from_model(
         argname = cli_config.get("name", field.alias)
         if operation == "update" and field.field_info.extra.get("readOnly"):
             continue
-        argname = argname.replace("_", "-")
         modelname = field.alias
         ftype = field.outer_type_
-        if not _prefix and field.required:
-            yield (modelname, argname.replace("-", "_")), click.argument(
-                argname, type=ftype
+        if not _parents and field.required:
+            yield (modelname, argname), click.argument(
+                argname.replace("_", "-"), type=ftype
             )
         else:
             metavar = argname.upper()
-            if _prefix:
-                fname = f"--{_prefix}-{argname}"
-                modelname, argname = (
-                    f"{_prefix}_{modelname}",
-                    f"{_prefix}_{argname.replace('-', '_')}",
-                )
-            else:
-                fname = f"--{argname}"
-                argname = argname.replace("-", "_")
+            argparts = _parents + tuple(argname.split("_"))
+            fname = f"--{'-'.join(argparts)}"
             description = None
             if field.field_info.description:
                 description = field.field_info.description
@@ -122,8 +114,8 @@ def _decorators_from_model(
                     choices = choices_from_enum(ftype)
                 attrs["type"] = click.Choice(choices)
             elif lenient_issubclass(ftype, pydantic.BaseModel):
-                assert not _prefix, "only one nesting level is supported"
-                yield from _decorators_from_model(ftype, operation, _prefix=argname)
+                assert not _parents, "only one nesting level is supported"
+                yield from _decorators_from_model(ftype, operation, _parents=(argname,))
                 continue
             elif origin_type is not None and issubclass(origin_type, list):
                 attrs["multiple"] = True
@@ -156,6 +148,8 @@ def _decorators_from_model(
                 if description[-1] not in ".?":
                     description += "."
                 attrs["help"] = description
+            argname = "_".join(argparts)
+            modelname = "_".join(_parents + (modelname,))
             yield (modelname, argname), click.option(fname, callback=default, **attrs)
 
 

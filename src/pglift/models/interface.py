@@ -127,7 +127,7 @@ class Role(Manifest):
     """PostgreSQL role"""
 
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {
-        "in_roles": {"name": "in-role"},
+        "in_roles": {"name": "in_role"},
         "state": {"hide": True},
     }
 
