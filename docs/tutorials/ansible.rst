@@ -20,7 +20,7 @@ Setup
 
 In the following we consider two nodes (or machines): the ``control`` node,
 where Ansible commands or playbooks will be executed and, the ``managed`` node
-where operations should apply:
+where operations should apply.
 
 On the ``control`` node, Ansible needs to be installed and the collection
 should be available in path, for instance, if you have a local checkout of
