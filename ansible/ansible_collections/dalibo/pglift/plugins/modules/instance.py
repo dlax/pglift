@@ -64,6 +64,9 @@ env:
 """
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.dalibo.pglift.plugins.module_utils.context import (
+    AnsibleContext,
+)
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
 )
@@ -72,7 +75,6 @@ with check_required_libs():
     import pydantic
 
     from pglift import exceptions, instances, plugin_manager
-    from pglift.ansible import AnsibleContext
     from pglift.models import helpers, interface, system
     from pglift.settings import SiteSettings
 

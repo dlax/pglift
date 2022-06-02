@@ -30,6 +30,9 @@ RETURN = """
 from typing import Dict
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.dalibo.pglift.plugins.module_utils.context import (
+    AnsibleContext,
+)
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
 )
@@ -38,7 +41,6 @@ with check_required_libs():
     import pydantic
 
     from pglift import prometheus
-    from pglift.ansible import AnsibleContext
     from pglift.models import helpers
     from pglift.settings import SiteSettings
 

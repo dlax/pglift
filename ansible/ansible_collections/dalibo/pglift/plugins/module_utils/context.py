@@ -1,14 +1,17 @@
 import logging
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
 
-from ._compat import Protocol
-from .ctx import BaseContext, SiteMixin
-from .types import CompletedProcess
+from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
+    check_required_libs,
+)
 
-if TYPE_CHECKING:
-    from .settings import Settings
+with check_required_libs():
+    from pglift._compat import Protocol
+    from pglift.ctx import BaseContext, SiteMixin
+    from pglift.types import CompletedProcess
 
-logger = logging.getLogger(__name__)
+    if TYPE_CHECKING:
+        from pglift.settings import Settings
 
 
 class _AnsibleModule(Protocol):
@@ -42,6 +45,7 @@ class AnsibleContext(SiteMixin, BaseContext):
 
     def __init__(self, module: _AnsibleModule, *, settings: "Settings") -> None:
         self.module = module
+        logger = logging.getLogger("pglift")
         logger.addHandler(AnsibleLoggingHandler(module))
         super().__init__(settings=settings)
 
