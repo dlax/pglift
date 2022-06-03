@@ -1,17 +1,15 @@
 import enum
 import json
 from datetime import datetime
-from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional
 
 import click
 import pytest
 from click.testing import CliRunner
 from pydantic import BaseModel, Field, SecretStr
 
-from pglift import pm, prometheus
-from pglift.models import helpers, interface
-from pglift.types import AnsibleConfig, AutoStrEnum, CLIConfig, Manifest
+from pglift.models import helpers
+from pglift.types import AnsibleConfig, AutoStrEnum, CLIConfig
 
 from . import click_result_traceback
 
@@ -396,27 +394,3 @@ def test_argspec_from_model_keep_default() -> None:
     assert helpers.argspec_from_model(Model) == {
         "n_f": {"default": 42, "type": "int"},
     }
-
-
-# Composite instance model with all plugins enabled, for Ansible argspec tests.
-composite_instance_model = interface.Instance.composite(pm.PluginManager.get())
-
-
-@pytest.mark.parametrize(
-    "manifest_type",
-    [
-        composite_instance_model,
-        prometheus.PostgresExporter,
-        interface.Role,
-        interface.Database,
-    ],
-)
-def test_argspec_from_model_manifest(
-    datadir: Path, write_changes: bool, manifest_type: Type[Manifest]
-) -> None:
-    actual = helpers.argspec_from_model(manifest_type)
-    fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
-    if write_changes:
-        fpath.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n")
-    expected = json.loads(fpath.read_text())
-    assert actual == expected
