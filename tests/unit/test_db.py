@@ -12,10 +12,10 @@ from pglift.models.system import Instance
 from pglift.settings import Settings
 
 
-def test_queries(datadir: Path, regen_test_data: bool) -> None:
+def test_queries(datadir: Path, write_changes: bool) -> None:
     actual = dict(db.queries())
     fpath = datadir / "queries.json"
-    if regen_test_data:
+    if write_changes:
         fpath.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n")
     expected = json.loads(fpath.read_text())
     assert actual == expected

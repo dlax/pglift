@@ -388,11 +388,11 @@ composite_instance_model = interface.Instance.composite(pm.PluginManager.get())
     ],
 )
 def test_argspec_from_model_manifest(
-    datadir: Path, regen_test_data: bool, manifest_type: Type[Manifest]
+    datadir: Path, write_changes: bool, manifest_type: Type[Manifest]
 ) -> None:
     actual = helpers.argspec_from_model(manifest_type)
     fpath = datadir / f"ansible-argspec-{manifest_type.__name__.lower()}.json"
-    if regen_test_data:
+    if write_changes:
         fpath.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n")
     expected = json.loads(fpath.read_text())
     assert actual == expected

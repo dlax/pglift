@@ -16,16 +16,16 @@ from pglift.util import short_version
 
 def pytest_addoption(parser: Any) -> None:
     parser.addoption(
-        "--regen-test-data",
+        "--write-changes",
         action="store_true",
         default=False,
-        help="Re-generate test data from actual results",
+        help="Write-back changes to test data.",
     )
 
 
 @pytest.fixture
-def regen_test_data(request: Any) -> bool:
-    value = request.config.getoption("--regen-test-data")
+def write_changes(request: Any) -> bool:
+    value = request.config.option.write_changes
     assert isinstance(value, bool)
     return value
 
