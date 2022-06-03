@@ -76,6 +76,11 @@ or through ``tox``:
 
     $ tox -e tests-unit
 
+Some unit tests use local files (in ``test/data``) to compare actual results
+with their expectation. Often, when there is a mismatch that is intentional
+(e.g. if interface models changed), it's handy to write back expected files:
+for this, pass ``--write-changes`` option to pytest invocation.
+
 By default, functional tests will not use systemd as a service manager /
 scheduler. In order to run tests with systemd, pass the ``--systemd`` option
 to pytest command.
