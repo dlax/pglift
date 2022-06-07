@@ -78,6 +78,10 @@ def test_log_directory(instance: system.Instance, log_directory: Path) -> None:
     assert instance_log_dir.exists()
 
 
+def passfile_entries(passfile: Path, *, role: str = "postgres") -> List[str]:
+    return [line for line in passfile.read_text().splitlines() if f":{role}:" in line]
+
+
 def test_pgpass(
     ctx: Context,
     instance_manifest: interface.Instance,
@@ -87,19 +91,13 @@ def test_pgpass(
     port = instance.port
     passfile = ctx.settings.postgresql.auth.passfile
 
-    def postgres_entry() -> str:
-        (entry,) = [
-            line for line in passfile.read_text().splitlines() if ":postgres:" in line
-        ]
-        return entry
-
     if postgresql_auth == AuthType.pgpass:
-        assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
+        assert passfile_entries(passfile) == [f"*:{port}:*:postgres:s3kret"]
 
         with reconfigure_instance(ctx, instance_manifest, port=port + 1):
-            assert postgres_entry() == f"*:{port+1}:*:postgres:s3kret"
+            assert passfile_entries(passfile) == [f"*:{port+1}:*:postgres:s3kret"]
 
-        assert postgres_entry() == f"*:{port}:*:postgres:s3kret"
+        assert passfile_entries(passfile) == [f"*:{port}:*:postgres:s3kret"]
 
 
 def test_connect(
@@ -364,6 +362,7 @@ def test_list(ctx: Context, instance: system.Instance) -> None:
 def test_standby_instance(
     ctx: Context,
     instance: system.Instance,
+    postgresql_auth: AuthType,
     replrole_password: str,
     standby_manifest: interface.Instance,
     standby_instance: system.Instance,
@@ -382,11 +381,25 @@ def test_standby_instance(
     assert [r["slot_name"] for r in rows] == [slotname]
 
 
+def test_standby_pgpass(
+    ctx: Context,
+    postgresql_auth: AuthType,
+    standby_instance: system.Instance,
+) -> None:
+    if postgresql_auth != AuthType.pgpass:
+        pytest.skip(f"not applicable for auth: {postgresql_auth}")
+    passfile = ctx.settings.postgresql.auth.passfile
+    port = standby_instance.port
+    assert f"*:{port}:*:postgres:s3kret" in passfile_entries(passfile)
+
+
 def test_standby_replication(
     ctx: Context,
     instance: system.Instance,
     instance_manifest: interface.Instance,
     settings: Settings,
+    postgresql_auth: AuthType,
+    surole_password: str,
     tmp_port_factory: Iterator[int],
     tmp_path_factory: pytest.TempPathFactory,
     database_factory: DatabaseFactory,
@@ -496,6 +509,23 @@ def test_standby_replication(
             role=replrole,
             dbname="template1",
         ) == [{"pg_is_in_recovery": False}]
+        # Check that we can connect to the promoted instance.
+        connargs = {
+            "host": str(standby_instance.config().unix_socket_directories),
+            "port": standby_instance.port,
+            "user": surole.name,
+        }
+        if postgresql_auth == AuthType.peer:
+            pass
+        elif postgresql_auth == AuthType.pgpass:
+            connargs["passfile"] = str(ctx.settings.postgresql.auth.passfile)
+        else:
+            connargs["password"] = surole_password
+        with psycopg.connect(**connargs) as conn:  # type: ignore[call-overload]
+            if postgresql_auth == AuthType.peer:
+                assert not conn.pgconn.used_password
+            else:
+                assert conn.pgconn.used_password
 
 
 def test_instance_upgrade(

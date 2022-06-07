@@ -428,6 +428,7 @@ def standby_manifest(
     composite_instance_model: Type[interface.Instance],
     tmp_port_factory: Iterator[int],
     pg_version: str,
+    surole_password: str,
     replrole_password: str,
     prometheus_password: str,
     instance: system.Instance,
@@ -446,6 +447,7 @@ def standby_manifest(
                 # Keep logs to stderr in tests so that they are captured by pytest.
                 "logging_collector": False,
             },
+            "surole_password": surole_password,
             "standby": {
                 "for": primary_conninfo,
                 "password": replrole_password,
@@ -461,7 +463,10 @@ def standby_manifest(
 
 @pytest.fixture(scope="session")
 def standby_instance(
-    ctx: Context, standby_manifest: interface.Instance, instance: system.Instance
+    ctx: Context,
+    postgresql_auth: AuthType,
+    standby_manifest: interface.Instance,
+    instance: system.Instance,
 ) -> Iterator[system.Instance]:
     with instances.running(ctx, instance):
         instances.apply(ctx, standby_manifest)
@@ -471,6 +476,9 @@ def standby_instance(
     instances.stop(ctx, stdby_instance)
     yield stdby_instance
     instances.drop(ctx, stdby_instance)
+    if postgresql_auth == AuthType.pgpass:
+        passfile = ctx.settings.postgresql.auth.passfile
+        assert passfile.read_text() == "#hostname:port:database:username:password\n"
 
 
 @pytest.fixture(scope="session")

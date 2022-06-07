@@ -10,21 +10,31 @@ from pglift.models import interface, system
 from pglift.prometheus import impl as prometheus
 from pglift.settings import PgBackRestSettings, PrometheusSettings
 
+from . import AuthType
+
 
 def test_pgpass(
     ctx: Context,
+    postgresql_auth: AuthType,
+    standby_instance: system.Instance,
     instance_manifest: interface.Instance,
     instance_dropped: Configuration,
 ) -> None:
     config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
     surole = instance_manifest.surole(ctx.settings)
+    pgpass_entries = passfile.read_text().splitlines()
     if surole.pgpass and surole.password:
         port = config.port
-        pgpass_entries = passfile.read_text().splitlines()
         for line in pgpass_entries:
             assert f"*:{port}:*:{surole.name}:" not in line
-    assert passfile.read_text() == "#hostname:port:database:username:password\n"
+    if postgresql_auth == AuthType.pgpass:
+        assert pgpass_entries == [
+            "#hostname:port:database:username:password",
+            f"*:{standby_instance.port}:*:postgres:s3kret",
+        ]
+    else:
+        assert pgpass_entries == ["#hostname:port:database:username:password"]
 
 
 def test_systemd_backup_job(
