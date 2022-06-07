@@ -46,7 +46,8 @@ tests:
   image: $CI_REGISTRY_IMAGE:$dist
   script:
     - tox -e tests-unit
-    - tox -e tests-func
+    - tox -e tests-func -- -k 'not test_ansible'
+    - tox -e tests-func -- -k 'test_ansible'
   parallel:
     matrix:
       - dist: [debian, rockylinux8]
