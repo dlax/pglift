@@ -64,6 +64,7 @@ data and configuration files (we use a temporary directory in this tutorial):
      directory: $tmpdir/backups
     prometheus:
       execpath: /usr/bin/prometheus-postgres-exporter
+    temboard: {}
     EOF
 
 .. note::
@@ -81,6 +82,7 @@ encrypted with Ansible vault:
     postgresql_surole_password: $(openssl rand -base64 9)
     prod_bob_password: $(openssl rand -base64 9)
     prometheus_role_password: $(openssl rand -base64 9)
+    temboard_role_password: $(openssl rand -base64 9)
     EOF
 
 To view actual passwords:

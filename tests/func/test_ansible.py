@@ -38,6 +38,7 @@ def call_playbook(
     ansible_env: Dict[str, str],
     pgbackrest_available: bool,
     prometheus_execpath: Optional[pathlib.Path],
+    temboard_execpath: Optional[pathlib.Path],
 ) -> Iterator[Callable[[pathlib.Path], None]]:
     env = ansible_env.copy()
     env["ANSIBLE_VERBOSITY"] = "3"
@@ -59,6 +60,10 @@ def call_playbook(
         settings["prometheus"] = {"execpath": str(prometheus_execpath)}
     else:
         pytest.skip("prometheus not available")
+    if temboard_execpath:
+        settings["temboard"] = {"execpath": str(temboard_execpath)}
+    else:
+        pytest.skip("temboard not available")
 
     with (tmp_path / "config.json").open("w") as f:
         json.dump(settings, f)
@@ -73,6 +78,7 @@ def call_playbook(
             "postgresql_surole_password": "supers3kret",
             "prod_bob_password": "s3kret",
             "prometheus_role_password": "pr0m3th3u$",
+            "temboard_role_password": "temb0@rd",
         }
         yaml.dump(passwords, f)
     subprocess.check_call(["ansible-vault", "encrypt", str(tmp_path / "vars")], env=env)
@@ -156,6 +162,7 @@ def test_ansible(
     assert "unaccent" in installed
 
     socket.create_connection(("localhost", 9186), 1)
+    socket.create_connection(("localhost", 2344), 1)
 
     # test connection with bob to the db database
     with db.connect_dsn(
@@ -172,16 +179,17 @@ def test_ansible(
     preprod_dsn = "host=/tmp user=postgres password=supers3kret dbname=test port=5434"
     assert cluster_name(preprod_dsn) == "preprod"
     socket.create_connection(("localhost", 9188), 1)
+    socket.create_connection(("localhost", 2346), 1)
 
-    # check dev cluster & postgres_exporter are stopped
+    # check dev cluster, postgres_exporter and temboard-agent are stopped
     with pytest.raises(psycopg.OperationalError, match="No such file or directory"):
         cluster_name(
             "host=/tmp user=postgres password=supers3kret dbname=postgres port=5444"
         )
-
-    # check dev postgres_exporter is stopped
     with pytest.raises(ConnectionRefusedError):
         socket.create_connection(("localhost", 9189), 1)
+    with pytest.raises(ConnectionRefusedError):
+        socket.create_connection(("localhost", 2347), 1)
 
     call_playbook(PLAYDIR / "play2.yml")
 
@@ -214,8 +222,11 @@ def test_ansible(
         assert cluster_name(preprod_dsn) == "preprod"
     with pytest.raises(ConnectionRefusedError):
         socket.create_connection(("localhost", 9188), 1)
+    with pytest.raises(ConnectionRefusedError):
+        socket.create_connection(("localhost", 2346), 1)
 
     # dev running
     dev_dsn = "host=/tmp user=postgres password=supers3kret dbname=postgres port=5455"
     assert cluster_name(dev_dsn) == "dev"
     socket.create_connection(("localhost", 9189))
+    socket.create_connection(("localhost", 2347))

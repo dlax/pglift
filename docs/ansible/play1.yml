@@ -18,6 +18,8 @@
           - unaccent
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9186
+        temboard_password: "{{ temboard_role_password }}"
+        temboard_port: 2344
         roles:
           - name: bob
             login: true
@@ -46,6 +48,8 @@
         surole_password: "{{ postgresql_surole_password }}"
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9188
+        temboard_password: "{{ temboard_role_password }}"
+        temboard_port: 2346
 
     - name: register preprod conninfo
       dalibo.pglift.dsn_info:
@@ -71,3 +75,5 @@
         surole_password: "{{ postgresql_surole_password }}"
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9189
+        temboard_password: "{{ temboard_role_password }}"
+        temboard_port: 2347
