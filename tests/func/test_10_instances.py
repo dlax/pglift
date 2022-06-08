@@ -299,7 +299,9 @@ def test_apply(
     assert instances.status(ctx, i) == Status.unspecified_datadir
 
 
-def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> None:
+def test_get(
+    ctx: Context, instance: system.Instance, log_directory: Path, powa_available: bool
+) -> None:
     im = instances.get(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
@@ -308,13 +310,18 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
     if "log_directory" in config:
         logdir = config.pop("log_directory")
         assert logdir == str(log_directory)
+    spl = "passwordcheck"
+    extensions = ["passwordcheck"]
+    if powa_available:
+        spl += ", pg_qualstats, pg_stat_statements, pg_stat_kcache"
+        extensions += ["pg_qualstats", "pg_stat_statements", "pg_stat_kcache"]
     assert config == {
         "lc_messages": "C",
         "lc_monetary": "C",
         "lc_numeric": "C",
         "lc_time": "C",
         "logging_collector": False,
-        "shared_preload_libraries": "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache",
+        "shared_preload_libraries": spl,
     }
     if int(instance.version) <= 10:
         assert im.data_checksums is None
@@ -322,12 +329,7 @@ def test_get(ctx: Context, instance: system.Instance, log_directory: Path) -> No
         assert im.data_checksums is False
     assert im.state.name == "stopped"
     assert not im.surole_password
-    assert im.extensions == [
-        "passwordcheck",
-        "pg_qualstats",
-        "pg_stat_statements",
-        "pg_stat_kcache",
-    ]
+    assert im.extensions == extensions
     assert not im.pending_restart
 
     with instances.running(ctx, instance):
@@ -675,37 +677,41 @@ def test_extensions(
     ctx: Context,
     instance_manifest: interface.Instance,
     instance: system.Instance,
+    powa_available: bool,
 ) -> None:
     old_extensions = instance_manifest.extensions
     config = instance.config()
-    assert (
-        config.shared_preload_libraries
-        == "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache"
-    )
-    with instances.running(ctx, instance):
-        instance_manifest.extensions = list(
+    if powa_available:
+        spl_before = "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache"
+        spl_after = "pg_stat_statements, passwordcheck, pg_qualstats, pg_stat_kcache"
+        extensions = ["pg_stat_statements", "unaccent", "passwordcheck"]
+        expected_extensions = list(
             map(
-                interface.Extension, ["pg_stat_statements", "unaccent", "passwordcheck"]
+                interface.Extension,
+                [
+                    "pg_stat_statements",
+                    "passwordcheck",
+                    "pg_qualstats",
+                    "pg_stat_kcache",
+                    "unaccent",
+                ],
             )
         )
+    else:
+        spl_before = spl_after = "passwordcheck"
+        extensions = ["unaccent", "passwordcheck"]
+        expected_extensions = list(
+            map(interface.Extension, ["passwordcheck", "unaccent"])
+        )
+    assert config.shared_preload_libraries == spl_before
+    with instances.running(ctx, instance):
+        instance_manifest.extensions = list(map(interface.Extension, extensions))
         r = instances.apply(ctx, instance_manifest)
         instances.restart(ctx, instance)
         assert r is not None
 
-        im = instances.get(ctx, instance.name, instance.version)
-        assert sorted(im.extensions) == [
-            "passwordcheck",
-            "pg_qualstats",
-            "pg_stat_kcache",
-            "pg_stat_statements",
-            "unaccent",
-        ]
-
         config = instance.config()
-        assert (
-            config.shared_preload_libraries
-            == "pg_stat_statements, passwordcheck, pg_qualstats, pg_stat_kcache"
-        )
+        assert config.shared_preload_libraries == spl_after
 
         def get_installed_extensions() -> List[str]:
             return [
@@ -714,28 +720,25 @@ def test_extensions(
             ]
 
         installed = get_installed_extensions()
-        assert "pg_stat_statements" in installed
+        if powa_available:
+            assert "pg_stat_statements" in installed
         assert "unaccent" in installed
 
         # order of extensions as in shared_preload_libraries should be respected
-        assert instances._get(ctx, instance).extensions == [
-            "pg_stat_statements",
-            "passwordcheck",
-            "pg_qualstats",
-            "pg_stat_kcache",
-            "unaccent",
-        ]
+        assert instances._get(ctx, instance).extensions == expected_extensions
 
-        rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
-        assert len(rows)
+        if powa_available:
+            rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
+            assert rows
 
         instance_manifest.extensions = [interface.Extension.unaccent]
         r = instances.apply(ctx, instance_manifest)
         instances.restart(ctx, instance)
         config = instance.config()
         installed = get_installed_extensions()
-        assert "pg_stat_statements" not in installed
         assert "unaccent" in installed
+        if powa_available:
+            assert "pg_stat_statements" not in installed
     # reset extensions
     instance_manifest.extensions = old_extensions
     instances.apply(ctx, instance_manifest)
