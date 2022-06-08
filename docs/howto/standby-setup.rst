@@ -19,6 +19,12 @@ pglift will call `pg_basebackup`_ utility to create a standby. A replication
 slot can be specified with ``--standby-slot <slot name>``.
 
 .. note::
+   If the primary instance has a password set for the super-user role, and is
+   needed for local authentication through the password file in particular, it
+   might be useful to provide the same password through ``--surole-password``
+   option when creating the standby.
+
+.. note::
    If Prometheus postgres_exporter was set up on the primary instance and is
    wanted on the standby, don't forget to provide ``--prometheus-password``
    option to the above command with the same password as on the primary
