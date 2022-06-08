@@ -16,23 +16,14 @@ from . import AuthType
 def test_pgpass(
     ctx: Context,
     postgresql_auth: AuthType,
-    standby_instance: system.Instance,
     instance_manifest: interface.Instance,
+    standby_instance_dropped: Configuration,
     instance_dropped: Configuration,
 ) -> None:
     if postgresql_auth != AuthType.pgpass:
         pytest.skip("not applicable")
-    config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
-    surole = instance_manifest.surole(ctx.settings)
-    assert surole.pgpass and surole.password
-    pgpass_entries = passfile.read_text().splitlines()
-    port = config.port
-    for line in pgpass_entries:
-        assert f"*:{port}:*:{surole.name}:" not in line
-    assert pgpass_entries == [
-        f"*:{standby_instance.port}:*:postgres:s3kret",
-    ]
+    assert not passfile.exists()
 
 
 def test_systemd_backup_job(

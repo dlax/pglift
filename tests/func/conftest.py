@@ -399,7 +399,9 @@ def instance_manifest(
 
 
 @pytest.fixture(scope="session")
-def instance(ctx: Context, instance_manifest: interface.Instance) -> system.Instance:
+def instance(
+    ctx: Context, instance_manifest: interface.Instance
+) -> Iterator[system.Instance]:
     # Check status before initialization.
     assert instance_manifest.version is not None
     baseinstance = system.BaseInstance.get(
@@ -418,7 +420,9 @@ def instance(ctx: Context, instance_manifest: interface.Instance) -> system.Inst
             if line.strip() and not line.strip().startswith("#")
         )
     )
-    return instance
+    yield instance
+    if instances.exists(ctx, instance.name, instance.version):
+        instances.drop(ctx, instance)
 
 
 @pytest.fixture(scope="session")
@@ -475,20 +479,31 @@ def standby_instance(
     )
     instances.stop(ctx, stdby_instance)
     yield stdby_instance
-    instances.drop(ctx, stdby_instance)
-    if postgresql_auth == AuthType.pgpass:
-        passfile = ctx.settings.postgresql.auth.passfile
-        assert not passfile.exists()
+    if instances.exists(ctx, stdby_instance.name, stdby_instance.version):
+        instances.drop(ctx, stdby_instance)
+
+
+def _drop_instance(
+    ctx: Context, instance: system.Instance
+) -> pgtoolkit.conf.Configuration:
+    config = instance.config()
+    if instances.exists(ctx, instance.name, instance.version):
+        instances.drop(ctx, instance)
+    return config
 
 
 @pytest.fixture(scope="session")
 def instance_dropped(
     ctx: Context, instance: system.Instance
 ) -> pgtoolkit.conf.Configuration:
-    config = instance.config()
-    if instance.exists():
-        instances.drop(ctx, instance)
-    return config
+    return _drop_instance(ctx, instance)
+
+
+@pytest.fixture(scope="session")
+def standby_instance_dropped(
+    ctx: Context, standby_instance: system.Instance
+) -> pgtoolkit.conf.Configuration:
+    return _drop_instance(ctx, standby_instance)
 
 
 class RoleFactory(Protocol):
