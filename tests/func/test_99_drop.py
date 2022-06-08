@@ -20,21 +20,19 @@ def test_pgpass(
     instance_manifest: interface.Instance,
     instance_dropped: Configuration,
 ) -> None:
+    if postgresql_auth != AuthType.pgpass:
+        pytest.skip("not applicable")
     config = instance_dropped
     passfile = ctx.settings.postgresql.auth.passfile
     surole = instance_manifest.surole(ctx.settings)
+    assert surole.pgpass and surole.password
     pgpass_entries = passfile.read_text().splitlines()
-    if surole.pgpass and surole.password:
-        port = config.port
-        for line in pgpass_entries:
-            assert f"*:{port}:*:{surole.name}:" not in line
-    if postgresql_auth == AuthType.pgpass:
-        assert pgpass_entries == [
-            "#hostname:port:database:username:password",
-            f"*:{standby_instance.port}:*:postgres:s3kret",
-        ]
-    else:
-        assert pgpass_entries == ["#hostname:port:database:username:password"]
+    port = config.port
+    for line in pgpass_entries:
+        assert f"*:{port}:*:{surole.name}:" not in line
+    assert pgpass_entries == [
+        f"*:{standby_instance.port}:*:postgres:s3kret",
+    ]
 
 
 def test_systemd_backup_job(

@@ -139,8 +139,8 @@ def postgresql_settings(
     tmp_path_factory: pytest.TempPathFactory, postgresql_auth: AuthType
 ) -> PostgreSQLSettings:
     passfile = tmp_path_factory.mktemp("home") / ".pgpass"
-    passfile.touch(mode=0o600)
-    passfile.write_text("#hostname:port:database:username:password\n")
+    if postgresql_auth == AuthType.pgpass:
+        passfile.touch(mode=0o600)
     auth: Dict[str, Any] = {
         "local": "password",
         "passfile": str(passfile),
@@ -478,7 +478,7 @@ def standby_instance(
     instances.drop(ctx, stdby_instance)
     if postgresql_auth == AuthType.pgpass:
         passfile = ctx.settings.postgresql.auth.passfile
-        assert passfile.read_text() == "#hostname:port:database:username:password\n"
+        assert not passfile.exists()
 
 
 @pytest.fixture(scope="session")
