@@ -1,10 +1,19 @@
 from typing import List
 
+import pytest
+
 from pglift.ctx import Context
 from pglift.models import system
 from pglift.models.interface import Role
 
 from . import execute
+
+
+@pytest.fixture(scope="session", autouse=True)
+def powa_available(powa_available: bool) -> bool:
+    if not powa_available:
+        pytest.skip("powa is not available")
+    return powa_available
 
 
 def test_powa(

@@ -1,4 +1,3 @@
-import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -16,9 +15,12 @@ from pglift.settings import PgBackRestSettings
 from . import execute, reconfigure_instance
 from .conftest import DatabaseFactory
 
-pytestmark = pytest.mark.skipif(
-    shutil.which("pgbackrest") is None, reason="pgbackrest is not available"
-)
+
+@pytest.fixture(scope="session", autouse=True)
+def pgbackrest_available(pgbackrest_available: bool) -> bool:
+    if not pgbackrest_available:
+        pytest.skip("pgbackrest is not available")
+    return pgbackrest_available
 
 
 @pytest.fixture

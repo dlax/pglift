@@ -19,6 +19,12 @@ from . import reconfigure_instance
 from .conftest import DatabaseFactory, RoleFactory
 
 
+@pytest.fixture(scope="session", autouse=True)
+def prometheus_available(prometheus_execpath: bool) -> None:
+    if not prometheus_execpath:
+        pytest.skip("prometheus is not available")
+
+
 def config_dict(configpath: Path) -> Dict[str, str]:
     config = {}
     for line in configpath.read_text().splitlines():
