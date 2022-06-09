@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
 import pytest
 import requests
@@ -16,10 +16,9 @@ from . import reconfigure_instance
 
 
 @pytest.fixture(scope="session", autouse=True)
-def temboard_available(temboard_available: bool) -> bool:
-    if not temboard_available:
+def temboard_available(temboard_execpath: Optional[Path]) -> None:
+    if not temboard_execpath:
         pytest.skip("temboard not available")
-    return temboard_available
 
 
 def test_configure(

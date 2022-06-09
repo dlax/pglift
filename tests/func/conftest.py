@@ -121,11 +121,6 @@ def powa_available(pg_bindir: Tuple[pathlib.Path, str]) -> bool:
 
 
 @pytest.fixture(scope="session")
-def temboard_available() -> bool:
-    return shutil.which("temboard-agent") is not None
-
-
-@pytest.fixture(scope="session")
 def temboard_execpath() -> Optional[pathlib.Path]:
     path = shutil.which("temboard-agent")
     if path is not None:
@@ -190,7 +185,6 @@ def settings(
     pgbackrest_available: bool,
     prometheus_execpath: Optional[pathlib.Path],
     powa_available: bool,
-    temboard_available: bool,
     temboard_execpath: Optional[pathlib.Path],
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
@@ -211,10 +205,8 @@ def settings(
     if powa_available:
         obj["powa"] = {}
 
-    if temboard_available:
-        obj["temboard"] = {}
-        if temboard_execpath:
-            obj["temboard"] = {"execpath": temboard_execpath}
+    if temboard_execpath:
+        obj["temboard"] = {"execpath": temboard_execpath}
 
     try:
         s = Settings.parse_obj(obj)
