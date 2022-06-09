@@ -64,6 +64,13 @@ def pytest_report_header(config: Any) -> List[str]:
     return [f"postgresql: {pg_version}"]
 
 
+@pytest.fixture(scope="session")
+def no_plugins(request: Any) -> bool:
+    value = request.config.option.no_plugins
+    assert isinstance(value, bool)
+    return value
+
+
 @pytest.fixture(autouse=True)
 def journalctl() -> Iterator[None]:
     journalctl = shutil.which("journalctl")
@@ -90,12 +97,16 @@ def systemd_available() -> bool:
 
 
 @pytest.fixture(scope="session")
-def pgbackrest_available() -> bool:
+def pgbackrest_available(no_plugins: bool) -> bool:
+    if no_plugins:
+        return False
     return shutil.which("pgbackrest") is not None
 
 
 @pytest.fixture(scope="session")
-def prometheus_execpath() -> Optional[pathlib.Path]:
+def prometheus_execpath(no_plugins: bool) -> Optional[pathlib.Path]:
+    if no_plugins:
+        return None
     for name in ("prometheus-postgres-exporter", "postgres_exporter"):
         path = shutil.which(name)
         if path is not None:
@@ -104,7 +115,9 @@ def prometheus_execpath() -> Optional[pathlib.Path]:
 
 
 @pytest.fixture(scope="session")
-def powa_available(pg_bindir: Tuple[pathlib.Path, str]) -> bool:
+def powa_available(no_plugins: bool, pg_bindir: Tuple[pathlib.Path, str]) -> bool:
+    if no_plugins:
+        return False
     pg_config = pg_bindir[0] / "pg_config"
     result = subprocess.run(
         [pg_config, "--pkglibdir"],
@@ -121,7 +134,9 @@ def powa_available(pg_bindir: Tuple[pathlib.Path, str]) -> bool:
 
 
 @pytest.fixture(scope="session")
-def temboard_execpath() -> Optional[pathlib.Path]:
+def temboard_execpath(no_plugins: bool) -> Optional[pathlib.Path]:
+    if no_plugins:
+        return None
     path = shutil.which("temboard-agent")
     if path is not None:
         return pathlib.Path(path)
@@ -186,6 +201,7 @@ def settings(
     prometheus_execpath: Optional[pathlib.Path],
     powa_available: bool,
     temboard_execpath: Optional[pathlib.Path],
+    no_plugins: bool,
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
@@ -218,8 +234,6 @@ def settings(
             )
         )
 
-    no_plugins = request.config.getoption("--no-plugins")
-    assert isinstance(no_plugins, bool)
     if no_plugins:
         to_disable = [name for name, field in plugins(s) if field is not None]
         if to_disable:
