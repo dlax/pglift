@@ -88,6 +88,19 @@ You may find the secret key in temboard's configuration file as defined in
 ``temboard.configpath`` setting (e.g.
 ``$prefix/etc/temboard-agent/temboard-agent-14-main.conf``).
 
+Command line interface
+~~~~~~~~~~~~~~~~~~~~~~
+
+The ``temboard-agent`` command line entry point exposes command to return
+the instance secret key:
+
+.. code-block:: console
+
+    $ pglift temboard-agent -i 14/main secret-key
+    123456789
+
+You need this key to `add new instance`_ in `temBoard UI`_.
+
 
 PoWA
 ----
@@ -123,3 +136,4 @@ outside of `pglift`).
 .. _`registered`: https://powa.readthedocs.io/en/latest/components/powa-archivist/configuration.html#powa-register-server
 .. _`temBoard`: https://temboard.readthedocs.io/en/latest/
 .. _`temBoard UI`: https://temboard.readthedocs.io/en/latest/temboard-howto/
+.. _`add new instance`: https://temboard.readthedocs.io/en/latest/temboard-howto/#add-a-new-instance

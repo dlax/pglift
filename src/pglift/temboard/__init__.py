@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Optional, Type
 
+import click
 import pydantic
 
 from .. import exceptions, hookimpl, systemd, util
@@ -123,3 +124,10 @@ def instance_drop(ctx: "BaseContext", instance: "system.Instance") -> None:
         return
     manifest = interface.Instance(name=instance.name, version=instance.version)
     impl.revert_setup(ctx, manifest, settings, instance.config())
+
+
+@hookimpl  # type: ignore[misc]
+def cli() -> "click.Group":
+    from .cli import temboard_agent
+
+    return temboard_agent

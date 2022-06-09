@@ -27,6 +27,7 @@ from pglift.pgbackrest.cli import pgbackrest as pgbackrest_cli
 from pglift.prometheus import impl as prometheus_impl
 from pglift.prometheus.cli import postgres_exporter as postgres_exporter_cli
 from pglift.settings import PostgreSQLVersion, Settings
+from pglift.temboard.cli import temboard_agent as temboard_agent_cli
 
 instance_arg_guessed_or_given = pytest.mark.parametrize(
     "args", [[], ["test"]], ids=["instance:guessed", "instance:given"]
@@ -1630,3 +1631,11 @@ def test_pgbackrest(
         redirect_output=True,
         check=True,
     )
+
+
+def test_temboard_secret_key(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    result = runner.invoke(temboard_agent_cli, "secret-key", obj=obj)
+    assert result.exit_code == 0
+    assert json.loads(result.output) == 123456789

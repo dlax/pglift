@@ -89,6 +89,11 @@ def password(qualname: str, settings: "TemboardSettings") -> Optional[str]:
         return None
 
 
+def secret_key(qualname: str, settings: "TemboardSettings") -> int:
+    configpath = _configpath(qualname, settings)
+    return int(config_var(configpath, name="key", section="temboard"))
+
+
 @task("setting up temboardAgent")
 def setup(
     ctx: "BaseContext",

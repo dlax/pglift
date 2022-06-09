@@ -173,6 +173,7 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
             [
                 "[temboard]",
                 f"port = {temboard.port}",
+                "key = 123456789",
                 "[postgresql]",
                 f"port = {instance.port}",
                 f"host = {settings.postgresql.socket_directory}",

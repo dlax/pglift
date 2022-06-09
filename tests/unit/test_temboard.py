@@ -99,3 +99,7 @@ def test_password(temboard_settings: TemboardSettings, instance: Instance) -> No
     finally:
         if original_content is not None:
             configpath.write_text(original_content)
+
+
+def test_secret_key(temboard_settings: TemboardSettings, instance: Instance) -> None:
+    assert temboard.secret_key(instance.qualname, temboard_settings) == 123456789
