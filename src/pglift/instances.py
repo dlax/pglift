@@ -553,6 +553,11 @@ def status(ctx: "BaseContext", instance: system.BaseInstance) -> Status:
     return pg_ctl(instance.version, ctx=ctx).status(instance.datadir)
 
 
+def is_running(ctx: "BaseContext", instance: system.BaseInstance) -> bool:
+    """Return True if the instance is running based on its status."""
+    return status(ctx, instance) == Status.running
+
+
 def check_status(
     ctx: "BaseContext", instance: system.BaseInstance, expected: Status
 ) -> None:
@@ -872,7 +877,7 @@ def apply(
             ctx, sys_instance, instance.auth, surole=surole, replrole=replrole
         )
 
-    is_running = status(ctx, sys_instance) == Status.running
+    instance_is_running = is_running(ctx, sys_instance)
 
     if instance.data_checksums is not None:
         actual_data_checksums = get_data_checksums(ctx, sys_instance)
@@ -885,11 +890,11 @@ def apply(
             changed = True
 
     if state == States.stopped:
-        if is_running:
+        if instance_is_running:
             stop(ctx, sys_instance)
             changed = True
     elif state == States.started:
-        if not is_running:
+        if not instance_is_running:
             start(ctx, sys_instance)
             changed = True
     else:
@@ -944,8 +949,7 @@ def check_pending_actions(
     The instance is automatically reloaded if needed.
     The user is prompted for confirmation if a restart is needed.
     """
-    is_running = status(ctx, instance) == Status.running
-    if not is_running:
+    if not is_running(ctx, instance):
         return
 
     if "port" in changes:
@@ -988,8 +992,7 @@ def check_pending_actions(
 def get(ctx: "BaseContext", name: str, version: Optional[str]) -> interface.Instance:
     """Return the instance object with specified name and version."""
     instance = system.Instance.system_lookup(ctx, (name, version))
-    is_running = status(ctx, instance) == Status.running
-    if not is_running:
+    if not is_running(ctx, instance):
         missing_bits = [
             "locale",
             "encoding",
@@ -1012,8 +1015,8 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     managed_config = instance.config(managed_only=True).as_dict()
     managed_config.pop("port", None)
     st = status(ctx, instance)
-    is_running = st == Status.running
     state = interface.InstanceState.from_pg_status(st)
+    instance_is_running = is_running(ctx, instance)
     services = {
         s.__class__.__service__: s
         for s in ctx.hook.get(ctx=ctx, instance=instance)
@@ -1025,7 +1028,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
             "slot": instance.standby.slot,
             "password": instance.standby.password,
         }
-        if is_running:
+        if instance_is_running:
             kw["replication_lag"] = replication_lag(ctx, instance)
         standby = interface.Instance.Standby(**kw)
     else:
@@ -1043,7 +1046,7 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     locale = None
     encoding = None
     pending_rst = False
-    if is_running:
+    if instance_is_running:
         if instance.standby is None:
             surole_name = ctx.settings.postgresql.surole.name
             surole_password = roles.get(ctx, instance, surole_name).password
