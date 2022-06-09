@@ -1035,10 +1035,10 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
     else:
         standby = None
 
-    extensions = []
+    extensions: List[interface.Extension] = []
     if "shared_preload_libraries" in config:
         extensions += [
-            spl.strip()
+            interface.Extension(spl.strip())
             for spl in str(config["shared_preload_libraries"]).split(",")
             if spl.strip()
         ]

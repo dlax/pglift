@@ -329,7 +329,7 @@ def test_get(
         assert im.data_checksums is False
     assert im.state.name == "stopped"
     assert not im.surole_password
-    assert im.extensions == extensions
+    assert [e.name for e in im.extensions] == extensions
     assert not im.pending_restart
 
     with instances.running(ctx, instance):
