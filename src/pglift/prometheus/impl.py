@@ -159,12 +159,7 @@ def setup(
     """
     uri = make_uri(**psycopg.conninfo.conninfo_to_dict(dsn, password=password))
     config = [f"DATA_SOURCE_NAME={uri}"]
-    appname = f"postgres_exporter-{name}"
     log_options = ["--log.level=info"]
-    if ctx.settings.service_manager == "systemd":
-        # XXX Checking for systemd presence as a naive way to check for syslog
-        # availability; this is enough for Docker.
-        log_options.append(f"--log.format=logger:syslog?appname={appname}&local=0")
     opts = " ".join(log_options)
     queriespath = _queriespath(name, settings)
     config.extend(
