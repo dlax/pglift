@@ -924,11 +924,9 @@ def apply(
 
 
 def pending_restart(ctx: "BaseContext", instance: system.PostgreSQLInstance) -> bool:
-    """Return True if the instance is pending a restart to account for configuration changes.
-
-    The instance must be running.
-    """
-    assert status(ctx, instance) == Status.running
+    """Return True if the instance is pending a restart to account for configuration changes."""
+    if not is_running(ctx, instance):
+        return False
     with db.superuser_connect(ctx, instance) as cnx, cnx.cursor(
         row_factory=psycopg.rows.args_row(bool)
     ) as cur:
