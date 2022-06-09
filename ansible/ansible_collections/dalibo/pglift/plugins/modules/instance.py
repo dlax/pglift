@@ -61,6 +61,9 @@ configuration_changes:
   type: dict
 env:
     description: libpq environment variable used to connect to the instance
+pending_restart:
+  description: true if the instance needs to be restarted
+  type: bool
 """
 
 from ansible.module_utils.basic import AnsibleModule
@@ -114,6 +117,7 @@ def run_module() -> None:
             pass
         else:
             result["env"] = instances.env_for(ctx, instance, path=True)
+            result["pending_restart"] = instances.pending_restart(ctx, instance)
 
     module.exit_json(**result)
 
