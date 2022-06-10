@@ -6,6 +6,9 @@ variables:
   ROCKYLINUX8_CI_IMAGE: "$CI_REGISTRY_IMAGE:rockylinux8"
   DEBBUILD_CI_IMAGE: "$CI_REGISTRY_IMAGE:debbuild"
 
+default:
+  interruptible: true
+
 stages:
   - build
   - test
