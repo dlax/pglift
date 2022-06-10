@@ -64,6 +64,19 @@ def default_run_prefix(uid: int) -> Path:
     return base / pkgname
 
 
+def default_systemd_unit_path(uid: int) -> Path:
+    """Return the default systemd unit path for 'uid'.
+
+    >>> default_systemd_unit_path(0)
+    PosixPath('/etc/systemd/system')
+    >>> default_systemd_unit_path(42)  # doctest: +ELLIPSIS
+    PosixPath('/home/.../.local/share/systemd/user')
+    """
+    if uid == 0:
+        return Path("/etc/systemd/system")
+    return util.xdg_data_home() / "systemd" / "user"
+
+
 def default_sysuser() -> Tuple[str, str]:
     pwentry = pwd.getpwuid(os.getuid())
     grentry = grp.getgrgid(pwentry.pw_gid)
@@ -504,7 +517,7 @@ class SystemdSettings(BaseSettings):
         env_prefix = "systemd_"
 
     unit_path: Path = Field(
-        default=util.xdg_data_home() / "systemd" / "user",
+        default=default_systemd_unit_path(os.getuid()),
         description="Base path where systemd units will be installed.",
     )
 
