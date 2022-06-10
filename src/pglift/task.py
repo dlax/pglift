@@ -128,6 +128,7 @@ def transaction() -> Iterator[None]:
             except IndexError:
                 break
             if t.revert_action:
+                logger.warning("reverting '%s'", t.title)
                 t.revert_action(*args, **kwargs)
         raise exc
     finally:
