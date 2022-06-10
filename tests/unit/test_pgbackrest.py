@@ -14,9 +14,7 @@ from pglift.settings import PgBackRestSettings, Settings
 
 
 @pytest.fixture
-def pgbackrest_settings(
-    need_pgbackrest: None, settings: Settings
-) -> PgBackRestSettings:
+def pgbackrest_settings(settings: Settings) -> PgBackRestSettings:
     assert settings.pgbackrest is not None
     return settings.pgbackrest
 
@@ -171,7 +169,6 @@ def test_standby_restore(
         pgbackrest.restore(ctx, standby_instance, pgbackrest_settings)
 
 
-@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_configure_cancelled_if_repo_exists(
     ctx: Context, instance: Instance, instance_manifest: interface.Instance
 ) -> None:

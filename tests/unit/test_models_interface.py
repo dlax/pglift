@@ -27,21 +27,17 @@ def test_privileges_sorted() -> None:
     }
 
 
-def test_instance_composite_service(
-    ctx: Context, pg_version: str, prometheus: bool
-) -> None:
+def test_instance_composite_service(ctx: Context, pg_version: str) -> None:
     Instance = interface.Instance.composite(ctx.pm)
     m = Instance.parse_obj({"name": "test", "version": pg_version, "prometheus": None})
-    if prometheus:
-        s = m.service(prometheus_models.ServiceManifest)
-        assert s is None
+    s = m.service(prometheus_models.ServiceManifest)
+    assert s is None
 
     m = Instance.parse_obj(
         {"name": "test", "version": pg_version, "prometheus": {"port": 123}}
     )
-    if prometheus:
-        s = m.service(prometheus_models.ServiceManifest)
-        assert s is not None and s.port == 123
+    s = m.service(prometheus_models.ServiceManifest)
+    assert s is not None and s.port == 123
 
     class MyService(types.ServiceManifest, service_name="notfound"):
         pass

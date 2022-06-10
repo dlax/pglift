@@ -17,14 +17,11 @@ from pglift.settings import PrometheusSettings, Settings
 
 
 @pytest.fixture
-def prometheus_settings(
-    need_prometheus: None, settings: Settings
-) -> PrometheusSettings:
+def prometheus_settings(settings: Settings) -> PrometheusSettings:
     assert settings.prometheus is not None
     return settings.prometheus
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     assert (
         prometheus.systemd_unit(instance.qualname)
@@ -32,7 +29,6 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     )
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_install_systemd_unit_template(
     ctx: Context, prometheus_execpath: Optional[pathlib.Path]
 ) -> None:

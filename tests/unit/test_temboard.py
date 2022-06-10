@@ -16,12 +16,11 @@ from pglift.temboard import (
 
 
 @pytest.fixture
-def temboard_settings(need_temboard: None, settings: Settings) -> TemboardSettings:
+def temboard_settings(settings: Settings) -> TemboardSettings:
     assert settings.temboard is not None
     return settings.temboard
 
 
-@pytest.mark.usefixtures("need_temboard")
 def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     assert (
         temboard.systemd_unit(instance.qualname)
@@ -29,7 +28,6 @@ def test_systemd_unit(pg_version: str, instance: Instance) -> None:
     )
 
 
-@pytest.mark.usefixtures("need_temboard")
 def test_install_systemd_unit_template(
     ctx: Context, temboard_execpath: Optional[pathlib.Path]
 ) -> None:

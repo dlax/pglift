@@ -314,11 +314,9 @@ def test_instance_create(
         "--extension=unaccent",
         "--extension=pg_stat_statements",
         "--auth-host=ident",
+        "--prometheus-port=1212",
+        "--temboard-port=2347",
     ]
-    if ctx.settings.prometheus is not None:
-        cmd.append("--prometheus-port=1212")
-    if ctx.settings.temboard is not None:
-        cmd.append("--temboard-port=2347")
     with patch.object(instances, "apply") as apply:
         result = runner.invoke(cli, cmd, obj=obj)
     expected = {
@@ -333,11 +331,9 @@ def test_instance_create(
             "local": None,
             "host": "ident",
         },
+        "prometheus": {"port": 1212},
+        "temboard": {"port": 2347},
     }
-    if ctx.settings.prometheus is not None:
-        expected["prometheus"] = {"port": 1212}
-    if ctx.settings.temboard is not None:
-        expected["temboard"] = {"port": 2347}
     e = composite_instance_model.parse_obj(expected)
     apply.assert_called_once_with(ctx, e)
     assert result.exit_code == 0, result
@@ -366,11 +362,9 @@ def test_instance_create_standby(
             "slot": "sloot",
             "password": "replicated",
         },
+        "prometheus": {"port": 9187},
+        "temboard": {"port": 2345},
     }
-    if ctx.settings.prometheus is not None:
-        expected["prometheus"] = {"port": 9187}
-    if ctx.settings.temboard is not None:
-        expected["temboard"] = {"port": 2345}
 
     e = composite_instance_model.parse_obj(expected)
     apply.assert_called_once_with(ctx, e)
@@ -388,13 +382,11 @@ def test_instance_apply(
     assert result.exit_code == 2
     assert "Missing option '-f'" in result.stderr
 
-    m: Dict[str, Any] = {"name": "test"}
-    if ctx.settings.prometheus is not None:
-        m["prometheus"] = {"password": "truite", "port": 1212}
-
-    if ctx.settings.temboard is not None:
-        m["temboard"] = {"port": 2347}
-
+    m = {
+        "name": "test",
+        "prometheus": {"password": "truite", "port": 1212},
+        "temboard": {"port": 2347},
+    }
     manifest = tmp_path / "manifest.yml"
     content = yaml.dump(m)
     manifest.write_text(content)
@@ -420,11 +412,15 @@ def test_instance_alter(
     actual_obj: Dict[str, Any] = {
         "name": instance.name,
         "extensions": ["pg_stat_statements", "unaccent"],
+        "prometheus": {"port": 1212},
+        "temboard": {"port": 2347},
     }
     altered_obj: Dict[str, Any] = {
         "name": instance.name,
         "state": "stopped",
         "extensions": ["passwordcheck"],
+        "prometheus": {"port": 2121},
+        "temboard": {"port": 2437},
     }
     cmd = [
         "instance",
@@ -432,16 +428,9 @@ def test_instance_alter(
         str(instance),
         "--state=stopped",
         "--extension=passwordcheck",
+        "--prometheus-port=2121",
+        "--temboard-port=2437",
     ]
-    if ctx.settings.prometheus is not None:
-        actual_obj["prometheus"] = {"port": 1212}
-        altered_obj["prometheus"] = {"port": 2121}
-        cmd.append("--prometheus-port=2121")
-    if ctx.settings.temboard is not None:
-        actual_obj["temboard"] = {"port": 2347}
-        altered_obj["temboard"] = {"port": 2437}
-        cmd.append("--temboard-port=2437")
-
     actual = composite_instance_model.parse_obj(actual_obj)
     altered = composite_instance_model.parse_obj(altered_obj)
     with patch.object(instances, "apply") as apply, patch.object(
@@ -621,7 +610,7 @@ def test_instance_exec(
 
 
 def test_instance_env(
-    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj, pgbackrest: bool
+    runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
     r = runner.invoke(
         cli,
@@ -631,22 +620,21 @@ def test_instance_env(
     assert r.exit_code == 0, r
     bindir = instances.pg_ctl(instance.version, ctx=ctx).bindir
     path = os.environ["PATH"]
-    expected = f"PATH={bindir}:{path}\n"
-    if pgbackrest:
-        expected += (
-            f"PGBACKREST_CONFIG={ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf\n"
-            f"PGBACKREST_STANZA={instance.version}-{instance.name}\n"
-        )
-    expected += (
-        f"PGDATA={instance.datadir}\n"
-        "PGHOST=/socks\n"
-        f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}\n"
-        "PGPORT=999\n"
-        "PGUSER=postgres\n"
-        f"PSQLRC={instance.psqlrc}\n"
-        f"PSQL_HISTORY={instance.psql_history}\n"
+    expected = "\n".join(
+        [
+            f"PATH={bindir}:{path}",
+            f"PGBACKREST_CONFIG={ctx.settings.prefix}/etc/pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf",
+            f"PGBACKREST_STANZA={instance.version}-{instance.name}",
+            f"PGDATA={instance.datadir}",
+            "PGHOST=/socks",
+            f"PGPASSFILE={ctx.settings.postgresql.auth.passfile}",
+            "PGPORT=999",
+            "PGUSER=postgres",
+            f"PSQLRC={instance.psqlrc}",
+            f"PSQL_HISTORY={instance.psql_history}",
+        ]
     )
-    assert r.stdout == expected
+    assert r.stdout.rstrip() == expected
 
 
 def test_instance_logs(runner: CliRunner, instance: Instance, obj: Obj) -> None:
@@ -666,7 +654,6 @@ def test_instance_logs(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     assert result.output == "log\nged\n"
 
 
-@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> None:
     with patch.object(pgbackrest, "backup") as backup:
         result = runner.invoke(
@@ -679,7 +666,6 @@ def test_instance_backup(runner: CliRunner, instance: Instance, obj: Obj) -> Non
     assert backup.call_args[1] == {"type": types.BackupType("diff")}
 
 
-@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_backups(
     runner: CliRunner, instance: Instance, settings: Settings, ctx: Context, obj: Obj
 ) -> None:
@@ -742,7 +728,6 @@ def test_instance_backups(
     ]
 
 
-@pytest.mark.usefixtures("need_pgbackrest")
 def test_instance_restore(
     runner: CliRunner, instance: Instance, ctx: Context, obj: Obj
 ) -> None:
@@ -1552,7 +1537,6 @@ def test_database_privileges(
     ]
 
 
-@pytest.mark.usefixtures("need_prometheus")
 @pytest.mark.parametrize(
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
@@ -1577,7 +1561,6 @@ def test_postgres_exporter_start_stop(
     )
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_schema(runner: CliRunner, obj: Obj) -> None:
     result = runner.invoke(postgres_exporter_cli, ["--schema"], obj=obj)
     schema = json.loads(result.output)
@@ -1585,7 +1568,6 @@ def test_postgres_exporter_schema(runner: CliRunner, obj: Obj) -> None:
     assert schema["description"] == "Prometheus postgres_exporter service."
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_apply(
     runner: CliRunner, tmp_path: Path, ctx: Context, obj: Obj
 ) -> None:
@@ -1606,7 +1588,6 @@ def test_postgres_exporter_apply(
     )
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus_impl, "apply") as apply:
         result = runner.invoke(
@@ -1622,7 +1603,6 @@ def test_postgres_exporter_install(runner: CliRunner, ctx: Context, obj: Obj) ->
     )
 
 
-@pytest.mark.usefixtures("need_prometheus")
 def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) -> None:
     with patch.object(prometheus_impl, "drop") as drop:
         result = runner.invoke(
@@ -1634,7 +1614,6 @@ def test_postgres_exporter_uninstall(runner: CliRunner, ctx: Context, obj: Obj) 
     drop.assert_called_once_with(ctx, "123-exp")
 
 
-@pytest.mark.usefixtures("need_pgbackrest")
 def test_pgbackrest(
     runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
 ) -> None:
