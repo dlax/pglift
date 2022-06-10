@@ -28,7 +28,6 @@ import psycopg
 import pydantic
 import pydantic.json
 import rich
-from click.exceptions import Exit
 from click.shell_completion import CompletionItem
 from pydantic import ByteSize
 from rich.console import Console, RenderableType
@@ -248,9 +247,7 @@ def pass_component_settings(mod: ModuleType, name: str, f: C) -> C:
         ctx = context.obj.ctx
         assert isinstance(ctx, Context), ctx
         settings = getattr(mod, "available")(ctx)
-        if not settings:
-            click.echo(f"{name} not available", err=True)
-            raise Exit(1)
+        assert settings
         context.invoke(f, settings, *args, **kwargs)
 
     return cast(C, wrapper)

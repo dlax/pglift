@@ -124,11 +124,6 @@ def test_pass_component_settings(runner: CliRunner, obj: Obj) -> None:
     def command(settings: Any, *args: Any) -> None:
         click.echo(f"settings is {settings.id}")
 
-    mod.available.return_value = None
-    r = runner.invoke(command, obj=obj)
-    assert r.exit_code == 1
-    assert r.stderr == "mymod not available\n"
-
     rv = MagicMock(id="123")
     mod.available.return_value = rv
     r = runner.invoke(command, obj=obj)
