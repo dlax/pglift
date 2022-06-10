@@ -58,6 +58,12 @@ def default_prefix(uid: int) -> Path:
     return util.xdg_data_home() / pkgname
 
 
+def default_run_prefix(uid: int) -> Path:
+    """Return the default run path prefix for 'uid'."""
+    base = Path("/run") if uid == 0 else util.xdg_runtime_dir(uid)
+    return base / pkgname
+
+
 def default_sysuser() -> Tuple[str, str]:
     pwentry = pwd.getpwuid(os.getuid())
     grentry = grp.getgrgid(pwentry.pw_gid)
@@ -66,6 +72,7 @@ def default_sysuser() -> Tuple[str, str]:
 
 class PrefixedPath(PosixPath):
     basedir = Path("")
+    key = "prefix"
 
     @classmethod
     def __get_validators__(cls) -> Iterator[Callable[[Path], "PrefixedPath"]]:
@@ -95,7 +102,8 @@ class ConfigPath(PrefixedPath):
 
 
 class RunPath(PrefixedPath):
-    basedir = Path("run")
+    basedir = Path("")
+    key = "run_prefix"
 
 
 class DataPath(PrefixedPath):
@@ -571,6 +579,11 @@ class Settings(BaseSettings):
         description="Path prefix for configuration and data files.",
     )
 
+    run_prefix: Path = Field(
+        default=default_run_prefix(os.getuid()),
+        description="Path prefix for runtime socket, lockfiles and PID files.",
+    )
+
     logpath: LogPath = Field(
         default=LogPath(),
         description="Directory where temporary log files from command executions will be stored",
@@ -588,17 +601,18 @@ class Settings(BaseSettings):
     @root_validator
     def __prefix_paths(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Prefix child settings fields with the global 'prefix'."""
-        prefix = values["prefix"]
         for key, child in values.items():
             if isinstance(child, PrefixedPath):
-                values[key] = child.prefix(prefix)
+                values[key] = child.prefix(values[child.key])
             elif isinstance(child, BaseSettings):
-                update = {
-                    fn: getattr(child, fn).prefix(prefix)
-                    for fn, mf in child.__fields__.items()
+                update = {}
+                for fn, mf in child.__fields__.items():
                     # mf.types_ may be a typing.* class, which is not a type.
-                    if isinstance(mf.type_, type) and issubclass(mf.type_, PrefixedPath)
-                }
+                    if isinstance(mf.type_, type) and issubclass(
+                        mf.type_, PrefixedPath
+                    ):
+                        prefixed_path = getattr(child, fn)
+                        update[fn] = prefixed_path.prefix(values[prefixed_path.key])
                 if update:
                     child_values = child.dict()
                     child_values.update(update)

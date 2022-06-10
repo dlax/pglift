@@ -205,7 +205,11 @@ def settings(
 ) -> Settings:
     prefix = tmp_path_factory.mktemp("prefix")
     (prefix / "run" / "postgresql").mkdir(parents=True)
-    obj = {"prefix": str(prefix), "postgresql": postgresql_settings.dict()}
+    obj = {
+        "prefix": str(prefix),
+        "run_prefix": str(tmp_path_factory.mktemp("run")),
+        "postgresql": postgresql_settings.dict(),
+    }
     if systemd_requested:
         obj.update({"service_manager": "systemd", "scheduler": "systemd"})
 

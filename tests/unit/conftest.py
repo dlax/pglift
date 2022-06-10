@@ -57,6 +57,7 @@ def settings(
     return Settings.parse_obj(
         {
             "prefix": str(tmp_path),
+            "run_prefix": str(tmp_path / "run"),
             "postgresql": {
                 "auth": {
                     "local": "peer",

@@ -44,6 +44,7 @@ def call_playbook(
     env["ANSIBLE_VERBOSITY"] = "3"
     settings = {
         "prefix": str(tmp_path),
+        "run_prefix": str(tmp_path / "run"),
         "postgresql": {
             "auth": {
                 "local": "md5",

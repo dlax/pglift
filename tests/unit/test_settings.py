@@ -106,11 +106,12 @@ def test_settings(tmp_path: Path) -> None:
     s = Settings.parse_obj(
         {
             "prefix": "/prefix",
+            "run_prefix": "/runprefix",
             "postgresql": {"root": str(tmp_path), "pid_directory": "pgsql"},
         }
     )
     assert s.postgresql.root == tmp_path
-    assert str(s.postgresql.pid_directory) == "/prefix/run/pgsql"
+    assert str(s.postgresql.pid_directory) == "/runprefix/pgsql"
 
 
 def test_postgresql_versions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

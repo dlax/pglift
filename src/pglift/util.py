@@ -38,6 +38,10 @@ def xdg_data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
 
 
+def xdg_runtime_dir(uid: int) -> Path:
+    return Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{uid}"))
+
+
 def etc_config(*parts: str) -> Optional[Path]:
     """Lookup for a configuration file in /etc."""
     config = (etc() / pkgname).joinpath(*parts)
