@@ -189,7 +189,7 @@ def test_instance_identifier(runner: CliRunner, obj: Obj, instance: Instance) ->
 def test_instance_commands_completion(runner: CliRunner, obj: Obj) -> None:
     group = instance_cli.cli
     assert group.name
-    comp = ShellComplete(group, {}, group.name, "_CLICK_COMPLETE")
+    comp = ShellComplete(group, {"obj": obj}, group.name, "_CLICK_COMPLETE")
     commands = [c.value for c in comp.get_completions([], "")]
     assert commands == [
         "alter",
