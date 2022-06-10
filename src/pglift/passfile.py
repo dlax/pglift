@@ -22,6 +22,7 @@ def instance_configure(
     manifest: "interface.Instance",
     config: "Configuration",
     changes: "ConfigChanges",
+    creating: bool,
 ) -> None:
     """Set / update passfile entry for PostgreSQL roles upon instance
     configuration.
@@ -49,7 +50,7 @@ def instance_configure(
     passfile = ctx.settings.postgresql.auth.passfile
     with pgpass.edit(passfile) as f:
         surole_entry = None
-        if old_port != port:
+        if not creating and old_port != port:
             # Port changed, update all entries matching the old value.
             for entry in f:
                 if entry.matches(port=old_port):
