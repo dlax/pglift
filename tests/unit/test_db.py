@@ -74,7 +74,7 @@ def test_connect(ctx: BaseContext, instance: Instance, settings: Settings) -> No
     passfile = settings.postgresql.auth.passfile
     assert passfile.exists()
     connect.assert_called_once_with(
-        f"dbname=postgres user=dba port=999 host=/socks passfile={passfile}",
+        f"user=dba port=999 host=/socks passfile={passfile}",
         row_factory=psycopg.rows.dict_row,
     )
 

@@ -99,7 +99,6 @@ def connect(
     ctx: "BaseContext",
     instance: "PostgreSQLInstance",
     *,
-    dbname: str = "postgres",
     autocommit: bool = False,
     user: Optional[str] = None,
     password: Optional[str] = None,
@@ -114,7 +113,7 @@ def connect(
             )
 
     build_conninfo = functools.partial(
-        dsn, instance, postgresql_settings, dbname=dbname, user=user, **kwargs
+        dsn, instance, postgresql_settings, user=user, **kwargs
     )
 
     conninfo = build_conninfo(password=password)

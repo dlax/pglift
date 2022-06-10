@@ -65,6 +65,7 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
         ctx,
         instance,
         f"select rolvaliduntil, rolconnlimit from pg_roles where rolname = '{role.name}'",
+        dbname="template1",
         role=role,
     )
     assert record["rolvaliduntil"] == role.validity
@@ -91,7 +92,7 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
     with pytest.raises(
         psycopg.OperationalError, match='role "nologin" is not permitted to log in'
     ):
-        execute(ctx, instance, "select 1", role=nologin)
+        execute(ctx, instance, "select 1", dbname="template1", role=nologin)
 
 
 def role_in_pgpass(
