@@ -893,9 +893,12 @@ def apply(
         if instance_is_running:
             stop(ctx, sys_instance)
             changed = True
-    elif state == States.started:
+    elif state in (States.started, States.restarted):
         if not instance_is_running:
             start(ctx, sys_instance)
+            changed = True
+        elif state == States.restarted:
+            restart(ctx, sys_instance)
             changed = True
     else:
         assert False, f"unexpected state: {state}"  # pragma: nocover

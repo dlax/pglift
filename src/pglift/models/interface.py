@@ -51,6 +51,9 @@ class InstanceState(AutoStrEnum):
     absent = enum.auto()
     """absent"""
 
+    restarted = enum.auto()
+    """restarted"""
+
     @classmethod
     def from_pg_status(cls, status: Status) -> "InstanceState":
         """Instance state from PostgreSQL status.

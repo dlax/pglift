@@ -170,7 +170,8 @@
     "choices": [
       "stopped",
       "started",
-      "absent"
+      "absent",
+      "restarted"
     ],
     "default": "started",
     "description": [
