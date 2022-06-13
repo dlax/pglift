@@ -444,20 +444,30 @@ class Instance(BaseInstance):
     )
 
     @root_validator
-    def __port_not_in_configuration_(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate that 'configuration' field has no 'port' key.
+    def __validate_port_(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate that 'port' field and configuration['port'] are consistent.
 
         >>> Instance(name="i")
         Instance(name='i', ...)
-        >>> Instance(name="i", configuration={"port": 123})
+        >>> Instance(name="i", port=123, configuration={"port": 123})
+        Instance(name='i', ...)
+        >>> Instance(name="i", port=321, configuration={"port": 123})
         Traceback (most recent call last):
             ...
         pydantic.error_wrappers.ValidationError: 1 validation error for Instance
         __root__
-          port should not be specified in configuration field (type=value_error)
+          'port' field and configuration['port'] mistmatch (type=value_error)
         """
-        if "port" in values.get("configuration", {}):
-            raise ValueError("port should not be specified in configuration field")
+        try:
+            port = values["port"]
+        except KeyError:
+            return values
+        try:
+            config_port = values.get("configuration", {})["port"]
+        except KeyError:
+            return values
+        if config_port != port:
+            raise ValueError("'port' field and configuration['port'] mistmatch")
         return values
 
     _S = TypeVar("_S", bound=ServiceManifest)
