@@ -160,6 +160,7 @@ class Manifest(BaseModel):
 
     class Config:
         extra = "forbid"
+        validate_always = True
 
     _M = TypeVar("_M", bound="Manifest")
 
