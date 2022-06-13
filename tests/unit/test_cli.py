@@ -993,6 +993,7 @@ def test_role_create(
                 "rob",
                 "--password=ert",
                 "--pgpass",
+                "--login",
                 "--no-inherit",
                 "--in-role=monitoring",
                 "--in-role=backup",
@@ -1005,6 +1006,7 @@ def test_role_create(
         {
             "name": "rob",
             "password": "ert",
+            "login": True,
             "pgpass": True,
             "inherit": False,
             "in_roles": ["monitoring", "backup"],

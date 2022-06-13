@@ -48,7 +48,6 @@ class Address(BaseModel):
     zip_code: int = Field(default=0, description="ZIP code")
     city: str = Field(description="city")
     country: Country = Field()
-    shared: bool = Field(description="is this a collocation?")
     primary: bool = Field(
         default=False, description="is this person's primary address?"
     )
@@ -127,9 +126,8 @@ def test_parameters_from_model() -> None:
         "  --address-zip-code ZIP_CODE     ZIP code.\n"
         "  --address-town TOWN             City.\n"
         "  --address-country [fr|be]\n"
-        "  --address-shared / --no-address-shared\n"
-        "                                  Is this a collocation?\n"
-        "  --address-primary               Is this person's primary address?\n"
+        "  --address-primary / --no-address-primary\n"
+        "                                  Is this person's primary address?\n"
         "  --address-coords-long LONG      Longitude.\n"
         "  --address-coords-lat LAT        Latitude.\n"
         "  --birthdate BIRTHDATE           Date of birth.\n"
@@ -151,7 +149,6 @@ def test_parameters_from_model() -> None:
             "--address-coords-long=12.3",
             "--address-coords-lat=9.87",
             "--birthdate=1981-02-18T01:02",
-            "--no-address-shared",
             "--indent=2",
             "--nickname",
             "--title=ms",
@@ -169,7 +166,6 @@ def test_parameters_from_model() -> None:
             "street": ["bd montparnasse", "far far away"],
             "zip_code": 0,
             "primary": True,
-            "shared": False,
         },
         "age": 42,
         "dob": "1981-02-18T01:02:00",
@@ -247,7 +243,7 @@ def test_unnest() -> None:
         "address_country": "fr",
         "address_street": ["bd montparnasse"],
         "address_zip_code": 0,
-        "address_shared": True,
+        "address_primary": True,
         "address_coords_long": 0,
         "address_coords_lat": 1.2,
     }
@@ -261,7 +257,7 @@ def test_unnest() -> None:
             "country": "fr",
             "street": ["bd montparnasse"],
             "zip_code": 0,
-            "shared": True,
+            "primary": True,
         },
     }
 
@@ -277,14 +273,14 @@ def test_parse_params_as() -> None:
         "country": "fr",
         "street": ["bd montparnasse"],
         "zip_code": 0,
-        "shared": True,
+        "primary": True,
     }
     address = Address(
         street=["bd montparnasse"],
         zip_code=0,
         city="paris",
         country=Country.France,
-        shared=True,
+        primary=True,
     )
     assert helpers.parse_params_as(Address, address_params) == address
 
@@ -326,10 +322,6 @@ def test_argspec_from_model() -> None:
         },
         "address_city": {"type": "str", "description": ["the city"]},
         "address_country": {"choices": ["fr", "gb"]},
-        "address_shared": {
-            "type": "bool",
-            "description": ["is this a collocation?"],
-        },
         "address_primary": {
             "type": "bool",
             "description": ["is this person's primary address?"],

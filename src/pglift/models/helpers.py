@@ -140,10 +140,7 @@ def _decorators_from_model(
                 attrs["confirmation_prompt"] = True
                 attrs["hide_input"] = True
             elif lenient_issubclass(ftype, bool):
-                if field.default is False:
-                    attrs["is_flag"] = True
-                else:
-                    fname = f"{fname}/--no-{fname[2:]}"
+                fname = f"{fname}/--no-{fname[2:]}"
                 # Use None to distinguish unspecified option from the default value.
                 attrs["default"] = None
             else:
