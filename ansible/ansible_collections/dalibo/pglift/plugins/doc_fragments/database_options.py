@@ -15,7 +15,7 @@ def build_doc() -> str:
     argspec["instance"] = types.AnsibleArgSpec(
         required=True, type="str", description=["Instance name."]
     )
-    return yaml.dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
+    return yaml.safe_dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
 
 
 class ModuleDocFragment(object):

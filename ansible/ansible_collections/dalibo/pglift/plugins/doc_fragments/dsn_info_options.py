@@ -10,7 +10,7 @@ with check_required_libs():
 
 def build_doc() -> str:
     argspec = helpers.argspec_from_model(interface.BaseInstance)
-    return yaml.dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
+    return yaml.safe_dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
 
 
 class ModuleDocFragment(object):

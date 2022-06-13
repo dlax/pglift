@@ -12,7 +12,7 @@ with check_required_libs():
 def build_doc() -> str:
     model_type = prometheus.PostgresExporter
     argspec = helpers.argspec_from_model(model_type)
-    return yaml.dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
+    return yaml.safe_dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
 
 
 class ModuleDocFragment(object):

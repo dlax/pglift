@@ -15,7 +15,7 @@ def build_doc() -> str:
     pm = plugin_manager(settings)
     model_type = interface.Instance.composite(pm)
     argspec = helpers.argspec_from_model(model_type)
-    return yaml.dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
+    return yaml.safe_dump({"options": argspec}, sort_keys=False)  # type: ignore[no-any-return]
 
 
 class ModuleDocFragment(object):
