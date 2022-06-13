@@ -73,7 +73,7 @@ def test_start_stop(ctx: Context, instance: system.Instance) -> None:
         assert r.ok
         output = r.text
         output_json = json.loads(output)
-        assert output_json["hostname"] == "localhost.localdomain"
+        assert output_json["pg_port"] == instance.port
 
     with instances.stopped(ctx, instance, run_hooks=True):
         if ctx.settings.service_manager == "systemd":
@@ -109,4 +109,4 @@ def test_standby(
         assert r.ok
         output = r.text
         output_json = json.loads(output)
-        assert output_json["hostname"] == "localhost.localdomain"
+        assert output_json["pg_port"] == standby_instance.port

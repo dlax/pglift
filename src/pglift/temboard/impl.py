@@ -2,6 +2,7 @@ import configparser
 import json
 import logging
 import shutil
+import socket
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -139,10 +140,17 @@ def setup(
         "plugins": json.dumps(settings.plugins),
         "ssl_cert_file": str(ssl_cert_file),
         "ssl_key_file": str(ssl_key_file),
-        "hostname": "localhost.localdomain",  # FIXME
         "key": util.generate_password(31, letters=False),
         "home": str(_homedir(instance.qualname, settings)),
     }
+
+    # no longer needed when temboard ticket is done
+    # https://github.com/dalibo/temboard/issues/1067
+    hostname = socket.getfqdn()
+    if "." not in hostname:
+        cp["temboard"]["hostname"] = f"{hostname}.local"
+    #
+
     cp["postgresql"] = {
         "user": settings.role,
         "instance": instance.qualname,
