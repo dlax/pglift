@@ -71,15 +71,13 @@ def get(
     if not exists(ctx, instance, name):
         raise exceptions.RoleNotFound(name)
     with db.connect(ctx, instance) as cnx:
-        with cnx.cursor(row_factory=psycopg.rows.class_row(interface.Role)) as cur:
-            cur.execute(db.query("role_inspect"), {"username": name})
-            role = cur.fetchone()
-            assert role is not None
+        values = cnx.execute(db.query("role_inspect"), {"username": name}).fetchone()
+        assert values is not None
     if in_pgpass(ctx, instance, name):
-        role.pgpass = True
+        values["pgpass"] = True
     if not password:
-        role.password = None
-    return role
+        values["password"] = None
+    return interface.Role(**values)
 
 
 @task("dropping role '{name}' from instance {instance}")

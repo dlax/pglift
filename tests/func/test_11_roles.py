@@ -154,10 +154,10 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     ):
         pass
 
-    role.password = SecretStr("changed")
-    assert roles.apply(ctx, instance, role)
-    role.password = None
-    assert not roles.apply(ctx, instance, role)
+    pwchanged_role = role.copy(update={"password": SecretStr("changed")})
+    assert roles.apply(ctx, instance, pwchanged_role)
+    nopw_role = role.copy(update={"password": None})
+    assert not roles.apply(ctx, instance, nopw_role)
 
     role = interface.Role(
         name=rolname,

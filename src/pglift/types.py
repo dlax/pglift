@@ -159,8 +159,10 @@ class Manifest(BaseModel):
     _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {}
 
     class Config:
+        allow_mutation = False
         extra = "forbid"
         validate_always = True
+        validate_assignment = True
 
     _M = TypeVar("_M", bound="Manifest")
 
@@ -174,6 +176,13 @@ class Manifest(BaseModel):
         """Return a YAML serialization of this manifest."""
         data = json.loads(self.json(by_alias=True, **kwargs))
         return yaml.dump(data, sort_keys=False, explicit_start=True)  # type: ignore[no-any-return]
+
+    def _copy_validate(self: _M, update: Dict[str, Any]) -> _M:
+        """Like .copy(), but with validation (and default value setting).
+
+        (Internal method, mostly useful for test purpose.)
+        """
+        return self.__class__.validate(self.copy(update=update).dict())
 
 
 class ServiceManifest(Manifest):

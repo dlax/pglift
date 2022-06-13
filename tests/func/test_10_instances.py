@@ -267,7 +267,7 @@ def test_apply(
     assert not instances.apply(ctx, im)  # no-op
 
     assert instances.status(ctx, i) == Status.not_running
-    im.state = interface.InstanceState.started
+    im = im._copy_validate({"state": "started"})
     assert instances.apply(ctx, im)
     assert instances.status(ctx, i) == Status.running
     assert not instances.pending_restart(ctx, i)
@@ -279,8 +279,10 @@ def test_apply(
         assert db.extensions == [interface.Extension.unaccent]
         assert db.owner == "bob"
 
-    im.configuration["listen_addresses"] = "*"  # requires restart
-    im.configuration["autovacuum"] = False  # requires reload
+    newconfig = im.configuration.copy()
+    newconfig["listen_addresses"] = "*"  # requires restart
+    newconfig["autovacuum"] = False  # requires reload
+    im = im._copy_validate({"configuration": newconfig})
     with caplog.at_level(logging.DEBUG, logger="pgflit"):
         assert instances.apply(ctx, im)
     assert (
@@ -290,11 +292,11 @@ def test_apply(
     assert instances.status(ctx, i) == Status.running
     assert instances.pending_restart(ctx, i)
 
-    im.state = interface.InstanceState.stopped
+    im = im._copy_validate({"state": "stopped"})
     assert instances.apply(ctx, im)
     assert instances.status(ctx, i) == Status.not_running
 
-    im.state = interface.InstanceState.absent
+    im = im._copy_validate({"state": "absent"})
     assert instances.apply(ctx, im) is None
     with pytest.raises(exceptions.InstanceNotFound):
         i.exists()
@@ -630,7 +632,7 @@ def test_data_checksums(
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
 
     # explicitly enabled
-    manifest.data_checksums = True
+    manifest = manifest._copy_validate({"data_checksums": True})
     if int(pg_version) < 12:
         with pytest.raises(
             exceptions.UnsupportedError,
@@ -651,14 +653,14 @@ def test_data_checksums(
     assert instances._get(ctx, instance).data_checksums
 
     # not explicitly disabled so still enabled
-    manifest.data_checksums = None
-    assert instances.apply(ctx, manifest) is False
+    assert (
+        instances.apply(ctx, manifest._copy_validate({"data_checksums": None})) is False
+    )
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "on"}]
 
     # explicitly disabled
-    manifest.data_checksums = False
     with caplog.at_level(logging.INFO, logger="pglift.instances"):
-        assert instances.apply(ctx, manifest)
+        assert instances.apply(ctx, manifest._copy_validate({"data_checksums": False}))
     assert execute(ctx, instance, "SHOW data_checksums") == [{"data_checksums": "off"}]
     assert "disabling data checksums" in caplog.messages
     caplog.clear()
@@ -666,12 +668,11 @@ def test_data_checksums(
 
     # re-enabled with instance running
     with instances.running(ctx, instance):
-        manifest.data_checksums = True
         with pytest.raises(
             exceptions.InstanceStateError,
             match="could not alter data_checksums on a running instance",
         ):
-            instances.apply(ctx, manifest)
+            instances.apply(ctx, manifest._copy_validate({"data_checksums": True}))
     assert instances._get(ctx, instance).data_checksums is False
 
 
@@ -682,7 +683,6 @@ def extra_extensions(
     instance: system.Instance,
     powa_available: bool,
 ) -> Iterator[Tuple[str, List[interface.Extension]]]:
-    original_extensions = instance_manifest.extensions[:]
     config = instance.config()
     if powa_available:
         spl_before = "passwordcheck, pg_qualstats, pg_stat_statements, pg_stat_kcache"
@@ -708,12 +708,11 @@ def extra_extensions(
         )
     assert config.shared_preload_libraries == spl_before
     with instances.running(ctx, instance):
-        instance_manifest.extensions = list(map(interface.Extension, extensions))
-        r = instances.apply(ctx, instance_manifest)
+        new_manifest = instance_manifest._copy_validate({"extensions": extensions})
+        r = instances.apply(ctx, new_manifest)
         instances.restart(ctx, instance)
         assert r is not None
         yield spl, expected_extensions
-        instance_manifest.extensions = original_extensions
         instances.apply(ctx, instance_manifest)
 
 
@@ -747,8 +746,7 @@ def test_extensions(
         rows = execute(ctx, instance, "SELECT * FROM pg_stat_statements LIMIT 1")
         assert rows
 
-    instance_manifest.extensions = [interface.Extension.unaccent]
-    instances.apply(ctx, instance_manifest)
+    instances.apply(ctx, instance_manifest._copy_validate({"extensions": ["unaccent"]}))
     instances.restart(ctx, instance)
     config = instance.config()
     installed = get_installed_extensions()
