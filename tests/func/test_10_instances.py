@@ -238,6 +238,7 @@ def test_apply(
 ) -> None:
     port = next(tmp_port_factory)
     prometheus_port = next(tmp_port_factory)
+    temboard_port = next(tmp_port_factory)
     im = composite_instance_model(
         name="test_apply",
         version=pg_version,
@@ -246,6 +247,7 @@ def test_apply(
         state=interface.InstanceState.stopped,
         configuration={"unix_socket_directories": str(tmp_path)},
         prometheus={"port": prometheus_port},
+        temboard={"port": temboard_port},
         surole_password=surole_password,
         restart_on_changes=False,
         roles=[{"name": "bob"}],
