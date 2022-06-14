@@ -81,6 +81,7 @@ encrypted with Ansible vault:
     user@control:~$ cat << EOF | ansible-vault encrypt > pglift-vars
     postgresql_surole_password: $(openssl rand -base64 9)
     prod_bob_password: $(openssl rand -base64 9)
+    backup_role_password: $(openssl rand -base64 9)
     prometheus_role_password: $(openssl rand -base64 9)
     temboard_role_password: $(openssl rand -base64 9)
     EOF

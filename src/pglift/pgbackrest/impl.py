@@ -194,11 +194,13 @@ def init(
     ctx: "BaseContext",
     instance: "system.PostgreSQLInstance",
     settings: "PgBackRestSettings",
+    password: Optional[str],
 ) -> None:
+
     with instances.running(ctx, instance):
         role = interface.Role(
             name=ctx.settings.postgresql.backuprole,
-            password=util.generate_password(),
+            password=password,
             login=True,
             superuser=True,
             pgpass=True,

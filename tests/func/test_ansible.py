@@ -78,6 +78,7 @@ def call_playbook(
         passwords = {
             "postgresql_surole_password": "supers3kret",
             "prod_bob_password": "s3kret",
+            "backup_role_password": "b4ckup",
             "prometheus_role_password": "pr0m3th3u$",
             "temboard_role_password": "temb0@rd",
         }

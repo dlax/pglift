@@ -409,6 +409,11 @@ def powa_password() -> str:
 
 
 @pytest.fixture(scope="session")
+def pgbackrest_password() -> str:
+    return "b4ckup"
+
+
+@pytest.fixture(scope="session")
 def composite_instance_model(ctx: Context) -> Type[interface.Instance]:
     return interface.Instance.composite(ctx.pm)
 
@@ -425,6 +430,7 @@ def instance_manifest(
     pg_version: str,
     surole_password: str,
     replrole_password: str,
+    pgbackrest_password: str,
     prometheus_password: str,
     temboard_password: str,
     powa_password: str,
@@ -446,6 +452,8 @@ def instance_manifest(
             "password": temboard_password,
             "port": next(tmp_port_factory),
         }
+    if settings.pgbackrest:
+        services["pgbackrest"] = {"password": pgbackrest_password}
     return composite_instance_model.parse_obj(
         {
             "name": "test",

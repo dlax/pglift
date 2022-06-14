@@ -15,6 +15,7 @@
         surole_password: "{{ postgresql_surole_password }}"
         extensions:
           - unaccent
+        pgbackrest_password: "{{ backup_role_password }}"
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9186
         temboard_password: "{{ temboard_role_password }}"
@@ -48,6 +49,7 @@
           max_connections: 42
           unix_socket_directories: /tmp
         surole_password: "{{ postgresql_surole_password }}"
+        pgbackrest_password: "{{ backup_role_password }}"
         prometheus_password: "{{ prometheus_role_password }}"
         prometheus_port: 9189
         temboard_password: "{{ temboard_role_password }}"

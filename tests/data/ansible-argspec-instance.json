@@ -83,6 +83,13 @@
     "required": true,
     "type": "str"
   },
+  "pgbackrest_password": {
+    "description": [
+      "Password of PostgreSQL role for pgBackRest"
+    ],
+    "no_log": true,
+    "type": "str"
+  },
   "port": {
     "description": [
       "TCP port the postgresql instance will be listening to",

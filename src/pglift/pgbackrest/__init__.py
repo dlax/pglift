@@ -1,16 +1,17 @@
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Type
 
 from pgtoolkit.conf import Configuration
 
 from .. import exceptions, hookimpl
 from ..models import system
-from . import impl
+from . import impl, models
 from .impl import available as available
 from .impl import backup as backup
 from .impl import expire as expire
 from .impl import iter_backups as iter_backups
 from .impl import restore as restore
+from .models import ServiceManifest
 
 if TYPE_CHECKING:
     import click
@@ -32,6 +33,11 @@ def instance_configuration(
         return Configuration()
     instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
     return impl.postgresql_configuration(instance.qualname, settings)
+
+
+@hookimpl  # type: ignore[misc]
+def interface_model() -> Type[models.ServiceManifest]:
+    return models.ServiceManifest
 
 
 @hookimpl  # type: ignore[misc]
@@ -63,9 +69,14 @@ def instance_configure(
     impl.setup(ctx, instance.qualname, settings, config, instance.datadir)
 
     info = impl.backup_info(ctx, instance.qualname, settings)
+    service = manifest.service(ServiceManifest)
+    assert service is not None
+    password = None
+    if service.password:
+        password = service.password.get_secret_value()
     # Only initialize if the stanza does not already exist.
     if not info or info[0]["status"]["code"] == 1:
-        impl.init(ctx, instance, settings)
+        impl.init(ctx, instance, settings, password)
 
 
 @hookimpl  # type: ignore[misc]
