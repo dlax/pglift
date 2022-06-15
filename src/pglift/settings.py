@@ -442,7 +442,7 @@ class PrometheusSettings(PluginSettings):
 
     pid_file: RunPath = Field(
         default=RunPath("prometheus/{name}.pid"),
-        description="Path to directory where postgres_exporter process PID file will be written.",
+        description="Path to which postgres_exporter process PID will be written.",
     )
 
 
@@ -491,7 +491,7 @@ class TemboardSettings(PluginSettings):
 
     pid_file: RunPath = Field(
         default=RunPath("temboard-agent/temboard-agent-{name}.pid"),
-        description="Path to the PID file.",
+        description="Path to which temboard-agent process PID will be written.",
     )
 
     users_path: ConfigPath = Field(
