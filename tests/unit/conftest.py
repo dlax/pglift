@@ -152,8 +152,10 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
             ]
         )
     )
-    (instance.datadir / "pg_hba.conf").write_text("# pg_hba.conf\n")
-    (instance.datadir / "pg_ident.conf").write_text("# pg_ident.conf\n")
+    (instance.datadir / "pg_hba.conf").write_text(
+        "# pg_hba.conf\nlocal all postgres peer\n"
+    )
+    (instance.datadir / "pg_ident.conf").write_text("# pg_ident.conf\nmymap test dba\n")
     confdir = instance.datadir / "conf.pglift.d"
     confdir.mkdir()
     (confdir / "user.conf").write_text(f"bonjour = on\nbonjour_name= '{name}'\n")
