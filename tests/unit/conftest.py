@@ -113,7 +113,11 @@ def instance_manifest(
     composite_instance_model: Type[interface.Instance], pg_version: str
 ) -> interface.Instance:
     return composite_instance_model(
-        name="test", version=pg_version, extensions=["passwordcheck"]
+        name="test",
+        version=pg_version,
+        surole_password=pydantic.SecretStr("p0st.g're$"),
+        replrole_password=pydantic.SecretStr("repl1&c"),
+        extensions=["passwordcheck"],
     )
 
 
