@@ -339,6 +339,16 @@ class PostgreSQLSettings(BaseSettings):
         description="Path to directory where postgres unix socket will be written.",
     )
 
+    dumps_directory: DataPath = Field(
+        default=DataPath("dumps/{instance.version}-{instance.name}"),
+        description="Path to directory where database dumps are stored.",
+    )
+
+    dump_command: List[str] = Field(
+        default=["{bindir}/pg_dump", "-Fc", "-f", "{name}.dump", "-d", "{conninfo}"],
+        description="Command used to dump a database",
+    )
+
     def libpq_environ(
         self,
         ctx: "BaseContext",

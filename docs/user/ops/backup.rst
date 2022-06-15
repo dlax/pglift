@@ -88,6 +88,39 @@ instance is restored at its state targeted by specified label.
    pgBackRest command output. This can be achieved by setting the log-level to
    DEBUG in ``pglift`` command (e.g. ``pglift -L debug instance restore``).
 
+.. _database-dumps:
+
+Database dumps
+~~~~~~~~~~~~~~
+
+`pglift` also provides a convenient way to backup a database for an instance.
+
+Assuming we have a `main` instance running with a `myapp` database.
+
+The `database dump` command can be used as follows:
+
+.. code-block:: console
+
+    $ pglift database -i main dump myapp
+    INFO     backing up database 'myapp' on instance 14/main
+
+By default, this command runs the `pg_dump` utility and creates a dump in the
+`dumps_directory` (with a name including the current date and time).
+
+The `dumps_directory` and `dump_command` can be adjusted in the site settings
+(see :doc:`/user/setup/settings`):
+
+.. code-block:: yaml
+
+   dumps_directory: dumps/{instance.version}-{instance.name}
+   dump_command:
+     - {bindir}/pg_dump
+     - -Fc
+     - -f
+     - {name}.dump
+     - -d
+     - {conninfo}
+
 Scheduled backups
 -----------------
 

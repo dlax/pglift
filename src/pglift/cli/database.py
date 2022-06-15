@@ -204,3 +204,12 @@ def database_run(
     else:
         for dbname, rows in result.items():
             print_table_for(rows, title=f"Database {dbname}")
+
+
+@cli.command("dump")
+@click.argument("dbname")
+@pass_instance
+@pass_ctx
+def database_dump(ctx: Context, instance: system.Instance, dbname: str) -> None:
+    with instances.running(ctx, instance):
+        databases.dump(ctx, instance, dbname)

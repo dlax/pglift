@@ -1,7 +1,11 @@
 Databases backup and restore
 ----------------------------
 
-Programs ``pg_dump`` and ``pg_restore`` can be used directly through ``pglift
+`pglift` provides a streamlined way to do logical database backup.
+
+Please refer to :ref:`database dumps<database-dumps>`.
+
+Programs ``pg_dump`` and ``pg_restore`` can also be used directly through ``pglift
 instance exec`` command.
 
 .. code-block:: console

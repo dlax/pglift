@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 import psycopg.rows
@@ -263,3 +265,32 @@ def run(
             if cur.description is not None:
                 result[database.name] = cur.fetchall()
     return result
+
+
+@task("backing up database '{dbname}' on instance {instance}")
+def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -> None:
+    """dump a database of `instance` (logical backup)."""
+    if not exists(ctx, instance, dbname):
+        raise exceptions.DatabaseNotFound(dbname)
+    postgresql_settings = ctx.settings.postgresql
+
+    bindir = postgresql_settings.versions[instance.version].bindir
+    conninfo = db.dsn(
+        instance,
+        postgresql_settings,
+        dbname=dbname,
+        user=ctx.settings.postgresql.surole.name,
+    )
+
+    date = datetime.now().strftime("%Y-%d-%m-%H:%M:%S")
+    name = (
+        Path(str(postgresql_settings.dumps_directory).format(instance=instance))
+        / f"{dbname}-{date}"
+    )
+    name.parent.mkdir(exist_ok=True, parents=True)
+    cmd = [
+        c.format(bindir=bindir, name=name, conninfo=conninfo)
+        for c in postgresql_settings.dump_command
+    ]
+    env = postgresql_settings.libpq_environ(ctx, instance)
+    ctx.run(cmd, check=True, env=env)

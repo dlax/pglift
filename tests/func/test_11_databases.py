@@ -1,6 +1,8 @@
 import datetime
+import fnmatch
 import logging
 import time
+from pathlib import Path
 from typing import Iterator
 
 import pytest
@@ -250,3 +252,18 @@ def test_run_output_notices(
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "foo\n"
+
+
+def test_dump(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
+    with pytest.raises(exceptions.DatabaseNotFound, match="absent"):
+        databases.dump(ctx, instance, "absent")
+    database_factory("dbtodump")
+    databases.dump(ctx, instance, "dbtodump")
+    directory = Path(
+        str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
+    )
+    assert directory.exists()
+    (filepath,) = directory.iterdir()
+    assert fnmatch.fnmatch(str(filepath), "*dbtodump-*.dump"), filepath

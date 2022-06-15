@@ -1535,6 +1535,35 @@ def test_database_privileges(
     ]
 
 
+def test_database_dump(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, running: MagicMock
+) -> None:
+    with patch.object(
+        databases, "dump", side_effect=exceptions.DatabaseNotFound("bar")
+    ) as dump:
+        result = runner.invoke(
+            cli,
+            ["database", "-i", str(instance), "dump", "bar"],
+            obj=obj,
+        )
+    dump.assert_called_once_with(ctx, instance, "bar")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 1
+    assert result.stderr.splitlines()[-1] == "Error: database 'bar' not found"
+
+    running.reset_mock()
+
+    with patch.object(databases, "dump") as dump:
+        result = runner.invoke(
+            cli,
+            ["database", "-i", str(instance), "dump", "foo"],
+            obj=obj,
+        )
+    dump.assert_called_once_with(ctx, instance, "foo")
+    running.assert_called_once_with(ctx, instance)
+    assert result.exit_code == 0
+
+
 @pytest.mark.parametrize(
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
