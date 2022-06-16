@@ -288,23 +288,27 @@ def ctx(postgresql_auth: AuthType, settings: Settings) -> Context:
     return context
 
 
-@pytest.fixture(scope="session")
-def installed(ctx: Context, tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
-    tmp_path = tmp_path_factory.mktemp("config")
-    settings = ctx.settings
-    if settings.service_manager != "systemd":
+@pytest.fixture(scope="session", autouse=True)
+def _installed(
+    ctx: Context, systemd_requested: bool, tmp_path_factory: pytest.TempPathFactory
+) -> Iterator[None]:
+    if not systemd_requested:
         yield
         return
 
+    tmp_path = tmp_path_factory.mktemp("config")
+    settings = ctx.settings
+    assert settings.service_manager == "systemd"
+
     custom_settings = tmp_path / "settings.json"
     custom_settings.write_text(settings.json())
-    _install.do(
+    assert _install.do(
         ctx,
         env=f"SETTINGS=@{custom_settings}",
         header=f"# ** Test run on {platform.node()} at {datetime.now().isoformat()} **",
     )
     yield
-    _install.undo(ctx)
+    assert _install.undo(ctx)
 
 
 @pytest.fixture

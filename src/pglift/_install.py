@@ -87,23 +87,25 @@ def revert_postgresql_backup_systemd_templates(
     systemd.uninstall(BACKUP_TIMER_NAME, ctx.settings.systemd.unit_path, logger=logger)
 
 
-def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> None:
+def do(ctx: BaseContext, env: Optional[str] = None, header: str = "") -> bool:
     if ctx.settings.service_manager != "systemd":
         logger.warning("not using systemd as 'service_manager', skipping installation")
-        return
+        return False
     postgresql_systemd_unit_template(ctx, env=env, header=header)
     ctx.hook.install_systemd_unit_template(ctx=ctx, header=header)
     postgresql_backup_systemd_templates(ctx, env=env, header=header)
     systemd.daemon_reload(ctx)
+    return True
 
 
-def undo(ctx: BaseContext) -> None:
+def undo(ctx: BaseContext) -> bool:
     if ctx.settings.service_manager != "systemd":
         logger.warning(
             "not using systemd as 'service_manager', skipping uninstallation"
         )
-        return
+        return False
     revert_postgresql_backup_systemd_templates(ctx)
     ctx.hook.uninstall_systemd_unit_template(ctx=ctx)
     revert_postgresql_systemd_unit_template(ctx)
     systemd.daemon_reload(ctx)
+    return True
