@@ -61,7 +61,8 @@ def pytest_addoption(parser: Any) -> None:
 
 def pytest_report_header(config: Any) -> List[str]:
     pg_version = config.option.pg_version
-    return [f"postgresql: {pg_version}"]
+    systemd = config.option.systemd
+    return [f"postgresql: {pg_version}", f"systemd: {systemd}"]
 
 
 @pytest.fixture(scope="session")
