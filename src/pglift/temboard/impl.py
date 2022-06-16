@@ -188,6 +188,9 @@ def setup(
         ssl_dir = ssl_cert_file.parent
         util.generate_certificate(ssl_dir, cert_name=cert_name, key_name=key_name)
 
+    if ctx.settings.service_manager == "systemd":
+        systemd.enable(ctx, systemd_unit(instance.qualname))
+
 
 @setup.revert("deconfiguring temboard agent")
 def revert_setup(
