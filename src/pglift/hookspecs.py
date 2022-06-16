@@ -58,6 +58,15 @@ def instance_configuration(
     """Called before the PostgreSQL instance configuration is written."""
 
 
+@hookspec(firstresult=True)  # type: ignore[misc]
+def instance_init_replication(
+    ctx: "BaseContext",
+    instance: "Instance",
+    standby: "interface.Instance.Standby",
+) -> Optional[bool]:
+    """Called before PostgreSQL datadir is created for a standby."""
+
+
 @hookspec  # type: ignore[misc]
 def instance_configure(
     ctx: "BaseContext",
