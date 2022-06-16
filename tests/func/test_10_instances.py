@@ -226,7 +226,6 @@ def test_start_stop_restart_running_stopped(
     assert instances.status(ctx, i) == Status.not_running
 
 
-@pytest.mark.usefixtures("installed")
 def test_apply(
     ctx: Context,
     pg_version: str,
