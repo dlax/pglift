@@ -1,4 +1,5 @@
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
@@ -7,13 +8,13 @@ import psycopg.rows
 from pgtoolkit import conf as pgconf
 from psycopg import sql
 
-from . import db, exceptions, types
+from . import db, exceptions, hookimpl, types
 from .ctx import BaseContext
-from .models import interface
+from .models import interface, system
 from .task import task
 
 if TYPE_CHECKING:
-    from .models import system
+    from pgtoolkit.conf import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -294,3 +295,35 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
     ]
     env = postgresql_settings.libpq_environ(ctx, instance)
     ctx.run(cmd, check=True, env=env)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_configure(
+    ctx: "BaseContext",
+    manifest: "interface.Instance",
+    config: "Configuration",
+    creating: bool,
+) -> None:
+    if creating:
+        instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
+        dumps_directory = Path(
+            str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
+        )
+        dumps_directory.mkdir(parents=True, exist_ok=True)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_drop(ctx: "BaseContext", instance: "system.Instance") -> None:
+
+    dumps_directory = Path(
+        str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
+    )
+    has_dumps = False
+    if dumps_directory.exists():
+        has_dumps = next(dumps_directory.iterdir(), None) is not None
+
+    if not has_dumps or ctx.confirm(
+        f"Confirm deletion of database dump(s) for instance {instance} ?",
+        True,
+    ):
+        shutil.rmtree(dumps_directory)

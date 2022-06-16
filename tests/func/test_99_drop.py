@@ -81,6 +81,17 @@ def test_prometheus_teardown(
             requests.get("http://0.0.0.0:9187/metrics")
 
 
+def test_databases_teardown(
+    ctx: Context,
+    instance: system.Instance,
+    instance_dropped: Configuration,
+) -> None:
+    dumps_directory = pathlib.Path(
+        str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
+    )
+    assert not dumps_directory.exists()
+
+
 def test_instance(
     ctx: Context, instance: system.Instance, instance_dropped: Configuration
 ) -> None:

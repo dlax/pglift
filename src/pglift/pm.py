@@ -13,6 +13,7 @@ class PluginManager(pluggy.PluginManager):  # type: ignore[misc]
     def get(cls, no_register: Sequence[str] = ()) -> "PluginManager":
         hook_modules = (
             "instances",
+            "databases",
             "passfile",
             "backup",
             "pgbackrest",
