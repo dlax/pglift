@@ -519,6 +519,8 @@ def start(
         logger.debug("not running hooks for a foreground start")
         run_hooks = False
 
+    ctx.settings.postgresql.socket_directory.mkdir(parents=True, exist_ok=True)
+
     start_postgresql(ctx, instance, wait=wait, logfile=logfile, foreground=foreground)
 
     if run_hooks and wait:
