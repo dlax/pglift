@@ -1,4 +1,5 @@
 import argparse
+import logging
 from typing import Optional, Sequence
 
 from . import exceptions, settings
@@ -47,4 +48,5 @@ def main(
 if __name__ == "__main__":  # pragma: nocover
     import sys
 
+    logging.basicConfig(level=logging.INFO)
     sys.exit(main())

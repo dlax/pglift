@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING
 
 from . import exceptions, hookimpl, settings, systemd, types
@@ -82,4 +83,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":  # pragma: nocover
+    logging.basicConfig(level=logging.INFO)
     main()
