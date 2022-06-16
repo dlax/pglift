@@ -60,7 +60,7 @@ def pytest_addoption(parser: Any) -> None:
 
 
 def pytest_report_header(config: Any) -> List[str]:
-    pg_version = config.getoption("--pg-version")
+    pg_version = config.option.pg_version
     return [f"postgresql: {pg_version}"]
 
 
@@ -145,7 +145,7 @@ def temboard_execpath(no_plugins: bool) -> Optional[pathlib.Path]:
 
 @pytest.fixture(scope="session")
 def systemd_requested(request: Any, systemd_available: bool) -> bool:
-    value = request.config.getoption("--systemd")
+    value = request.config.option.systemd
     assert isinstance(value, bool)
     if value and not systemd_available:
         raise pytest.UsageError("systemd is not available on this system")
@@ -250,7 +250,7 @@ def settings(
 def pg_bindir(
     request: Any, postgresql_settings: PostgreSQLSettings
 ) -> Tuple[pathlib.Path, str]:
-    version = request.config.getoption("--pg-version")
+    version = request.config.option.pg_version
     if version is None:
         pytest.skip("no PostgreSQL installation found")
     assert isinstance(version, str)
