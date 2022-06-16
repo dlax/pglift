@@ -51,7 +51,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "stanza", metavar="<version>-<name>", help="instance identifier"
+        "instance", metavar="<version>-<name>", help="instance identifier"
     )
 
     def do_backup(
@@ -73,7 +73,7 @@ def main() -> None:
     args = parser.parse_args()
     ctx = Context(settings=settings.SiteSettings())
     try:
-        instance = system.PostgreSQLInstance.from_stanza(ctx, args.stanza)
+        instance = system.PostgreSQLInstance.from_qualname(ctx, args.instance)
     except ValueError as e:
         parser.error(str(e))
     except exceptions.InstanceNotFound as e:

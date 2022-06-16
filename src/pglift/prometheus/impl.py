@@ -293,7 +293,7 @@ def apply(
     :raises exceptions.InstanceStateError: if the target instance exists on system.
     """
     try:
-        system.PostgreSQLInstance.from_stanza(ctx, postgres_exporter.name)
+        system.PostgreSQLInstance.from_qualname(ctx, postgres_exporter.name)
     except (ValueError, exceptions.InstanceNotFound):
         pass
     else:

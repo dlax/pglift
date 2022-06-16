@@ -24,7 +24,7 @@ def main(
         ctx = Context(settings=settings.SiteSettings())
 
     try:
-        instance = system.PostgreSQLInstance.from_stanza(ctx, args.instance)
+        instance = system.PostgreSQLInstance.from_qualname(ctx, args.instance)
     except ValueError as e:
         parser.error(str(e))
     except InstanceNotFound as e:

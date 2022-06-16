@@ -164,8 +164,8 @@ class PostgreSQLInstance(BaseInstance):
         return Standby.system_lookup(self)
 
     @classmethod
-    def from_stanza(cls: Type[T], ctx: "BaseContext", stanza: str) -> T:
-        """Build an Instance from a '<version>-<name>' string."""
+    def from_qualname(cls: Type[T], ctx: "BaseContext", stanza: str) -> T:
+        """Lookup for an Instance by its qualified name."""
         try:
             version, name = stanza.split("-", 1)
         except ValueError:
