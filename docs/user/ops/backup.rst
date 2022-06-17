@@ -114,12 +114,12 @@ The `dumps_directory` and `dump_command` can be adjusted in the site settings
 
    dumps_directory: dumps/{instance.version}-{instance.name}
    dump_command:
-     - {bindir}/pg_dump
+     - "{bindir}/pg_dump"
      - -Fc
      - -f
-     - {path}/{dbname}-{date}.dump
+     - "{path}/{dbname}-{date}.dump"
      - -d
-     - {conninfo}
+     - "{conninfo}"
 
 Scheduled backups
 -----------------
