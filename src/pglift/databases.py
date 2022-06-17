@@ -287,13 +287,10 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
         .astimezone()
         .isoformat(timespec="seconds")
     )
-    name = (
-        Path(str(postgresql_settings.dumps_directory).format(instance=instance))
-        / f"{dbname}-{date}"
-    )
-    name.parent.mkdir(exist_ok=True, parents=True)
+    path = Path(str(postgresql_settings.dumps_directory).format(instance=instance))
+    path.parent.mkdir(exist_ok=True, parents=True)
     cmd = [
-        c.format(bindir=bindir, name=name, conninfo=conninfo)
+        c.format(bindir=bindir, path=path, conninfo=conninfo, dbname=dbname, date=date)
         for c in postgresql_settings.dump_command
     ]
     env = postgresql_settings.libpq_environ(ctx, instance)

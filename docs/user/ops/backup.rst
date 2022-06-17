@@ -117,7 +117,7 @@ The `dumps_directory` and `dump_command` can be adjusted in the site settings
      - {bindir}/pg_dump
      - -Fc
      - -f
-     - {name}.dump
+     - {path}/{dbname}-{date}.dump
      - -d
      - {conninfo}
 

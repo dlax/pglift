@@ -345,7 +345,14 @@ class PostgreSQLSettings(BaseSettings):
     )
 
     dump_command: List[str] = Field(
-        default=["{bindir}/pg_dump", "-Fc", "-f", "{name}.dump", "-d", "{conninfo}"],
+        default=[
+            "{bindir}/pg_dump",
+            "-Fc",
+            "-f",
+            "{path}/{dbname}-{date}.dump",
+            "-d",
+            "{conninfo}",
+        ],
         description="Command used to dump a database",
     )
 
