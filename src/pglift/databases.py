@@ -318,10 +318,9 @@ def instance_drop(ctx: "BaseContext", instance: "system.Instance") -> None:
     dumps_directory = Path(
         str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
     )
-    has_dumps = False
-    if dumps_directory.exists():
-        has_dumps = next(dumps_directory.iterdir(), None) is not None
-
+    if not dumps_directory.exists():
+        return
+    has_dumps = next(dumps_directory.iterdir(), None) is not None
     if not has_dumps or ctx.confirm(
         f"Confirm deletion of database dump(s) for instance {instance} ?",
         True,
