@@ -1,5 +1,5 @@
+import datetime
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
@@ -282,7 +282,11 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
         user=ctx.settings.postgresql.surole.name,
     )
 
-    date = datetime.now().strftime("%Y-%d-%m-%H:%M:%S")
+    date = (
+        datetime.datetime.now(datetime.timezone.utc)
+        .astimezone()
+        .isoformat(timespec="seconds")
+    )
     name = (
         Path(str(postgresql_settings.dumps_directory).format(instance=instance))
         / f"{dbname}-{date}"
