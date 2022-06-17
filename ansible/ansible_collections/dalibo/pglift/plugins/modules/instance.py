@@ -73,6 +73,9 @@ from ansible_collections.dalibo.pglift.plugins.module_utils.context import (
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
 )
+from ansible_collections.dalibo.pglift.plugins.module_utils.versioncheck import (
+    check_pglift_version,
+)
 
 with check_required_libs():
     import pydantic
@@ -88,6 +91,8 @@ def run_module() -> None:
     model_type = interface.Instance.composite(pm)
     argspec = helpers.argspec_from_model(model_type)
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
+
+    check_pglift_version(module)
 
     try:
         m = helpers.parse_params_as(model_type, module.params)

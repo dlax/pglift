@@ -64,6 +64,9 @@ from ansible_collections.dalibo.pglift.plugins.module_utils.context import (
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
 )
+from ansible_collections.dalibo.pglift.plugins.module_utils.versioncheck import (
+    check_pglift_version,
+)
 
 with check_required_libs():
     from pglift import instances
@@ -72,8 +75,12 @@ with check_required_libs():
 
 
 def run_module() -> None:
+
     argspec = helpers.argspec_from_model(interface.BaseInstance)
     module = AnsibleModule(argspec, supports_check_mode=True)
+
+    check_pglift_version(module)
+
     settings = SiteSettings()
     ctx = AnsibleContext(module, settings=settings)
     instance = system.PostgreSQLInstance.system_lookup(
