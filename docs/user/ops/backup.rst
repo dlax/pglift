@@ -104,7 +104,7 @@ The `database dump` command can be used as follows:
     $ pglift database -i main dump myapp
     INFO     backing up database 'myapp' on instance 14/main
 
-By default, this command runs the `pg_dump` utility and creates a dump in the
+By default, this command runs the pg_dump_ utility and creates a dump in the
 `dumps_directory` (with a name including the current date and time).
 
 The `dumps_directory` and `dump_command` can be adjusted in the site settings
@@ -120,6 +120,33 @@ The `dumps_directory` and `dump_command` can be adjusted in the site settings
      - "{path}/{dbname}-{date}.dump"
      - -d
      - "{conninfo}"
+
+Here's an example of a command that simply dumps the database in SQL format:
+
+.. code-block:: yaml
+
+   dump_command:
+     - "{bindir}/pg_dump"
+     - -f
+     - "{path}/{dbname}-{date}.sql"
+     - -d
+     - "{conninfo}"
+
+When using pg_dump_, some important information is not dumped (for example
+roles or tablespaces definitions). If this is a limitation, pg_back_ can be
+used instead:
+
+.. code-block:: yaml
+
+   dump_command:
+     - /path/to/pg_back
+     - -B
+     - "{bindir}"
+     - -b
+     - "{path}"
+     - -d
+     - "{conninfo}"
+     - "{dbname}"
 
 Scheduled backups
 -----------------
@@ -146,3 +173,5 @@ periodic backup is installed:
 
 
 .. _pgBackRest: https://pgbackrest.org/
+.. _pg_dump: https://www.postgresql.org/docs/current/app-pgdump.html
+.. _pg_back: https://https://github.com/orgrim/pg_back
