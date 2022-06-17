@@ -7,7 +7,7 @@ import subprocess
 import sys
 from logging import Logger
 from pathlib import Path
-from subprocess import PIPE
+from subprocess import PIPE, TimeoutExpired
 from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
 from . import exceptions
@@ -126,6 +126,7 @@ def run(
     check: bool = False,
     stdout_logger: Optional[Logger] = None,
     stderr_logger: Optional[Logger] = None,
+    timeout: Optional[float] = None,
     **kwargs: Any,
 ) -> CompletedProcess:
     """Run a command as a subprocess.
@@ -155,6 +156,14 @@ def run(
     Traceback (most recent call last):
         ...
     pglift.exceptions.CommandError: Command '['cat', 'doesnotexist']' returned non-zero exit status 1.
+
+    With a non-None timeout argument, a :class:`~subprocess.TimeoutExpired`
+    exception might be raised:
+
+    >>> run(["sleep", "0.1"], timeout=0.01)
+    Traceback (most recent call last):
+        ...
+    subprocess.TimeoutExpired: Command '['sleep', '0.1']' timed out after 0.01 seconds
     """
     if not args:
         raise ValueError("empty arguments sequence")
@@ -196,7 +205,14 @@ def run(
 
     async def run() -> Tuple[asyncio.subprocess.Process, str, str]:
         proc = await asyncio.create_subprocess_exec(*args, **kwargs)
-        out, err = await communicate_with(proc, input, process_stdout, process_stderr)
+        aw = communicate_with(proc, input, process_stdout, process_stderr)
+        if timeout is None:
+            out, err = await aw
+        else:
+            try:
+                out, err = await asyncio.wait_for(aw, timeout)
+            except asyncio.TimeoutError:
+                raise TimeoutExpired(args, timeout) from None
         assert proc.returncode is not None
         return proc, out, err
 
