@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
     from .ctx import BaseContext
     from .models import interface
-    from .models.system import BaseInstance, Instance
+    from .models.system import Instance, PostgreSQLInstance
     from .types import ConfigChanges, ServiceManifest
 
 hookspec = pluggy.HookspecMarker(pkgname)
@@ -37,7 +37,7 @@ def instance_cli(group: "click.Group") -> None:
 
 
 @hookspec  # type: ignore[misc]
-def system_lookup(ctx: "BaseContext", instance: "BaseInstance") -> Optional[Any]:
+def system_lookup(ctx: "BaseContext", instance: "PostgreSQLInstance") -> Optional[Any]:
     """Look up for the satellite service object on system that matches specified instance."""
 
 

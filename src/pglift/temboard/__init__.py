@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @hookimpl  # type: ignore[misc]
 def system_lookup(
-    ctx: "BaseContext", instance: "system.BaseInstance"
+    ctx: "BaseContext", instance: "system.PostgreSQLInstance"
 ) -> Optional[models.Service]:
     settings = available(ctx)
     assert settings is not None
