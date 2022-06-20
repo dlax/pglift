@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Iterator, Tuple, Type
+from typing import Dict, Iterator, Optional, Tuple, Type
 
 import pytest
 import requests
@@ -20,7 +20,7 @@ from .conftest import DatabaseFactory, RoleFactory
 
 
 @pytest.fixture(scope="session", autouse=True)
-def prometheus_available(prometheus_execpath: bool) -> None:
+def prometheus_available(prometheus_execpath: Optional[Path]) -> None:
     if not prometheus_execpath:
         pytest.skip("prometheus is not available")
 
