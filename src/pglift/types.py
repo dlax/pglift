@@ -28,8 +28,10 @@ from ._compat import Protocol, TypeAlias, TypedDict
 
 if TYPE_CHECKING:
     CompletedProcess = subprocess.CompletedProcess[str]
+    Popen = subprocess.Popen[str]
 else:
     CompletedProcess = subprocess.CompletedProcess
+    Popen = subprocess.Popen
 
 
 class StrEnum(str, enum.Enum):

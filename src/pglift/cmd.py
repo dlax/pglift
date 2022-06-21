@@ -8,11 +8,12 @@ import sys
 from logging import Logger
 from pathlib import Path
 from subprocess import PIPE, TimeoutExpired
-from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
+from types import TracebackType
+from typing import Any, Callable, Mapping, Optional, Sequence, Tuple, Type
 
 from . import exceptions
 from ._compat import shlex_join
-from .types import AutoStrEnum, CompletedProcess
+from .types import AutoStrEnum, CompletedProcess, Popen
 
 
 async def process_stream_with(
@@ -269,15 +270,7 @@ def status_program(pidfile: Path) -> Status:
     return Status.not_running
 
 
-def start_program(
-    cmd: Sequence[str],
-    pidfile: Path,
-    *,
-    timeout: float = 1,
-    env: Optional[Mapping[str, str]] = None,
-    capture_output: bool = True,
-    logger: Optional[Logger] = None,
-) -> None:
+class Program:
     """Start program described by 'cmd' and store its PID in 'pidfile'.
 
     This is aimed at starting daemon programs.
@@ -285,44 +278,92 @@ def start_program(
     :raises ~exceptions.SystemError: if the program is already running.
     :raises ~exceptions.CommandError: in case program execution terminates
         after `timeout`.
+
+    When used as a context manager, any exception raised within the block will
+    trigger program termination at exit. This can be used to perform sanity
+    checks shortly after program startup.
     """
-    prog = cmd[0]
-    status = status_program(pidfile)
-    if status in (Status.running, Status.dangling):
-        pid = pidfile.read_text()
-        if status == Status.running:
-            raise exceptions.SystemError(
-                f"program {prog} seems to be running already with PID {pid}"
-            )
-        elif status == Status.dangling:
-            if logger:
-                logger.warning(
-                    "program %s is supposed to be running with PID %s but "
-                    "it's apparently not; starting anyway",
-                    prog,
-                    pid,
+
+    def __init__(
+        self,
+        cmd: Sequence[str],
+        pidfile: Path,
+        *,
+        timeout: float = 1,
+        env: Optional[Mapping[str, str]] = None,
+        capture_output: bool = True,
+        logger: Optional[Logger] = None,
+    ) -> None:
+        self.pidfile = pidfile
+        self._logger = logger
+        self.proc = self._start(
+            cmd, timeout=timeout, env=env, capture_output=capture_output
+        )
+
+    def _start(
+        self,
+        cmd: Sequence[str],
+        *,
+        timeout: float = 1,
+        env: Optional[Mapping[str, str]] = None,
+        capture_output: bool = True,
+    ) -> Popen:
+        pidfile = self.pidfile
+        logger = self._logger
+        prog = cmd[0]
+        status = status_program(self.pidfile)
+        if status in (Status.running, Status.dangling):
+            pid = pidfile.read_text()
+            if status == Status.running:
+                raise exceptions.SystemError(
+                    f"program {prog} seems to be running already with PID {pid}"
                 )
-            pidfile.unlink()
-    stdout = stderr = None
-    if capture_output:
-        stdout = stderr = subprocess.PIPE
-    if logger:
-        logger.debug("%s", shlex_join(cmd))
-    proc = subprocess.Popen(  # nosec
-        cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
-    )
-    try:
-        __, errs = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        pidfile.parent.mkdir(parents=True, exist_ok=True)
-        pidfile.write_text(str(proc.pid))
-        return None
-    else:
-        if capture_output and logger:
-            assert errs is not None
-            for errline in errs.splitlines():
-                logger.error("%s: %s", prog, errline)
-        raise exceptions.CommandError(proc.returncode, cmd, stderr=errs)
+            elif status == Status.dangling:
+                if logger:
+                    logger.warning(
+                        "program %s is supposed to be running with PID %s but "
+                        "it's apparently not; starting anyway",
+                        prog,
+                        pid,
+                    )
+                pidfile.unlink()
+        stdout = stderr = None
+        if capture_output:
+            stdout = stderr = subprocess.PIPE
+        if logger:
+            logger.debug("%s", shlex_join(cmd))
+        proc = subprocess.Popen(  # nosec
+            cmd, stdout=stdout, stderr=stderr, env=env, universal_newlines=True
+        )
+        try:
+            __, errs = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            pidfile.parent.mkdir(parents=True, exist_ok=True)
+            pidfile.write_text(str(proc.pid))
+            return proc
+        else:
+            if capture_output and logger:
+                assert errs is not None
+                for errline in errs.splitlines():
+                    logger.error("%s: %s", prog, errline)
+            raise exceptions.CommandError(proc.returncode, cmd, stderr=errs)
+
+    def __enter__(self) -> "Program":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: BaseException,
+        traceback: Optional[TracebackType],
+    ) -> None:
+        if exc_value is not None:
+            if self._logger:
+                cmd = shlex_join(self.proc.args)  # type: ignore[arg-type]
+                self._logger.warning("terminating program '%s'", cmd)
+            self.proc.terminate()
+            self.pidfile.unlink()
+            raise exc_value
 
 
 def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None:

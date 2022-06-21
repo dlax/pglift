@@ -258,7 +258,7 @@ def start(
             if cmd.status_program(pidfile) == cmd.Status.running:
                 logger.debug("temboard-agent '%s' is already running", name)
                 return
-            cmd.start_program(args, pidfile, logger=logger)
+            cmd.Program(args, pidfile, logger=logger)
 
 
 @task("stopping temboard-agent service")

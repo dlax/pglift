@@ -31,11 +31,14 @@ def test_start_program_terminate_program_status_program(
     logger = logging.getLogger(__name__)
 
     pidfile = tmp_path / "sleep" / "pid"
-    cmd.start_program(
+    p = cmd.Program(
         ["sleep", "10"], pidfile, timeout=0.01, env={"X_DEBUG": "1"}, logger=logger
     )
+    assert p.pidfile == pidfile
     with pidfile.open() as f:
         pid = f.read()
+
+    assert p.proc.pid == int(pid)
 
     proc = Path("/proc") / pid
     assert proc.exists()
@@ -45,7 +48,7 @@ def test_start_program_terminate_program_status_program(
     assert cmd.status_program(pidfile) == cmd.Status.running
 
     with pytest.raises(SystemError, match="running already"):
-        cmd.start_program(["sleep", "10"], pidfile, logger=logger)
+        cmd.Program(["sleep", "10"], pidfile, logger=logger)
 
     cmd.terminate_program(pidfile, logger=logger)
     r = subprocess.run(["pgrep", pid], check=False)
@@ -58,7 +61,7 @@ def test_start_program_terminate_program_status_program(
     assert cmd.status_program(pidfile) == cmd.Status.dangling
     caplog.clear()
     with pytest.raises(CommandError), caplog.at_level(logging.WARNING, logger=__name__):
-        cmd.start_program(
+        cmd.Program(
             ["sleep", "well"], pidfile, logger=logger, env={"LANG": "C", "LC_ALL": "C"}
         )
     assert not pidfile.exists()
@@ -70,3 +73,17 @@ def test_start_program_terminate_program_status_program(
     with caplog.at_level(logging.WARNING, logger=__name__):
         cmd.terminate_program(pidfile, logger=logger)
     assert f"program from {pidfile} not running" in caplog.records[0].message
+
+
+def test_program_context(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    logger = logging.getLogger(__name__)
+    pidfile = tmp_path / "pid"
+    with pytest.raises(ValueError, match="expected"), caplog.at_level(
+        logging.WARNING, logger=__name__
+    ):
+        with cmd.Program(["sleep", "5"], pidfile, timeout=0.001, logger=logger) as prog:
+            assert pidfile.exists()
+            assert not prog.proc.poll()
+            raise ValueError("expected")
+    assert "terminating program 'sleep 5'" in caplog.messages
+    assert not pidfile.exists()

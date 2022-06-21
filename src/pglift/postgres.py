@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Sequence
 
 from . import exceptions, settings
-from .cmd import start_program
+from .cmd import Program
 from .ctx import Context
 from .exceptions import InstanceNotFound
 from .models import system
@@ -38,7 +38,7 @@ def main(
         / f"postgresql-{instance.version}-{instance.name}.pid"
     )
     try:
-        start_program(cmd, pidfile, capture_output=False)
+        Program(cmd, pidfile, capture_output=False)
     except exceptions.CommandError:
         return 1
     else:

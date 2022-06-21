@@ -261,7 +261,7 @@ def start(
             if cmd.status_program(pidfile) == cmd.Status.running:
                 logger.debug("postgres_exporter '%s' is already running", name)
                 return
-            cmd.start_program(args, pidfile, env=env, logger=logger)
+            cmd.Program(args, pidfile, env=env, logger=logger)
 
 
 @task("stopping postgres_exporter service")
