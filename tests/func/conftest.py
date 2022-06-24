@@ -409,6 +409,7 @@ def log_directory(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
 
 @pytest.fixture(scope="session")
 def instance_manifest(
+    settings: Settings,
     ctx: Context,
     pg_version: str,
     surole_password: str,
@@ -421,8 +422,19 @@ def instance_manifest(
     composite_instance_model: Type[interface.Instance],
 ) -> interface.Instance:
     port = next(tmp_port_factory)
-    prometheus_port = next(tmp_port_factory)
-    temboard_port = next(tmp_port_factory)
+    services = {}
+    if settings.prometheus:
+        services["prometheus"] = {
+            "port": next(tmp_port_factory),
+            "password": prometheus_password,
+        }
+    if settings.powa:
+        services["powa"] = {"password": powa_password}
+    if settings.temboard:
+        services["temboard"] = {
+            "password": temboard_password,
+            "port": next(tmp_port_factory),
+        }
     return composite_instance_model.parse_obj(
         {
             "name": "test",
@@ -440,15 +452,7 @@ def instance_manifest(
             "surole_password": surole_password,
             "replrole_password": replrole_password,
             "extensions": ["passwordcheck"],
-            "prometheus": {
-                "password": prometheus_password,
-                "port": prometheus_port,
-            },
-            "powa": {"password": powa_password},
-            "temboard": {
-                "password": temboard_password,
-                "port": temboard_port,
-            },
+            **services,
         }
     )
 
