@@ -22,10 +22,17 @@ else:
         return " ".join(shlex.quote(arg) for arg in split_command)
 
 
+if pyversion >= (3, 10):
+    from typing import TypeAlias  # type: ignore[attr-defined]
+else:
+    from typing_extensions import TypeAlias
+
+
 __all__ = [
     "Final",
     "Literal",
     "Protocol",
+    "TypeAlias",
     "TypedDict",
     "version",
 ]

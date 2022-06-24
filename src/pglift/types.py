@@ -24,7 +24,7 @@ import yaml
 from pgtoolkit import conf as pgconf
 from pydantic import BaseModel, SecretStr
 
-from ._compat import Protocol, TypedDict
+from ._compat import Protocol, TypeAlias, TypedDict
 
 if TYPE_CHECKING:
     CompletedProcess = subprocess.CompletedProcess[str]
@@ -66,7 +66,9 @@ class CommandRunner(Protocol):
         ...
 
 
-ConfigChanges = Dict[str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]]
+ConfigChanges: TypeAlias = Dict[
+    str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]
+]
 
 
 class Extension(AutoStrEnum):
