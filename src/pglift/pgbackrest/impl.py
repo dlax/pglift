@@ -3,7 +3,6 @@ import datetime
 import json
 import os
 import re
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union, overload
 
@@ -182,15 +181,13 @@ def revert_setup(
         configpath.unlink()
 
     if lockpath.exists():
-        shutil.rmtree(lockpath)
+        ctx.rmtree(lockpath)
 
     if spoolpath.exists():
-        shutil.rmtree(spoolpath)
+        ctx.rmtree(spoolpath)
 
-    try:
-        shutil.rmtree(directory)
-    except FileNotFoundError:
-        pass
+    if directory.exists():
+        ctx.rmtree(directory)
 
     configdir = instance.datadir
     confd = conf_info(configdir)[0]

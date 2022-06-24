@@ -1,7 +1,5 @@
-import shutil
-from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from pgtoolkit import conf as pgconf
 
@@ -9,6 +7,7 @@ from . import __name__ as pkgname
 from . import exceptions
 
 if TYPE_CHECKING:
+    from .ctx import BaseContext
     from .models.system import BaseInstance
 
 
@@ -68,28 +67,19 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     return config
 
 
-F = Callable[["BaseInstance", Path], None]
-
-
-def absolute_path(fn: F) -> F:
-    @wraps(fn)
-    def wrapper(instance: "BaseInstance", path: Path) -> None:
-        if not path.is_absolute():
-            path = instance.datadir / path
-        return fn(instance, path)
-
-    return cast(F, wrapper)
-
-
-@absolute_path
 def create_log_directory(instance: "BaseInstance", path: Path) -> None:
+    if not path.is_absolute():
+        path = instance.datadir / path
     path.mkdir(parents=True, exist_ok=True)
 
 
-@absolute_path
-def remove_log_directory(instance: "BaseInstance", path: Path) -> None:
+def remove_log_directory(
+    ctx: "BaseContext", instance: "BaseInstance", path: Path
+) -> None:
+    if not path.is_absolute():
+        path = instance.datadir / path
     if path.exists():
-        shutil.rmtree(path)
+        ctx.rmtree(path)
 
 
 def merge_lists(first: str, second: str) -> str:

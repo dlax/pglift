@@ -4,6 +4,7 @@ from typing import Any, Tuple
 import pytest
 
 from pglift import conf
+from pglift.ctx import Context
 from pglift.models.system import Instance
 from pglift.settings import Settings
 
@@ -41,12 +42,14 @@ def log_directory(
         return path, path
 
 
-def test_log_directory(instance: Instance, log_directory: Tuple[Path, Path]) -> None:
+def test_log_directory(
+    ctx: Context, instance: Instance, log_directory: Tuple[Path, Path]
+) -> None:
     log_dir, abs_log_dir = log_directory
     assert not abs_log_dir.exists()
     conf.create_log_directory(instance, log_dir)
     assert abs_log_dir.exists()
-    conf.remove_log_directory(instance, log_dir)
+    conf.remove_log_directory(ctx, instance, log_dir)
     assert not abs_log_dir.exists()
     assert abs_log_dir.parent.exists()
-    conf.remove_log_directory(instance, log_dir)  # no-op
+    conf.remove_log_directory(ctx, instance, log_dir)  # no-op

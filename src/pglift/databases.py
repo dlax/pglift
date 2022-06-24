@@ -1,5 +1,4 @@
 import logging
-import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
@@ -325,4 +324,4 @@ def instance_drop(ctx: "BaseContext", instance: "system.Instance") -> None:
         f"Confirm deletion of database dump(s) for instance {instance} ?",
         True,
     ):
-        shutil.rmtree(dumps_directory)
+        ctx.rmtree(dumps_directory)

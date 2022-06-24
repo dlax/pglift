@@ -1,7 +1,9 @@
 import logging
+import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from types import TracebackType
+from typing import Any, Optional, Sequence, Tuple, Type
 
 from . import cmd, plugin_manager, util
 from ._compat import shlex_join
@@ -30,6 +32,21 @@ class BaseContext(ABC):
     ) -> CompletedProcess:
         """Execute a system command using chosen implementation."""
         ...
+
+    def rmtree(self, path: Path, ignore_errors: bool = False) -> None:
+        def log(
+            func: Any,
+            thispath: Any,
+            exc_info: Tuple[Type[BaseException], BaseException, TracebackType],
+        ) -> None:
+            logger.warning(
+                "failed to delete %s during tree deletion of %s: %s",
+                thispath,
+                path,
+                exc_info[1],
+            )
+
+        shutil.rmtree(path, ignore_errors=ignore_errors, onerror=log)
 
     def confirm(self, message: str, default: bool) -> bool:
         """Possible ask for confirmation of an action before running.

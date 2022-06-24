@@ -1,7 +1,6 @@
 import configparser
 import json
 import logging
-import shutil
 import socket
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -216,10 +215,9 @@ def revert_setup(
     pidfile = _pidfile(instance.qualname, settings)
     if pidfile.exists():
         pidfile.unlink()
-    try:
-        shutil.rmtree(_homedir(instance.qualname, settings))
-    except FileNotFoundError:
-        pass
+    homedir = _homedir(instance.qualname, settings)
+    if homedir.exists():
+        ctx.rmtree(homedir)
     ssl_cert_file = _ssl_cert_file(instance.qualname, settings)
     if ssl_cert_file.exists():
         ssl_cert_file.unlink()
