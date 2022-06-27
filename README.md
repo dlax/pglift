@@ -11,8 +11,11 @@ concern backup, monitoring, high-availability or migration.
 The project aims at supporting several tools for each category. At the moment,
 supported tools are:
 
-* Backup: pgBackRest
-* Monitoring: Prometheus postgres\_exporter
+* Backup: [pgBackRest][]
+* Monitoring: [Prometheus postgres\_exporter][]
+
+[pgBackRest]: https://pgbackrest.org/
+[Prometheus postgres\_exporter]: https://github.com/prometheus-community/postgres_exporter
 
 # Status
 
