@@ -14,6 +14,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     Set,
     Tuple,
@@ -113,7 +114,7 @@ def _(value: Dict[str, Any]) -> str:
 
 
 def print_table_for(
-    items: Iterable[Dict[str, Dict[str, Any]]],
+    items: Iterable[Mapping[str, Any]],
     title: Optional[str] = None,
     *,
     display: Callable[[RenderableType], None] = rich.print,
