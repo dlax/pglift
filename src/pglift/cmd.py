@@ -344,7 +344,7 @@ def terminate_program(pidfile: Path, *, logger: Optional[Logger] = None) -> None
 
     pid = int(pidfile.read_text())
     if logger:
-        logger.info("terminating process %d", pid)
+        logger.debug("terminating process %d", pid)
     try:
         os.kill(pid, signal.SIGTERM)
     except ProcessLookupError as e:
