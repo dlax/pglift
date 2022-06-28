@@ -72,7 +72,7 @@ def test_init_version_not_available(ctx: Context) -> None:
 def test_init_force_data_checksums(
     ctx: Context, pg_version: str, data_checksums: bool
 ) -> None:
-    assert ctx.settings.postgresql.initdb.data_checksums is False
+    assert ctx.settings.postgresql.initdb.data_checksums is None
     manifest = interface.Instance(
         name="checksums", version=pg_version, data_checksums=data_checksums
     )

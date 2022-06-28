@@ -150,16 +150,7 @@ def init(ctx: "BaseContext", manifest: interface.Instance) -> None:
         "auth_local": "trust",
         "auth_host": "reject",
     }
-    locale = manifest.locale or initdb_settings.locale
-    if locale is not None:
-        opts["locale"] = locale
-    encoding = manifest.encoding or initdb_settings.encoding
-    if encoding is not None:
-        opts["encoding"] = encoding
-    if manifest.data_checksums or (
-        manifest.data_checksums is None and initdb_settings.data_checksums
-    ):
-        opts["data_checksums"] = True
+    opts.update(manifest.initdb_options(initdb_settings).dict(exclude_none=True))
 
     surole_password = manifest.surole(ctx.settings).password
     if surole_password:
@@ -833,7 +824,7 @@ def apply(
 
     configure_options = instance.configuration or {}
     configure_options["port"] = instance.port
-    locale = instance.locale or ctx.settings.postgresql.initdb.locale
+    locale = instance.initdb_options(ctx.settings.postgresql.initdb).locale
     if locale:
         for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
             configure_options.setdefault(key, locale)

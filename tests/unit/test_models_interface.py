@@ -71,6 +71,21 @@ def test_instance_pg_ident(
     assert actual == expected
 
 
+def test_instance_initdb_options(
+    settings: Settings, instance_manifest: interface.Instance
+) -> None:
+    initdb_settings = settings.postgresql.initdb
+    assert instance_manifest.initdb_options(initdb_settings) == initdb_settings
+    assert instance_manifest.copy(
+        update={"locale": "X", "data_checksums": True}
+    ).initdb_options(initdb_settings) == initdb_settings.copy(
+        update={"locale": "X", "data_checksums": True}
+    )
+    assert instance_manifest.copy(update={"data_checksums": None}).initdb_options(
+        initdb_settings.copy(update={"data_checksums": True})
+    ) == initdb_settings.copy(update={"data_checksums": True})
+
+
 def test_privileges_sorted() -> None:
     p = interface.Privilege(
         database="postgres",

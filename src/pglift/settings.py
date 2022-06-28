@@ -257,8 +257,8 @@ class InitdbSettings(BaseSettings):
         default="UTF8", description="Instance encoding as used by initdb."
     )
 
-    data_checksums: bool = Field(
-        default=False, description="Use checksums on data pages."
+    data_checksums: Optional[bool] = Field(
+        default=None, description="Use checksums on data pages."
     )
 
 

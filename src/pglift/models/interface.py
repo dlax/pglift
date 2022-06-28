@@ -548,6 +548,18 @@ class Instance(BaseInstance):
             sysuser=ctx.settings.sysuser[0],
         )
 
+    def initdb_options(self, base: settings.InitdbSettings) -> settings.InitdbSettings:
+        data_checksums: Union[None, Literal[True]] = {
+            True: True,
+            False: None,
+            None: base.data_checksums or None,
+        }[self.data_checksums]
+        return settings.InitdbSettings(
+            locale=self.locale or base.locale,
+            encoding=self.encoding or base.encoding,
+            data_checksums=data_checksums,
+        )
+
 
 class InstanceBackup(Manifest):
     label: str
