@@ -288,7 +288,6 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
         .isoformat(timespec="seconds")
     )
     path = Path(str(postgresql_settings.dumps_directory).format(instance=instance))
-    path.parent.mkdir(exist_ok=True, parents=True)
     cmd = [
         c.format(bindir=bindir, path=path, conninfo=conninfo, dbname=dbname, date=date)
         for c in postgresql_settings.dump_command
