@@ -302,26 +302,8 @@ def configure(
     if spl:
         confitems["shared_preload_libraries"] = spl
 
-    def format_values(
-        confitems: Dict[str, Any], memtotal: float = util.total_memory()
-    ) -> None:
-        for k in ("shared_buffers", "effective_cache_size"):
-            try:
-                v = confitems[k]
-            except KeyError:
-                continue
-            if v is None:
-                continue
-            try:
-                confitems[k] = util.percent_memory(v, memtotal)
-            except ValueError:
-                pass
-        for k, v in confitems.items():
-            if isinstance(v, str):
-                confitems[k] = v.format(settings=ctx.settings.postgresql)
-
-    format_values(confitems)
-    format_values(site_confitems)
+    conf.format_values(confitems, ctx.settings.postgresql)
+    conf.format_values(site_confitems, ctx.settings.postgresql)
 
     def make_config(
         fpath: Path, items: Dict[str, Optional[pgconf.Value]]

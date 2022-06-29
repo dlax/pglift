@@ -1,14 +1,15 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from pgtoolkit import conf as pgconf
 
 from . import __name__ as pkgname
-from . import exceptions
+from . import exceptions, util
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
     from .models.system import BaseInstance
+    from .settings import PostgreSQLSettings
 
 
 def make(instance: str, **confitems: Optional[pgconf.Value]) -> pgconf.Configuration:
@@ -98,3 +99,24 @@ def merge_lists(first: str, second: str) -> str:
     first_list = [s.strip() for s in first.split(",") if s.strip()]
     second_list = [s.strip() for s in second.split(",") if s.strip()]
     return ", ".join(first_list + [s for s in second_list if s not in first_list])
+
+
+def format_values(
+    confitems: Dict[str, Any],
+    settings: "PostgreSQLSettings",
+    memtotal: float = util.total_memory(),
+) -> None:
+    for k in ("shared_buffers", "effective_cache_size"):
+        try:
+            v = confitems[k]
+        except KeyError:
+            continue
+        if v is None:
+            continue
+        try:
+            confitems[k] = util.percent_memory(v, memtotal)
+        except ValueError:
+            pass
+    for k, v in confitems.items():
+        if isinstance(v, str):
+            confitems[k] = v.format(settings=settings)
