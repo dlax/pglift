@@ -292,6 +292,25 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
     env = postgresql_settings.libpq_environ(ctx, instance)
     ctx.run(cmd, check=True, env=env)
 
+    manifest = path / f"{dbname}_{date}.manifest"
+    manifest.touch()
+    manifest.write_text("# File created by pglift to keep track of database dumps\n")
+
+
+def list_dumps(
+    ctx: BaseContext, instance: "system.PostgreSQLInstance", dbnames: Sequence[str] = ()
+) -> List[interface.DatabaseDump]:
+    postgresql_settings = ctx.settings.postgresql
+    path = Path(str(postgresql_settings.dumps_directory).format(instance=instance))
+    dumps = (
+        x.stem.rsplit("_", 1) for x in sorted(path.glob("*.manifest")) if x.is_file()
+    )
+    return [
+        interface.DatabaseDump(dbname=dbname, date=date)
+        for dbname, date in dumps
+        if not dbnames or dbname in dbnames
+    ]
+
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(

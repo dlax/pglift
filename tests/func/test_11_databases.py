@@ -265,5 +265,23 @@ def test_dump(
         str(ctx.settings.postgresql.dumps_directory).format(instance=instance)
     )
     assert directory.exists()
-    (filepath,) = directory.iterdir()
-    assert fnmatch.fnmatch(str(filepath), "*dbtodump_*.dump"), filepath
+    (dumpfile, manifest) = sorted(directory.iterdir())
+    assert fnmatch.fnmatch(str(dumpfile), "*dbtodump_*.dump"), dumpfile
+    assert fnmatch.fnmatch(str(manifest), "*dbtodump_*.manifest"), manifest
+
+
+def test_list_dumps(
+    ctx: Context, instance: system.Instance, database_factory: DatabaseFactory
+) -> None:
+    database_factory("dbtodump")
+    databases.dump(ctx, instance, "dbtodump")
+    dumps = databases.list_dumps(ctx, instance)
+    dbnames = [d.dbname for d in dumps]
+    assert "dbtodump" in dbnames
+
+    dumps = databases.list_dumps(ctx, instance, dbnames=("dbtodump",))
+    dbnames = [d.dbname for d in dumps]
+    assert "dbtodump" in dbnames
+
+    dumps = databases.list_dumps(ctx, instance, dbnames=("otherdb",))
+    assert dumps == []

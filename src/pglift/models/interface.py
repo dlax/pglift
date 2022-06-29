@@ -228,6 +228,11 @@ class Database(Manifest):
     )
 
 
+class DatabaseDump(Manifest):
+    dbname: str
+    date: datetime
+
+
 class Instance(BaseInstance):
     """PostgreSQL instance"""
 

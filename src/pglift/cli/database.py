@@ -214,3 +214,19 @@ def database_dump(ctx: Context, instance: system.Instance, dbname: str) -> None:
     """Dump a database"""
     with instances.running(ctx, instance):
         databases.dump(ctx, instance, dbname)
+
+
+@cli.command("dumps")
+@click.argument("dbname", nargs=-1)
+@as_json_option
+@pass_instance
+@pass_ctx
+def database_dumps(
+    ctx: Context, instance: system.Instance, dbname: Sequence[str], as_json: bool
+) -> None:
+    """List the database dumps"""
+    dumps = databases.list_dumps(ctx, instance, dbnames=dbname)
+    if as_json:
+        print_json_for((i.dict(by_alias=True) for i in dumps))
+    else:
+        print_table_for((i.dict(by_alias=True) for i in dumps))

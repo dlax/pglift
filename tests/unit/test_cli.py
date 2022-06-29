@@ -1571,6 +1571,24 @@ def test_database_dump(
     assert result.exit_code == 0
 
 
+def test_database_dumps(
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+) -> None:
+    d = datetime.datetime(2002, 3, 11)
+    expected_list_as_json = [{"dbname": "mydb", "date": d.isoformat()}]
+    with patch.object(
+        databases,
+        "list_dumps",
+        return_value=[interface.DatabaseDump(dbname="mydb", date=d)],
+    ) as dumps:
+        result = runner.invoke(
+            cli, ["database", "-i", str(instance), "dumps", "mydb", "--json"], obj=obj
+        )
+    dumps.assert_called_once_with(ctx, instance, dbnames=("mydb",))
+    assert result.exit_code == 0
+    assert json.loads(result.output) == expected_list_as_json
+
+
 @pytest.mark.parametrize(
     ("action", "kwargs"),
     [("start", {"foreground": False}), ("stop", {})],
