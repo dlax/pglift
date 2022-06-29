@@ -233,14 +233,12 @@ def configure(
     _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf."""
-    configgen = configuration(
-        ctx, manifest, values=values, run_hooks=run_hooks, _creating=_creating
-    )
+    configgen = configuration(ctx, manifest, values=values)
     while True:
         try:
             path, content, mode = next(configgen)
         except StopIteration as e:
-            changes = e.value
+            changes, config = e.value
             break
         else:
             if content is None:  # directory
@@ -252,6 +250,15 @@ def configure(
                 if mode is not None:
                     path.touch(mode=mode)
                 path.write_text(content)
+
+    if run_hooks:
+        ctx.hook.instance_configure(
+            ctx=ctx,
+            manifest=manifest,
+            config=config,
+            changes=changes,
+            creating=_creating,
+        )
 
     if not _creating:
         sys_instance = system.Instance.system_lookup(
@@ -267,15 +274,13 @@ def configuration(
     manifest: interface.Instance,
     *,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
-    run_hooks: bool = True,
-    _creating: bool = False,
-) -> Generator[ConfigItem, None, ConfigChanges]:
+) -> Generator[ConfigItem, None, Tuple[ConfigChanges, pgconf.Configuration]]:
     """Generator of configuration items (path, content, mode).
 
     If 'content' is not None, 'path' is a file where 'content' should be
     written to. Otherwise, it's a directory.
 
-    Return the configuration changes.
+    Return the configuration changes and merged configuration.
 
     `manifest.ssl` parameter controls SSL configuration. If False, SSL is not
     enabled. If True, a self-signed certificate is generated. A tuple of two
@@ -368,33 +373,20 @@ def configuration(
         return config, changes
 
     site_config, site_changes = make_config(site_conffile, site_confitems)
+    if site_changes:
+        yield site_conffile, "\n".join(site_config.lines), None
+
     user_config, changes = make_config(user_conffile, confitems)
+    if changes:
+        yield user_conffile, "\n".join(user_config.lines), None
 
-    def gen_configs() -> Iterator[Tuple[Path, str, Optional[int]]]:
-        if site_changes:
-            yield site_conffile, "\n".join(site_config.lines), None
-        if changes:
-            yield user_conffile, "\n".join(user_config.lines), None
-
-    if _creating:
-        yield from gen_configs()
     i_config = site_config + user_config
-    if run_hooks:
-        ctx.hook.instance_configure(
-            ctx=ctx,
-            manifest=manifest,
-            config=i_config,
-            changes=changes,
-            creating=_creating,
-        )
-    if not _creating:
-        yield from gen_configs()
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         yield conf.log_directory(sys_instance, logdir), None, None
 
-    return changes
+    return changes, i_config
 
 
 @contextlib.contextmanager
