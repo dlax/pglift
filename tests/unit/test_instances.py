@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import re
+import stat
 from typing import Any
 from unittest.mock import patch
 
@@ -192,8 +193,12 @@ def test_configure(
     changes = instances.configure(ctx, instance_manifest._copy_validate({"ssl": True}))
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
-    assert (configdir / "server.crt").exists()
-    assert (configdir / "server.key").exists()
+    crt = configdir / "server.crt"
+    key = configdir / "server.key"
+    assert crt.exists()
+    assert key.exists()
+    assert stat.filemode(crt.stat().st_mode) == "-rw-------"
+    assert stat.filemode(key.stat().st_mode) == "-rw-------"
 
     ssl = (cert_file, key_file) = (
         instance.datadir / "c.crt",

@@ -1,4 +1,5 @@
 import configparser
+import functools
 import json
 import logging
 import socket
@@ -184,8 +185,14 @@ def setup(
         with configpath.open("w") as configfile:
             cp.write(configfile)
     if not ssl_cert_file.exists() or not ssl_key_file.exists():
+        crt, key = util.generate_certificate(
+            run_command=functools.partial(ctx.run, log_output=False)
+        )
         ssl_dir = ssl_cert_file.parent
-        util.generate_certificate(ssl_dir, cert_name=cert_name, key_name=key_name)
+        for fname, content in [(cert_name, crt), (key_name, key)]:
+            fpath = ssl_dir / fname
+            fpath.touch(0o600)
+            fpath.write_text(content)
 
     if ctx.settings.service_manager == "systemd":
         systemd.enable(ctx, systemd_unit(instance.qualname))

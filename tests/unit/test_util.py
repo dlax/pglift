@@ -1,4 +1,3 @@
-import stat
 import string
 from pathlib import Path
 
@@ -43,15 +42,10 @@ def test_dist_config() -> None:
     assert pg_hba.parent == util.datapath / "postgresql"
 
 
-def test_gen_certificate(tmp_path: Path) -> None:
-
-    util.generate_certificate(tmp_path)
-    crt = tmp_path / "server.crt"
-    key = tmp_path / "server.key"
-    assert crt.exists()
-    assert key.exists()
-    assert stat.filemode(crt.stat().st_mode) == "-rw-------"
-    assert stat.filemode(key.stat().st_mode) == "-rw-------"
+def test_gen_certificate() -> None:
+    crt, key = util.generate_certificate()
+    assert crt.splitlines()[-1] == "-----END CERTIFICATE-----"
+    assert key.splitlines()[-1] == "-----END RSA PRIVATE KEY-----"
 
 
 def test_total_memory(meminfo: Path) -> None:

@@ -3,7 +3,7 @@ import secrets
 import string
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import humanize
 
@@ -80,43 +80,37 @@ def with_header(content: str, header: str) -> str:
     return content
 
 
-def generate_certificate(
-    configdir: Path,
-    *,
-    run_command: CommandRunner = cmd.run,
-    cert_name: str = "server.crt",
-    key_name: str = "server.key",
-) -> None:
-    """Generate a self-signed certificate instance in
-    `configdir`.
-    """
-    certfile = configdir / cert_name
-    keyfile = configdir / key_name
-    run_command(["openssl", "genrsa", "-out", str(keyfile), "2048"], check=True)
-    keyfile.chmod(0o600)
-    out = run_command(
-        ["openssl", "req", "-new", "-text", "-key", str(keyfile), "-batch"],
-        check=True,
-    ).stdout
-    with tempfile.NamedTemporaryFile("w") as tempcert:
-        tempcert.write(out)
-        tempcert.seek(0)
-        run_command(
-            [
-                "openssl",
-                "req",
-                "-x509",
-                "-text",
-                "-in",
-                tempcert.name,
-                "-key",
-                str(keyfile),
-                "-out",
-                str(certfile),
-            ],
+def generate_certificate(*, run_command: CommandRunner = cmd.run) -> Tuple[str, str]:
+    """Generate a self-signed certificate as (crt, key) content."""
+    r = run_command(["openssl", "genrsa", "2048"], capture_output=True, check=True)
+    key = r.stdout
+    with tempfile.NamedTemporaryFile("w") as tempkey:
+        tempkey.write(key)
+        tempkey.seek(0)
+        out = run_command(
+            ["openssl", "req", "-new", "-text", "-key", tempkey.name, "-batch"],
             check=True,
-        )
-    certfile.chmod(0o600)
+        ).stdout
+        with tempfile.NamedTemporaryFile("w") as tempcert:
+            tempcert.write(out)
+            tempcert.seek(0)
+            r = run_command(
+                [
+                    "openssl",
+                    "req",
+                    "-x509",
+                    "-text",
+                    "-in",
+                    tempcert.name,
+                    "-key",
+                    tempkey.name,
+                ],
+                capture_output=True,
+                check=True,
+            )
+            crt = r.stdout
+
+    return crt, key
 
 
 def generate_password(length: int = 32, letters: bool = True) -> str:

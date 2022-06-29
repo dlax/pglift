@@ -262,9 +262,13 @@ def configure(
     if ssl:
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False) and ssl is True:
-        util.generate_certificate(
-            configdir, run_command=functools.partial(ctx.run, log_output=False)
+        crt, key = util.generate_certificate(
+            run_command=functools.partial(ctx.run, log_output=False)
         )
+        for fname, content in [("server.crt", crt), ("server.key", key)]:
+            fpath = configdir / fname
+            fpath.touch(mode=0o600)
+            fpath.write_text(content)
     elif isinstance(ssl, tuple):
         try:
             certfile, keyfile = ssl
