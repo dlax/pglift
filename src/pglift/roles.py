@@ -109,17 +109,6 @@ def exists(
         return cur.rowcount == 1
 
 
-def has_password(
-    ctx: "BaseContext", instance: "system.PostgreSQLInstance", name: str
-) -> bool:
-    """Return True if the role has a password set."""
-    with db.connect(ctx, instance) as cnx:
-        cur = cnx.execute(db.query("role_has_password"), {"username": name})
-        haspassword = cur.fetchone()["haspassword"]  # type: ignore[index]
-        assert isinstance(haspassword, bool)
-        return haspassword
-
-
 def encrypt_password(cnx: psycopg.Connection[Any], role: Role) -> str:
     assert role.password is not None, "role has no password to encrypt"
     encoding = cnx.info.encoding

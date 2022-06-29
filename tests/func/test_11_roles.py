@@ -36,7 +36,7 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert not roles.has_password(ctx, instance, role.name)
+    assert not role.has_password
 
     role = interface.Role(
         name="password",
@@ -49,7 +49,7 @@ def test_create(ctx: Context, instance: system.Instance) -> None:
     assert not roles.exists(ctx, instance, role.name)
     roles.create(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert roles.has_password(ctx, instance, role.name)
+    assert role.has_password
     r = execute(
         ctx,
         instance,
@@ -125,7 +125,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
     assert not roles.exists(ctx, instance, role.name)
     assert roles.apply(ctx, instance, role)
     assert roles.exists(ctx, instance, role.name)
-    assert not roles.has_password(ctx, instance, role.name)
+    assert not role.has_password
     assert not _role_in_pgpass(role)
     assert roles.apply(ctx, instance, role) is False  # no-op
 
@@ -136,14 +136,14 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
     role = interface.Role(name=rolname, password=SecretStr("passw0rd"))
     assert roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role.name)
+    assert role.has_password
     assert not _role_in_pgpass(role)
 
     role = interface.Role(
         name=rolname, login=True, password=SecretStr("passw0rd"), pgpass=True
     )
     assert roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role.name)
+    assert role.has_password
     assert _role_in_pgpass(role)
     with db.connect(
         ctx,
@@ -167,7 +167,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
         connection_limit=5,
     )
     assert roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role.name)
+    assert role.has_password
     assert _role_in_pgpass(role)
     assert roles.get(ctx, instance, rolname).connection_limit == 5
     with db.connect(
@@ -181,7 +181,7 @@ def test_apply(ctx: Context, instance: system.Instance) -> None:
 
     role = interface.Role(name=rolname, pgpass=False)
     assert roles.apply(ctx, instance, role)
-    assert roles.has_password(ctx, instance, role.name)
+    assert not role.has_password
     assert not _role_in_pgpass(role)
     assert roles.get(ctx, instance, rolname).connection_limit is None
 
@@ -246,7 +246,7 @@ def test_get(
     surole = instance_manifest.surole(ctx.settings)
     assert postgres.name == "postgres"
     if surole.password:
-        assert postgres.password is not None
+        assert postgres.has_password
         if surole.pgpass:
             assert postgres.pgpass is not None
         assert roles.get(ctx, instance, "postgres", password=False).password is None

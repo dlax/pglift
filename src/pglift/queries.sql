@@ -4,23 +4,13 @@ SELECT true FROM pg_roles WHERE rolname = %(username)s;
 -- name: role_create
 CREATE ROLE {username} {options};
 
--- name: role_has_password
-SELECT
-    rolpassword IS NOT NULL as haspassword FROM pg_authid
-WHERE
-    rolname = %(username)s;
-
 -- name: role_alter
 ALTER ROLE {username} {options};
 
 -- name: role_inspect
 SELECT
     r.rolname AS name,
-    CASE WHEN r.rolpassword IS NOT NULL THEN
-        '<set>'
-    ELSE
-        NULL
-    END AS password,
+    r.rolpassword IS NOT NULL AS has_password,
     r.rolinherit AS inherit,
     r.rolcanlogin AS login,
     r.rolsuper AS superuser,

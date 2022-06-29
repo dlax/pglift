@@ -166,11 +166,19 @@ class Role(Manifest):
     _cli_config: ClassVar[Dict[str, CLIConfig]] = {
         "in_roles": {"name": "in_role"},
         "state": {"hide": True},
+        "has_password": {"hide": True},
     }
-
+    _ansible_config: ClassVar[Dict[str, AnsibleConfig]] = {
+        "has_password": {"hide": True},
+    }
     name: str = Field(readOnly=True, description=("Role name."))
     password: Optional[SecretStr] = Field(
         default=None, description="Role password.", exclude=True
+    )
+    has_password: bool = Field(
+        default=False,
+        description="True if the role has a password.",
+        readOnly=True,
     )
     inherit: bool = Field(
         default=True,
@@ -195,6 +203,22 @@ class Role(Manifest):
     state: PresenceState = Field(
         default=PresenceState.present, description=("Role state.")
     )
+
+    @validator("has_password", always=True)
+    def __set_has_password(cls, value: bool, values: Dict[str, Any]) -> bool:
+        """Set 'has_password' field according to 'password'.
+
+        >>> r = Role(name="postgres")
+        >>> r.has_password
+        False
+        >>> r = Role(name="postgres", password="P4zzw0rd")
+        >>> r.has_password
+        True
+        >>> r = Role(name="postgres", has_password=True)
+        >>> r.has_password
+        True
+        """
+        return value or values["password"] is not None
 
 
 class Database(Manifest):

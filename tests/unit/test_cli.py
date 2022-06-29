@@ -1137,7 +1137,7 @@ def test_role_get(
             {
                 "name": "present",
                 "pgpass": True,
-                "password": "hidden",
+                "has_password": True,
                 "inherit": False,
                 "validity": datetime.datetime(2022, 1, 1),
                 "connection_limit": 5,
@@ -1156,6 +1156,7 @@ def test_role_get(
     assert json.loads(result.stdout) == {
         "name": "present",
         "pgpass": True,
+        "has_password": True,
         "inherit": False,
         "login": False,
         "superuser": False,
