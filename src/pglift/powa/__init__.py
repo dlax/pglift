@@ -32,10 +32,7 @@ def instance_configuration(
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: "BaseContext",
-    manifest: "interface.Instance",
-    config: Configuration,
-    creating: bool,
+    ctx: "BaseContext", manifest: "interface.Instance", creating: bool
 ) -> None:
     """Install PoWA for an instance when it gets configured."""
     settings = available(ctx)

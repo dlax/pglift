@@ -1,7 +1,7 @@
 import datetime
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import psycopg.rows
 from pgtoolkit import conf as pgconf
@@ -11,9 +11,6 @@ from . import db, exceptions, hookimpl, types
 from .ctx import BaseContext
 from .models import interface, system
 from .task import task
-
-if TYPE_CHECKING:
-    from pgtoolkit.conf import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -298,10 +295,7 @@ def dump(ctx: BaseContext, instance: "system.PostgreSQLInstance", dbname: str) -
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: "BaseContext",
-    manifest: "interface.Instance",
-    config: "Configuration",
-    creating: bool,
+    ctx: "BaseContext", manifest: "interface.Instance", creating: bool
 ) -> None:
     if creating:
         instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)

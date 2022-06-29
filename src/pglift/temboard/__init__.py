@@ -85,10 +85,7 @@ def uninstall_systemd_unit_template(ctx: "BaseContext") -> None:
 
 @hookimpl  # type: ignore[misc]
 def instance_configure(
-    ctx: "BaseContext",
-    manifest: "interface.Instance",
-    config: "Configuration",
-    creating: bool,
+    ctx: "BaseContext", manifest: "interface.Instance", config: "Configuration"
 ) -> None:
     """Install temboard agent for an instance when it gets configured."""
     settings = available(ctx)
