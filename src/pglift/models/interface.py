@@ -170,7 +170,9 @@ class Role(Manifest):
     }
 
     name: str = Field(readOnly=True, description=("Role name."))
-    password: Optional[SecretStr] = Field(default=None, description="Role password.")
+    password: Optional[SecretStr] = Field(
+        default=None, description="Role password.", exclude=True
+    )
     inherit: bool = Field(
         default=True,
         description="Let the role inherits the privileges of the roles its is a member of.",
@@ -305,7 +307,7 @@ class Instance(BaseInstance):
             description="DSN of primary for streaming replication.",
         )
         password: Optional[SecretStr] = Field(
-            default=None, description="Password for the replication user."
+            default=None, description="Password for the replication user.", exclude=True
         )
         status: State = Field(
             default=State.demoted, description=("Instance standby state.")
@@ -373,10 +375,16 @@ class Instance(BaseInstance):
         default_factory=dict, description=("Settings for the PostgreSQL instance.")
     )
     surole_password: Optional[SecretStr] = Field(
-        default=None, description="Super-user role password.", readOnly=True
+        default=None,
+        description="Super-user role password.",
+        readOnly=True,
+        exclude=True,
     )
     replrole_password: Optional[SecretStr] = Field(
-        default=None, description="Replication role password.", readOnly=True
+        default=None,
+        description="Replication role password.",
+        readOnly=True,
+        exclude=True,
     )
     data_checksums: Optional[bool] = Field(
         default=None,

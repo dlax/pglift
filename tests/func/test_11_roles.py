@@ -285,9 +285,7 @@ def test_alter(
     role_factory("alter", "IN ROLE pg_read_all_settings, pg_read_all_stats")
     roles.alter(ctx, instance, role)
     described = roles.get(ctx, instance, "alter").dict()
-    described.pop("password").get_secret_value() == "<set>"
     expected = role.dict()
-    del expected["password"]
     assert described == expected
 
 

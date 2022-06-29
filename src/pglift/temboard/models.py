@@ -27,4 +27,5 @@ class ServiceManifest(types.ServiceManifest, service_name="temboard"):
     password: Optional[SecretStr] = Field(
         default=None,
         description="Password of PostgreSQL role for temboard agent.",
+        exclude=True,
     )

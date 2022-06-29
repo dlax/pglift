@@ -486,8 +486,8 @@ def test_instance_get(
     get.assert_called_once_with(ctx, "test", pg_version)
     assert table_result.exit_code == 0, (table_result, table_result.output)
     assert table_result.output.splitlines() == [
-        " name  versi…  port  ssl    surol…  replr…  data…  locale  enco…  exten…  pend… ",
-        " test          5432  False  *****…                 C       UTF16          False ",
+        " name  version  port  ssl    data_che…  locale  encoding  extensions  pending_… ",
+        " test           5432  False             C       UTF16                 False     ",
     ]
 
 
@@ -1147,7 +1147,6 @@ def test_role_get(
     assert result.exit_code == 0
     assert json.loads(result.stdout) == {
         "name": "present",
-        "password": "**********",
         "pgpass": True,
         "inherit": False,
         "login": False,
