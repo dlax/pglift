@@ -107,6 +107,7 @@ def test_list_no_pgroot(ctx: Context) -> None:
 def test_configure(
     ctx: Context, instance: Instance, instance_manifest: interface.Instance
 ) -> None:
+    assert not instance_manifest.ssl
     configdir = instance.datadir
     postgresql_conf = configdir / "postgresql.conf"
     with postgresql_conf.open("w") as f:
@@ -158,8 +159,7 @@ def test_configure(
 
     changes = instances.configure(
         ctx,
-        instance_manifest,
-        ssl=True,
+        instance_manifest._copy_validate({"ssl": True}),
         values=dict(port=None, listen_address="*"),
     )
     assert changes == {
@@ -177,7 +177,9 @@ def test_configure(
         user_configfpath.stat().st_mtime,
     )
     changes = instances.configure(
-        ctx, instance_manifest, values=dict(listen_address="*"), ssl=True
+        ctx,
+        instance_manifest._copy_validate({"ssl": True}),
+        values=dict(listen_address="*"),
     )
     assert changes == {}
     mtime_after = (
@@ -187,7 +189,7 @@ def test_configure(
     )
     assert mtime_before == mtime_after
 
-    changes = instances.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest._copy_validate({"ssl": True}))
     lines = user_configfpath.read_text().splitlines()
     assert "ssl = on" in lines
     assert (configdir / "server.crt").exists()
@@ -199,7 +201,7 @@ def test_configure(
     )
     for fpath in ssl:
         fpath.touch()
-    changes = instances.configure(ctx, instance_manifest, ssl=ssl)
+    changes = instances.configure(ctx, instance_manifest._copy_validate({"ssl": ssl}))
     assert changes == {
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
@@ -212,14 +214,14 @@ def test_configure(
         assert fpath.exists()
 
     # reconfigure default ssl certs
-    changes = instances.configure(ctx, instance_manifest, ssl=True)
+    changes = instances.configure(ctx, instance_manifest._copy_validate({"ssl": True}))
     assert changes == {
         "ssl_cert_file": (str(cert_file), None),
         "ssl_key_file": (str(key_file), None),
     }
 
     # disable ssl
-    changes = instances.configure(ctx, instance_manifest, ssl=False)
+    changes = instances.configure(ctx, instance_manifest)
     assert changes == {
         "ssl": (True, None),
     }

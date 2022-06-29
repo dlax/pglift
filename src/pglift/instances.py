@@ -227,15 +227,14 @@ def configure(
     ctx: "BaseContext",
     manifest: interface.Instance,
     *,
-    ssl: Union[bool, Tuple[Path, Path]] = False,
     values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
     run_hooks: bool = True,
     _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf.
 
-    `ssl` parameter controls SSL configuration. If False, SSL is not enabled.
-    If True, a self-signed certificate is generated. A tuple of two
+    `manifest.ssl` parameter controls SSL configuration. If False, SSL is not
+    enabled. If True, a self-signed certificate is generated. A tuple of two
     `~pathlib.Path` corresponding to the location of SSL cert file and key
     file to use may also be passed.
 
@@ -259,6 +258,7 @@ def configure(
     user_conffile = confd / "user.conf"
     pgconfig = pgconf.parse(str(postgresql_conf))
     confitems = dict(values or {})
+    ssl = manifest.ssl
     if ssl:
         confitems["ssl"] = True
     if not pgconfig.get("ssl", False) and ssl is True:
@@ -829,13 +829,7 @@ def apply(
         for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
             configure_options.setdefault(key, locale)
 
-    changes = configure(
-        ctx,
-        instance,
-        ssl=instance.ssl,
-        values=configure_options,
-        _creating=_creating,
-    )
+    changes = configure(ctx, instance, values=configure_options, _creating=_creating)
     changed = changed or bool(changes)
 
     sys_instance = system.Instance.system_lookup(ctx, (instance.name, instance.version))
