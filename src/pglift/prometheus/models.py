@@ -32,7 +32,6 @@ class ServiceManifest(types.ServiceManifest, service_name="prometheus"):
     password: Optional[pydantic.SecretStr] = Field(
         default=None,
         description="Password of PostgreSQL role for Prometheus postgres_exporter.",
-        writeOnly=True,
     )
 
 
