@@ -879,15 +879,15 @@ def test_pgconf_set(
         )
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
+    config = dict(
+        manifest.configuration,
+        bonjour=True,
+        bonjour_name="test",
+        cluster_name="unittests",
+        foo="bar",
+    )
     configure.assert_called_once_with(
-        ctx,
-        manifest,
-        values=dict(
-            bonjour=True,
-            bonjour_name="test",
-            cluster_name="unittests",
-            foo="bar",
-        ),
+        ctx, manifest._copy_validate({"configuration": config})
     )
     assert "foo: baz -> bar" in result.stderr
 
@@ -910,14 +910,14 @@ def test_pgconf_set(
         )
     assert result.exit_code == 0
     manifest = interface.Instance(name=instance.name, version=instance.version)
+    config = dict(
+        manifest.configuration,
+        bonjour=True,
+        bonjour_name="changed",
+        foo="bar",
+    )
     configure.assert_called_once_with(
-        ctx,
-        manifest,
-        values=dict(
-            bonjour=True,
-            bonjour_name="changed",
-            foo="bar",
-        ),
+        ctx, manifest._copy_validate({"configuration": config})
     )
     assert "bonjour_name: test -> changed" in result.stderr
     assert "foo: baz -> bar" not in result.stderr
@@ -945,7 +945,10 @@ def test_pgconf_remove(
             obj=obj,
         )
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, values={"bonjour": True})
+    config = dict(manifest.configuration, bonjour=True)
+    configure.assert_called_once_with(
+        ctx, manifest._copy_validate({"configuration": config})
+    )
     assert result.exit_code == 0, result.stderr
     assert "bonjour_name: test -> None" in result.stderr
 
@@ -965,7 +968,12 @@ def test_pgconf_edit(
     assert result.exit_code == 0, result.stderr
     edit.assert_called_once_with(text=user_conf.read_text())
     manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(ctx, manifest, values={"bonjour": "bonsoir"})
+    configure.assert_called_once_with(
+        ctx,
+        manifest._copy_validate(
+            {"configuration": dict(manifest.configuration, bonjour="bonsoir")}
+        ),
+    )
     assert result.stderr == "bonjour: on -> 'matin\n"
 
     with patch("click.edit", return_value=None) as edit, patch.object(

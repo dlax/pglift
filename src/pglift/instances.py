@@ -15,7 +15,6 @@ from typing import (
     Generator,
     Iterator,
     List,
-    Mapping,
     Optional,
     Tuple,
     Union,
@@ -228,12 +227,11 @@ def configure(
     ctx: "BaseContext",
     manifest: interface.Instance,
     *,
-    values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
     run_hooks: bool = True,
     _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf."""
-    configgen = configuration(ctx, manifest, values=values)
+    configgen = configuration(ctx, manifest)
     while True:
         try:
             path, content, mode = next(configgen)
@@ -270,10 +268,7 @@ def configure(
 
 
 def configuration(
-    ctx: "BaseContext",
-    manifest: interface.Instance,
-    *,
-    values: Optional[Mapping[str, Optional[pgconf.Value]]] = None,
+    ctx: "BaseContext", manifest: interface.Instance
 ) -> Generator[ConfigItem, None, Tuple[ConfigChanges, pgconf.Configuration]]:
     """Generator of configuration items (path, content, mode).
 
@@ -305,7 +300,12 @@ def configuration(
     site_conffile = confd / "site.conf"
     user_conffile = confd / "user.conf"
     pgconfig = pgconf.parse(str(postgresql_conf))
-    confitems = dict(values or {})
+    confitems = manifest.configuration.copy() or {}
+    confitems["port"] = manifest.port
+    locale = manifest.initdb_options(ctx.settings.postgresql.initdb).locale
+    if locale:
+        for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
+            confitems.setdefault(key, locale)
     ssl = manifest.ssl
     if ssl:
         confitems["ssl"] = True
@@ -834,14 +834,7 @@ def apply(
         init(ctx, instance)
         changed = True
 
-    configure_options = instance.configuration or {}
-    configure_options["port"] = instance.port
-    locale = instance.initdb_options(ctx.settings.postgresql.initdb).locale
-    if locale:
-        for key in ("lc_messages", "lc_monetary", "lc_numeric", "lc_time"):
-            configure_options.setdefault(key, locale)
-
-    changes = configure(ctx, instance, values=configure_options, _creating=_creating)
+    changes = configure(ctx, instance, _creating=_creating)
     changed = changed or bool(changes)
 
     sys_instance = system.Instance.system_lookup(ctx, (instance.name, instance.version))

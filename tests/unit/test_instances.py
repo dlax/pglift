@@ -116,12 +116,16 @@ def test_configure(
 
     changes = instances.configure(
         ctx,
-        instance_manifest,
-        values=dict(
-            port=5433,
-            max_connections=100,
-            shared_buffers="10 %",
-            effective_cache_size="5MB",
+        instance_manifest._copy_validate(
+            {
+                "configuration": dict(
+                    instance_manifest.configuration,
+                    max_connections=100,
+                    shared_buffers="10 %",
+                    effective_cache_size="5MB",
+                ),
+                "port": 5433,
+            }
         ),
     )
     old_shared_buffers, new_shared_buffers = changes.pop("shared_buffers")
@@ -131,6 +135,10 @@ def test_configure(
         "bonjour": (True, None),
         "bonjour_name": ("test", None),
         "effective_cache_size": (None, "5MB"),
+        "lc_messages": (None, "C"),
+        "lc_monetary": (None, "C"),
+        "lc_numeric": (None, "C"),
+        "lc_time": (None, "C"),
         "max_connections": (None, 100),
         "port": (None, 5433),
         "shared_preload_libraries": (None, "passwordcheck"),
@@ -160,14 +168,21 @@ def test_configure(
 
     changes = instances.configure(
         ctx,
-        instance_manifest._copy_validate({"ssl": True}),
-        values=dict(port=None, listen_address="*"),
+        instance_manifest._copy_validate(
+            {
+                "configuration": dict(
+                    instance_manifest.configuration, listen_address="*"
+                ),
+                "port": 5432,
+                "ssl": True,
+            }
+        ),
     )
     assert changes == {
         "effective_cache_size": ("5MB", None),
         "listen_address": (None, "*"),
         "max_connections": (100, None),
-        "port": (5433, None),
+        "port": (5433, 5432),
         "shared_buffers": (new_shared_buffers, None),
         "ssl": (None, True),
     }
@@ -179,8 +194,14 @@ def test_configure(
     )
     changes = instances.configure(
         ctx,
-        instance_manifest._copy_validate({"ssl": True}),
-        values=dict(listen_address="*"),
+        instance_manifest._copy_validate(
+            {
+                "configuration": dict(
+                    instance_manifest.configuration, listen_address="*"
+                ),
+                "ssl": True,
+            }
+        ),
     )
     assert changes == {}
     mtime_after = (

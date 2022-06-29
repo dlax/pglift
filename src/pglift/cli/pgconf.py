@@ -91,8 +91,10 @@ def pgconf_set(
     """Set configuration items."""
     values = instance.config(managed_only=True).as_dict()
     values.update(parameters)
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instances.configure(ctx, manifest, values=values)
+    manifest = interface.Instance(
+        name=instance.name, version=instance.version, configuration=values
+    )
+    changes = instances.configure(ctx, manifest)
     show_configuration_changes(changes, parameters.keys())
 
 
@@ -110,8 +112,10 @@ def pgconf_remove(
             del values[p]
         except KeyError:
             raise click.ClickException(f"'{p}' not found in managed configuration")
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instances.configure(ctx, manifest, values=values)
+    manifest = interface.Instance(
+        name=instance.name, version=instance.version, configuration=values
+    )
+    changes = instances.configure(ctx, manifest)
     show_configuration_changes(changes, parameters)
 
 
@@ -127,6 +131,8 @@ def pgconf_edit(ctx: Context, instance: system.Instance) -> None:
         return
     config = pgtoolkit.conf.parse(io.StringIO(edited))
     values = config.as_dict()
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    changes = instances.configure(ctx, manifest, values=values)
+    manifest = interface.Instance(
+        name=instance.name, version=instance.version, configuration=values
+    )
+    changes = instances.configure(ctx, manifest)
     show_configuration_changes(changes)

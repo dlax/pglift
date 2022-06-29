@@ -1,7 +1,7 @@
 import enum
 from contextlib import contextmanager
 from functools import partial
-from typing import Any, Iterator, List, Optional, overload
+from typing import Any, Dict, Iterator, List, Optional, overload
 
 from pglift import db, instances
 from pglift._compat import Literal
@@ -17,29 +17,24 @@ class AuthType(str, enum.Enum):
     pgpass = "pgpass"
 
 
-def configure_instance(
-    ctx: BaseContext,
-    manifest: interface.Instance,
-    *,
-    port: Optional[int] = None,
-    creating: bool = False,
-    **confitems: Any,
-) -> None:
-    values = manifest.configuration.copy()
-    values["port"] = port or manifest.port
-    values.update(confitems)
-    instances.configure(ctx, manifest, values=values, _creating=creating)
-
-
 @contextmanager
 def reconfigure_instance(
-    ctx: BaseContext, manifest: interface.Instance, **confitems: Any
+    ctx: BaseContext,
+    manifest: interface.Instance,
+    port: Optional[int] = None,
+    **confitems: Any,
 ) -> Iterator[None]:
-    configure_instance(ctx, manifest, **confitems)
+    update: Dict[str, Any] = {}
+    if port is not None:
+        update["port"] = port
+    if confitems:
+        update["configuration"] = dict(manifest.configuration.copy(), **confitems)
+    assert update
+    instances.configure(ctx, manifest._copy_validate(update))
     try:
         yield
     finally:
-        configure_instance(ctx, manifest)
+        instances.configure(ctx, manifest)
 
 
 @overload
