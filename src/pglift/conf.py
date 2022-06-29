@@ -68,10 +68,10 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     return config
 
 
-def create_log_directory(instance: "BaseInstance", path: Path) -> None:
+def log_directory(instance: "BaseInstance", path: Path) -> Path:
     if not path.is_absolute():
         path = instance.datadir / path
-    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def remove_log_directory(

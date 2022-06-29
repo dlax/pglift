@@ -47,8 +47,8 @@ def test_log_directory(
 ) -> None:
     log_dir, abs_log_dir = log_directory
     assert not abs_log_dir.exists()
-    conf.create_log_directory(instance, log_dir)
-    assert abs_log_dir.exists()
+    assert conf.log_directory(instance, log_dir) == abs_log_dir
+    abs_log_dir.mkdir(parents=True)
     conf.remove_log_directory(ctx, instance, log_dir)
     assert not abs_log_dir.exists()
     assert abs_log_dir.parent.exists()
