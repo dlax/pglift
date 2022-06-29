@@ -228,25 +228,13 @@ def test_configure(
 def test_configure_auth(
     ctx: Context, instance_manifest: interface.Instance, instance: Instance
 ) -> None:
-    surole = interface.Role(name="superuser")
-    replrole = interface.Role(name="replicator")
     hba = instance.datadir / "pg_hba.conf"
     ident = instance.datadir / "pg_ident.conf"
-    instances.configure_auth(
-        ctx, instance, instance_manifest.auth, surole=surole, replrole=replrole
-    )
-    assert hba.read_text().splitlines() == [
-        "local   all             superuser                                peer",
-        "local   all             all                                     peer",
-        "host    all             all             127.0.0.1/32            password",
-        "host    all             all             ::1/128                 password",
-        "local   replication     replicator                              peer",
-        "host    replication     replicator      127.0.0.1/32            password",
-        "host    replication     replicator      ::1/128                 password",
-    ]
-    assert ident.read_text().splitlines() == [
-        "# MAPNAME       SYSTEM-USERNAME         PG-USERNAME"
-    ]
+    orig_hba = hba.read_text()
+    orig_ident = ident.read_text()
+    instances.configure_auth(ctx, instance, instance_manifest)
+    assert hba.read_text() != orig_hba
+    assert ident.read_text() != orig_ident
 
 
 def test_check_status(ctx: Context, instance: Instance) -> None:

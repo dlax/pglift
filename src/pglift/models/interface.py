@@ -33,13 +33,14 @@ from pydantic import (
 from pydantic.error_wrappers import ErrorWrapper
 from pydantic.utils import lenient_issubclass
 
-from .. import settings
+from .. import settings, util
 from .._compat import Final, Literal
 from ..types import AnsibleConfig, AutoStrEnum, CLIConfig
 from ..types import Extension as Extension
 from ..types import Manifest, Port, ServiceManifest
 
 if TYPE_CHECKING:
+    from ..ctx import BaseContext
     from ..pm import PluginManager
 
 default_port: Final = 5432
@@ -515,6 +516,29 @@ class Instance(BaseInstance):
                 login=True,
                 replication=True,
             )
+
+    def _auth(self, settings: settings.AuthSettings) -> Auth:
+        auth = self.auth
+        local, host = settings.local, settings.host
+        if auth:
+            local = auth.local or local
+            host = auth.host or host
+        return Instance.Auth(local=local, host=host)
+
+    def pg_hba(self, ctx: "BaseContext") -> str:
+        surole = self.surole(ctx.settings)
+        replrole = self.replrole(ctx.settings)
+        auth = self._auth(ctx.settings.postgresql.auth)
+        return util.template(ctx, "postgresql", "pg_hba.conf").format(
+            auth=auth, surole=surole.name, replrole=replrole.name
+        )
+
+    def pg_ident(self, ctx: "BaseContext") -> str:
+        surole = self.surole(ctx.settings)
+        return util.template(ctx, "postgresql", "pg_ident.conf").format(
+            surole=surole.name,
+            sysuser=ctx.settings.sysuser[0],
+        )
 
 
 class InstanceBackup(Manifest):

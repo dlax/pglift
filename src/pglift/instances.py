@@ -461,35 +461,16 @@ def stopped(
 def configure_auth(
     ctx: "BaseContext",
     instance: system.PostgreSQLInstance,
-    auth: Optional[interface.Instance.Auth],
-    *,
-    surole: interface.Role,
-    replrole: interface.Role,
+    manifest: interface.Instance,
 ) -> None:
     """Configure authentication for the PostgreSQL instance."""
     logger.info("configuring PostgreSQL authentication")
-    auth_settings = ctx.settings.postgresql.auth
     hba_path = instance.datadir / "pg_hba.conf"
-    auth_local = auth_settings.local
-    auth_host = auth_settings.host
-    if auth:
-        if auth.local:
-            auth_local = auth.local
-        if auth.host:
-            auth_host = auth.host
-    hba = util.template(ctx, "postgresql", "pg_hba.conf").format(
-        surole=surole.name,
-        replrole=replrole.name,
-        auth_local=auth_local,
-        auth_host=auth_host,
-    )
+    hba = manifest.pg_hba(ctx)
     hba_path.write_text(hba)
 
     ident_path = instance.datadir / "pg_ident.conf"
-    ident = util.template(ctx, "postgresql", "pg_ident.conf").format(
-        surole=surole.name,
-        sysuser=ctx.settings.sysuser[0],
-    )
+    ident = manifest.pg_ident(ctx)
     ident_path.write_text(ident)
 
 
@@ -875,10 +856,7 @@ def apply(
             logger.info("creating replication user %s", replrole.name)
             with running(ctx, sys_instance):
                 roles.apply(ctx, sys_instance, replrole)
-        surole = instance.surole(ctx.settings)
-        configure_auth(
-            ctx, sys_instance, instance.auth, surole=surole, replrole=replrole
-        )
+        configure_auth(ctx, sys_instance, instance)
 
     instance_is_running = is_running(ctx, sys_instance)
 

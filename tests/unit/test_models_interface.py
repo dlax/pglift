@@ -1,4 +1,5 @@
 import socket
+from pathlib import Path
 
 import port_for
 import pydantic
@@ -8,6 +9,7 @@ from pglift import types
 from pglift.ctx import Context
 from pglift.models import interface
 from pglift.prometheus import models as prometheus_models
+from pglift.settings import Settings
 
 
 def test_validate_ports() -> None:
@@ -31,6 +33,42 @@ def test_validate_ports() -> None:
             interface.validate_ports(m)
     assert f"{p1} already in use" in str(cm)
     assert f"{p2} already in use" in str(cm)
+
+
+def test_instance__auth(
+    settings: Settings, instance_manifest: interface.Instance
+) -> None:
+    assert instance_manifest._auth(settings.postgresql.auth) == interface.Instance.Auth(
+        local="peer", host="password"
+    )
+
+
+def test_instance_pg_hba(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    datadir: Path,
+    write_changes: bool,
+) -> None:
+    actual = instance_manifest.pg_hba(ctx)
+    fpath = datadir / "pg_hba.conf"
+    if write_changes:
+        fpath.write_text(actual)
+    expected = fpath.read_text()
+    assert actual == expected
+
+
+def test_instance_pg_ident(
+    ctx: Context,
+    instance_manifest: interface.Instance,
+    datadir: Path,
+    write_changes: bool,
+) -> None:
+    actual = instance_manifest.pg_ident(ctx)
+    fpath = datadir / "pg_ident.conf"
+    if write_changes:
+        fpath.write_text(actual)
+    expected = fpath.read_text()
+    assert actual == expected
 
 
 def test_privileges_sorted() -> None:
