@@ -179,3 +179,12 @@ def test_backup_restore(
         assert "backrest" in [r["datname"] for r in rows]
         rows = execute(ctx, instance, "SELECT * FROM t", dbname="backrest")
         assert rows == [{"s": "created"}]
+
+
+def test_upgrade(
+    pgbackrest_settings: PgBackRestSettings, upgraded_instance: system.Instance
+) -> None:
+    configpath = Path(
+        str(pgbackrest_settings.configpath).format(instance=upgraded_instance)
+    )
+    assert configpath.exists()
