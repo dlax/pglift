@@ -676,7 +676,7 @@ def upgrade(
             for entry in passfile:
                 if entry.matches(port=instance.port, username=surole.name):
                     surole_password = entry.password
-    new_manifest = interface.Instance.parse_obj(
+    new_manifest = interface.Instance.composite(ctx.pm).parse_obj(
         dict(
             _get(ctx, instance),
             name=name or instance.name,
