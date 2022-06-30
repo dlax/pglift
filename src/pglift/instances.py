@@ -234,7 +234,14 @@ def configure(
     sys_instance = system.PostgreSQLInstance.system_lookup(
         ctx, (manifest.name, manifest.version)
     )
-    configgen = configuration(ctx, manifest, sys_instance.datadir)
+    datadir = sys_instance.datadir
+    postgresql_conf = datadir / "postgresql.conf"
+    confd, include = conf.info(datadir)
+    confd.mkdir(exist_ok=True, parents=True)
+    base = pgconf.parse(postgresql_conf)
+    configgen = configuration(
+        ctx, manifest, datadir=datadir, includedir=confd, base=base
+    )
     while True:
         try:
             path, content, mode = next(configgen)
@@ -251,6 +258,10 @@ def configure(
                 if mode is not None:
                     path.touch(mode=mode)
                 path.write_text(content)
+
+    original_content = postgresql_conf.read_text()
+    if not any(line.startswith(include) for line in original_content.splitlines()):
+        postgresql_conf.write_text(f"{include}\n\n{original_content}")
 
     if run_hooks:
         ctx.hook.instance_configure(
@@ -271,7 +282,12 @@ def configure(
 
 
 def configuration(
-    ctx: "BaseContext", manifest: interface.Instance, datadir: Path
+    ctx: "BaseContext",
+    manifest: interface.Instance,
+    *,
+    datadir: Path,
+    includedir: Path,
+    base: pgconf.Configuration,
 ) -> Generator[ConfigItem, None, Tuple[ConfigChanges, pgconf.Configuration]]:
     """Generator of configuration items (path, content, mode).
 
@@ -293,12 +309,8 @@ def configuration(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
-    postgresql_conf = datadir / "postgresql.conf"
-    confd, include = conf.info(datadir)
-    yield confd, None, None
-    site_conffile = confd / "site.conf"
-    user_conffile = confd / "user.conf"
-    pgconfig = pgconf.parse(str(postgresql_conf))
+    site_conffile = includedir / "site.conf"
+    user_conffile = includedir / "user.conf"
     confitems = manifest.configuration.copy() or {}
     confitems["port"] = manifest.port
     locale = manifest.initdb_options(ctx.settings.postgresql.initdb).locale
@@ -308,7 +320,7 @@ def configuration(
     ssl = manifest.ssl
     if ssl:
         confitems["ssl"] = True
-    if not pgconfig.get("ssl", False) and ssl is True:
+    if not base.get("ssl", False) and ssl is True:
         crt, key = util.generate_certificate(
             run_command=functools.partial(ctx.run, log_output=False)
         )
@@ -322,9 +334,6 @@ def configuration(
             raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
         confitems["ssl_cert_file"] = str(certfile)
         confitems["ssl_key_file"] = str(keyfile)
-    original_content = postgresql_conf.read_text()
-    if not any(line.startswith(include) for line in original_content.splitlines()):
-        yield postgresql_conf, f"{include}\n\n{original_content}", None
 
     site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": manifest.name}
     site_config_template = ctx.site_config("postgresql", "site.conf")
