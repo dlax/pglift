@@ -538,6 +538,7 @@ def test_instance_upgrade(
     instance: system.Instance,
     tmp_port_factory: Iterator[int],
     database_factory: DatabaseFactory,
+    composite_instance_model: Type[interface.Instance],
 ) -> None:
     database_factory("present")
     port = next(tmp_port_factory)
@@ -547,6 +548,7 @@ def test_instance_upgrade(
         name="test_upgrade",
         version=instance.version,
         port=port,
+        _instance_model=composite_instance_model,
     )
     try:
         assert newinstance.name == "test_upgrade"

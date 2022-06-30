@@ -17,6 +17,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
     Union,
 )
 
@@ -647,6 +648,7 @@ def upgrade(
     name: Optional[str] = None,
     port: Optional[int] = None,
     jobs: Optional[int] = None,
+    _instance_model: Optional[Type[interface.Instance]] = None,
 ) -> system.Instance:
     """Upgrade a primary instance using pg_upgrade"""
     if instance.standby:
@@ -676,7 +678,9 @@ def upgrade(
             for entry in passfile:
                 if entry.matches(port=instance.port, username=surole.name):
                     surole_password = entry.password
-    new_manifest = interface.Instance.composite(ctx.pm).parse_obj(
+    if _instance_model is None:
+        _instance_model = interface.Instance.composite(ctx.pm)
+    new_manifest = _instance_model.parse_obj(
         dict(
             _get(ctx, instance),
             name=name or instance.name,
