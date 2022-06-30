@@ -186,6 +186,18 @@ def test_standby(
         assert "pg_up 1" in output.splitlines()
 
 
+@pytest.mark.xfail
+def test_upgrade(
+    prometheus_settings: PrometheusSettings, upgraded_instance: system.Instance
+) -> None:
+    service = upgraded_instance.service(models.Service)
+    assert service.password
+    name = upgraded_instance.qualname
+    configpath = Path(str(prometheus_settings.configpath).format(name=name))
+    assert configpath.exists()
+    # TODO: complement similarly to test_configure()
+
+
 def test_start_stop_nonlocal(
     ctx: Context,
     prometheus_settings: PrometheusSettings,
