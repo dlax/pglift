@@ -534,31 +534,13 @@ def test_standby_replication(
 
 
 def test_instance_upgrade(
-    ctx: Context,
-    instance: system.Instance,
-    tmp_port_factory: Iterator[int],
-    database_factory: DatabaseFactory,
-    composite_instance_model: Type[interface.Instance],
+    ctx: Context, instance: system.Instance, upgraded_instance: system.Instance
 ) -> None:
-    database_factory("present")
-    port = next(tmp_port_factory)
-    newinstance = instances.upgrade(
-        ctx,
-        instance,
-        name="test_upgrade",
-        version=instance.version,
-        port=port,
-        _instance_model=composite_instance_model,
-    )
-    try:
-        assert newinstance.name == "test_upgrade"
-        assert newinstance.version == instance.version
-        assert newinstance.port == port
-        assert instances.status(ctx, newinstance) == Status.not_running
-        with instances.running(ctx, newinstance):
-            assert databases.exists(ctx, newinstance, "present")
-    finally:
-        instances.drop(ctx, newinstance)
+    assert upgraded_instance.name == "upgraded"
+    assert upgraded_instance.version == instance.version
+    assert instances.status(ctx, upgraded_instance) == Status.not_running
+    with instances.running(ctx, upgraded_instance):
+        assert databases.exists(ctx, upgraded_instance, "postgres")
 
 
 def test_server_settings(ctx: Context, instance: system.Instance) -> None:

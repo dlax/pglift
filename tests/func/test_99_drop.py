@@ -18,6 +18,7 @@ def test_pgpass(
     postgresql_auth: AuthType,
     instance_manifest: interface.Instance,
     standby_instance_dropped: Configuration,
+    upgraded_instance_dropped: Configuration,
     instance_dropped: Configuration,
 ) -> None:
     if postgresql_auth != AuthType.pgpass:

@@ -558,6 +558,26 @@ def standby_instance(
         instances.drop(ctx, stdby_instance)
 
 
+@pytest.fixture(scope="session")
+def upgraded_instance(
+    ctx: Context,
+    instance: system.Instance,
+    tmp_port_factory: Iterator[int],
+    composite_instance_model: Type[interface.Instance],
+) -> Iterator[system.Instance]:
+    upgraded = instances.upgrade(
+        ctx,
+        instance,
+        name="upgraded",
+        version=instance.version,
+        port=next(tmp_port_factory),
+        _instance_model=composite_instance_model,
+    )
+    yield upgraded
+    if instances.exists(ctx, upgraded.name, upgraded.version):
+        instances.drop(ctx, upgraded)
+
+
 def _drop_instance(
     ctx: Context, instance: system.Instance
 ) -> pgtoolkit.conf.Configuration:
@@ -579,6 +599,13 @@ def standby_instance_dropped(
     ctx: Context, standby_instance: system.Instance
 ) -> pgtoolkit.conf.Configuration:
     return _drop_instance(ctx, standby_instance)
+
+
+@pytest.fixture(scope="session")
+def upgraded_instance_dropped(
+    ctx: Context, upgraded_instance: system.Instance
+) -> pgtoolkit.conf.Configuration:
+    return _drop_instance(ctx, upgraded_instance)
 
 
 class RoleFactory(Protocol):
