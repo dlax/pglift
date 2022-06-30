@@ -230,7 +230,11 @@ def configure(
     run_hooks: bool = True,
     _creating: bool = False,
 ) -> ConfigChanges:
-    """Write instance's configuration and include it in its postgresql.conf."""
+    """Write instance's configuration and include it in its postgresql.conf.
+
+    Also compute changes to the overall PostgreSQL configuration and return it
+    as a 'ConfigChanges' dictionary.
+    """
     sys_instance = system.PostgreSQLInstance.system_lookup(
         ctx, (manifest.name, manifest.version)
     )
@@ -246,7 +250,7 @@ def configure(
         try:
             path, content, mode = next(configgen)
         except StopIteration as e:
-            changes, config = e.value
+            config = e.value
             break
         else:
             if content is None:  # directory
@@ -255,6 +259,8 @@ def configure(
                     kw["mode"] = mode
                 path.mkdir(**kw)
             else:
+                if path.exists() and path.read_text() == content:
+                    continue
                 if mode is not None:
                     path.touch(mode=mode)
                 path.write_text(content)
@@ -262,6 +268,17 @@ def configure(
     original_content = postgresql_conf.read_text()
     if not any(line.startswith(include) for line in original_content.splitlines()):
         postgresql_conf.write_text(f"{include}\n\n{original_content}")
+
+    new = pgconf.parse(postgresql_conf)
+
+    changes: ConfigChanges = {}
+    config_before = {e.name: e.value for e in base}
+    config_after = {e.name: e.value for e in new}
+    for k in set(config_before) | set(config_after):
+        pv = config_before.get(k)
+        nv = config_after.get(k)
+        if nv != pv:
+            changes[k] = (pv, nv)
 
     if run_hooks:
         ctx.hook.instance_configure(
@@ -288,13 +305,13 @@ def configuration(
     datadir: Path,
     includedir: Path,
     base: pgconf.Configuration,
-) -> Generator[ConfigItem, None, Tuple[ConfigChanges, pgconf.Configuration]]:
+) -> Generator[ConfigItem, None, pgconf.Configuration]:
     """Generator of configuration items (path, content, mode).
 
     If 'content' is not None, 'path' is a file where 'content' should be
     written to. Otherwise, it's a directory.
 
-    Return the configuration changes and merged configuration.
+    Return merged configuration.
 
     `manifest.ssl` parameter controls SSL configuration. If False, SSL is not
     enabled. If True, a self-signed certificate is generated. A tuple of two
@@ -357,34 +374,13 @@ def configuration(
     if spl:
         confitems["shared_preload_libraries"] = spl
 
-    conf.format_values(confitems, ctx.settings.postgresql)
     conf.format_values(site_confitems, ctx.settings.postgresql)
+    site_config = conf.make(manifest.name, **site_confitems)
+    yield site_conffile, "\n".join(site_config.lines), None
 
-    def make_config(
-        fpath: Path, items: Dict[str, Optional[pgconf.Value]]
-    ) -> Tuple[pgconf.Configuration, ConfigChanges]:
-        config = conf.make(manifest.name, **items)
-
-        config_before = {}
-        if fpath.exists():
-            config_before = {e.name: e.value for e in pgconf.parse(fpath)}
-        config_after = {e.name: e.value for e in config}
-        changes: ConfigChanges = {}
-        for k in set(config_before) | set(config_after):
-            pv = config_before.get(k)
-            nv = config_after.get(k)
-            if nv != pv:
-                changes[k] = (pv, nv)
-
-        return config, changes
-
-    site_config, site_changes = make_config(site_conffile, site_confitems)
-    if site_changes:
-        yield site_conffile, "\n".join(site_config.lines), None
-
-    user_config, changes = make_config(user_conffile, confitems)
-    if changes:
-        yield user_conffile, "\n".join(user_config.lines), None
+    conf.format_values(confitems, ctx.settings.postgresql)
+    user_config = conf.make(manifest.name, **confitems)
+    yield user_conffile, "\n".join(user_config.lines), None
 
     i_config = site_config + user_config
 
@@ -392,7 +388,7 @@ def configuration(
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
         yield conf.log_directory(datadir, logdir), None, None
 
-    return changes, i_config
+    return i_config
 
 
 @contextlib.contextmanager

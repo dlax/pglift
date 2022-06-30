@@ -132,17 +132,23 @@ def test_configure(
     assert old_shared_buffers is None
     assert new_shared_buffers is not None and new_shared_buffers != "10 %"
     assert changes == {
-        "bonjour": (True, None),
-        "bonjour_name": ("test", None),
+        "cluster_name": (None, "test"),
         "effective_cache_size": (None, "5MB"),
         "lc_messages": (None, "C"),
         "lc_monetary": (None, "C"),
         "lc_numeric": (None, "C"),
         "lc_time": (None, "C"),
+        "log_destination": (None, "stderr"),
+        "logging_collector": (None, True),
         "max_connections": (None, 100),
         "port": (None, 5433),
         "shared_preload_libraries": (None, "passwordcheck"),
+        "unix_socket_directories": (
+            None,
+            str(ctx.settings.postgresql.socket_directory),
+        ),
     }
+
     with postgresql_conf.open() as f:
         line1 = f.readline().strip()
     assert line1 == "include_dir = 'conf.pglift.d'"
@@ -178,14 +184,21 @@ def test_configure(
             }
         ),
     )
+    old_effective_cache_size, new_effective_cache_size = changes.pop(
+        "effective_cache_size"
+    )
+    assert old_effective_cache_size == "5MB"
+    assert new_effective_cache_size != old_effective_cache_size
+    old_shared_buffers1, new_shared_buffers1 = changes.pop("shared_buffers")
+    assert old_shared_buffers1 == new_shared_buffers
+    assert new_shared_buffers1 != old_shared_buffers1
     assert changes == {
-        "effective_cache_size": ("5MB", None),
         "listen_address": (None, "*"),
         "max_connections": (100, None),
         "port": (5433, 5432),
-        "shared_buffers": (new_shared_buffers, None),
         "ssl": (None, True),
     }
+
     # Same configuration, no change.
     mtime_before = (
         postgresql_conf.stat().st_mtime,
