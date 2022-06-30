@@ -8,7 +8,6 @@ from . import exceptions, util
 
 if TYPE_CHECKING:
     from .ctx import BaseContext
-    from .models.system import BaseInstance
     from .settings import PostgreSQLSettings
 
 
@@ -68,17 +67,14 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     return config
 
 
-def log_directory(instance: "BaseInstance", path: Path) -> Path:
+def log_directory(datadir: Path, path: Path) -> Path:
     if not path.is_absolute():
-        path = instance.datadir / path
+        path = datadir / path
     return path
 
 
-def remove_log_directory(
-    ctx: "BaseContext", instance: "BaseInstance", path: Path
-) -> None:
-    if not path.is_absolute():
-        path = instance.datadir / path
+def remove_log_directory(ctx: "BaseContext", datadir: Path, path: Path) -> None:
+    path = log_directory(datadir, path)
     if path.exists():
         ctx.rmtree(path)
 

@@ -231,7 +231,10 @@ def configure(
     _creating: bool = False,
 ) -> ConfigChanges:
     """Write instance's configuration and include it in its postgresql.conf."""
-    configgen = configuration(ctx, manifest)
+    sys_instance = system.PostgreSQLInstance.system_lookup(
+        ctx, (manifest.name, manifest.version)
+    )
+    configgen = configuration(ctx, manifest, sys_instance.datadir)
     while True:
         try:
             path, content, mode = next(configgen)
@@ -268,7 +271,7 @@ def configure(
 
 
 def configuration(
-    ctx: "BaseContext", manifest: interface.Instance
+    ctx: "BaseContext", manifest: interface.Instance, datadir: Path
 ) -> Generator[ConfigItem, None, Tuple[ConfigChanges, pgconf.Configuration]]:
     """Generator of configuration items (path, content, mode).
 
@@ -290,12 +293,8 @@ def configuration(
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
     """
-    sys_instance = system.PostgreSQLInstance.system_lookup(
-        ctx, (manifest.name, manifest.version)
-    )
-    configdir = sys_instance.datadir
-    postgresql_conf = configdir / "postgresql.conf"
-    confd, include = conf.info(configdir)
+    postgresql_conf = datadir / "postgresql.conf"
+    confd, include = conf.info(datadir)
     yield confd, None, None
     site_conffile = confd / "site.conf"
     user_conffile = confd / "user.conf"
@@ -314,7 +313,7 @@ def configuration(
             run_command=functools.partial(ctx.run, log_output=False)
         )
         for fname, content in [("server.crt", crt), ("server.key", key)]:
-            fpath = configdir / fname
+            fpath = datadir / fname
             yield fpath, content, 0o600
     elif isinstance(ssl, tuple):
         try:
@@ -327,9 +326,7 @@ def configuration(
     if not any(line.startswith(include) for line in original_content.splitlines()):
         yield postgresql_conf, f"{include}\n\n{original_content}", None
 
-    site_confitems: Dict[str, Optional[pgconf.Value]] = {
-        "cluster_name": sys_instance.name
-    }
+    site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": manifest.name}
     site_config_template = ctx.site_config("postgresql", "site.conf")
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
@@ -357,7 +354,7 @@ def configuration(
     def make_config(
         fpath: Path, items: Dict[str, Optional[pgconf.Value]]
     ) -> Tuple[pgconf.Configuration, ConfigChanges]:
-        config = conf.make(sys_instance.name, **items)
+        config = conf.make(manifest.name, **items)
 
         config_before = {}
         if fpath.exists():
@@ -384,7 +381,7 @@ def configuration(
 
     if "log_directory" in i_config:
         logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        yield conf.log_directory(sys_instance, logdir), None, None
+        yield conf.log_directory(datadir, logdir), None, None
 
     return changes, i_config
 
