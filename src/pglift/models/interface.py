@@ -40,7 +40,6 @@ from ..types import Extension as Extension
 from ..types import Manifest, Port, ServiceManifest
 
 if TYPE_CHECKING:
-    from ..ctx import BaseContext
     from ..pm import PluginManager
 
 default_port: Final = 5432
@@ -533,19 +532,19 @@ class Instance(BaseInstance):
             host = auth.host or host
         return Instance.Auth(local=local, host=host)
 
-    def pg_hba(self, ctx: "BaseContext") -> str:
-        surole = self.surole(ctx.settings)
-        replrole = self.replrole(ctx.settings)
-        auth = self._auth(ctx.settings.postgresql.auth)
-        return util.template(ctx, "postgresql", "pg_hba.conf").format(
+    def pg_hba(self, settings: settings.Settings) -> str:
+        surole = self.surole(settings)
+        replrole = self.replrole(settings)
+        auth = self._auth(settings.postgresql.auth)
+        return util.template("postgresql", "pg_hba.conf").format(
             auth=auth, surole=surole.name, replrole=replrole.name
         )
 
-    def pg_ident(self, ctx: "BaseContext") -> str:
-        surole = self.surole(ctx.settings)
-        return util.template(ctx, "postgresql", "pg_ident.conf").format(
+    def pg_ident(self, settings: settings.Settings) -> str:
+        surole = self.surole(settings)
+        return util.template("postgresql", "pg_ident.conf").format(
             surole=surole.name,
-            sysuser=ctx.settings.sysuser[0],
+            sysuser=settings.sysuser[0],
         )
 
     def initdb_options(self, base: settings.InitdbSettings) -> settings.InitdbSettings:

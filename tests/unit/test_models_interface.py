@@ -44,12 +44,12 @@ def test_instance__auth(
 
 
 def test_instance_pg_hba(
-    ctx: Context,
+    settings: Settings,
     instance_manifest: interface.Instance,
     datadir: Path,
     write_changes: bool,
 ) -> None:
-    actual = instance_manifest.pg_hba(ctx)
+    actual = instance_manifest.pg_hba(settings)
     fpath = datadir / "pg_hba.conf"
     if write_changes:
         fpath.write_text(actual)
@@ -58,12 +58,12 @@ def test_instance_pg_hba(
 
 
 def test_instance_pg_ident(
-    ctx: Context,
+    settings: Settings,
     instance_manifest: interface.Instance,
     datadir: Path,
     write_changes: bool,
 ) -> None:
-    actual = instance_manifest.pg_ident(ctx)
+    actual = instance_manifest.pg_ident(settings)
     fpath = datadir / "pg_ident.conf"
     if write_changes:
         fpath.write_text(actual)

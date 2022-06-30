@@ -20,7 +20,7 @@ def postgresql_systemd_unit_template(
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
-    content = systemd.template(ctx, POSTGRESQL_SERVICE_NAME).format(
+    content = systemd.template(POSTGRESQL_SERVICE_NAME).format(
         executeas=systemd.executeas(ctx.settings),
         python=sys.executable,
         environment=environment,
@@ -52,7 +52,7 @@ def postgresql_backup_systemd_templates(
     environment = ""
     if env:
         environment = f"\nEnvironment={env}\n"
-    service_content = systemd.template(ctx, BACKUP_SERVICE_NAME).format(
+    service_content = systemd.template(BACKUP_SERVICE_NAME).format(
         executeas=systemd.executeas(ctx.settings),
         environment=environment,
         python=sys.executable,
@@ -63,7 +63,7 @@ def postgresql_backup_systemd_templates(
         ctx.settings.systemd.unit_path,
         logger=logger,
     )
-    timer_content = systemd.template(ctx, BACKUP_TIMER_NAME).format(
+    timer_content = systemd.template(BACKUP_TIMER_NAME).format(
         # TODO: use a setting for that value
         calendar="daily",
     )

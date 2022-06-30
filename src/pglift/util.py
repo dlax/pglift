@@ -3,7 +3,7 @@ import secrets
 import string
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
 import humanize
 
@@ -11,17 +11,14 @@ from . import __name__ as pkgname
 from . import cmd, exceptions
 from .types import CommandRunner
 
-if TYPE_CHECKING:
-    from .ctx import BaseContext
-
 datapath = Path(__file__).parent / "data"
 
 
-def template(ctx: "BaseContext", *args: str) -> str:
+def template(*args: str) -> str:
     """Return the content of a configuration file template, either found in
     site configuration or in distribution data.
     """
-    path = ctx.site_config(*args)
+    path = site_config(*args)
     assert path is not None and path.exists(), f"{path} template file not found"
     return path.read_text()
 
@@ -63,6 +60,17 @@ def dist_config(*parts: str) -> Optional[Path]:
     config = datapath.joinpath(*parts)
     if config.exists():
         return config
+    return None
+
+
+def site_config(*parts: str) -> Optional[Path]:
+    """Lookup for a configuration file path in user or site configuration,
+    prior to distribution.
+    """
+    for hdlr in (etc_config, xdg_config, dist_config):
+        config = hdlr(*parts)
+        if config:
+            return config
     return None
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import Any, Optional, Sequence, Tuple, Type
 
-from . import cmd, plugin_manager, util
+from . import cmd, plugin_manager
 from ._compat import shlex_join
 from .settings import Settings
 from .types import CompletedProcess
@@ -66,26 +66,6 @@ class BaseContext(ABC):
         """
         return None
 
-    @staticmethod
-    def site_config(*parts: str) -> Optional[Path]:
-        """Lookup for a configuration file path."""
-        return util.dist_config(*parts)
-
-
-class SiteMixin:
-    """Mixin to load data files from user or site locations."""
-
-    @classmethod
-    def site_config(cls, *parts: str) -> Optional[Path]:
-        """Lookup for a configuration file path in user or site configuration,
-        prior to distribution.
-        """
-        for hdlr in (util.etc_config, util.xdg_config):
-            config = hdlr(*parts)
-            if config:
-                return config
-        return BaseContext.site_config(*parts)
-
 
 class Context(BaseContext):
     """Default execution context."""
@@ -104,7 +84,3 @@ class Context(BaseContext):
         return cmd.run(
             args, stdout_logger=stdout_logger, stderr_logger=logger, **kwargs
         )
-
-
-class SiteContext(SiteMixin, Context):
-    pass

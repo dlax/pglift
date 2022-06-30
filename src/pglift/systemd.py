@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def template(ctx: "BaseContext", name: str) -> str:
-    return util.template(ctx, "systemd", name)
+def template(name: str) -> str:
+    return util.template("systemd", name)
 
 
 def executeas(settings: Settings) -> str:

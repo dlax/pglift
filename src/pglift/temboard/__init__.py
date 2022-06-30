@@ -62,7 +62,7 @@ def install_systemd_unit_template(ctx: "BaseContext", header: str = "") -> None:
     settings = available(ctx)
     assert settings is not None
     configpath = str(settings.configpath).replace("{name}", "%i")
-    content = systemd.template(ctx, SYSTEMD_SERVICE_NAME).format(
+    content = systemd.template(SYSTEMD_SERVICE_NAME).format(
         executeas=systemd.executeas(ctx.settings),
         configpath=configpath,
         execpath=str(settings.execpath),

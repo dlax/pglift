@@ -18,7 +18,7 @@ from rich.highlighter import NullHighlighter
 from .. import __name__ as pkgname
 from .. import _install, version
 from .._compat import Literal
-from ..ctx import Context, SiteMixin
+from ..ctx import Context
 from ..models import system
 from ..settings import Settings, SiteSettings
 from ..task import Displayer
@@ -49,11 +49,7 @@ class CLIContext(Context):
         return default
 
 
-class CLISiteContext(SiteMixin, CLIContext):
-    pass
-
-
-class InteractiveCLIContext(CLISiteContext):
+class InteractiveCLIContext(CLIContext):
     """An interactive CLI context that prompts for confirmation."""
 
     def confirm(self, message: str, default: bool) -> bool:
@@ -79,7 +75,7 @@ class Obj:
         interactive: bool = True,
     ) -> None:
         if context is None:
-            cls = InteractiveCLIContext if interactive else CLISiteContext
+            cls = InteractiveCLIContext if interactive else CLIContext
             try:
                 settings = SiteSettings()
             except pydantic.ValidationError as e:

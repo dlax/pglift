@@ -1,5 +1,6 @@
 import string
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -40,6 +41,11 @@ def test_dist_config() -> None:
     pg_hba = util.dist_config("postgresql", "pg_hba.conf")
     assert pg_hba is not None
     assert pg_hba.parent == util.datapath / "postgresql"
+
+
+def test_site_config(site_config: Any) -> None:
+    assert site_config is util.dist_config
+    assert util.site_config is util.dist_config
 
 
 def test_gen_certificate() -> None:

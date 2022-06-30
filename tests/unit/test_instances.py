@@ -267,13 +267,13 @@ def test_configure(
 
 
 def test_configure_auth(
-    ctx: Context, instance_manifest: interface.Instance, instance: Instance
+    settings: Settings, instance_manifest: interface.Instance, instance: Instance
 ) -> None:
     hba = instance.datadir / "pg_hba.conf"
     ident = instance.datadir / "pg_ident.conf"
     orig_hba = hba.read_text()
     orig_ident = ident.read_text()
-    instances.configure_auth(ctx, instance, instance_manifest)
+    instances.configure_auth(settings, instance, instance_manifest)
     assert hba.read_text() != orig_hba
     assert ident.read_text() != orig_ident
 

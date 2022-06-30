@@ -30,7 +30,7 @@ from pydantic import SecretStr
 from . import cmd, conf, databases, db, exceptions, roles, systemd, util
 from ._compat import Literal
 from .models import interface, system
-from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion
+from .settings import EXTENSIONS_CONFIG, PostgreSQLVersion, Settings
 from .task import task
 from .types import ConfigChanges, ConfigItem
 
@@ -353,7 +353,7 @@ def configuration(
         confitems["ssl_key_file"] = str(keyfile)
 
     site_confitems: Dict[str, Optional[pgconf.Value]] = {"cluster_name": manifest.name}
-    site_config_template = ctx.site_config("postgresql", "site.conf")
+    site_config_template = util.site_config("postgresql", "site.conf")
     if site_config_template is not None:
         site_confitems.update(pgconf.parse(site_config_template).as_dict())
 
@@ -464,18 +464,18 @@ def stopped(
 
 
 def configure_auth(
-    ctx: "BaseContext",
+    settings: Settings,
     instance: system.PostgreSQLInstance,
     manifest: interface.Instance,
 ) -> None:
     """Configure authentication for the PostgreSQL instance."""
     logger.info("configuring PostgreSQL authentication")
     hba_path = instance.datadir / "pg_hba.conf"
-    hba = manifest.pg_hba(ctx)
+    hba = manifest.pg_hba(settings)
     hba_path.write_text(hba)
 
     ident_path = instance.datadir / "pg_ident.conf"
-    ident = manifest.pg_ident(ctx)
+    ident = manifest.pg_ident(settings)
     ident_path.write_text(ident)
 
 
@@ -848,7 +848,7 @@ def apply(
             logger.info("creating replication user %s", replrole.name)
             with running(ctx, sys_instance):
                 roles.apply(ctx, sys_instance, replrole)
-        configure_auth(ctx, sys_instance, instance)
+        configure_auth(ctx.settings, sys_instance, instance)
 
     instance_is_running = is_running(ctx, sys_instance)
 

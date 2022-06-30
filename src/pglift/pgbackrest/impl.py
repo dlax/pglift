@@ -156,7 +156,7 @@ def setup(
     confd = conf_info(configdir)[0]
     pgconfigfile = confd / "pgbackrest.conf"
     if not pgconfigfile.exists():
-        config_template = ctx.site_config("postgresql", "pgbackrest.conf")
+        config_template = util.site_config("postgresql", "pgbackrest.conf")
         if config_template is not None:
             pgconfig = config_template.read_text().format(
                 execpath=settings.execpath, configpath=configpath, stanza=stanza

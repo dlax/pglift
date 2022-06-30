@@ -5,7 +5,8 @@ import shutil
 import subprocess
 from datetime import datetime
 from textwrap import dedent
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Type
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Type
+from unittest.mock import patch
 
 import pgtoolkit.conf
 import port_for
@@ -160,6 +161,27 @@ def postgresql_auth(request: Any) -> AuthType:
 
 
 @pytest.fixture(scope="session")
+def site_config(
+    site_config: Callable[..., pathlib.Path], postgresql_auth: AuthType
+) -> Iterator[Callable[..., pathlib.Path]]:
+    if postgresql_auth == AuthType.peer:
+
+        def test_site_config(*parts: str) -> Optional[pathlib.Path]:
+            """Lookup for configuration files in local data director first."""
+            datadir = pathlib.Path(__file__).parent / "data"
+            fpath = datadir.joinpath(*parts)
+            if fpath.exists():
+                return fpath
+            return site_config(*parts)
+
+        with patch("pglift.util.site_config", new=test_site_config) as fn:
+            yield fn  # type: ignore[misc]
+        return
+
+    yield site_config
+
+
+@pytest.fixture(scope="session")
 def postgresql_settings(
     tmp_path_factory: pytest.TempPathFactory, postgresql_auth: AuthType
 ) -> PostgreSQLSettings:
@@ -267,22 +289,11 @@ def pg_version(pg_bindir: Tuple[pathlib.Path, str]) -> str:
     return pg_bindir[1]
 
 
-class PeerAuthContext(Context):
-    @classmethod
-    def site_config(cls, *parts: str) -> Optional[pathlib.Path]:
-        datadir = pathlib.Path(__file__).parent / "data"
-        fpath = datadir.joinpath(*parts)
-        if fpath.exists():
-            return fpath
-        return super().site_config(*parts)
-
-
 @pytest.fixture(scope="session")
 def ctx(postgresql_auth: AuthType, settings: Settings) -> Context:
     logger = logging.getLogger("pglift")
     logger.setLevel(logging.DEBUG)
-    cls = PeerAuthContext if postgresql_auth == AuthType.peer else Context
-    context = cls(settings=settings)
+    context = Context(settings=settings)
     context.pm.trace.root.setwriter(print)
     context.pm.enable_tracing()
     return context

@@ -7,7 +7,7 @@ from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
 
 with check_required_libs():
     from pglift._compat import Protocol
-    from pglift.ctx import BaseContext, SiteMixin
+    from pglift.ctx import BaseContext
     from pglift.types import CompletedProcess
 
     if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class AnsibleLoggingHandler(logging.Handler):
             self._ansible_module.log(f"[record.levelname.lower()] {message}")
 
 
-class AnsibleContext(SiteMixin, BaseContext):
+class AnsibleContext(BaseContext):
     """Execution context that uses an Ansible module."""
 
     def __init__(self, module: _AnsibleModule, *, settings: "Settings") -> None:
