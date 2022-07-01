@@ -259,17 +259,15 @@ def configure(
             config: pgconf.Configuration = e.value
             break
         else:
-            if content is None:  # directory
-                kw = {"exist_ok": True, "parents": True}
-                if mode is not None:
-                    kw["mode"] = mode
-                path.mkdir(**kw)
-            else:
-                if path.exists() and path.read_text() == content:
-                    continue
-                if mode is not None:
-                    path.touch(mode=mode)
-                path.write_text(content)
+            if path.exists() and path.read_text() == content:
+                continue
+            if mode is not None:
+                path.touch(mode=mode)
+            path.write_text(content)
+
+    if "log_directory" in config:
+        logdir = Path(config.log_directory)  # type: ignore[arg-type]
+        logdir.mkdir(exist_ok=True, parents=True)
 
     original_content = postgresql_conf.read_text()
     if not any(line.startswith(include) for line in original_content.splitlines()):
@@ -313,9 +311,6 @@ def configuration(
     base: Optional[pgconf.Configuration],
 ) -> Generator[ConfigItem, None, pgconf.Configuration]:
     """Generator of configuration items (path, content, mode).
-
-    If 'content' is not None, 'path' is a file where 'content' should be
-    written to. Otherwise, it's a directory.
 
     Return merged configuration.
 
@@ -388,13 +383,7 @@ def configuration(
     user_config = conf.make(manifest.name, **confitems)
     yield user_conffile, "\n".join(user_config.lines), None
 
-    i_config = site_config + user_config
-
-    if "log_directory" in i_config:
-        logdir = Path(i_config.log_directory)  # type: ignore[arg-type]
-        yield conf.log_directory(datadir, logdir), None, None
-
-    return i_config
+    return site_config + user_config
 
 
 @contextlib.contextmanager

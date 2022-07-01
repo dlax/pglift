@@ -69,7 +69,7 @@ class CommandRunner(Protocol):
         ...
 
 
-ConfigItem: TypeAlias = Tuple[Path, Optional[str], Optional[int]]
+ConfigItem: TypeAlias = Tuple[Path, str, Optional[int]]
 ConfigChanges: TypeAlias = Dict[
     str, Tuple[Optional[pgconf.Value], Optional[pgconf.Value]]
 ]
