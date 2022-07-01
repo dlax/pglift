@@ -2,6 +2,7 @@ import io
 import socket
 
 import port_for
+import pydantic
 import yaml
 
 from pglift.types import Manifest, Port, StrEnum
@@ -34,6 +35,15 @@ def test_yaml() -> None:
     point = Point(x=0, y=1.2)
     s = point.yaml()
     assert s == "---\nx: 0.0\ny: 1.2\n"
+
+
+def test_copy_validate() -> None:
+    class S(Manifest):
+        f: str
+        g: str = pydantic.Field(default="unset", exclude=True)
+
+    s = S(f="f", g="g")
+    assert s._copy_validate({"g": "G"}).g == "G"
 
 
 def test_strenum() -> None:

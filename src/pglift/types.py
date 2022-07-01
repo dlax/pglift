@@ -188,7 +188,7 @@ class Manifest(BaseModel):
 
         (Internal method, mostly useful for test purpose.)
         """
-        return self.__class__.validate(self.copy(update=update).dict())
+        return self.__class__.validate(dict(self.dict(), **update))
 
 
 class ServiceManifest(Manifest):
