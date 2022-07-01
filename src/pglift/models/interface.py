@@ -471,10 +471,7 @@ class Instance(BaseInstance):
         __root__
           'port' field and configuration['port'] mistmatch (type=value_error)
         """
-        try:
-            port = values["port"]
-        except KeyError:
-            return values
+        port = values["port"]
         try:
             config_port = values.get("configuration", {})["port"]
         except KeyError:
