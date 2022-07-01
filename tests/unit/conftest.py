@@ -121,7 +121,9 @@ def instance_manifest(
     )
 
 
-def _instance(name: str, version: str, settings: Settings) -> Instance:
+def _instance(
+    name: str, version: str, postgresql_conf: str, settings: Settings
+) -> Instance:
     # Services are looked-up in reverse order of plugin registration.
     services: List[Any] = []
 
@@ -147,22 +149,11 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
     )
     instance.datadir.mkdir(parents=True)
     (instance.datadir / "PG_VERSION").write_text(instance.version)
-    (instance.datadir / "postgresql.conf").write_text(
-        "\n".join(
-            [
-                "port = 999",
-                "unix_socket_directories = /socks",
-                "# backslash_quote = 'safe_encoding'",
-            ]
-        )
-    )
+    (instance.datadir / "postgresql.conf").write_text(postgresql_conf)
     (instance.datadir / "pg_hba.conf").write_text(
         "# pg_hba.conf\nlocal all postgres peer\n"
     )
     (instance.datadir / "pg_ident.conf").write_text("# pg_ident.conf\nmymap test dba\n")
-    confdir = instance.datadir / "conf.pglift.d"
-    confdir.mkdir()
-    (confdir / "user.conf").write_text(f"bonjour = on\nbonjour_name= '{name}'\n")
 
     prometheus_config = prometheus_mod._configpath(
         instance.qualname, settings.prometheus
@@ -194,13 +185,28 @@ def _instance(name: str, version: str, settings: Settings) -> Instance:
 
 
 @pytest.fixture
-def instance(pg_version: str, settings: Settings, request: Any) -> Instance:
-    return _instance("test", pg_version, settings)
+def postgresql_conf() -> str:
+    return "\n".join(
+        [
+            "port = 999",
+            "unix_socket_directories = /socks",
+            "# backslash_quote = 'safe_encoding'",
+        ]
+    )
 
 
 @pytest.fixture
-def standby_instance(pg_version: str, settings: Settings) -> Instance:
-    instance = _instance("standby", pg_version, settings)
+def instance(
+    pg_version: str, postgresql_conf: str, settings: Settings, request: Any
+) -> Instance:
+    return _instance("test", pg_version, postgresql_conf, settings)
+
+
+@pytest.fixture
+def standby_instance(
+    pg_version: str, postgresql_conf: str, settings: Settings
+) -> Instance:
+    instance = _instance("standby", pg_version, postgresql_conf, settings)
     (
         instance.datadir
         / ("standby.signal" if int(pg_version) >= 12 else "recovery.conf")

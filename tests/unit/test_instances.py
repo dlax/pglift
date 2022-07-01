@@ -132,6 +132,7 @@ def test_configure(
     assert old_shared_buffers is None
     assert new_shared_buffers is not None and new_shared_buffers != "10 %"
     assert changes == {
+        "bonjour_name": ("overridden", None),
         "cluster_name": (None, "test"),
         "effective_cache_size": (None, "5MB"),
         "lc_messages": (None, "C"),
@@ -149,27 +150,21 @@ def test_configure(
         ),
     }
 
-    with postgresql_conf.open() as f:
-        line1 = f.readline().strip()
-    assert line1 == "include_dir = 'conf.pglift.d'"
-
-    site_configfpath = configdir / "conf.pglift.d" / "site.conf"
-    user_configfpath = configdir / "conf.pglift.d" / "user.conf"
-    lines = user_configfpath.read_text().splitlines()
+    postgresql_conf = configdir / "postgresql.conf"
+    content = postgresql_conf.read_text()
+    lines = content.splitlines()
     assert "port = 5433" in lines
-    site_config = site_configfpath.read_text()
-    assert "cluster_name = 'test'" in site_config.splitlines()
-    assert re.search(r"shared_buffers = '\d+ [kMGT]?B'", site_config)
-    assert "effective_cache_size" in site_config
+    assert "cluster_name = 'test'" in lines
+    assert re.search(r"shared_buffers = '\d+ [kMGT]?B'", content)
+    assert "effective_cache_size" in content
     assert (
-        f"unix_socket_directories = '{ctx.settings.prefix}/run/postgresql'"
-        in site_config
+        f"unix_socket_directories = '{ctx.settings.prefix}/run/postgresql'" in content
     )
 
     with postgresql_conf.open() as f:
         config = parse_pgconf(f)
     assert config.port == 5433
-    assert config.bonjour_name == "overridden"
+    assert config.entries["bonjour_name"].commented
     assert config.cluster_name == "test"
 
     changes = instances.configure(
@@ -200,11 +195,7 @@ def test_configure(
     }
 
     # Same configuration, no change.
-    mtime_before = (
-        postgresql_conf.stat().st_mtime,
-        site_configfpath.stat().st_mtime,
-        user_configfpath.stat().st_mtime,
-    )
+    mtime_before = postgresql_conf.stat().st_mtime
     changes = instances.configure(
         ctx,
         instance_manifest._copy_validate(
@@ -217,15 +208,11 @@ def test_configure(
         ),
     )
     assert changes == {}
-    mtime_after = (
-        postgresql_conf.stat().st_mtime,
-        site_configfpath.stat().st_mtime,
-        user_configfpath.stat().st_mtime,
-    )
+    mtime_after = postgresql_conf.stat().st_mtime
     assert mtime_before == mtime_after
 
     changes = instances.configure(ctx, instance_manifest._copy_validate({"ssl": True}))
-    lines = user_configfpath.read_text().splitlines()
+    lines = postgresql_conf.read_text().splitlines()
     assert "ssl = on" in lines
     crt = configdir / "server.crt"
     key = configdir / "server.key"
@@ -245,7 +232,7 @@ def test_configure(
         "ssl_cert_file": (None, str(cert_file)),
         "ssl_key_file": (None, str(key_file)),
     }
-    lines = user_configfpath.read_text().splitlines()
+    lines = postgresql_conf.read_text().splitlines()
     assert "ssl = on" in lines
     assert f"ssl_cert_file = '{instance.datadir / 'c.crt'}'" in lines
     assert f"ssl_key_file = '{instance.datadir / 'k.key'}'" in lines

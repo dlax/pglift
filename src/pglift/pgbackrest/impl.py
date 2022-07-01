@@ -11,7 +11,6 @@ from pgtoolkit import conf as pgconf
 
 from .. import exceptions, instances, roles, util
 from .._compat import Literal
-from ..conf import info as conf_info
 from ..models import interface
 from ..task import task
 from ..types import BackupType
@@ -152,16 +151,19 @@ def setup(
 
     directory.mkdir(exist_ok=True, parents=True)
 
-    configdir = instance.datadir
-    confd = conf_info(configdir)[0]
-    pgconfigfile = confd / "pgbackrest.conf"
-    if not pgconfigfile.exists():
-        config_template = util.site_config("postgresql", "pgbackrest.conf")
-        if config_template is not None:
-            pgconfig = config_template.read_text().format(
-                execpath=settings.execpath, configpath=configpath, stanza=stanza
-            )
-            pgconfigfile.write_text(pgconfig)
+
+def postgresql_configuration(
+    instance: "system.PostgreSQLInstance", settings: "PgBackRestSettings"
+) -> pgconf.Configuration:
+    config_template = util.site_config("postgresql", "pgbackrest.conf")
+    config = pgconf.Configuration()
+    if config_template is not None:
+        configpath = _configpath(instance, settings)
+        pgconfig = config_template.read_text().format(
+            execpath=settings.execpath, configpath=configpath, stanza=instance.qualname
+        )
+        list(config.parse(pgconfig.splitlines()))
+    return config
 
 
 @setup.revert("deconfiguring pgBackRest")
@@ -188,12 +190,6 @@ def revert_setup(
 
     if directory.exists():
         ctx.rmtree(directory)
-
-    configdir = instance.datadir
-    confd = conf_info(configdir)[0]
-    pgconfigfile = confd / "pgbackrest.conf"
-    if pgconfigfile.exists():
-        pgconfigfile.unlink()
 
 
 @task("initializing pgBackRest repository")

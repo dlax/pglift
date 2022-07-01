@@ -1,6 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Dict
 
+from pgtoolkit.conf import Configuration
+
 from .. import exceptions, hookimpl
 from ..models import system
 from . import impl
@@ -12,7 +14,6 @@ from .impl import restore as restore
 
 if TYPE_CHECKING:
     import click
-    from pgtoolkit.conf import Configuration
 
     from ..ctx import BaseContext
     from ..models import interface
@@ -20,6 +21,17 @@ if TYPE_CHECKING:
 __all__ = ["available", "backup", "expire", "iter_backups", "restore"]
 
 logger = logging.getLogger(__name__)
+
+
+@hookimpl  # type: ignore[misc]
+def instance_configuration(
+    ctx: "BaseContext", manifest: "interface.Instance"
+) -> "Configuration":
+    settings = available(ctx)
+    if not settings:
+        return Configuration()
+    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    return impl.postgresql_configuration(instance, settings)
 
 
 @hookimpl  # type: ignore[misc]

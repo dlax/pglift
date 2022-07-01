@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from pgtoolkit import conf as pgconf
 
-from . import __name__ as pkgname
 from . import exceptions, util
 
 if TYPE_CHECKING:
@@ -22,42 +21,24 @@ def make(instance: str, **confitems: Optional[pgconf.Value]) -> pgconf.Configura
     return conf
 
 
-def info(configdir: Path) -> Tuple[Path, str]:
-    """Return (confd, include) where `confd` is the path to
-    directory where managed configuration files live and `include` is an
-    include directive to be inserted in main 'postgresql.conf'.
-    """
-    confd = Path(f"conf.{pkgname}.d")
-    include = f"include_dir = '{confd}'"
-    confd = configdir / confd
-    return confd, include
-
-
 def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     """Return parsed PostgreSQL configuration for given `configdir`.
 
     If ``managed_only`` is ``True``, only the managed configuration is
-    returned, otherwise the fully parsed configuration is returned.
+    returned excluding 'postgresql.auto.conf' or 'recovery.conf', otherwise
+    the fully parsed configuration is returned.
 
     :raises ~exceptions.FileNotFoundError: if expected configuration file is missing.
     """
-
-    def conffile_notfound(path: Path) -> exceptions.FileNotFoundError:
-        return exceptions.FileNotFoundError(
-            f"PostgreSQL configuration file {path} not found"
-        )
-
-    if managed_only:
-        confd = info(configdir)[0]
-        conffile = confd / "user.conf"
-        if not conffile.exists():
-            raise conffile_notfound(conffile)
-        return pgconf.parse(conffile)
-
     postgresql_conf = configdir / "postgresql.conf"
     if not postgresql_conf.exists():
-        raise conffile_notfound(postgresql_conf)
+        raise exceptions.FileNotFoundError(
+            f"PostgreSQL configuration file {postgresql_conf} not found"
+        )
     config = pgconf.parse(postgresql_conf)
+
+    if managed_only:
+        return config
 
     for extra_conf in ("postgresql.auto.conf", "recovery.conf"):
         try:

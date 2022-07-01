@@ -4,5 +4,4 @@ PostgreSQL configuration management
 ===================================
 
 .. autofunction:: make
-.. autofunction:: info
 .. autofunction:: read

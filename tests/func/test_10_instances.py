@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import psycopg
 import pytest
+from pgtoolkit import conf as pgconf
 from pgtoolkit.ctl import Status
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
@@ -27,17 +28,15 @@ def test_directories(instance: system.Instance) -> None:
     assert (instance.waldir / "archive_status").is_dir()
 
 
-def test_config(instance: system.Instance) -> None:
+def test_config(
+    instance: system.Instance, instance_manifest: interface.Instance
+) -> None:
     postgresql_conf = instance.datadir / "postgresql.conf"
     assert postgresql_conf.exists()
-    with postgresql_conf.open() as f:
-        for line in f:
-            if line.strip() == "include_dir = 'conf.pglift.d'":
-                continue
-            sline = line.lstrip()
-            assert not sline or sline.startswith(
-                "#"
-            ), f"found uncommented line in postgresql.conf: {line}"
+    pgconfig = pgconf.parse(postgresql_conf)
+    assert set(k for k, v in pgconfig.entries.items() if not v.commented) & set(
+        instance_manifest.configuration
+    )
 
 
 def test_psqlrc(instance: system.Instance) -> None:
@@ -302,29 +301,45 @@ def test_apply(
 
 
 def test_get(
-    ctx: Context, instance: system.Instance, log_directory: Path, powa_available: bool
+    ctx: Context,
+    instance: system.Instance,
+    log_directory: Path,
+    pgbackrest_available: bool,
+    powa_available: bool,
 ) -> None:
     im = instances.get(ctx, instance.name, instance.version)
     assert im is not None
     assert im.name == "test"
     config = im.configuration
     assert im.port == instance.port
-    if "log_directory" in config:
-        logdir = config.pop("log_directory")
-        assert logdir == str(log_directory)
+    # Pop host-dependent values.
+    del config["effective_cache_size"]
+    del config["shared_buffers"]
     spl = "passwordcheck"
     extensions = ["passwordcheck"]
     if powa_available:
         spl += ", pg_qualstats, pg_stat_statements, pg_stat_kcache"
         extensions += ["pg_qualstats", "pg_stat_statements", "pg_stat_kcache"]
-    assert config == {
+    socket_directory = str(ctx.settings.postgresql.socket_directory).format(
+        instance=instance
+    )
+    expected_config = {
+        "cluster_name": "test",
         "lc_messages": "C",
         "lc_monetary": "C",
         "lc_numeric": "C",
         "lc_time": "C",
+        "log_destination": "stderr",
+        "log_directory": str(log_directory),
         "logging_collector": False,
         "shared_preload_libraries": spl,
+        "unix_socket_directories": socket_directory,
     }
+    if pgbackrest_available:
+        del config["archive_command"]
+        expected_config["archive_mode"] = True
+        expected_config["wal_level"] = "replica"
+    assert config == expected_config
     if int(instance.version) <= 10:
         assert im.data_checksums is None
     else:

@@ -12,23 +12,24 @@ from pglift.settings import Settings
 
 def test_read(pg_version: str, settings: Settings, tmp_path: Path) -> None:
     datadir = tmp_path
-    (datadir / "postgresql.auto.conf").touch()
+    postgresql_auto_conf = datadir / "postgresql.auto.conf"
+    postgresql_auto_conf.write_text("primary_conn_info = host=primary\n")
     postgresql_conf = datadir / "postgresql.conf"
-    postgresql_conf.touch()
     postgresql_conf.write_text("\n".join(["bonjour = hello", "port=1234"]))
 
-    config = conf.read(tmp_path)
+    config = conf.read(datadir)
     config.bonjour == "hello"
     config.port == 1234
+    config.primary_conn_info == "host=primary"
 
-    user_conf = datadir / "conf.pglift.d" / "user.conf"
-    with pytest.raises(FileNotFoundError, match=str(user_conf)):
+    config = conf.read(datadir, managed_only=True)
+    config.bonjour == "hello"
+    config.port == 1234
+    assert "primary_conn_info" not in config
+
+    postgresql_conf.unlink()
+    with pytest.raises(FileNotFoundError, match=str(postgresql_conf)):
         conf.read(datadir, True)
-    user_conf.parent.mkdir(parents=True)
-    user_conf.write_text("\n".join(["port=5555"]))
-    mconf = conf.read(datadir, True)
-    assert mconf is not None
-    assert mconf.port == 5555
 
 
 def test_update(datadir: Path, write_changes: bool) -> None:

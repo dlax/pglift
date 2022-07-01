@@ -4,57 +4,74 @@ PostgreSQL configuration
 ========================
 
 Instances created by pglift have their configuration managed. This is handled
-by writing these configuration items into specific files located in the
-``conf.pglift.d`` directory within instance's data directory. An include
-directive is then inserted on top of main ``postgresql.conf`` file.
+by writing configuration items into ``postgresql.conf`` within instance's data
+directory.
 
-For instance, given a ``13/main`` instance, we'll have the following
-configuration tree:
+Instance configuration is built from
+site-wise ``postgresql.conf`` file (or a template) that might be present in
+``$XDG_CONFIG_HOME/pglift/postgresql/postgresql.conf`` [#xdgconfighome]_ or
+``/etc/pglift/postgresql/postgresql.conf`` (by order of precedence). The
+default ``postgresql.conf`` template file contains:
 
-.. code-block:: bash
-
-    $prefix/srv/pgsql/13/main/data/
-    ├── conf.pglift.d
-    │   ├── pgbackrest.conf
-    │   ├── site.conf
-    │   └── user.conf
-    ├── postgresql.auto.conf
-    └── postgresql.conf
-
-Head of ``postgresql.conf`` contains:
-
-.. code-block::
+.. literalinclude:: ../../../src/pglift/data/postgresql/postgresql.conf
+   :language: ini
    :caption: postgresql.conf
 
-    include_dir = 'conf.pglift.d'
+Memory settings (``shared_buffers`` and ``effective_cache_size``) may be
+specified as a percentage of total system memory. ``unix_socket_directories``
+value will be computed from site settings for the ``socket_directory`` defined
+in ``postgresql`` section.
 
-    # -----------------------------
-    # PostgreSQL configuration file
-    # -----------------------------
-    #
+Then, some satellite components (e.g. pgBackRest) may define some PostgreSQL
+configuration settings they might need for proper operation.
+
+Finally, any user-supplied value (e.g. the ``port`` or ``locale`` options or
+any other one provided through, e.g., the Ansible module) overrides the
+configuration:
+
+::
+
+    $ pglift instance create --port=5678 --locale=fr_FR --encoding=latin1 main
+    $ pglift instance exec main -- psql -c "select name, setting from pg_settings where source = 'configuration file';"
+              name           |                                                         setting
+    -------------------------+--------------------------------------------------------------------------------------------------------------------------
+     archive_command         | /usr/bin/pgbackrest --config=/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p
+     archive_mode            | on
+     cluster_name            | main
+     effective_cache_size    | 524288
+     lc_messages             | fr_FR
+     lc_monetary             | fr_FR
+     lc_numeric              | fr_FR
+     lc_time                 | fr_FR
+     log_destination         | stderr
+     logging_collector       | on
+     port                    | 5678
+     shared_buffers          | 131072
+     unix_socket_directories | /run/user/1000/pglift/postgresql
+     wal_level               | replica
+    (14 rows)
 
 
-File ``conf.pglift.d/pgbackrest.conf`` contains configuration items needed for
-pgBackRest to operate. Any other satellite service needing to override
-PostgreSQL configuration would have its file there.
 
-File ``conf.pglift.d/user.conf`` contains configuration items defined by the
-user at instance creation or update.
+.. seealso::
+   The ``pgconf`` command to manage :ref:`PostgreSQL configuration <pgconf>`.
+   ::
 
-File ``conf.pglift.d/site.conf`` contains site-wise configuration items, if
-any. The content of this file, or a template, might be defined on site by
-writing to ``$XDG_CONFIG_HOME/pglift/postgresql/site.conf`` [#xdgconfighome]_
-or ``/etc/pglift/postgresql/site.conf`` (by order of precedence). The default
-``site.conf`` file contains:
-
-.. literalinclude:: ../../../src/pglift/data/postgresql/site.conf
-   :caption: site.conf
-
-Since the include directive is located on top of ``postgresql.conf`` file, any
-setting defined in that file (and kept after the include directive) will take
-precedence over the managed configuration.
-
-.. seealso:: The ``pgconf`` command to manage :ref:`PostgreSQL configuration <pgconf>`.
+        $ pglift pgconf -i main show
+        port = 5678
+        unix_socket_directories = '/run/user/1000/pglift/postgresql'
+        shared_buffers = '1 GB'
+        wal_level = 'replica'
+        archive_mode = on
+        archive_command = '/usr/bin/pgbackrest --config=/etc/pgbackrest/pgbackrest-14-main.conf --stanza=14-main archive-push %p'
+        effective_cache_size = '4 GB'
+        log_destination = 'stderr'
+        logging_collector = on
+        cluster_name = 'main'
+        lc_messages = 'fr_FR'
+        lc_monetary = 'fr_FR'
+        lc_numeric = 'fr_FR'
+        lc_time = 'fr_FR'
 
 .. [#xdgconfighome]
    Where ``$XDG_CONFIG_DIR`` would be ``$HOME/.config`` unless configured

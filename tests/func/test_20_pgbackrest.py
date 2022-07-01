@@ -6,7 +6,6 @@ from typing import Iterator
 import pytest
 
 from pglift import instances, types
-from pglift.conf import info as conf_info
 from pglift.ctx import Context
 from pglift.models import interface, system
 from pglift.pgbackrest import impl as pgbackrest
@@ -58,13 +57,12 @@ def test_configure(
     lines = ctx.settings.postgresql.auth.passfile.read_text().splitlines()
     assert any(line.startswith(f"*:{instance.port}:*:backup:") for line in lines)
 
-    configdir = instance.datadir
-    confd = conf_info(configdir)[0]
-    pgconfigfile = confd / "pgbackrest.conf"
+    pgconfigfile = instance.datadir / "postgresql.conf"
     pgconfig = pgconfigfile.read_text().splitlines()
     assert (
         f"archive_command = '{pgbackrest_settings.execpath} --config={configpath}"
         f" --stanza={instance.version}-{instance.name} archive-push %p'"
+        "  # command to use to archive a logfile segment"
     ) in pgconfig
 
     # Calling setup an other time doesn't overwrite configuration

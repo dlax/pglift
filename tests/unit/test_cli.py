@@ -878,17 +878,17 @@ def test_pgconf_set(
             obj=obj,
         )
     assert result.exit_code == 0
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    config = dict(
-        manifest.configuration,
-        bonjour=True,
-        bonjour_name="test",
-        cluster_name="unittests",
-        foo="bar",
+    manifest = interface.Instance(
+        name=instance.name,
+        version=instance.version,
+        configuration={
+            "port": 999,
+            "unix_socket_directories": "/socks",
+            "cluster_name": "unittests",
+            "foo": "bar",
+        },
     )
-    configure.assert_called_once_with(
-        ctx, manifest._copy_validate({"configuration": config})
-    )
+    configure.assert_called_once_with(ctx, manifest)
     assert "foo: baz -> bar" in result.stderr
 
     with patch.object(
@@ -909,16 +909,17 @@ def test_pgconf_set(
             obj=obj,
         )
     assert result.exit_code == 0
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    config = dict(
-        manifest.configuration,
-        bonjour=True,
-        bonjour_name="changed",
-        foo="bar",
+    manifest = interface.Instance(
+        name=instance.name,
+        version=instance.version,
+        configuration={
+            "bonjour_name": "changed",
+            "port": 999,
+            "unix_socket_directories": "/socks",
+            "foo": "bar",
+        },
     )
-    configure.assert_called_once_with(
-        ctx, manifest._copy_validate({"configuration": config})
-    )
+    configure.assert_called_once_with(ctx, manifest)
     assert "bonjour_name: test -> changed" in result.stderr
     assert "foo: baz -> bar" not in result.stderr
     assert "changes in 'foo' not applied" in result.stderr
@@ -937,26 +938,26 @@ def test_pgconf_remove(
     assert "'fsync' not found in managed configuration" in result.stderr
 
     with patch.object(
-        instances, "configure", return_value={"bonjour_name": ("test", None)}
+        instances,
+        "configure",
+        return_value={"unix_socket_directories": ("/socks", None)},
     ) as configure:
         result = runner.invoke(
             cli,
-            ["pgconf", f"--instance={instance}", "remove", "bonjour_name"],
+            ["pgconf", f"--instance={instance}", "remove", "unix_socket_directories"],
             obj=obj,
         )
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    config = dict(manifest.configuration, bonjour=True)
-    configure.assert_called_once_with(
-        ctx, manifest._copy_validate({"configuration": config})
-    )
     assert result.exit_code == 0, result.stderr
-    assert "bonjour_name: test -> None" in result.stderr
+    assert "unix_socket_directories: /socks -> None" in result.stderr
+    manifest = interface.Instance(
+        name=instance.name, version=instance.version, configuration={"port": 999}
+    )
+    configure.assert_called_once_with(ctx, manifest)
 
 
 def test_pgconf_edit(
-    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance
+    runner: CliRunner, ctx: Context, obj: Obj, instance: Instance, postgresql_conf: str
 ) -> None:
-    user_conf = instance.datadir / "conf.pglift.d" / "user.conf"
     with patch("click.edit", return_value="bonjour = bonsoir\n") as edit, patch.object(
         instances, "configure", return_value={"bonjour": ("on", "'matin")}
     ) as configure:
@@ -966,14 +967,13 @@ def test_pgconf_edit(
             obj=obj,
         )
     assert result.exit_code == 0, result.stderr
-    edit.assert_called_once_with(text=user_conf.read_text())
-    manifest = interface.Instance(name=instance.name, version=instance.version)
-    configure.assert_called_once_with(
-        ctx,
-        manifest._copy_validate(
-            {"configuration": dict(manifest.configuration, bonjour="bonsoir")}
-        ),
+    edit.assert_called_once_with(text=postgresql_conf)
+    manifest = interface.Instance(
+        name=instance.name,
+        version=instance.version,
+        configuration={"bonjour": "bonsoir"},
     )
+    configure.assert_called_once_with(ctx, manifest)
     assert result.stderr == "bonjour: on -> 'matin\n"
 
     with patch("click.edit", return_value=None) as edit, patch.object(

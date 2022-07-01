@@ -107,7 +107,7 @@ Set multiple parameters:
 
         $ pglift pgconf -i main edit
 
-    this will open your text editor with the *user* configuration.
+    this will open your text editor with the configuration.
 
 Remove parameters configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

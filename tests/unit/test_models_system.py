@@ -129,13 +129,9 @@ def test_postgresqlinstance_port(instance: Instance) -> None:
 
 
 def test_postgresqlinstance_config(instance: Instance) -> None:
-    config = instance.config()
-    assert config.port == 999
-    assert config.unix_socket_directories == "/socks"
-
-    assert instance.config(managed_only=True).as_dict() == {
-        "bonjour": True,
-        "bonjour_name": "test",
+    assert instance.config().as_dict() == {
+        "port": 999,
+        "unix_socket_directories": "/socks",
     }
 
 
