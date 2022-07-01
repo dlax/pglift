@@ -310,7 +310,7 @@ def configuration(
     *,
     datadir: Path,
     includedir: Path,
-    base: pgconf.Configuration,
+    base: Optional[pgconf.Configuration],
 ) -> Generator[ConfigItem, None, pgconf.Configuration]:
     """Generator of configuration items (path, content, mode).
 
@@ -343,7 +343,7 @@ def configuration(
     ssl = manifest.ssl
     if ssl:
         confitems["ssl"] = True
-    if not base.get("ssl", False) and ssl is True:
+    if (base is None or not base.get("ssl", False)) and ssl is True:
         crt, key = util.generate_certificate(
             run_command=functools.partial(ctx.run, log_output=False)
         )
