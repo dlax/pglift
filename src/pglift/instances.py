@@ -319,10 +319,6 @@ def configuration(
     `~pathlib.Path` corresponding to the location of SSL cert file and key
     file to use may also be passed.
 
-    `values` defines configuration items to be set in managed configuration
-    file. This should be a *complete definition*: any item present in the
-    configuration file and absent from this mapping will be dropped.
-
     'shared_buffers' and 'effective_cache_size' setting, if defined and set to
     a percent-value, will be converted to proper memory value relative to the
     total memory available on the system.
