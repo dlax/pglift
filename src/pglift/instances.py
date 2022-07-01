@@ -256,7 +256,7 @@ def configure(
         try:
             path, content, mode = next(configgen)
         except StopIteration as e:
-            config = e.value
+            config: pgconf.Configuration = e.value
             break
         else:
             if content is None:  # directory
