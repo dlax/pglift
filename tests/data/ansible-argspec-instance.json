@@ -86,7 +86,8 @@
   "port": {
     "default": 5432,
     "description": [
-      "TCP port the postgresql instance will be listening to"
+      "TCP port the postgresql instance will be listening to",
+      "If unspecified, default to 5432 unless a 'port' setting is found in 'configuration'"
     ],
     "type": "int"
   },

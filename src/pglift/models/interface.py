@@ -364,7 +364,10 @@ class Instance(BaseInstance):
 
     port: Port = Field(
         default=Port(default_port),
-        description="TCP port the postgresql instance will be listening to.",
+        description=(
+            "TCP port the postgresql instance will be listening to. "
+            f"If unspecified, default to {default_port} unless a 'port' setting is found in 'configuration'."
+        ),
     )
     ssl: Union[bool, Tuple[Path, Path]] = Field(
         default=False,
@@ -470,6 +473,9 @@ class Instance(BaseInstance):
         pydantic.error_wrappers.ValidationError: 1 validation error for Instance
         __root__
           'port' field and configuration['port'] mistmatch (type=value_error)
+        >>> i = Instance(name="i", configuration={"port": 123})
+        >>> i.port
+        123
         """
         port = values["port"]
         try:
@@ -477,7 +483,10 @@ class Instance(BaseInstance):
         except KeyError:
             return values
         if config_port != port:
-            raise ValueError("'port' field and configuration['port'] mistmatch")
+            if port == default_port:
+                values["port"] = config_port
+            else:
+                raise ValueError("'port' field and configuration['port'] mistmatch")
         return values
 
     _S = TypeVar("_S", bound=ServiceManifest)
