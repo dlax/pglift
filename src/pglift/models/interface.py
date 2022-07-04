@@ -387,7 +387,7 @@ class Instance(BaseInstance):
             return psycopg.conninfo.make_conninfo(self.for_, **kw)
 
     port: Port = Field(
-        default=Port(default_port),
+        default=None,
         description=(
             "TCP port the postgresql instance will be listening to. "
             f"If unspecified, default to {default_port} unless a 'port' setting is found in 'configuration'."
@@ -483,34 +483,66 @@ class Instance(BaseInstance):
         writeOnly=True,
     )
 
-    @root_validator
+    @root_validator(pre=True)
     def __validate_port_(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate that 'port' field and configuration['port'] are consistent.
 
-        >>> Instance(name="i")
-        Instance(name='i', ...)
-        >>> Instance(name="i", port=123, configuration={"port": 123})
-        Instance(name='i', ...)
+        If unspecified, 'port' is either set from configuration value or from
+        the default port value.
+
+        >>> i = Instance(name="i")
+        >>> i.port, "port" in i.configuration
+        (5432, False)
+        >>> i = Instance(name="i", configuration={"port": 5423})
+        >>> i.port, i.configuration["port"]
+        (5423, 5423)
+        >>> i = Instance(name="i", port=5454)
+        >>> i.port, "port" in i.configuration
+        (5454, False)
+
+        Otherwise, and if configuration['port'] exists, make sure values are
+        consistent and possibly cast the latter as an integer.
+
+        >>> i = Instance(name="i", configuration={"port": 5455})
+        >>> i.port, i.configuration["port"]
+        (5455, 5455)
+        >>> i = Instance(name="i", port=123, configuration={"port": "123"})
+        >>> i.port, i.configuration["port"]
+        (123, 123)
         >>> Instance(name="i", port=321, configuration={"port": 123})
         Traceback (most recent call last):
             ...
         pydantic.error_wrappers.ValidationError: 1 validation error for Instance
         __root__
           'port' field and configuration['port'] mistmatch (type=value_error)
-        >>> i = Instance(name="i", configuration={"port": 123})
-        >>> i.port
-        123
+        >>> Instance(name="i", configuration={"port": "abc"})
+        Traceback (most recent call last):
+            ...
+        pydantic.error_wrappers.ValidationError: 1 validation error for Instance
+        __root__
+          invalid literal for int() with base 10: 'abc' (type=value_error)
         """
-        port = values["port"]
+        config_port = None
         try:
-            config_port = values.get("configuration", {})["port"]
+            port = values["port"]
         except KeyError:
-            return values
-        if config_port != port:
-            if port == default_port:
-                values["port"] = config_port
+            try:
+                config_port = int(values["configuration"]["port"])
+            except KeyError:
+                port = default_port
             else:
-                raise ValueError("'port' field and configuration['port'] mistmatch")
+                port = config_port
+            values["port"] = Port(port)
+        else:
+            try:
+                config_port = int(values["configuration"]["port"])
+            except KeyError:
+                pass
+            else:
+                if config_port != port:
+                    raise ValueError("'port' field and configuration['port'] mistmatch")
+        if config_port is not None:
+            values["configuration"]["port"] = config_port
         return values
 
     _S = TypeVar("_S", bound=ServiceManifest)
