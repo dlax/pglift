@@ -211,5 +211,6 @@ def database_run(
 @pass_instance
 @pass_ctx
 def database_dump(ctx: Context, instance: system.Instance, dbname: str) -> None:
+    """Dump a database"""
     with instances.running(ctx, instance):
         databases.dump(ctx, instance, dbname)
