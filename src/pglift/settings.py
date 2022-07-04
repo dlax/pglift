@@ -349,7 +349,7 @@ class PostgreSQLSettings(BaseSettings):
             "{bindir}/pg_dump",
             "-Fc",
             "-f",
-            "{path}/{dbname}-{date}.dump",
+            "{path}/{dbname}_{date}.dump",
             "-d",
             "{conninfo}",
         ],

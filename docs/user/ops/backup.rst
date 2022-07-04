@@ -117,7 +117,7 @@ The `dumps_directory` and `dump_command` can be adjusted in the site settings
      - "{bindir}/pg_dump"
      - -Fc
      - -f
-     - "{path}/{dbname}-{date}.dump"
+     - "{path}/{dbname}_{date}.dump"
      - -d
      - "{conninfo}"
 
@@ -128,7 +128,7 @@ Here's an example of a command that simply dumps the database in SQL format:
    dump_command:
      - "{bindir}/pg_dump"
      - -f
-     - "{path}/{dbname}-{date}.sql"
+     - "{path}/{dbname}_{date}.sql"
      - -d
      - "{conninfo}"
 

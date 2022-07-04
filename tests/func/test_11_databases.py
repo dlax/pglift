@@ -266,4 +266,4 @@ def test_dump(
     )
     assert directory.exists()
     (filepath,) = directory.iterdir()
-    assert fnmatch.fnmatch(str(filepath), "*dbtodump-*.dump"), filepath
+    assert fnmatch.fnmatch(str(filepath), "*dbtodump_*.dump"), filepath
