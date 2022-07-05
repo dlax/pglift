@@ -67,6 +67,30 @@ def read(configdir: Path, managed_only: bool = False) -> pgconf.Configuration:
     return config
 
 
+def update(base: pgconf.Configuration, **values: pgconf.Value) -> None:
+    """Update 'base' configuration so that it contains new values.
+
+    Entries absent from 'values' but present in 'base' are commented out.
+    """
+    with base.edit() as entries:
+        for key, value in list(entries.items()):
+            if value.commented:
+                continue
+            try:
+                new = values.pop(key)
+            except KeyError:
+                entries[key].commented = True
+            else:
+                entries[key].value = new
+                entries[key].commented = False
+        for key, val in values.items():
+            try:
+                entries[key].value = val
+                entries[key].commented = False
+            except KeyError:
+                entries.add(key, val)
+
+
 def log_directory(datadir: Path, path: Path) -> Path:
     if not path.is_absolute():
         path = datadir / path

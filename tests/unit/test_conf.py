@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Tuple
 
 import pytest
+from pgtoolkit import conf as pgconf
 
 from pglift import conf
 from pglift.ctx import Context
@@ -28,6 +29,21 @@ def test_read(pg_version: str, settings: Settings, tmp_path: Path) -> None:
     mconf = conf.read(datadir, True)
     assert mconf is not None
     assert mconf.port == 5555
+
+
+def test_update(datadir: Path, write_changes: bool) -> None:
+    cfg = pgconf.parse(datadir / "postgresql.conf.sample")
+    conf.update(
+        cfg,
+        max_connections=10,  # changed
+        bonjour=True,  # uncommented
+        log_destination="stderr",  # added
+    )
+    fpath = datadir / "postgresql.conf"
+    if write_changes:
+        cfg.save(fpath)
+    expected = fpath.read_text().splitlines(keepends=True)
+    assert cfg.lines == expected
 
 
 @pytest.fixture(params=["relative", "absolute"])
