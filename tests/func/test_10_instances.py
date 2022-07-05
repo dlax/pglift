@@ -7,7 +7,6 @@ from unittest.mock import patch
 import psycopg
 import pytest
 from pgtoolkit.ctl import Status
-from pydantic import SecretStr
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
@@ -331,14 +330,13 @@ def test_get(
     else:
         assert im.data_checksums is False
     assert im.state.name == "stopped"
-    assert not im.surole_password
     assert [e.name for e in im.extensions] == extensions
     assert not im.pending_restart
 
     with instances.running(ctx, instance):
         im = instances.get(ctx, instance.name, instance.version)
-        assert isinstance(im.surole_password, SecretStr)
         assert not im.pending_restart
+        assert im.locale
 
 
 def test_list(ctx: Context, instance: system.Instance) -> None:

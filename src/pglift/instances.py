@@ -1010,16 +1010,10 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
             if spl.strip()
         ]
 
-    surole_password = replrole_password = None
     locale = None
     encoding = None
     pending_rst = False
     if instance_is_running:
-        if instance.standby is None:
-            surole_name = ctx.settings.postgresql.surole.name
-            surole_password = roles.get(ctx, instance, surole_name).password
-            replrole = ctx.settings.postgresql.replrole
-            replrole_password = roles.get(ctx, instance, replrole).password
         locale = get_locale(ctx, instance)
         encoding = get_encoding(ctx, instance)
         extensions += [
@@ -1041,8 +1035,6 @@ def _get(ctx: "BaseContext", instance: system.Instance) -> interface.Instance:
         pending_restart=pending_rst,
         ssl=config.get("ssl", False),
         configuration=managed_config,
-        surole_password=surole_password,
-        replrole_password=replrole_password,
         locale=locale,
         encoding=encoding,
         data_checksums=data_checksums,
