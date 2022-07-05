@@ -233,6 +233,11 @@ def configure(
 ) -> ConfigChanges:
     """Write instance's configuration in postgresql.conf.
 
+    `manifest.ssl` parameter controls SSL configuration. If False, SSL is not
+    enabled. If True, a self-signed certificate is generated. A tuple of two
+    `~pathlib.Path` corresponding to the location of SSL cert file and key
+    file to use may also be passed.
+
     Also compute changes to the overall PostgreSQL configuration and return it
     as a 'ConfigChanges' dictionary.
     """
@@ -240,21 +245,18 @@ def configure(
         ctx, (manifest.name, manifest.version)
     )
     datadir = sys_instance.datadir
-    postgresql_conf = datadir / "postgresql.conf"
-    base = pgconf.parse(postgresql_conf)
-    config, ssl_cert_files = configuration(ctx, manifest, datadir=datadir, base=base)
-    for path, content in ssl_cert_files:
-        assert not path.exists()
-        path.touch(mode=0o600)
-        path.write_text(content)
+    configure_ssl(ctx, manifest.configuration, datadir)
+    config = configuration(ctx, manifest)
+
     if "log_directory" in config:
         logdir = Path(config.log_directory)  # type: ignore[arg-type]
         logdir.mkdir(exist_ok=True, parents=True)
 
+    postgresql_conf = pgconf.parse(datadir / "postgresql.conf")
     changes: ConfigChanges = {}
-    config_before = base.as_dict()
-    conf.update(base, **config.as_dict())
-    config_after = base.as_dict()
+    config_before = postgresql_conf.as_dict()
+    conf.update(postgresql_conf, **config.as_dict())
+    config_after = postgresql_conf.as_dict()
     for k in set(config_before) | set(config_after):
         pv = config_before.get(k)
         nv = config_after.get(k)
@@ -262,7 +264,7 @@ def configure(
             changes[k] = (pv, nv)
 
     if changes:
-        base.save()
+        postgresql_conf.save()
 
     if run_hooks:
         ctx.hook.instance_configure(
@@ -282,20 +284,40 @@ def configure(
     return changes
 
 
-def configuration(
-    ctx: "BaseContext",
-    manifest: interface.Instance,
-    *,
-    datadir: Path,
-    base: Optional[pgconf.Configuration],
-) -> Tuple[pgconf.Configuration, List[Tuple[Path, str]]]:
-    """Return instance configuration from manifest along with a list for SSL
-    certificate file information.
+def configure_ssl(
+    ctx: "BaseContext", configuration: Dict[str, Any], datadir: Path
+) -> None:
+    """Possibly generate SSL certificate files in instance 'datadir' based on specified 'configuration'."""
+    if not configuration.get("ssl"):
+        return
+    try:
+        cert, key = Path(configuration["ssl_cert_file"]), Path(
+            configuration["ssl_key_file"]
+        )
+    except KeyError:
+        cert, key = Path("server.crt"), Path("server.key")
+    if not cert.is_absolute():
+        cert = datadir / cert
+    if not key.is_absolute():
+        key = datadir / key
+    if not cert.exists() and not key.exists():
+        certcontent, keycontent = util.generate_certificate(
+            run_command=functools.partial(ctx.run, log_output=False)
+        )
+        cert.touch(mode=0o600)
+        cert.write_text(certcontent)
+        key.touch(mode=0o600)
+        key.write_text(keycontent)
+    else:
+        assert (
+            cert.exists() and key.exists()
+        ), f"One of SSL certificate files {cert} or {key} exists but the other does not"
 
-    `manifest.ssl` parameter controls SSL configuration. If False, SSL is not
-    enabled. If True, a self-signed certificate is generated. A tuple of two
-    `~pathlib.Path` corresponding to the location of SSL cert file and key
-    file to use may also be passed.
+
+def configuration(
+    ctx: "BaseContext", manifest: interface.Instance
+) -> pgconf.Configuration:
+    """Return instance configuration from manifest.
 
     'shared_buffers' and 'effective_cache_size' setting, if defined and set to
     a percent-value, will be converted to proper memory value relative to the
@@ -319,15 +341,6 @@ def configuration(
 
     confitems.update(manifest.configuration)
 
-    ssl_cert_files = []
-    if (base is None or not base.get("ssl", False)) and manifest.ssl is True:
-        crt, key = util.generate_certificate(
-            run_command=functools.partial(ctx.run, log_output=False)
-        )
-        for fname, content in [("server.crt", crt), ("server.key", key)]:
-            fpath = datadir / fname
-            ssl_cert_files.append((fpath, content))
-
     spl = ""
     spl_list = []
     for extension in manifest.extensions:
@@ -347,7 +360,7 @@ def configuration(
 
     conf.format_values(confitems, ctx.settings.postgresql)
 
-    return conf.make(manifest.name, **confitems), ssl_cert_files
+    return conf.make(manifest.name, **confitems)
 
 
 @contextlib.contextmanager
