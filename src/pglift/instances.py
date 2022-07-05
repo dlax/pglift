@@ -304,7 +304,6 @@ def configure_ssl(
         certcontent, keycontent = util.generate_certificate(
             run_command=functools.partial(ctx.run, log_output=False)
         )
-        cert.touch(mode=0o600)
         cert.write_text(certcontent)
         key.touch(mode=0o600)
         key.write_text(keycontent)

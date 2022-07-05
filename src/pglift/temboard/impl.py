@@ -189,9 +189,10 @@ def setup(
             run_command=functools.partial(ctx.run, log_output=False)
         )
         ssl_dir = ssl_cert_file.parent
-        for fname, content in [(cert_name, crt), (key_name, key)]:
+        for fname, content, mode in [(cert_name, crt, None), (key_name, key, 0o600)]:
             fpath = ssl_dir / fname
-            fpath.touch(0o600)
+            if mode:
+                fpath.touch(mode)
             fpath.write_text(content)
 
     if ctx.settings.service_manager == "systemd":

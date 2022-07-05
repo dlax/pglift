@@ -218,7 +218,7 @@ def test_configure(
     key = configdir / "server.key"
     assert crt.exists()
     assert key.exists()
-    assert stat.filemode(crt.stat().st_mode) == "-rw-------"
+    assert stat.filemode(crt.stat().st_mode) == "-rw-r--r--"
     assert stat.filemode(key.stat().st_mode) == "-rw-------"
 
     ssl = (cert_file, key_file) = (
