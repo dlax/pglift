@@ -545,6 +545,31 @@ class Instance(BaseInstance):
             values["configuration"]["port"] = config_port
         return values
 
+    @validator("configuration", always=True)
+    def __set_configuration_ssl_(
+        cls, value: Dict[str, Any], values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Set SSL configuration options according to 'ssl' field.
+
+        >>> Instance(name="test").configuration
+        {}
+        >>> Instance(name="test", ssl=True).configuration
+        {'ssl': True}
+        >>> Instance(name="test", ssl=["server.pem", "server.key"]).configuration
+        {'ssl': True, 'ssl_cert_file': 'server.pem', 'ssl_key_file': 'server.key'}
+        """
+        ssl = values["ssl"]
+        if ssl:
+            value["ssl"] = True
+        if isinstance(ssl, tuple):
+            try:
+                certfile, keyfile = ssl
+            except ValueError:
+                raise ValueError("expecting a 2-tuple for 'ssl' parameter")
+            value["ssl_cert_file"] = str(certfile)
+            value["ssl_key_file"] = str(keyfile)
+        return value
+
     _S = TypeVar("_S", bound=ServiceManifest)
 
     def service(self, stype: Type[_S]) -> Optional[_S]:

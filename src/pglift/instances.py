@@ -320,23 +320,13 @@ def configuration(
     confitems.update(manifest.configuration)
 
     ssl_cert_files = []
-    ssl = manifest.ssl
-    if ssl:
-        confitems["ssl"] = True
-    if (base is None or not base.get("ssl", False)) and ssl is True:
+    if (base is None or not base.get("ssl", False)) and manifest.ssl is True:
         crt, key = util.generate_certificate(
             run_command=functools.partial(ctx.run, log_output=False)
         )
         for fname, content in [("server.crt", crt), ("server.key", key)]:
             fpath = datadir / fname
             ssl_cert_files.append((fpath, content))
-    elif isinstance(ssl, tuple):
-        try:
-            certfile, keyfile = ssl
-        except ValueError:
-            raise ValueError("expecting a 2-tuple for 'ssl' parameter") from None
-        confitems["ssl_cert_file"] = str(certfile)
-        confitems["ssl_key_file"] = str(keyfile)
 
     spl = ""
     spl_list = []
