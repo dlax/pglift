@@ -396,29 +396,27 @@ class PgBackRestSettings(PluginSettings):
     )
 
     configpath: ConfigPath = Field(
-        default=ConfigPath(
-            "pgbackrest/pgbackrest-{instance.version}-{instance.name}.conf"
-        ),
+        default=ConfigPath("pgbackrest/pgbackrest-{name}.conf"),
         description="Path to the config file.",
     )
 
     directory: DataPath = Field(
-        default=DataPath("pgbackrest/{instance.version}-{instance.name}"),
+        default=DataPath("pgbackrest/{name}"),
         description="Path to the directory where backups are stored.",
     )
 
     logpath: DataPath = Field(
-        default=DataPath("pgbackrest/{instance.version}-{instance.name}/logs"),
+        default=DataPath("pgbackrest/{name}/logs"),
         description="Path where log files are stored.",
     )
 
     spoolpath: DataPath = Field(
-        default=DataPath("pgbackrest/{instance.version}-{instance.name}/spool"),
+        default=DataPath("pgbackrest/{name}/spool"),
         description="Spool path.",
     )
 
     lockpath: RunPath = Field(
-        default=RunPath("pgbackrest/{instance.version}-{instance.name}/lock"),
+        default=RunPath("pgbackrest/{name}/lock"),
         description="Path where lock files are stored.",
     )
 

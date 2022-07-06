@@ -45,7 +45,7 @@ def pgbackrest(
     command: Tuple[str, ...],
 ) -> None:
     """Proxy to pgbackrest operations on an instance"""
-    cmd = impl.make_cmd(instance, settings, *command)
+    cmd = impl.make_cmd(instance.qualname, settings, *command)
     ctx.run(cmd, redirect_output=True, check=True)
 
 

@@ -26,7 +26,7 @@ def pgbackrest_available(pgbackrest_available: bool) -> bool:
 def directory(
     pgbackrest_settings: PgBackRestSettings, instance: system.Instance
 ) -> Path:
-    return Path(str(pgbackrest_settings.directory).format(instance=instance))
+    return Path(str(pgbackrest_settings.directory).format(name=instance.qualname))
 
 
 def test_configure(
@@ -42,15 +42,17 @@ def test_configure(
     assert instance_config
     instance_port = instance_config.port
 
-    configpath = Path(str(pgbackrest_settings.configpath).format(instance=instance))
+    configpath = Path(
+        str(pgbackrest_settings.configpath).format(name=instance.qualname)
+    )
     assert configpath.exists()
     lines = configpath.read_text().splitlines()
     assert f"pg1-port = {instance_port}" in lines
     assert "pg1-user = backup" in lines
     assert directory.exists()
 
-    lockpath = Path(str(pgbackrest_settings.lockpath).format(instance=instance))
-    spoolpath = Path(str(pgbackrest_settings.spoolpath).format(instance=instance))
+    lockpath = Path(str(pgbackrest_settings.lockpath).format(name=instance.qualname))
+    spoolpath = Path(str(pgbackrest_settings.spoolpath).format(name=instance.qualname))
     assert lockpath.exists()
     assert spoolpath.exists()
 
@@ -67,7 +69,9 @@ def test_configure(
 
     # Calling setup an other time doesn't overwrite configuration
     mtime_before = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
-    pgbackrest.setup(ctx, instance, pgbackrest_settings, instance.config())
+    pgbackrest.setup(
+        ctx, instance.qualname, pgbackrest_settings, instance.config(), instance.datadir
+    )
     mtime_after = configpath.stat().st_mtime, pgconfigfile.stat().st_mtime
     assert mtime_before == mtime_after
 
@@ -183,6 +187,6 @@ def test_upgrade(
     pgbackrest_settings: PgBackRestSettings, upgraded_instance: system.Instance
 ) -> None:
     configpath = Path(
-        str(pgbackrest_settings.configpath).format(instance=upgraded_instance)
+        str(pgbackrest_settings.configpath).format(name=upgraded_instance.qualname)
     )
     assert configpath.exists()

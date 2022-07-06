@@ -25,32 +25,27 @@ def available(ctx: "BaseContext") -> Optional["PgBackRestSettings"]:
     return ctx.settings.pgbackrest
 
 
-def enabled(instance: "system.BaseInstance", settings: "PgBackRestSettings") -> bool:
-    return _configpath(instance, settings).exists()
+def enabled(qualname: str, settings: "PgBackRestSettings") -> bool:
+    return _configpath(qualname, settings).exists()
 
 
-def make_cmd(
-    instance: "system.BaseInstance", settings: "PgBackRestSettings", *args: str
-) -> List[str]:
-    configpath = _configpath(instance, settings)
-    stanza = instance.qualname
+def make_cmd(qualname: str, settings: "PgBackRestSettings", *args: str) -> List[str]:
+    configpath = _configpath(qualname, settings)
     return [
         str(settings.execpath),
         f"--config={configpath}",
-        f"--stanza={stanza}",
+        f"--stanza={qualname}",
     ] + list(args)
 
 
-def _configpath(
-    instance: "system.BaseInstance", settings: "PgBackRestSettings"
-) -> Path:
-    return Path(str(settings.configpath).format(instance=instance))
+def _configpath(qualname: str, settings: "PgBackRestSettings") -> Path:
+    return Path(str(settings.configpath).format(name=qualname))
 
 
 @overload
 def backup_info(
     ctx: "BaseContext",
-    instance: "system.BaseInstance",
+    qualname: str,
     settings: "PgBackRestSettings",
     *,
     backup_set: Optional[str] = None,
@@ -62,7 +57,7 @@ def backup_info(
 @overload
 def backup_info(
     ctx: "BaseContext",
-    instance: "system.BaseInstance",
+    qualname: str,
     settings: "PgBackRestSettings",
     *,
     backup_set: Optional[str] = None,
@@ -72,7 +67,7 @@ def backup_info(
 
 def backup_info(
     ctx: "BaseContext",
-    instance: "system.BaseInstance",
+    qualname: str,
     settings: "PgBackRestSettings",
     *,
     backup_set: Optional[str] = None,
@@ -88,7 +83,7 @@ def backup_info(
     if output_json:
         args.append("--output=json")
     args.append("info")
-    r = ctx.run(make_cmd(instance, settings, *args), check=True)
+    r = ctx.run(make_cmd(qualname, settings, *args), check=True)
     if not output_json:
         return r.stdout
     return json.loads(r.stdout)  # type: ignore[no-any-return]
@@ -97,22 +92,23 @@ def backup_info(
 @task("setting up pgBackRest")
 def setup(
     ctx: "BaseContext",
-    instance: "system.PostgreSQLInstance",
+    name: str,
     settings: "PgBackRestSettings",
     instance_config: pgconf.Configuration,
+    datadir: Path,
 ) -> None:
     """Setup pgBackRest"""
-    configpath = _configpath(instance, settings)
+    configpath = _configpath(name, settings)
     configpath.parent.mkdir(mode=0o750, exist_ok=True, parents=True)
-    directory = Path(str(settings.directory).format(instance=instance))
-    logpath = Path(str(settings.logpath).format(instance=instance))
+    directory = Path(str(settings.directory).format(name=name))
+    logpath = Path(str(settings.logpath).format(name=name))
     logpath.mkdir(exist_ok=True, parents=True)
-    spoolpath = Path(str(settings.spoolpath).format(instance=instance))
+    spoolpath = Path(str(settings.spoolpath).format(name=name))
     spoolpath.mkdir(exist_ok=True, parents=True)
-    lockpath = Path(str(settings.lockpath).format(instance=instance))
+    lockpath = Path(str(settings.lockpath).format(name=name))
     lockpath.mkdir(exist_ok=True, parents=True)
 
-    stanza = instance.qualname
+    stanza = name
 
     # Always use string values so that this would match with actual config (on
     # disk) that's parsed later on.
@@ -130,7 +126,7 @@ def setup(
             "compress-level": "3",
         },
         stanza: {
-            "pg1-path": f"{instance.datadir}",
+            "pg1-path": str(datadir),
             "pg1-port": str(instance_config.get("port", 5432)),
             "pg1-user": ctx.settings.postgresql.backuprole,
         },
@@ -153,14 +149,14 @@ def setup(
 
 
 def postgresql_configuration(
-    instance: "system.PostgreSQLInstance", settings: "PgBackRestSettings"
+    qualname: str, settings: "PgBackRestSettings"
 ) -> pgconf.Configuration:
     config_template = util.site_config("postgresql", "pgbackrest.conf")
     config = pgconf.Configuration()
     if config_template is not None:
-        configpath = _configpath(instance, settings)
+        configpath = _configpath(qualname, settings)
         pgconfig = config_template.read_text().format(
-            execpath=settings.execpath, configpath=configpath, stanza=instance.qualname
+            execpath=settings.execpath, configpath=configpath, stanza=qualname
         )
         list(config.parse(pgconfig.splitlines()))
     return config
@@ -169,15 +165,16 @@ def postgresql_configuration(
 @setup.revert("deconfiguring pgBackRest")
 def revert_setup(
     ctx: "BaseContext",
-    instance: "system.PostgreSQLInstance",
+    name: str,
     settings: "PgBackRestSettings",
     instance_config: pgconf.Configuration,
+    datadir: Path,
 ) -> None:
     """Un-setup pgBackRest"""
-    configpath = _configpath(instance, settings)
-    directory = Path(str(settings.directory).format(instance=instance))
-    lockpath = Path(str(settings.lockpath).format(instance=instance))
-    spoolpath = Path(str(settings.spoolpath).format(instance=instance))
+    configpath = _configpath(name, settings)
+    directory = Path(str(settings.directory).format(name=name))
+    lockpath = Path(str(settings.lockpath).format(name=name))
+    spoolpath = Path(str(settings.spoolpath).format(name=name))
 
     if configpath.exists():
         configpath.unlink()
@@ -209,13 +206,14 @@ def init(
         if not roles.exists(ctx, instance, role.name):
             roles.create(ctx, instance, role)
             roles.set_pgpass_entry_for(ctx, instance, role)
-        ctx.run(make_cmd(instance, settings, "start"), check=True)
-        ctx.run(make_cmd(instance, settings, "stanza-create"), check=True)
-        ctx.run(make_cmd(instance, settings, "check"), check=True)
+        name = instance.qualname
+        ctx.run(make_cmd(name, settings, "start"), check=True)
+        ctx.run(make_cmd(name, settings, "stanza-create"), check=True)
+        ctx.run(make_cmd(name, settings, "check"), check=True)
 
 
 def backup_command(
-    instance: "system.BaseInstance",
+    qualname: str,
     settings: "PgBackRestSettings",
     *,
     type: BackupType = BackupType.default(),
@@ -234,7 +232,7 @@ def backup_command(
     ]
     if start_fast:
         args.insert(-1, "--start-fast")
-    return make_cmd(instance, settings, *args)
+    return make_cmd(qualname, settings, *args)
 
 
 @task("backing up instance with pgBackRest")
@@ -259,20 +257,18 @@ def backup(
     env = os.environ.copy()
     env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
     ctx.run(
-        backup_command(instance, settings, type=type),
+        backup_command(instance.qualname, settings, type=type),
         check=True,
         env=env,
     )
 
 
-def expire_command(
-    instance: "system.BaseInstance", settings: "PgBackRestSettings"
-) -> List[str]:
+def expire_command(qualname: str, settings: "PgBackRestSettings") -> List[str]:
     """Return the full pgbackrest command to expire backups for ``instance``.
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    return make_cmd(instance, settings, "--log-level-console=info", "expire")
+    return make_cmd(qualname, settings, "--log-level-console=info", "expire")
 
 
 @task("expiring pgBackRest backups")
@@ -283,7 +279,7 @@ def expire(
 
     Ref.: https://pgbackrest.org/command.html#command-expire
     """
-    ctx.run(expire_command(instance, settings), check=True)
+    ctx.run(expire_command(instance.qualname, settings), check=True)
 
 
 def _parse_backup_databases(info: str) -> List[str]:
@@ -327,14 +323,18 @@ def iter_backups(
     ctx: "BaseContext", instance: "system.BaseInstance", settings: "PgBackRestSettings"
 ) -> Iterator[interface.InstanceBackup]:
     """Yield information about backups on an instance."""
-    backups = backup_info(ctx, instance, settings)[0]["backup"]
+    backups = backup_info(ctx, instance.qualname, settings)[0]["backup"]
 
     def started_at(entry: Any) -> float:
         return entry["timestamp"]["start"]  # type: ignore[no-any-return]
 
     for backup in sorted(backups, key=started_at, reverse=True):
         info_set = backup_info(
-            ctx, instance, settings, backup_set=backup["label"], output_json=False
+            ctx,
+            instance.qualname,
+            settings,
+            backup_set=backup["label"],
+            output_json=False,
         )
         databases = _parse_backup_databases(info_set)
         dtstart = datetime.datetime.fromtimestamp(backup["timestamp"]["start"])
@@ -351,7 +351,7 @@ def iter_backups(
 
 
 def restore_command(
-    instance: "system.BaseInstance",
+    qualname: str,
     settings: "PgBackRestSettings",
     *,
     date: Optional[datetime.datetime] = None,
@@ -378,7 +378,7 @@ def restore_command(
     elif backup_set is not None:
         args += ["--target-action=promote", "--type=immediate", f"--set={backup_set}"]
     args.append("restore")
-    return make_cmd(instance, settings, *args)
+    return make_cmd(qualname, settings, *args)
 
 
 @task("restoring instance with pgBackRest")
@@ -399,7 +399,7 @@ def restore(
     if instance.standby:
         raise exceptions.InstanceReadOnlyError(instance)
 
-    cmd = restore_command(instance, settings, date=date, backup_set=label)
+    cmd = restore_command(instance.qualname, settings, date=date, backup_set=label)
     ctx.run(cmd, check=True)
 
 
@@ -407,6 +407,6 @@ def env_for(
     instance: "system.Instance", settings: "PgBackRestSettings"
 ) -> Dict[str, str]:
     return {
-        "PGBACKREST_CONFIG": str(_configpath(instance, settings)),
+        "PGBACKREST_CONFIG": str(_configpath(instance.qualname, settings)),
         "PGBACKREST_STANZA": instance.qualname,
     }

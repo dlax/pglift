@@ -47,14 +47,16 @@ def test_pgbackrest_teardown(
     instance_dropped: Configuration,
 ) -> None:
     configpath = pathlib.Path(
-        str(pgbackrest_settings.configpath).format(instance=instance)
+        str(pgbackrest_settings.configpath).format(name=instance.qualname)
     )
     directory = pathlib.Path(
-        str(pgbackrest_settings.directory).format(instance=instance)
+        str(pgbackrest_settings.directory).format(name=instance.qualname)
     )
-    lockpath = pathlib.Path(str(pgbackrest_settings.lockpath).format(instance=instance))
+    lockpath = pathlib.Path(
+        str(pgbackrest_settings.lockpath).format(name=instance.qualname)
+    )
     spoolpath = pathlib.Path(
-        str(pgbackrest_settings.spoolpath).format(instance=instance)
+        str(pgbackrest_settings.spoolpath).format(name=instance.qualname)
     )
     assert not configpath.exists()
     assert not directory.exists()

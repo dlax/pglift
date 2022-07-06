@@ -31,7 +31,7 @@ def instance_configuration(
     if not settings:
         return Configuration()
     instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
-    return impl.postgresql_configuration(instance, settings)
+    return impl.postgresql_configuration(instance.qualname, settings)
 
 
 @hookimpl  # type: ignore[misc]
@@ -50,17 +50,17 @@ def instance_configure(
     if instance.standby:
         return
 
-    if creating and impl.enabled(instance, settings):
+    if creating and impl.enabled(instance.qualname, settings):
         if not ctx.confirm(
             f"Old pgbackrest repository exists for instance {instance}, continue by overwriting it?",
             False,
         ):
             raise exceptions.Cancelled("Pgbackrest repository already exists")
-        impl.revert_setup(ctx, instance, settings, config)
+        impl.revert_setup(ctx, instance.qualname, settings, config, instance.datadir)
 
-    impl.setup(ctx, instance, settings, config)
+    impl.setup(ctx, instance.qualname, settings, config, instance.datadir)
 
-    info = impl.backup_info(ctx, instance, settings)
+    info = impl.backup_info(ctx, instance.qualname, settings)
     # Only initialize if the stanza does not already exist.
     if not info or info[0]["status"]["code"] == 1:
         impl.init(ctx, instance, settings)
@@ -72,16 +72,18 @@ def instance_drop(ctx: "BaseContext", instance: system.Instance) -> None:
     settings = available(ctx)
     if not settings:
         return
-    if not impl.enabled(instance, settings):
+    if not impl.enabled(instance.qualname, settings):
         return
 
-    nb_backups = len(impl.backup_info(ctx, instance, settings)[0]["backup"])
+    nb_backups = len(impl.backup_info(ctx, instance.qualname, settings)[0]["backup"])
 
     if not nb_backups or ctx.confirm(
         f"Confirm deletion of {nb_backups} backup(s) for instance {instance} ?",
         True,
     ):
-        impl.revert_setup(ctx, instance, settings, instance.config())
+        impl.revert_setup(
+            ctx, instance.qualname, settings, instance.config(), instance.datadir
+        )
 
 
 @hookimpl  # type: ignore[misc]

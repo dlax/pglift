@@ -19,16 +19,11 @@ def pgbackrest_settings(settings: Settings) -> PgBackRestSettings:
     return settings.pgbackrest
 
 
-def test_make_cmd(
-    pg_version: str,
-    settings: Settings,
-    pgbackrest_settings: PgBackRestSettings,
-    instance: Instance,
-) -> None:
-    assert pgbackrest.make_cmd(instance, pgbackrest_settings, "stanza-upgrade") == [
+def test_make_cmd(settings: Settings, pgbackrest_settings: PgBackRestSettings) -> None:
+    assert pgbackrest.make_cmd("42-test", pgbackrest_settings, "stanza-upgrade") == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-42-test.conf",
+        "--stanza=42-test",
         "stanza-upgrade",
     ]
 
@@ -37,20 +32,20 @@ def test_backup_info(
     ctx: Context,
     settings: Settings,
     pgbackrest_settings: PgBackRestSettings,
-    pg_version: str,
-    instance: Instance,
 ) -> None:
     with patch.object(ctx, "run") as run:
         run.return_value.stdout = "[]"
         assert (
-            pgbackrest.backup_info(ctx, instance, pgbackrest_settings, backup_set="foo")
+            pgbackrest.backup_info(
+                ctx, "testback", pgbackrest_settings, backup_set="foo"
+            )
             == []
         )
     run.assert_called_once_with(
         [
             "/usr/bin/pgbackrest",
-            f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-            f"--stanza={pg_version}-test",
+            f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-testback.conf",
+            "--stanza=testback",
             "--set=foo",
             "--output=json",
             "info",
@@ -60,17 +55,14 @@ def test_backup_info(
 
 
 def test_backup_command(
-    pg_version: str,
-    settings: Settings,
-    pgbackrest_settings: PgBackRestSettings,
-    instance: Instance,
+    settings: Settings, pgbackrest_settings: PgBackRestSettings
 ) -> None:
     assert pgbackrest.backup_command(
-        instance, pgbackrest_settings, type=types.BackupType.full
+        "backtesr", pgbackrest_settings, type=types.BackupType.full
     ) == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-backtesr.conf",
+        "--stanza=backtesr",
         "--type=full",
         "--log-level-console=info",
         "--start-fast",
@@ -79,35 +71,29 @@ def test_backup_command(
 
 
 def test_expire_command(
-    pg_version: str,
-    settings: Settings,
-    pgbackrest_settings: PgBackRestSettings,
-    instance: Instance,
+    settings: Settings, pgbackrest_settings: PgBackRestSettings
 ) -> None:
-    assert pgbackrest.expire_command(instance, pgbackrest_settings) == [
+    assert pgbackrest.expire_command("expire", pgbackrest_settings) == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-expire.conf",
+        "--stanza=expire",
         "--log-level-console=info",
         "expire",
     ]
 
 
 def test_restore_command(
-    pg_version: str,
-    settings: Settings,
-    pgbackrest_settings: PgBackRestSettings,
-    instance: Instance,
+    settings: Settings, pgbackrest_settings: PgBackRestSettings
 ) -> None:
     with pytest.raises(exceptions.UnsupportedError):
         pgbackrest.restore_command(
-            instance, pgbackrest_settings, date=datetime.now(), backup_set="sunset"
+            "rest", pgbackrest_settings, date=datetime.now(), backup_set="sunset"
         )
 
-    assert pgbackrest.restore_command(instance, pgbackrest_settings) == [
+    assert pgbackrest.restore_command("rest", pgbackrest_settings) == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-rest.conf",
+        "--stanza=rest",
         "--log-level-console=info",
         "--delta",
         "--link-all",
@@ -115,13 +101,13 @@ def test_restore_command(
     ]
 
     assert pgbackrest.restore_command(
-        instance,
+        "backtest",
         pgbackrest_settings,
         date=datetime(2003, 1, 1).replace(tzinfo=timezone.utc),
     ) == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-backtest.conf",
+        "--stanza=backtest",
         "--log-level-console=info",
         "--delta",
         "--link-all",
@@ -132,13 +118,13 @@ def test_restore_command(
     ]
 
     assert pgbackrest.restore_command(
-        instance,
+        "backtest",
         pgbackrest_settings,
         backup_set="x",
     ) == [
         "/usr/bin/pgbackrest",
-        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-{pg_version}-test.conf",
-        f"--stanza={pg_version}-test",
+        f"--config={settings.prefix}/etc/pgbackrest/pgbackrest-backtest.conf",
+        "--stanza=backtest",
         "--log-level-console=info",
         "--delta",
         "--link-all",
@@ -182,7 +168,7 @@ def test_instance_configure_cancelled_if_repo_exists(
                 config=Configuration(),
                 creating=True,
             )
-    enabled.assert_called_once_with(instance, settings)
+    enabled.assert_called_once_with(instance.qualname, settings)
 
 
 def test_env_for(
