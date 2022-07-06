@@ -30,7 +30,7 @@ def instance_configuration(
     settings = available(ctx)
     if not settings:
         return Configuration()
-    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.BaseInstance.get(manifest.name, manifest.version, ctx)
     return impl.postgresql_configuration(instance.qualname, settings)
 
 
@@ -46,7 +46,9 @@ def instance_configure(
     if not settings:
         logger.warning("pgbackrest not available, skipping backup configuration")
         return
-    instance = system.Instance.system_lookup(ctx, (manifest.name, manifest.version))
+    instance = system.PostgreSQLInstance.system_lookup(
+        ctx, (manifest.name, manifest.version)
+    )
     if instance.standby:
         return
 
