@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from ansible_collections.dalibo.pglift.plugins.module_utils.importcheck import (
     check_required_libs,
@@ -22,7 +22,12 @@ class _AnsibleModule(Protocol):
         ...
 
     def run_command(
-        self, args: Sequence[str], *, check_rc: bool = False, **kwargs: Any
+        self,
+        args: Sequence[str],
+        *,
+        check_rc: bool = False,
+        environ_update: Optional[Dict[str, str]] = None,
+        **kwargs: Any,
     ) -> Tuple[int, str, str]:
         ...
 
@@ -57,10 +62,11 @@ class AnsibleContext(BaseContext):
         **kwargs: Any,
     ) -> CompletedProcess:
         """Run a command through the Ansible module."""
-        try:
-            kwargs["check_rc"] = kwargs.pop("check")
-        except KeyError:
-            pass
+        for ansible_name, name in [("check_rc", "check"), ("environ_update", "env")]:
+            try:
+                kwargs[ansible_name] = kwargs.pop(name)
+            except KeyError:
+                pass
         kwargs.pop("capture_output", None)  # default on Ansible
         returncode, stdout, stderr = self.module.run_command(args, **kwargs)
         return CompletedProcess(args, returncode, stdout, stderr)
