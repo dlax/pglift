@@ -18,7 +18,7 @@ from ..types import BackupType
 if TYPE_CHECKING:
     from ..ctx import BaseContext
     from ..models import system
-    from ..settings import PgBackRestSettings
+    from ..settings import PgBackRestSettings, PostgreSQLSettings
 
 
 def available(ctx: "BaseContext") -> Optional["PgBackRestSettings"]:
@@ -36,6 +36,14 @@ def make_cmd(qualname: str, settings: "PgBackRestSettings", *args: str) -> List[
         f"--config={configpath}",
         f"--stanza={qualname}",
     ] + list(args)
+
+
+def libpq_environ(settings: "PostgreSQLSettings") -> Dict[str, str]:
+    # Don't use PostgreSQLSettings.libpq_environ() here since it applies to
+    # surole and we use backuprole.
+    env = os.environ.copy()
+    env.setdefault("PGPASSFILE", str(settings.auth.passfile))
+    return env
 
 
 def _configpath(qualname: str, settings: "PgBackRestSettings") -> Path:
@@ -209,9 +217,10 @@ def init(
             roles.create(ctx, instance, role)
             roles.set_pgpass_entry_for(ctx, instance, role)
         name = instance.qualname
+        env = libpq_environ(ctx.settings.postgresql)
         ctx.run(make_cmd(name, settings, "start"), check=True)
-        ctx.run(make_cmd(name, settings, "stanza-create"), check=True)
-        ctx.run(make_cmd(name, settings, "check"), check=True)
+        ctx.run(make_cmd(name, settings, "stanza-create"), check=True, env=env)
+        ctx.run(make_cmd(name, settings, "check"), check=True, env=env)
 
 
 def backup_command(
@@ -254,14 +263,10 @@ def backup(
     if instance.standby:
         raise exceptions.InstanceStateError("backup should be done on primary instance")
 
-    # Don't use ctx.libpq_environ() here since it applies to surole and we use
-    # backuprole.
-    env = os.environ.copy()
-    env["PGPASSFILE"] = str(ctx.settings.postgresql.auth.passfile)
     ctx.run(
         backup_command(instance.qualname, settings, type=type),
         check=True,
-        env=env,
+        env=libpq_environ(ctx.settings.postgresql),
     )
 
 
